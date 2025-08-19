@@ -69,7 +69,11 @@ export default function TeacherDashboard() {
 
   const fetchData = async () => {
     try {
-      if (!userProfile?.teacherProfile?.id) return;
+      if (!userProfile?.teacherProfile?.id) {
+        console.warn('No teacher profile found, skipping data fetch');
+        setLoading(false);
+        return;
+      }
 
       // Fetch students assigned to this teacher
       const { data: studentsData, error: studentsError } = await supabase

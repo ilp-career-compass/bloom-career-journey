@@ -44,7 +44,7 @@ export default function StudentDashboard() {
 
       if (activitiesError) throw activitiesError;
 
-      // Fetch student progress
+      // Fetch student progress (only if studentProfile exists)
       if (userProfile?.studentProfile?.id) {
         const { data: progressData, error: progressError } = await supabase
           .from('student_activity_progress')
@@ -54,6 +54,9 @@ export default function StudentDashboard() {
         if (progressError) throw progressError;
 
         setProgress(progressData || []);
+      } else {
+        console.warn('No student profile found, skipping progress fetch');
+        setProgress([]);
       }
 
       setActivities(activitiesData || []);
@@ -101,6 +104,15 @@ export default function StudentDashboard() {
 
     // Mock activity completion - in real app, this would navigate to activity page
     const results = `Completed ${activity.title} assessment`;
+    
+    if (!userProfile?.studentProfile?.id) {
+      toast({
+        title: "Error",
+        description: "Student profile not found",
+        variant: "destructive",
+      });
+      return;
+    }
     
     try {
       const { error } = await supabase

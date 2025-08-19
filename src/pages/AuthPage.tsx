@@ -11,8 +11,8 @@ import { BookOpen, Users, GraduationCap } from 'lucide-react';
 
 export default function AuthPage() {
   const { user, userProfile, signIn, signUp } = useAuth();
-  const [signInForm, setSignInForm] = useState({ mobile: '', password: '' });
-  const [signUpForm, setSignUpForm] = useState({ mobile: '', password: '', fullName: '', role: 'student' as 'teacher' | 'student' });
+  const [signInForm, setSignInForm] = useState({ identifier: '', password: '' });
+  const [signUpForm, setSignUpForm] = useState({ identifier: '', password: '', fullName: '', role: 'student' as 'teacher' | 'student' });
   const [loading, setLoading] = useState(false);
 
   // Redirect if already authenticated
@@ -26,7 +26,7 @@ export default function AuthPage() {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await signIn(signInForm.mobile, signInForm.password);
+    const { error } = await signIn(signInForm.identifier, signInForm.password);
     setLoading(false);
     if (error) {
       console.error('Sign in error:', error);
@@ -36,8 +36,15 @@ export default function AuthPage() {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    
+    // Determine if identifier is email or mobile
+    const isEmail = signUpForm.identifier.includes('@');
+    const email = isEmail ? signUpForm.identifier : null;
+    const mobile = !isEmail ? signUpForm.identifier : null;
+    
     const { error } = await signUp(
-      signUpForm.mobile, 
+      mobile, 
+      email, 
       signUpForm.password, 
       signUpForm.fullName, 
       signUpForm.role
@@ -74,13 +81,13 @@ export default function AuthPage() {
               <TabsContent value="signin">
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signin-mobile">Mobile Number</Label>
+                    <Label htmlFor="signin-identifier">Email or Mobile Number</Label>
                     <Input
-                      id="signin-mobile"
-                      type="tel"
-                      placeholder="Enter your mobile number"
-                      value={signInForm.mobile}
-                      onChange={(e) => setSignInForm({ ...signInForm, mobile: e.target.value })}
+                      id="signin-identifier"
+                      type="text"
+                      placeholder="Enter your email or mobile number"
+                      value={signInForm.identifier}
+                      onChange={(e) => setSignInForm({ ...signInForm, identifier: e.target.value })}
                       required
                     />
                   </div>
@@ -115,15 +122,18 @@ export default function AuthPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-mobile">Mobile Number</Label>
+                    <Label htmlFor="signup-identifier">Email Address / Mobile Number</Label>
                     <Input
-                      id="signup-mobile"
-                      type="tel"
-                      placeholder="Enter your mobile number"
-                      value={signUpForm.mobile}
-                      onChange={(e) => setSignUpForm({ ...signUpForm, mobile: e.target.value })}
+                      id="signup-identifier"
+                      type="text"
+                      placeholder="Enter your email address or mobile number"
+                      value={signUpForm.identifier}
+                      onChange={(e) => setSignUpForm({ ...signUpForm, identifier: e.target.value })}
                       required
                     />
+                    <p className="text-xs text-muted-foreground">
+                      If you provide a mobile number, we'll generate an email for account verification.
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-password">Password</Label>
