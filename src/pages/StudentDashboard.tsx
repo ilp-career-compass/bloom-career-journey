@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -19,22 +19,90 @@ import {
   Star,
   BookOpen,
   Heart,
-  Target
+  Target,
+  User,
+  LogOut,
+  Settings,
+  Edit,
+  MessageSquare,
+  Bot,
+  ChevronDown,
+  Crown,
+  Briefcase,
+  GraduationCap
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import React from 'react'; // Added missing import for React
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 export default function StudentDashboard() {
-  const { userProfile } = useAuth();
+  const { userProfile, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  
+
+  // Profile editing state
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [profileData, setProfileData] = useState({
+    fullName: userProfile?.full_name || '',
+    email: userProfile?.email || '',
+    bio: '',
+    interests: '',
+    careerGoals: '',
+    strengths: '',
+    areasForGrowth: ''
+  });
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+  // Load profile data when modal opens
+  const loadProfileData = async () => {
+    if (!userProfile?.id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('full_name, email, bio, interests, career_goals, strengths, areas_for_growth')
+        .eq('id', userProfile.id)
+        .single();
+
+      if (data && !error) {
+        setProfileData({
+          fullName: data.full_name || '',
+          email: data.email || '',
+          bio: data.bio || '',
+          interests: data.interests || '',
+          careerGoals: data.career_goals || '',
+          strengths: data.strengths || '',
+          areasForGrowth: data.areas_for_growth || ''
+        });
+      }
+    } catch (error) {
+      console.log('No existing profile data found, using defaults');
+    }
+  };
+
   // Assessment progress states
-  const [assessmentProgress, setAssessmentProgress] = useState<any>(null);
-  const [dreamsProgress, setDreamsProgress] = useState<any>(null);
-  const [schoolLearningProgress, setSchoolLearningProgress] = useState<any>(null);
-  const [roleModelsProgress, setRoleModelsProgress] = useState<any>(null);
-  const [hobbiesProgress, setHobbiesProgress] = useState<any>(null);
+  const [assessmentProgress, setAssessmentProgress] = useState<Record<string, any> | null>(null);
+  const [dreamsProgress, setDreamsProgress] = useState<Record<string, any> | null>(null);
+  const [schoolLearningProgress, setSchoolLearningProgress] = useState<Record<string, any> | null>(null);
+  const [roleModelsProgress, setRoleModelsProgress] = useState<Record<string, any> | null>(null);
+  const [hobbiesProgress, setHobbiesProgress] = useState<Record<string, any> | null>(null);
 
   // Assessment completion status
   const [inspirationCompleted, setInspirationCompleted] = useState(false);
@@ -43,42 +111,54 @@ export default function StudentDashboard() {
   const [roleModelsCompleted, setRoleModelsCompleted] = useState(false);
   const [hobbiesCompleted, setHobbiesCompleted] = useState(false);
 
-  useEffect(() => {
-    fetchData();
-    checkAssessmentProgress();
-    checkDreamsProgress();
-    checkSchoolLearningProgress();
-    checkRoleModelsProgress();
-    checkHobbiesProgress();
-  }, []);
-
-  // Update completion status when progress changes
-  useEffect(() => {
-    setInspirationCompleted(!!assessmentProgress);
-    setDreamsCompleted(!!dreamsProgress);
-    setSchoolLearningCompleted(!!schoolLearningProgress);
-    setRoleModelsCompleted(!!roleModelsProgress);
-    setHobbiesCompleted(!!hobbiesProgress);
-  }, [assessmentProgress, dreamsProgress, schoolLearningProgress, roleModelsProgress, hobbiesProgress]);
-
-  const fetchData = async () => {
-    if (!userProfile?.id) return;
-
+  // Profile management functions
+  const handleProfileSave = async () => {
+    setIsSavingProfile(true);
     try {
-      // Fetch student data
-      const { data: studentData, error: studentError } = await supabase
-        .from('students')
-        .select(`
-          *,
-          classes:class_id(name, schools:school_id(name)),
-          teachers:teacher_id(users:user_id(full_name))
-        `)
-        .eq('user_id', userProfile.id)
-        .single();
+      // Update all profile fields in the users table
+      const { error } = await supabase
+        .from('users')
+        .update({
+          full_name: profileData.fullName,
+          email: profileData.email,
+          bio: profileData.bio,
+          interests: profileData.interests,
+          career_goals: profileData.careerGoals,
+          strengths: profileData.strengths,
+          areas_for_growth: profileData.areasForGrowth,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userProfile?.id);
 
-      if (studentError) throw studentError;
+      if (error) throw error;
+
+      toast({
+        title: "Profile Updated! ✨",
+        description: "Your profile has been saved successfully.",
+      });
+      setIsProfileOpen(false);
     } catch (error) {
-      console.error('Error fetching student data:', error);
+      console.error('Error updating profile:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update profile. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      navigate('/auth');
+      toast({
+        title: "Logged Out",
+        description: "You have been successfully logged out.",
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
     }
   };
 
@@ -192,6 +272,48 @@ export default function StudentDashboard() {
       // No existing response found, which is fine
     }
   };
+
+  // Call useEffect after all functions are defined
+  useEffect(() => {
+    fetchData();
+    checkAssessmentProgress();
+    checkDreamsProgress();
+    checkSchoolLearningProgress();
+    checkRoleModelsProgress();
+    checkHobbiesProgress();
+  }, []);
+
+  // Update completion status when progress changes
+  useEffect(() => {
+    setInspirationCompleted(!!assessmentProgress);
+    setDreamsCompleted(!!dreamsProgress);
+    setSchoolLearningCompleted(!!schoolLearningProgress);
+    setRoleModelsCompleted(!!roleModelsProgress);
+    setHobbiesCompleted(!!hobbiesProgress);
+  }, [assessmentProgress, dreamsProgress, schoolLearningProgress, roleModelsProgress, hobbiesProgress]);
+
+  const fetchData = async () => {
+    if (!userProfile?.id) return;
+
+    try {
+      // Fetch student data
+      const { data: studentData, error: studentError } = await supabase
+        .from('students')
+        .select(`
+          *,
+          classes:class_id(name, schools:school_id(name)),
+          teachers:teacher_id(users:user_id(full_name))
+        `)
+        .eq('user_id', userProfile.id)
+        .single();
+
+      if (studentError) throw studentError;
+    } catch (error) {
+      console.error('Error fetching student data:', error);
+    }
+  };
+
+
 
   // Check if assessment is unlocked based on previous completion
   const isAssessmentUnlocked = (assessmentType: string) => {
@@ -314,9 +436,64 @@ export default function StudentDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 py-8">
-      <div className="container mx-auto px-4">
-        {/* Header */}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+      {/* Professional Header */}
+      <div className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo/Brand */}
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
+                <Crown className="w-6 h-6 text-white" />
+              </div>
+              <h1 className="text-xl font-bold text-gray-800">CareerCompass</h1>
+            </div>
+
+            {/* Profile Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex items-center space-x-2 hover:bg-gray-100">
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-semibold text-sm">
+                      {userProfile?.full_name?.charAt(0)?.toUpperCase() || 'S'}
+                    </span>
+                  </div>
+                  <span className="text-gray-700 font-medium">{userProfile?.full_name || 'Student'}</span>
+                  <ChevronDown className="w-4 h-4 text-gray-500" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end">
+                <DropdownMenuLabel className="font-semibold">
+                  <div className="flex items-center space-x-2">
+                    <User className="w-4 h-4" />
+                    <span>My Profile</span>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => {
+                  setIsProfileOpen(true);
+                  loadProfileData();
+                }}>
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Settings className="w-4 h-4 mr-2" />
+                  Settings
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 py-8">
+        {/* Welcome Section */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-800 mb-4">Welcome to Your Career Journey</h1>
           <p className="text-xl text-gray-600">
@@ -517,7 +694,205 @@ export default function StudentDashboard() {
             </div>
           </CardContent>
         </Card>
+
+        {/* CareerChat LM Section */}
+        <div className="mt-12">
+          <Card className="border-0 shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50">
+              <CardTitle className="text-2xl text-purple-800 flex items-center gap-3">
+                <Bot className="w-6 h-6 text-purple-600" />
+                CareerChat LM
+              </CardTitle>
+              <CardDescription className="text-purple-600">
+                Get personalized career guidance based on your assessment responses
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Chat Interface Preview */}
+                <div className="space-y-4">
+                  <div className="bg-gray-50 rounded-lg p-4 min-h-[200px]">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                        <Bot className="w-4 h-4 text-white" />
+                      </div>
+                      <span className="font-medium text-gray-700">CareerBot</span>
+                    </div>
+                    <p className="text-gray-600 text-sm">
+                      Hello! I'm here to help guide your career journey. Based on your assessments, I can provide personalized advice and suggestions.
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Input 
+                      placeholder="Ask me about your career path..." 
+                      className="flex-1"
+                      disabled
+                    />
+                    <Button disabled className="bg-purple-600 hover:bg-purple-700">
+                      <MessageSquare className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <p className="text-xs text-gray-500 text-center">
+                    AI-powered career guidance coming in Phase 2 ✨
+                  </p>
+                </div>
+
+                {/* Quick Actions */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-gray-800 mb-3">Quick Career Insights</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
+                      <Briefcase className="w-5 h-5 text-blue-600" />
+                      <div>
+                        <p className="font-medium text-blue-800">Career Paths</p>
+                        <p className="text-sm text-blue-600">Discover potential career options</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
+                      <GraduationCap className="w-5 h-5 text-green-600" />
+                      <div>
+                        <p className="font-medium text-green-800">Skill Development</p>
+                        <p className="text-sm text-green-600">Identify skills to develop</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 bg-orange-50 rounded-lg">
+                      <Target className="w-5 h-5 text-orange-600" />
+                      <div>
+                        <p className="font-medium text-orange-800">Goal Setting</p>
+                        <p className="text-sm text-orange-600">Set career milestones</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
+
+      {/* Profile Editing Modal */}
+      <Dialog open={isProfileOpen} onOpenChange={setIsProfileOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl text-gray-800">Edit Your Profile</DialogTitle>
+            <DialogDescription>
+              Update your personal information and career details to get better personalized guidance.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6 py-4">
+            {/* Basic Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Basic Information</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="fullName">Full Name *</Label>
+                  <Input
+                    id="fullName"
+                    value={profileData.fullName}
+                    onChange={(e) => setProfileData(prev => ({ ...prev, fullName: e.target.value }))}
+                    placeholder="Enter your full name"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={profileData.email}
+                    onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
+                    placeholder="Enter your email"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="bio">Bio</Label>
+                <Textarea
+                  id="bio"
+                  value={profileData.bio}
+                  onChange={(e) => setProfileData(prev => ({ ...prev, bio: e.target.value }))}
+                  placeholder="Tell us about yourself..."
+                  rows={3}
+                />
+              </div>
+            </div>
+
+            {/* Career Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Career Information</h3>
+              
+              <div className="space-y-2">
+                <Label htmlFor="interests">Interests & Hobbies</Label>
+                <Textarea
+                  id="interests"
+                  value={profileData.interests}
+                  onChange={(e) => setProfileData(prev => ({ ...prev, interests: e.target.value }))}
+                  placeholder="What are you passionate about? What hobbies do you enjoy?"
+                  rows={3}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="careerGoals">Career Goals</Label>
+                <Textarea
+                  id="careerGoals"
+                  value={profileData.careerGoals}
+                  onChange={(e) => setProfileData(prev => ({ ...prev, careerGoals: e.target.value }))}
+                  placeholder="What are your short-term and long-term career goals?"
+                  rows={3}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="strengths">Strengths</Label>
+                  <Textarea
+                    id="strengths"
+                    value={profileData.strengths}
+                    onChange={(e) => setProfileData(prev => ({ ...prev, strengths: e.target.value }))}
+                    placeholder="What are your key strengths and skills?"
+                    rows={3}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="areasForGrowth">Areas for Growth</Label>
+                  <Textarea
+                    id="areasForGrowth"
+                    value={profileData.areasForGrowth}
+                    onChange={(e) => setProfileData(prev => ({ ...prev, areasForGrowth: e.target.value }))}
+                    placeholder="What skills would you like to develop?"
+                    rows={3}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button variant="outline" onClick={() => setIsProfileOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleProfileSave} 
+              disabled={isSavingProfile}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {isSavingProfile ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Saving...
+                </>
+              ) : (
+                'Save Profile'
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
