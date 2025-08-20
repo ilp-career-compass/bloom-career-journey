@@ -158,7 +158,7 @@ export default function TeacherDashboard() {
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isProgressOpen, setIsProgressOpen] = useState(false);
-  const [isSummaryOpen, setIsSummaryOpen] = useState(false);
+  // removed summary dialog per request
   const [isAnswersOpen, setIsAnswersOpen] = useState(false);
   const [progressSummary, setProgressSummary] = useState<{[k:string]: {count:number; last?: string}}>({});
   const [activityTimeline, setActivityTimeline] = useState<Array<{id:string; title:string; seq:number; status:string; completed_at?: string}>>([]);
@@ -167,6 +167,9 @@ export default function TeacherDashboard() {
   const [activityProgressMap, setActivityProgressMap] = useState<Record<string, {status:string; completed_at?: string; results?: string}>>({});
   const [activityNotesMap, setActivityNotesMap] = useState<Record<string, string>>({});
   const [activitySaving, setActivitySaving] = useState<Record<string, boolean>>({});
+  const [assessmentAnswers, setAssessmentAnswers] = useState<any[]>([]);
+
+  
 
 
 
@@ -551,6 +554,10 @@ export default function TeacherDashboard() {
     );
   }
 
+  const renderReadableAnswers = (assessmentType: string, responses: any) => (
+    <pre className="text-xs whitespace-pre-wrap break-words bg-gray-50 p-3 rounded-md">{JSON.stringify(responses, null, 2)}</pre>
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50">
       {/* Professional Header */}
@@ -901,7 +908,7 @@ export default function TeacherDashboard() {
                                           .eq('student_id', student.id)
                                           .order('completed_at', { ascending: false });
                                         if (aerr) throw aerr;
-                                        (window as any).__assessmentAnswers = answers || [];
+                                        setAssessmentAnswers(answers || []);
                                         setIsAnswersOpen(true);
                                       } catch (err) {
                                         console.error('Load answers error:', err);
@@ -930,46 +937,7 @@ export default function TeacherDashboard() {
                                     >
                                       Remove / Unenroll
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={async ()=>{
-                                      setSelectedStudent(student);
-                                      try {
-                                        // progress summary
-                                        const { data } = await supabase
-                                          .from('assessment_responses')
-                                          .select('assessment_type, completed_at')
-                                          .eq('student_id', student.id);
-                                        const summary: {[k:string]: {count:number; last?: string}} = {};
-                                        (data||[]).forEach((r:any)=>{
-                                          const t = r.assessment_type;
-                                          if(!summary[t]) summary[t] = {count:0, last: undefined};
-                                          summary[t].count += 1;
-                                          if (!summary[t].last || new Date(r.completed_at) > new Date(summary[t].last!)) {
-                                            summary[t].last = r.completed_at;
-                                          }
-                                        });
-                                        setProgressSummary(summary);
-                                        // activity timeline
-                                        const { data: acts } = await supabase
-                                          .from('activities').select('id, title, sequence_number').order('sequence_number');
-                                        const { data: prog } = await supabase
-                                          .from('student_activity_progress')
-                                          .select('activity_id, status, completed_at')
-                                          .eq('student_id', student.id);
-                                        const m = new Map((prog||[]).map((p:any)=>[p.activity_id, p]));
-                                        const timeline = (acts||[]).map((a:any)=>{
-                                          const p = m.get(a.id);
-                                          return { id: a.id, title: a.title, seq: a.sequence_number, status: p?.status || 'locked', completed_at: p?.completed_at || null };
-                                        });
-                                        setActivityTimeline(timeline);
-                                        setIsSummaryOpen(true);
-                                      } catch (err) {
-                                        console.error('Load summary error:', err);
-                                        toast({ title: 'Failed to load summary', variant: 'destructive' });
-                                      }
-                                    }}>
-                                      <FileText className="w-4 h-4 mr-2" />
-                                      View Summary
-                                    </DropdownMenuItem>
+                                    
                                     <DropdownMenuItem>
                                       <FileText className="w-4 h-4 mr-2" />
                                       Add Note
@@ -1362,14 +1330,14 @@ export default function TeacherDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {['inspiration','dreams','school_learning','role_models','hobbies'].map((t)=> (
                 <Card key={t} className="border shadow-sm">
-              <CardHeader>
+                <CardHeader>
                     <CardTitle className="text-base capitalize">{t.replace('_',' ')}</CardTitle>
-              </CardHeader>
-              <CardContent>
+                </CardHeader>
+                <CardContent>
                     <div className="text-sm text-gray-600">Submissions: <span className="font-medium">{progressSummary[t]?.count || 0}</span></div>
                     <div className="text-sm text-gray-600">Last completed: <span className="font-medium">{progressSummary[t]?.last ? new Date(progressSummary[t]!.last!).toLocaleString() : '—'}</span></div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
               ))}
             </div>
           </div>
@@ -1380,85 +1348,6 @@ export default function TeacherDashboard() {
         </DialogContent>
       </Dialog>
 
-      {/* View Summary (printable) */}
-      <Dialog open={isSummaryOpen} onOpenChange={setIsSummaryOpen}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle className="text-xl">{selectedStudent?.user?.full_name || 'Student'} – Summary</DialogTitle>
-            <DialogDescription>Profile, activities snapshot, and assessment highlights</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-6 print:space-y-2">
-            {/* Profile */}
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <div className="text-gray-500">Name</div>
-                <div className="font-medium">{selectedStudent?.user?.full_name}</div>
-              </div>
-              <div>
-                <div className="text-gray-500">Class</div>
-                <div className="font-medium">{selectedStudent?.class?.name || '—'}</div>
-              </div>
-              <div>
-                <div className="text-gray-500">Mobile</div>
-                <div className="font-medium">{selectedStudent?.user?.mobile || '—'}</div>
-              </div>
-              <div>
-                <div className="text-gray-500">Email</div>
-                <div className="font-medium">{selectedStudent?.user?.email || '—'}</div>
-              </div>
-            </div>
-
-            {/* Assessment highlights */}
-            <div>
-              <div className="text-sm font-medium mb-2">Assessment Highlights</div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {['inspiration','dreams','school_learning','role_models','hobbies'].map((t)=> (
-                  <Card key={t} className="border shadow-sm">
-              <CardHeader>
-                      <CardTitle className="text-base capitalize">{t.replace('_',' ')}</CardTitle>
-              </CardHeader>
-                    <CardContent>
-                      <div className="text-sm text-gray-600">Submissions: <span className="font-medium">{progressSummary[t]?.count || 0}</span></div>
-                      <div className="text-sm text-gray-600">Last completed: <span className="font-medium">{progressSummary[t]?.last ? new Date(progressSummary[t]!.last!).toLocaleString() : '—'}</span></div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-
-            {/* Activities snapshot */}
-            <div>
-              <div className="text-sm font-medium mb-2">Activities Snapshot</div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="text-left py-2 pr-2">#</th>
-                      <th className="text-left py-2 pr-2">Title</th>
-                      <th className="text-left py-2 pr-2">Status</th>
-                      <th className="text-left py-2">Completed</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {activityTimeline.map(a => (
-                      <tr key={a.id} className="border-b border-gray-100">
-                        <td className="py-2 pr-2">{a.seq}</td>
-                        <td className="py-2 pr-2">{a.title}</td>
-                        <td className="py-2 pr-2"><Badge className={getStatusColor(a.status)}>{a.status}</Badge></td>
-                        <td className="py-2">{a.completed_at ? new Date(a.completed_at).toLocaleString() : '—'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                      </div>
-            </div>
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={()=> window.print()}>Print</Button>
-            <Button onClick={()=> setIsSummaryOpen(false)}>Close</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
       {/* Assessment Answers Modal */}
       <Dialog open={isAnswersOpen} onOpenChange={setIsAnswersOpen}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
@@ -1467,24 +1356,24 @@ export default function TeacherDashboard() {
             <DialogDescription>Latest submissions across all assessments</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            {((window as any).__assessmentAnswers || []).length === 0 ? (
+            {assessmentAnswers.length === 0 ? (
               <div className="text-sm text-gray-500">No assessment submissions yet.</div>
             ) : (
-              ((window as any).__assessmentAnswers as any[]).map((r:any, idx:number)=> (
+              assessmentAnswers.map((r:any, idx:number)=> (
                 <Card key={idx} className="border shadow-sm">
-                  <CardHeader>
+              <CardHeader>
                     <CardTitle className="text-base">
                       <span className="capitalize">{r.assessment_type.replace('_',' ')}</span> – {r.assessment_title}
                       <span className="ml-2 text-sm text-gray-500">{new Date(r.completed_at).toLocaleString()}</span>
                     </CardTitle>
-                  </CardHeader>
+              </CardHeader>
                   <CardContent>
-                    <pre className="text-xs whitespace-pre-wrap break-words bg-gray-50 p-3 rounded-md">{JSON.stringify(r.responses, null, 2)}</pre>
-                  </CardContent>
-                </Card>
+                    {renderReadableAnswers(r.assessment_type, r.responses)}
+                    </CardContent>
+                  </Card>
               ))
             )}
-          </div>
+                      </div>
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={()=> window.print()}>Print</Button>
             <Button onClick={()=> setIsAnswersOpen(false)}>Close</Button>
