@@ -17,7 +17,16 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   signIn: (identifier: string, password: string) => Promise<{ error: any }>;
-  signUp: (mobile: string | null, email: string, password: string, fullName: string, role: 'teacher' | 'student') => Promise<{ error: any }>;
+  signUp: (
+    mobile: string | null, 
+    email: string, 
+    password: string, 
+    fullName: string, 
+    role: 'teacher' | 'student',
+    schoolId: string,
+    classId?: string,
+    gender?: 'male' | 'female'
+  ) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   userProfile: any;
 }
@@ -85,24 +94,85 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Create user profile with proper error handling
+  // Create user profile with robust retries and diagnostics
   const createUserProfile = async (userData: any) => {
     try {
       console.log('Attempting to create user profile with data:', userData);
-      
-      // Try direct insert
-      const { error: insertError } = await supabase
-        .from('users')
-        .insert(userData);
-      
+
+      // 1) First attempt: full insert
+      let { error: insertError } = await supabase.from('users').insert(userData);
       if (!insertError) {
         console.log('User profile created successfully via direct insert');
         return { success: true, error: null };
       }
-      
-      console.log('Direct insert failed:', insertError);
-      return { success: false, error: insertError };
-      
+
+      console.warn('Direct insert failed:', {
+        code: (insertError as any)?.code,
+        message: (insertError as any)?.message,
+        details: (insertError as any)?.details,
+        hint: (insertError as any)?.hint,
+      });
+
+      // 2) If FK violation on school_id (23503), retry without school_id
+      const code = (insertError as any)?.code;
+      const message = (insertError as any)?.message || '';
+      let minimalPayload = { ...userData };
+
+      if (code === '23503' && message.includes('school_id')) {
+        console.warn('Retrying insert without school_id due to FK violation');
+        delete (minimalPayload as any).school_id;
+        const retry = await supabase.from('users').insert(minimalPayload);
+        if (!retry.error) {
+          console.log('User profile created successfully on retry without school_id');
+          return { success: true, error: null };
+        }
+        insertError = retry.error;
+      }
+
+      // 3) If NOT NULL violation (23502) for optional fields, strip down to minimal payload
+      if (code === '23502') {
+        console.warn('Retrying insert with minimal payload due to NOT NULL violation');
+        minimalPayload = {
+          id: userData.id,
+          password_hash: userData.password_hash || 'handled_by_auth',
+          role: userData.role,
+          full_name: userData.full_name,
+        };
+        const retry = await supabase.from('users').insert(minimalPayload);
+        if (!retry.error) {
+          console.log('User profile created successfully with minimal payload');
+          return { success: true, error: null };
+        }
+        insertError = retry.error;
+      }
+
+      // 4) As a last resort, upsert on conflict id (in case row was partially created elsewhere)
+      console.warn('Final attempt: upsert on id');
+      const upsert = await supabase
+        .from('users')
+        .upsert(
+          {
+            id: userData.id,
+            password_hash: userData.password_hash || 'handled_by_auth',
+            role: userData.role,
+            full_name: userData.full_name,
+            email: userData.email,
+            mobile: userData.mobile,
+          },
+          { onConflict: 'id' }
+        );
+      if (!upsert.error) {
+        console.log('User profile upserted successfully');
+        return { success: true, error: null };
+      }
+
+      console.error('All attempts to create user profile failed:', {
+        code: (upsert.error as any)?.code || code,
+        message: (upsert.error as any)?.message || message,
+        details: (upsert.error as any)?.details,
+        hint: (upsert.error as any)?.hint,
+      });
+      return { success: false, error: upsert.error || insertError };
     } catch (error) {
       console.error('Error in createUserProfile:', error);
       return { success: false, error };
@@ -153,13 +223,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchUserProfile = async (userId: string) => {
     try {
       console.log('Fetching user profile for:', userId);
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (userError) throw userError;
+      // Retry a few times because profile insert may race with auth state change
+      let attempts = 0;
+      let userData: any = null;
+      let userError: any = null;
+      while (attempts < 4) {
+        const { data, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle();
+        userData = data;
+        userError = error;
+        if (userData) break;
+        // If no row (PGRST116 / 406), wait and retry
+        const code = (userError as any)?.code;
+        if (code === 'PGRST116' || (userError && (userError as any).status === 406)) {
+          attempts += 1;
+          await new Promise(r => setTimeout(r, 500 * attempts));
+          continue;
+        }
+        break;
+      }
+      if (userError && !userData) throw userError;
 
       if (userData) {
         console.log('User data fetched:', userData);
@@ -226,57 +312,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (identifier: string, password: string) => {
     try {
-      // Check if identifier is email or mobile
+      // Determine if identifier is email or mobile
       const isEmail = identifier.includes('@');
-      
-      let userData;
-      let userError;
-      
+
+      // Resolve email to use for auth
+      let emailForAuth: string | null = null;
       if (isEmail) {
-        // If it's an email, check directly in users table
-        const { data, error } = await supabase
-          .from('users')
-          .select('*')
-          .eq('email', identifier)
-          .single();
-        userData = data;
-        userError = error;
-        
-        // If email column doesn't exist, fall back to mobile-only approach
-        if (error && error.message.includes('column "email" does not exist')) {
-          console.log('Email column does not exist - migration not applied, using mobile-only approach');
-          // Try to find user by mobile instead
-          const { data: mobileData, error: mobileError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('mobile', identifier)
-            .single();
-          userData = mobileData;
-          userError = mobileError;
-        }
+        emailForAuth = identifier;
       } else {
-        // If it's mobile, check in users table
-        const { data, error } = await supabase
+        // Try to fetch email from profile by mobile, but handle 406 (no row) gracefully
+        const { data: userByMobile, error: userByMobileError } = await supabase
           .from('users')
-          .select('*')
+          .select('email')
           .eq('mobile', identifier)
-          .single();
-        userData = data;
-        userError = error;
+          .maybeSingle();
+        if (userByMobile && userByMobile.email) {
+          emailForAuth = userByMobile.email;
+        } else {
+          // Fall back to the generated email pattern used at sign-up
+          emailForAuth = `${identifier}@internal.app`;
+        }
       }
 
-      if (userError || !userData) {
-        return { error: { message: 'Invalid email/mobile or password' } };
-      }
-
-      // Use the user's email for Supabase auth (generate if not exists)
-      let email = userData.email;
-      if (!email && userData.mobile) {
-        email = `${userData.mobile}@internal.app`;
-      }
-      
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
+      const { data: signInData, error } = await supabase.auth.signInWithPassword({
+        email: emailForAuth as string,
         password,
       });
 
@@ -288,15 +347,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
       }
 
+      // Ensure a user profile row exists after sign-in
+      if (!error && signInData?.user) {
+        const authedUser = signInData.user;
+        // Check if profile row exists
+        const { data: profileRow } = await supabase
+          .from('users')
+          .select('id')
+          .eq('id', authedUser.id)
+          .maybeSingle();
+        if (!profileRow) {
+          const payload: any = {
+            id: authedUser.id,
+            password_hash: 'handled_by_auth',
+            role: (authedUser.user_metadata?.role as any) || 'student',
+            full_name: authedUser.user_metadata?.full_name || 'User',
+            email: emailForAuth,
+          };
+          if (!isEmail) payload.mobile = identifier;
+          await supabase
+            .from('users')
+            .upsert(payload, { onConflict: 'id' as any });
+        }
+      }
+
       return { error };
     } catch (error) {
       return { error };
     }
   };
 
-  const signUp = async (mobile: string | null, email: string, password: string, fullName: string, role: 'teacher' | 'student') => {
+  const signUp = async (
+    mobile: string | null, 
+    email: string, 
+    password: string, 
+    fullName: string, 
+    role: 'teacher' | 'student',
+    schoolId: string,
+    classId?: string,
+    gender?: 'male' | 'female'
+  ) => {
     try {
-      console.log('Starting signUp process:', { mobile, email, fullName, role });
+      console.log('Starting signUp process:', { mobile, email, fullName, role, schoolId, classId, gender });
       
       // If no email is provided, we need to generate one for Supabase auth
       let finalEmail = email;
@@ -414,6 +506,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           password_hash: 'handled_by_auth',
           role,
           full_name: fullName,
+          school_id: schoolId,
         };
         
         // Only add email and mobile if the columns exist
@@ -422,6 +515,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         if (finalMobile) {
           userProfileData.mobile = finalMobile;
+        }
+        
+        // Add gender for students
+        if (role === 'student' && gender) {
+          userProfileData.gender = gender;
         }
         
         // Use the new createUserProfile function
@@ -438,6 +536,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         console.log('User profile created successfully');
+
+        // Create role-specific profile (teacher or student)
+        try {
+          if (role === 'teacher') {
+            // Create teacher profile
+            const { error: teacherError } = await supabase
+              .from('teachers')
+              .insert({
+                user_id: authData.user.id,
+                school_id: schoolId,
+                is_active: true,
+                joining_date: new Date().toISOString(),
+              });
+
+            if (teacherError) {
+              console.error('Error creating teacher profile:', teacherError);
+              toast({
+                title: "Registration warning",
+                description: "Account created but teacher profile setup failed. Please contact support.",
+                variant: "destructive",
+              });
+            }
+          } else if (role === 'student' && classId) {
+            // Create student profile
+            const { error: studentError } = await supabase
+              .from('students')
+              .insert({
+                user_id: authData.user.id,
+                class_id: classId,
+                teacher_id: null, // Will be assigned by admin/teacher later
+                enrollment_date: new Date().toISOString(),
+                enrollment_status: 'pending',
+              });
+
+            if (studentError) {
+              console.error('Error creating student profile:', studentError);
+              toast({
+                title: "Registration warning",
+                description: "Account created but student profile setup failed. Please contact support.",
+                variant: "destructive",
+              });
+            }
+          }
+        } catch (profileError) {
+          console.error('Error creating role profile:', profileError);
+          // Don't fail registration for profile creation errors
+        }
 
         // For Phase 1: Bypass email confirmation and sign in immediately
         try {

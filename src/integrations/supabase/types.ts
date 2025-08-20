@@ -6,6 +6,27 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
+// Helper function return types for school-based architecture
+export type SchoolInfo = {
+  school_id: string
+  school_name: string
+  school_code: string
+  org_name: string
+}
+
+export type SchoolClass = {
+  class_id: string
+  class_name: string
+}
+
+export type TeacherStudent = {
+  student_id: string
+  student_name: string
+  class_name: string
+  enrollment_date: string
+  enrollment_status: string
+}
+
 export type Database = {
   public: {
     Tables: {
@@ -135,18 +156,21 @@ export type Database = {
           id: string
           name: string
           org_id: string
+          school_code: string
           created_at: string
         }
         Insert: {
           id?: string
           name: string
           org_id: string
+          school_code: string
           created_at?: string
         }
         Update: {
           id?: string
           name?: string
           org_id?: string
+          school_code?: string
           created_at?: string
         }
       }
@@ -268,6 +292,7 @@ export type Database = {
           full_name: string
           mobile: string | null
           email: string
+          school_id: string | null
           bio: string | null
           interests: string | null
           career_goals: string | null
@@ -289,6 +314,7 @@ export type Database = {
           full_name: string
           mobile?: string | null
           email: string
+          school_id?: string | null
           bio?: string | null
           interests?: string | null
           career_goals?: string | null
@@ -310,6 +336,7 @@ export type Database = {
           full_name?: string
           mobile?: string | null
           email?: string
+          school_id?: string | null
           bio?: string | null
           interests?: string | null
           career_goals?: string | null

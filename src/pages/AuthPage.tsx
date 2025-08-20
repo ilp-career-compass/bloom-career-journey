@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -8,12 +8,107 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BookOpen, Users, GraduationCap } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { SchoolInfo, SchoolClass } from '@/integrations/supabase/types';
 
 export default function AuthPage() {
+  console.log('AuthPage: Component rendering');
+  
   const { user, userProfile, signIn, signUp } = useAuth();
   const [signInForm, setSignInForm] = useState({ identifier: '', password: '' });
-  const [signUpForm, setSignUpForm] = useState({ identifier: '', password: '', fullName: '', role: 'student' as 'teacher' | 'student' });
+  const [signUpForm, setSignUpForm] = useState({ 
+    identifier: '', 
+    password: '', 
+    fullName: '', 
+    role: 'student' as 'teacher' | 'student',
+    schoolId: '',
+    classId: '',
+    gender: '' as 'male' | 'female'
+  });
   const [loading, setLoading] = useState(false);
+  const [schools, setSchools] = useState<SchoolInfo[]>([]);
+  const [classes, setClasses] = useState<SchoolClass[]>([]);
+  const [loadingSchools, setLoadingSchools] = useState(false);
+
+  // Load schools on component mount
+  useEffect(() => {
+    console.log('AuthPage: useEffect triggered, calling loadSchools');
+    loadSchools();
+  }, []);
+
+  // Load classes when school is selected
+  useEffect(() => {
+    if (signUpForm.schoolId) {
+      loadClasses(signUpForm.schoolId);
+    } else {
+      setClasses([]);
+    }
+  }, [signUpForm.schoolId]);
+
+  // Load schools from database
+  const loadSchools = async () => {
+    console.log('Loading schools...');
+    setLoadingSchools(true);
+    try {
+      // Attempt 1: id, name, school_code
+      let { data, error } = await supabase
+        .from('schools')
+        .select('id, name, school_code')
+        .order('name');
+      if (error) {
+        console.warn('Primary school query failed, retrying without school_code:', error);
+        // Attempt 2: id, name
+        const retry = await supabase
+          .from('schools')
+          .select('id, name')
+          .order('name');
+        data = retry.data as any[] | null;
+        error = retry.error as any;
+      }
+      if (error) {
+        console.error('School query failed after retry:', error);
+        setSchools([]);
+        return;
+      }
+      const rawSchools = (data || []).filter((s: any) => s && s.id && s.name);
+      const uniqueSchools = Array.from(new Map(rawSchools.map((s: any) => [s.id, s])).values());
+      const schoolsData = uniqueSchools.map((school: any) => ({
+        school_id: String(school.id),
+        school_name: String(school.name),
+        school_code: String((school as any).school_code || ''),
+        org_name: ''
+      }));
+      setSchools(schoolsData);
+    } catch (error) {
+      console.error('Error loading schools:', error);
+      setSchools([]);
+    } finally {
+      setLoadingSchools(false);
+    }
+  };
+
+  // Load classes for selected school
+  const loadClasses = async (schoolId: string) => {
+    try {
+      console.log('Loading classes for school:', schoolId);
+      const { data, error } = await supabase
+        .from('classes')
+        .select('id, name')
+        .eq('school_id', schoolId)
+        .order('name');
+      if (error) throw error;
+      const rawClasses = (data || []).filter((r: any) => r && r.id && r.name);
+      const uniqueClasses = Array.from(new Map(rawClasses.map((r: any) => [r.id, r])).values());
+      const classesData = uniqueClasses.map((row: any) => ({
+        class_id: String(row.id),
+        class_name: String(row.name),
+      }));
+      setClasses(classesData);
+    } catch (error) {
+      console.error('Error loading classes:', error);
+      setClasses([]);
+    }
+  };
 
   // Redirect if already authenticated
   if (user && userProfile) {
@@ -37,6 +132,19 @@ export default function AuthPage() {
     e.preventDefault();
     setLoading(true);
     
+    // Validate required fields based on role
+    if (!signUpForm.schoolId) {
+      console.error('School selection is required');
+      setLoading(false);
+      return;
+    }
+    
+    if (signUpForm.role === 'student' && !signUpForm.classId) {
+      console.error('Class selection is required for students');
+      setLoading(false);
+      return;
+    }
+    
     // Determine if identifier is email or mobile
     const isEmail = signUpForm.identifier.includes('@');
     const email = isEmail ? signUpForm.identifier : null;
@@ -47,7 +155,10 @@ export default function AuthPage() {
       email, 
       signUpForm.password, 
       signUpForm.fullName, 
-      signUpForm.role
+      signUpForm.role,
+      signUpForm.schoolId,
+      signUpForm.classId,
+      signUpForm.gender
     );
     setLoading(false);
     if (error) {
@@ -131,9 +242,6 @@ export default function AuthPage() {
                       onChange={(e) => setSignUpForm({ ...signUpForm, identifier: e.target.value })}
                       required
                     />
-                    <p className="text-xs text-muted-foreground">
-                      If you provide a mobile number, we'll generate an email for account verification.
-                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-password">Password</Label>
@@ -148,7 +256,7 @@ export default function AuthPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="role">Role</Label>
-                    <Select value={signUpForm.role} onValueChange={(value: 'teacher' | 'student') => setSignUpForm({ ...signUpForm, role: value })}>
+                    <Select value={signUpForm.role} onValueChange={(value: 'teacher' | 'student') => setSignUpForm({ ...signUpForm, role: value, classId: '', schoolId: '' })}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -168,6 +276,80 @@ export default function AuthPage() {
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {/* School Selection */}
+                  <div className="space-y-2">
+                    <Label htmlFor="school">School *</Label>
+                    <Select 
+                      value={signUpForm.schoolId} 
+                      onValueChange={(value) => setSignUpForm({ ...signUpForm, schoolId: value, classId: '' })}
+                      disabled={loadingSchools}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={loadingSchools ? "Loading schools..." : "Select your school"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {schools.length === 0 ? (
+                          <>
+                            {loadingSchools ? null : (
+                              <div className="px-3 py-2 text-sm text-muted-foreground">No schools available</div>
+                            )}
+                          </>
+                        ) : (
+                          schools.map((school) => (
+                            <SelectItem key={school.school_id} value={school.school_id}>
+                              <div className="flex flex-col">
+                                <span className="font-medium">{school.school_name}</span>
+                                <span className="text-xs text-muted-foreground">{school.school_code}</span>
+                              </div>
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Class Selection - Only for Students */}
+                  {signUpForm.role === 'student' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="class">Class *</Label>
+                      <Select 
+                        value={signUpForm.classId} 
+                        onValueChange={(value) => setSignUpForm({ ...signUpForm, classId: value })}
+                        disabled={!signUpForm.schoolId || classes.length === 0}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={!signUpForm.schoolId ? "Select school first" : classes.length === 0 ? "No classes available" : "Select your class"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {classes.map((classItem) => (
+                            <SelectItem key={classItem.class_id} value={classItem.class_id}>
+                              {classItem.class_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {/* Gender Selection - Only for Students */}
+                  {signUpForm.role === 'student' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="gender">Gender</Label>
+                      <Select 
+                        value={signUpForm.gender} 
+                        onValueChange={(value: 'male' | 'female') => setSignUpForm({ ...signUpForm, gender: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select gender" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="male">Male</SelectItem>
+                          <SelectItem value="female">Female</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? 'Creating Account...' : 'Create Account'}
                   </Button>

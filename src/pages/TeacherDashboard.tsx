@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import { SchoolInfo, SchoolClass } from '@/integrations/supabase/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -136,11 +137,18 @@ export default function TeacherDashboard() {
     email: '',
     mobile: '',
     grade: '',
+    schoolId: '',
+    classId: '',
     parentName: '',
     parentPhone: '',
     parentEmail: '',
     address: ''
   });
+
+  // School and class data for add student modal
+  const [schools, setSchools] = useState<SchoolInfo[]>([]);
+  const [classes, setClasses] = useState<SchoolClass[]>([]);
+  const [loadingSchools, setLoadingSchools] = useState(false);
 
 
 
@@ -174,7 +182,16 @@ export default function TeacherDashboard() {
     try {
       setLoading(true);
       
-      // Get teacher's students with related data
+      // First get the teacher's school_id
+      const { data: teacherData, error: teacherError } = await supabase
+        .from('teachers')
+        .select('school_id')
+        .eq('user_id', userProfile?.id)
+        .single();
+
+      if (teacherError) throw teacherError;
+
+      // Get students from the teacher's school using the new school-based approach
       const { data, error } = await supabase
         .from('students')
           .select(`
@@ -225,7 +242,16 @@ export default function TeacherDashboard() {
 
   const handleAddStudent = async () => {
     try {
-      // First create user account
+      // First get the teacher's school_id
+      const { data: teacherData, error: teacherError } = await supabase
+        .from('teachers')
+        .select('school_id')
+        .eq('user_id', userProfile?.id)
+        .single();
+
+      if (teacherError) throw teacherError;
+
+      // First create user account with school_id
       const { data: userData, error: userError } = await supabase.auth.admin.createUser({
         email: newStudent.email,
         password: 'temporary123', // Will be changed by user
@@ -238,13 +264,21 @@ export default function TeacherDashboard() {
 
       if (userError) throw userError;
 
+      // Update user with school_id
+      const { error: userUpdateError } = await supabase
+        .from('users')
+        .update({ school_id: teacherData.school_id })
+        .eq('id', userData.user.id);
+
+      if (userUpdateError) throw userUpdateError;
+
       // Create student record
       const { error: studentError } = await supabase
         .from('students')
         .insert({
           user_id: userData.user.id,
           teacher_id: userProfile?.id,
-          class_id: newStudent.grade, // This should be a proper class ID
+          class_id: newStudent.classId, // Use the selected class ID
           enrollment_status: 'active',
           parent_guardian_name: newStudent.parentName,
           parent_guardian_phone: newStudent.parentPhone,
@@ -264,6 +298,8 @@ export default function TeacherDashboard() {
         email: '',
         mobile: '',
         grade: '',
+        schoolId: '',
+        classId: '',
         parentName: '',
         parentPhone: '',
         parentEmail: '',
@@ -295,13 +331,127 @@ export default function TeacherDashboard() {
     }
   };
 
+  // Load schools and classes for add student modal
+  const loadSchools = async () => {
+    try {
+      console.log('TeacherDashboard: Loading schools...');
+      setLoadingSchools(true);
+      
+      // First check if schools table exists
+      const { data: tableCheck, error: tableError } = await supabase
+        .from('schools')
+        .select('count')
+        .limit(1);
+      
+      if (tableError) {
+        console.error('TeacherDashboard: Schools table error:', tableError);
+        console.log('TeacherDashboard: Schools table does not exist - using fallback data');
+        
+        // Fallback schools data for testing until migration is applied
+        const fallbackSchools = [
+          { school_id: 'temp-1', school_name: 'ILP-Tamil Nadu', school_code: 'ILP-TN', org_name: 'ILP' },
+          { school_id: 'temp-2', school_name: 'ILP-Karnataka', school_code: 'ILP-KA', org_name: 'ILP' },
+          { school_id: 'temp-3', school_name: 'ILP-Andhra Pradesh', school_code: 'ILP-AP', org_name: 'ILP' },
+          { school_id: 'temp-4', school_name: 'ILP-Telangana', school_code: 'ILP-TG', org_name: 'ILP' },
+          { school_id: 'temp-5', school_name: 'ILP-Bihar', school_code: 'ILP-BH', org_name: 'ILP' },
+          { school_id: 'temp-6', school_name: 'ILP-Jharkhand', school_code: 'ILP-JH', org_name: 'ILP' },
+          { school_id: 'temp-7', school_name: 'ILP-Odisha', school_code: 'ILP-OD', org_name: 'ILP' }
+        ];
+        
+        setSchools(fallbackSchools);
+        return;
+      }
+      
+      console.log('TeacherDashboard: Schools table exists, fetching data...');
+      
+      const { data, error } = await supabase
+        .from('schools')
+        .select('id, name, school_code, orgs(name)')
+        .order('name');
+      
+      if (error) {
+        console.error('TeacherDashboard: Error fetching schools:', error);
+        throw error;
+      }
+      
+      console.log('TeacherDashboard: Schools data received:', data);
+      
+      const schoolsData = data?.map(school => ({
+        school_id: school.id,
+        school_name: school.name,
+        school_code: school.school_code,
+        org_name: school.orgs?.name || 'ILP'
+      })) || [];
+      
+      console.log('TeacherDashboard: Processed schools data:', schoolsData);
+      setSchools(schoolsData);
+    } catch (error) {
+      console.error('TeacherDashboard: Error loading schools:', error);
+      setSchools([]);
+    } finally {
+      setLoadingSchools(false);
+    }
+  };
+
+  const loadClasses = async (schoolId: string) => {
+    try {
+      console.log('TeacherDashboard: Loading classes for school:', schoolId);
+      
+      // Check if classes table exists
+      const { data: tableCheck, error: tableError } = await supabase
+        .from('classes')
+        .select('count')
+        .limit(1);
+      
+      if (tableError) {
+        console.error('TeacherDashboard: Classes table error:', tableError);
+        console.log('TeacherDashboard: Classes table does not exist - using fallback data');
+        
+        // Fallback classes data for testing until migration is applied
+        const fallbackClasses = [
+          { class_id: 'temp-8', class_name: 'Class 8' },
+          { class_id: 'temp-9', class_name: 'Class 9' },
+          { class_id: 'temp-10', class_name: 'Class 10' },
+          { class_id: 'temp-11', class_name: 'Class 11' },
+          { class_id: 'temp-12', class_name: 'Class 12' }
+        ];
+        
+        setClasses(fallbackClasses);
+        return;
+      }
+      
+      const { data, error } = await supabase
+        .from('classes')
+        .select('id, name')
+        .eq('school_id', schoolId)
+        .order('name');
+      
+      if (error) throw error;
+      console.log('TeacherDashboard: Classes data received:', data);
+      setClasses(data || []);
+    } catch (error) {
+      console.error('TeacherDashboard: Error loading classes:', error);
+      setClasses([]);
+    }
+  };
+
   // Load students data after functions are defined
   useEffect(() => {
     if (userProfile?.id) {
       loadStudents();
       loadStudentStats();
+      loadSchools(); // Load schools for add student modal
     }
   }, [userProfile]);
+
+  // Load classes when school is selected in add student modal
+  useEffect(() => {
+    if (newStudent.schoolId) {
+      loadClasses(newStudent.schoolId);
+    } else {
+      setClasses([]);
+    }
+  }, [newStudent.schoolId]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -763,6 +913,56 @@ export default function TeacherDashboard() {
               </div>
             </div>
 
+            {/* School and Class Selection */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">School & Class Information</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="school">School *</Label>
+                  <Select 
+                    value={newStudent.schoolId || ''} 
+                    onValueChange={(value) => setNewStudent(prev => ({ ...prev, schoolId: value, classId: '' }))}
+                    disabled={loadingSchools}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={loadingSchools ? "Loading schools..." : "Select school"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {schools.map((school) => (
+                        <SelectItem key={school.school_id} value={school.school_id}>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{school.school_name}</span>
+                            <span className="text-xs text-muted-foreground">{school.school_code}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="class">Class *</Label>
+                  <Select 
+                    value={newStudent.classId || ''} 
+                    onValueChange={(value) => setNewStudent(prev => ({ ...prev, classId: value }))}
+                    disabled={!newStudent.schoolId || classes.length === 0}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={!newStudent.schoolId ? "Select school first" : classes.length === 0 ? "No classes available" : "Select class"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {classes.map((classItem) => (
+                        <SelectItem key={classItem.class_id} value={classItem.class_id}>
+                          {classItem.class_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
             {/* Parent/Guardian Information */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Parent/Guardian Information</h3>
@@ -821,7 +1021,7 @@ export default function TeacherDashboard() {
             <Button 
               onClick={handleAddStudent}
               className="bg-green-600 hover:bg-green-700"
-              disabled={!newStudent.fullName || !newStudent.email || !newStudent.grade}
+              disabled={!newStudent.fullName || !newStudent.email || !newStudent.grade || !newStudent.schoolId || !newStudent.classId}
             >
               <Plus className="w-4 h-4 mr-2" />
               Add Student
