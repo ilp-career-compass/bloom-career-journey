@@ -108,12 +108,15 @@ export default function MySchoolLearningAssessment() {
   const checkExistingResponse = async () => {
     if (!userProfile) return;
 
-    // Try to get student_id from studentProfile first, fallback to user ID
-    let studentId = userProfile.studentProfile?.id;
-    
+    // Resolve student_id from students table; do not fallback to users.id
+    let studentId = userProfile.studentProfile?.id as string | undefined;
     if (!studentId) {
-      // If no studentProfile, use the user's ID directly
-      studentId = userProfile.id;
+      const { data: studentRow } = await supabase
+        .from('students')
+        .select('id')
+        .eq('user_id', userProfile.id)
+        .maybeSingle();
+      studentId = studentRow?.id;
     }
 
     if (!studentId) return;
@@ -125,7 +128,7 @@ export default function MySchoolLearningAssessment() {
         .eq('student_id', studentId)
         .eq('assessment_type', 'school_learning')
         .eq('assessment_title', 'My School, My Learning and I')
-        .single();
+        .maybeSingle();
 
       if (data && !error) {
         setIsCompleted(true);
@@ -201,19 +204,21 @@ export default function MySchoolLearningAssessment() {
       return;
     }
 
-    // Try to get student_id from studentProfile first, fallback to user ID
-    let studentId = userProfile.studentProfile?.id;
-    
+    // Resolve student_id from students table; do not fallback to users.id
+    let studentId = userProfile.studentProfile?.id as string | undefined;
     if (!studentId) {
-      // If no studentProfile, use the user's ID directly
-      studentId = userProfile.id;
-      console.log('Using user ID as student ID:', studentId);
+      const { data: studentRow } = await supabase
+        .from('students')
+        .select('id')
+        .eq('user_id', userProfile.id)
+        .maybeSingle();
+      studentId = studentRow?.id;
     }
 
     if (!studentId) {
       toast({
         title: "Error",
-        description: "Student ID not found. Please contact support.",
+        description: "Student profile not found. Please contact your teacher or support.",
         variant: "destructive",
       });
       return;
@@ -288,7 +293,7 @@ export default function MySchoolLearningAssessment() {
                     Review My Responses
                   </Button>
                   <Button 
-                    onClick={() => window.history.back()}
+                    onClick={() => (window.location.href = '/student')}
                     className="bg-green-600 hover:bg-green-700"
                   >
                     Back to Dashboard

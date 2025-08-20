@@ -162,14 +162,20 @@ export default function StudentDashboard() {
     }
   };
 
-  // Helper function to get student ID
-  const getStudentId = () => {
+  // Helper function to get student ID (students.id only)
+  const getStudentId = async () => {
     if (!userProfile) return null;
-    return userProfile.studentProfile?.id || userProfile.id;
+    if (userProfile.studentProfile?.id) return userProfile.studentProfile.id;
+    const { data } = await supabase
+      .from('students')
+      .select('id')
+      .eq('user_id', userProfile.id)
+      .maybeSingle();
+    return data?.id || null;
   };
 
   const checkAssessmentProgress = async () => {
-    const studentId = getStudentId();
+    const studentId = await getStudentId();
     if (!studentId) return;
 
     try {
@@ -179,7 +185,9 @@ export default function StudentDashboard() {
         .eq('student_id', studentId)
         .eq('assessment_type', 'inspiration')
         .eq('assessment_title', 'My Inspiration')
-        .single();
+        .order('completed_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
       if (data && !error) {
         setAssessmentProgress(data);
@@ -190,7 +198,7 @@ export default function StudentDashboard() {
   };
 
   const checkDreamsProgress = async () => {
-    const studentId = getStudentId();
+    const studentId = await getStudentId();
     if (!studentId) return;
 
     try {
@@ -200,7 +208,9 @@ export default function StudentDashboard() {
         .eq('student_id', studentId)
         .eq('assessment_type', 'dreams')
         .eq('assessment_title', 'My Dreams')
-        .single();
+        .order('completed_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
       if (data && !error) {
         setDreamsProgress(data);
@@ -211,7 +221,7 @@ export default function StudentDashboard() {
   };
 
   const checkSchoolLearningProgress = async () => {
-    const studentId = getStudentId();
+    const studentId = await getStudentId();
     if (!studentId) return;
 
     try {
@@ -221,18 +231,18 @@ export default function StudentDashboard() {
         .eq('student_id', studentId)
         .eq('assessment_type', 'school_learning')
         .eq('assessment_title', 'My School, My Learning and I')
-        .single();
+        .order('completed_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-      if (data && !error) {
-        setSchoolLearningProgress(data);
-      }
+      if (data && !error) setSchoolLearningProgress(data);
     } catch (error) {
       // No existing response found, which is fine
     }
   };
 
   const checkRoleModelsProgress = async () => {
-    const studentId = getStudentId();
+    const studentId = await getStudentId();
     if (!studentId) return;
 
     try {
@@ -242,7 +252,9 @@ export default function StudentDashboard() {
         .eq('student_id', studentId)
         .eq('assessment_type', 'role_models')
         .eq('assessment_title', 'My Role Models')
-        .single();
+        .order('completed_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
       if (data && !error) {
         setRoleModelsProgress(data);
@@ -253,7 +265,7 @@ export default function StudentDashboard() {
   };
 
   const checkHobbiesProgress = async () => {
-    const studentId = getStudentId();
+    const studentId = await getStudentId();
     if (!studentId) return;
 
     try {
@@ -263,7 +275,9 @@ export default function StudentDashboard() {
         .eq('student_id', studentId)
         .eq('assessment_type', 'hobbies')
         .eq('assessment_title', 'My Hobbies')
-        .single();
+        .order('completed_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
       if (data && !error) {
         setHobbiesProgress(data);
@@ -273,23 +287,29 @@ export default function StudentDashboard() {
     }
   };
 
-  // Call useEffect after all functions are defined
+  // Load progress once user profile is available
   useEffect(() => {
+    if (!userProfile?.id) return;
     fetchData();
     checkAssessmentProgress();
     checkDreamsProgress();
     checkSchoolLearningProgress();
     checkRoleModelsProgress();
     checkHobbiesProgress();
-  }, []);
+  }, [userProfile?.id]);
 
   // Update completion status when progress changes
   useEffect(() => {
-    setInspirationCompleted(!!assessmentProgress);
-    setDreamsCompleted(!!dreamsProgress);
-    setSchoolLearningCompleted(!!schoolLearningProgress);
-    setRoleModelsCompleted(!!roleModelsProgress);
-    setHobbiesCompleted(!!hobbiesProgress);
+    const insp = !!assessmentProgress;
+    const dreams = !!dreamsProgress;
+    const school = !!schoolLearningProgress;
+    const roles = !!roleModelsProgress;
+    const hobbies = !!hobbiesProgress;
+    setInspirationCompleted(insp);
+    setDreamsCompleted(dreams);
+    setSchoolLearningCompleted(school);
+    setRoleModelsCompleted(roles);
+    setHobbiesCompleted(hobbies);
   }, [assessmentProgress, dreamsProgress, schoolLearningProgress, roleModelsProgress, hobbiesProgress]);
 
   const fetchData = async () => {

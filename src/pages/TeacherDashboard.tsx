@@ -159,6 +159,7 @@ export default function TeacherDashboard() {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isProgressOpen, setIsProgressOpen] = useState(false);
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
+  const [isAnswersOpen, setIsAnswersOpen] = useState(false);
   const [progressSummary, setProgressSummary] = useState<{[k:string]: {count:number; last?: string}}>({});
   const [activityTimeline, setActivityTimeline] = useState<Array<{id:string; title:string; seq:number; status:string; completed_at?: string}>>([]);
   const [activities, setActivities] = useState<Array<{id:string; title:string; sequence_number:number}>>([]);
@@ -815,21 +816,35 @@ export default function TeacherDashboard() {
                                 <Button variant="ghost" size="sm" onClick={async ()=>{ 
                                   setSelectedStudent(student); 
                                   try {
-                                    // Load timeline by joining activities with progress
-                                    const { data: acts, error: actsErr } = await supabase
-                                      .from('activities')
-                                      .select('id, title, sequence_number')
-                                      .order('sequence_number');
-                                    if (actsErr) throw actsErr;
-                                    const { data: prog, error: progErr } = await supabase
-                                      .from('student_activity_progress')
-                                      .select('activity_id, status, completed_at')
+                                    // Build assessment-based timeline according to unlock rules
+                                    const order = [
+                                      { key: 'inspiration', title: 'MY INSPIRATION', seq: 1 },
+                                      { key: 'dreams', title: 'MY DREAMS', seq: 2 },
+                                      { key: 'school_learning', title: 'MY SCHOOL', seq: 3 },
+                                      { key: 'role_models', title: 'MY ROLE MODELS', seq: 4 },
+                                      { key: 'hobbies', title: 'MY HOBBIES', seq: 5 },
+                                    ] as const;
+                                    const { data: ar } = await supabase
+                                      .from('assessment_responses')
+                                      .select('assessment_type, completed_at')
                                       .eq('student_id', student.id);
-                                    if (progErr) throw progErr;
-                                    const m = new Map((prog||[]).map((p:any)=>[p.activity_id, p]));
-                                    const timeline = (acts||[]).map((a:any)=>{
-                                      const p = m.get(a.id);
-                                      return { id: a.id, title: a.title, seq: a.sequence_number, status: p?.status || 'locked', completed_at: p?.completed_at || null };
+                                    const latest: Record<string, string | undefined> = {};
+                                    (ar||[]).forEach((r:any)=>{
+                                      const prev = latest[r.assessment_type];
+                                      if (!prev || new Date(r.completed_at) > new Date(prev)) latest[r.assessment_type] = r.completed_at;
+                                    });
+                                    const insp = !!latest['inspiration'];
+                                    const dreams = !!latest['dreams'];
+                                    const school = !!latest['school_learning'];
+                                    const roles = !!latest['role_models'];
+                                    const timeline = order.map(item => {
+                                      let status = 'locked';
+                                      if (item.key === 'inspiration') status = insp ? 'completed' : 'unlocked';
+                                      if (item.key === 'dreams') status = insp ? (dreams ? 'completed' : 'unlocked') : 'locked';
+                                      if (item.key === 'school_learning') status = (insp && dreams) ? (school ? 'completed' : 'unlocked') : 'locked';
+                                      if (item.key === 'role_models') status = (insp && dreams && school) ? (roles ? 'completed' : 'unlocked') : 'locked';
+                                      if (item.key === 'hobbies') status = (insp && dreams && school && roles) ? (latest['hobbies'] ? 'completed' : 'unlocked') : 'locked';
+                                      return { id: item.key, title: item.title, seq: item.seq, status, completed_at: latest[item.key] } as any;
                                     });
                                     setActivityTimeline(timeline);
                                   } catch(err){
@@ -876,6 +891,25 @@ export default function TeacherDashboard() {
                                     }}>
                                       <Activity className="w-4 h-4 mr-2" />
                                       View Progress
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={async ()=>{
+                                      setSelectedStudent(student);
+                                      try {
+                                        const { data: answers, error: aerr } = await supabase
+                                          .from('assessment_responses')
+                                          .select('assessment_type, assessment_title, responses, completed_at')
+                                          .eq('student_id', student.id)
+                                          .order('completed_at', { ascending: false });
+                                        if (aerr) throw aerr;
+                                        (window as any).__assessmentAnswers = answers || [];
+                                        setIsAnswersOpen(true);
+                                      } catch (err) {
+                                        console.error('Load answers error:', err);
+                                        toast({ title: 'Failed to load answers', variant: 'destructive' });
+                                      }
+                                    }}>
+                                      <FileText className="w-4 h-4 mr-2" />
+                                      View Assessment Answers
                                     </DropdownMenuItem>
                                     <DropdownMenuItem className="text-red-600"
                                       onClick={async ()=>{
@@ -1422,6 +1456,38 @@ export default function TeacherDashboard() {
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={()=> window.print()}>Print</Button>
             <Button onClick={()=> setIsSummaryOpen(false)}>Close</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      {/* Assessment Answers Modal */}
+      <Dialog open={isAnswersOpen} onOpenChange={setIsAnswersOpen}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl">{selectedStudent?.user?.full_name || 'Student'} – Assessment Answers</DialogTitle>
+            <DialogDescription>Latest submissions across all assessments</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {((window as any).__assessmentAnswers || []).length === 0 ? (
+              <div className="text-sm text-gray-500">No assessment submissions yet.</div>
+            ) : (
+              ((window as any).__assessmentAnswers as any[]).map((r:any, idx:number)=> (
+                <Card key={idx} className="border shadow-sm">
+                  <CardHeader>
+                    <CardTitle className="text-base">
+                      <span className="capitalize">{r.assessment_type.replace('_',' ')}</span> – {r.assessment_title}
+                      <span className="ml-2 text-sm text-gray-500">{new Date(r.completed_at).toLocaleString()}</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <pre className="text-xs whitespace-pre-wrap break-words bg-gray-50 p-3 rounded-md">{JSON.stringify(r.responses, null, 2)}</pre>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={()=> window.print()}>Print</Button>
+            <Button onClick={()=> setIsAnswersOpen(false)}>Close</Button>
           </div>
         </DialogContent>
       </Dialog>

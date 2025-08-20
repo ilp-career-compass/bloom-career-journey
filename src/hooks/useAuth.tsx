@@ -392,6 +392,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   ) => {
     try {
       console.log('Starting signUp process:', { mobile, email, fullName, role, schoolId, classId, gender });
+
+      // Enforce class selection for students at the API layer too
+      if (role === 'student' && !classId) {
+        const err = { message: 'Class selection is required for student registration' } as any;
+        console.error('SignUp blocked:', err);
+        return { error: err };
+      }
       
       // If no email is provided, we need to generate one for Supabase auth
       let finalEmail = email;
@@ -561,13 +568,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 variant: "destructive",
               });
             }
-          } else if (role === 'student' && classId) {
-            // Create student profile
+          } else if (role === 'student') {
+            // Create student profile (class is optional in Phase 1)
             const { error: studentError } = await supabase
               .from('students')
               .insert({
                 user_id: authData.user.id,
-                class_id: classId,
+                class_id: classId || null,
                 teacher_id: null, // Will be assigned by admin/teacher later
                 enrollment_date: new Date().toISOString(),
                 enrollment_status: 'pending',
