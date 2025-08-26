@@ -41,6 +41,8 @@ import {
   MoreHorizontal,
   CheckCircle,
   AlertCircle,
+  MessageSquare,
+  LifeBuoy,
   Clock as ClockIcon,
   Users as UsersIcon,
   BookOpen as BookOpenIcon,
@@ -604,11 +606,11 @@ export default function TeacherDashboard() {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={()=> setChatOpen(true)}>
-                  <Settings className="w-4 h-4 mr-2" />
+                  <MessageSquare className="w-4 h-4 mr-2" />
                   AI Chatbot
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={()=> setContactOpen(true)}>
-                  <Settings className="w-4 h-4 mr-2" />
+                  <LifeBuoy className="w-4 h-4 mr-2" />
                   Contact ILP
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />

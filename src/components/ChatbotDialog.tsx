@@ -83,7 +83,7 @@ export default function ChatbotDialog({ open, onOpenChange }: ChatbotDialogProps
         <div className="flex flex-col gap-3">
           <div ref={listRef} className="h-72 overflow-y-auto rounded-md border p-3 bg-white">
             {messages.length === 0 ? (
-              <div className="text-sm text-gray-500">Start by asking a question. Example: "How do I run the MY INSPIRATION activity?"</div>
+              <div className="text-sm text-gray-500">Start by asking a question. Example: "Give me guidance for running a counselling session with grade 9 students."</div>
             ) : (
               messages.map(m => (
                 <div key={m.id} className={`mb-2 ${m.role === 'user' ? 'text-gray-900' : 'text-gray-700'}`}>
