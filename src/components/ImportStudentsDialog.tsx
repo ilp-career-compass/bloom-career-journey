@@ -111,7 +111,7 @@ export default function ImportStudentsDialog({ open, onOpenChange, classes, teac
       <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>Import Students (CSV)</DialogTitle>
-          <DialogDescription>Columns: full_name, contact, class_name (we map name → id)</DialogDescription>
+          <DialogDescription>Columns: full_name, contact, class_name</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div className="flex gap-2">
@@ -123,12 +123,6 @@ export default function ImportStudentsDialog({ open, onOpenChange, classes, teac
           <div className="text-xs text-gray-500">
             Example (CSV):
             <pre className="bg-gray-50 border rounded p-2 mt-1 whitespace-pre-wrap">{`full_name,contact,class_name\nAsha Kumar,asha@example.com,Class 8\nRavi M,+919876543210,Class 9`}</pre>
-          </div>
-          <div className="text-xs text-gray-500">
-            Available classes:
-            <div className="mt-1 whitespace-pre-wrap">
-              {classes.map(c => `${c.class_name} (id: ${c.class_id})`).join('\n')}
-            </div>
           </div>
           {rows.length > 0 && (
             <div className="text-sm text-gray-700">Ready to import: {rows.length} rows</div>

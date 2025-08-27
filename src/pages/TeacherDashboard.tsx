@@ -626,13 +626,6 @@ export default function TeacherDashboard() {
           </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end">
-                <DropdownMenuLabel className="font-semibold">
-                  <div className="flex items-center space-x-2">
-                    <User className="w-4 h-4" />
-                    <span>My Profile</span>
-        </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={()=> setProfileOpen(true)}>
                   <User className="w-4 h-4 mr-2" />
                   My Profile
