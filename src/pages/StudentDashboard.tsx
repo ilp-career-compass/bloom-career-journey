@@ -40,6 +40,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import ProfileDialog from '@/components/ProfileDialog';
 import {
   Dialog,
   DialogContent,
@@ -57,18 +58,8 @@ export default function StudentDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Profile editing state
+  // Profile dialog state
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [profileData, setProfileData] = useState({
-    fullName: userProfile?.full_name || '',
-    email: userProfile?.email || '',
-    bio: '',
-    interests: '',
-    careerGoals: '',
-    strengths: '',
-    areasForGrowth: ''
-  });
-  const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   // CareerChat LM state (no persistence)
   type ChatMsg = { id: string; role: 'user' | 'model'; text: string };
@@ -535,10 +526,7 @@ export default function StudentDashboard() {
           </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => {
-                  setIsProfileOpen(true);
-                  loadProfileData();
-                }}>
+                <DropdownMenuItem onClick={() => setIsProfileOpen(true)}>
                   <Edit className="w-4 h-4 mr-2" />
                   Edit Profile
                 </DropdownMenuItem>
@@ -843,128 +831,7 @@ export default function StudentDashboard() {
       </div>
 
       {/* Profile Editing Modal */}
-      <Dialog open={isProfileOpen} onOpenChange={setIsProfileOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-2xl text-gray-800">Edit Your Profile</DialogTitle>
-            <DialogDescription>
-              Update your personal information and career details to get better personalized guidance.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-6 py-4">
-            {/* Basic Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Basic Information</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="fullName">Full Name *</Label>
-                  <Input
-                    id="fullName"
-                    value={profileData.fullName}
-                    onChange={(e) => setProfileData(prev => ({ ...prev, fullName: e.target.value }))}
-                    placeholder="Enter your full name"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={profileData.email}
-                    onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
-                    placeholder="Enter your email"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="bio">Bio</Label>
-                <Textarea
-                  id="bio"
-                  value={profileData.bio}
-                  onChange={(e) => setProfileData(prev => ({ ...prev, bio: e.target.value }))}
-                  placeholder="Tell us about yourself..."
-                  rows={3}
-                />
-              </div>
-            </div>
-
-            {/* Career Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Career Information</h3>
-              
-              <div className="space-y-2">
-                <Label htmlFor="interests">Interests & Hobbies</Label>
-                <Textarea
-                  id="interests"
-                  value={profileData.interests}
-                  onChange={(e) => setProfileData(prev => ({ ...prev, interests: e.target.value }))}
-                  placeholder="What are you passionate about? What hobbies do you enjoy?"
-                  rows={3}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="careerGoals">Career Goals</Label>
-                <Textarea
-                  id="careerGoals"
-                  value={profileData.careerGoals}
-                  onChange={(e) => setProfileData(prev => ({ ...prev, careerGoals: e.target.value }))}
-                  placeholder="What are your short-term and long-term career goals?"
-                  rows={3}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="strengths">Strengths</Label>
-                  <Textarea
-                    id="strengths"
-                    value={profileData.strengths}
-                    onChange={(e) => setProfileData(prev => ({ ...prev, strengths: e.target.value }))}
-                    placeholder="What are your key strengths and skills?"
-                    rows={3}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="areasForGrowth">Areas for Growth</Label>
-                  <Textarea
-                    id="areasForGrowth"
-                    value={profileData.areasForGrowth}
-                    onChange={(e) => setProfileData(prev => ({ ...prev, areasForGrowth: e.target.value }))}
-                    placeholder="What skills would you like to develop?"
-                    rows={3}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button variant="outline" onClick={() => setIsProfileOpen(false)}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleProfileSave} 
-              disabled={isSavingProfile}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              {isSavingProfile ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Saving...
-                </>
-              ) : (
-                'Save Profile'
-              )}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ProfileDialog open={isProfileOpen} onOpenChange={setIsProfileOpen} />
     </div>
   );
 }

@@ -78,6 +78,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ChatbotDialog from '@/components/ChatbotDialog';
 import ContactIlpDialog from '@/components/ContactIlpDialog';
+import ProfileDialog from '@/components/ProfileDialog';
+import ImportStudentsDialog from '@/components/ImportStudentsDialog';
 
 // Marker: Help Center (AI Chatbot + Contact ILP) is integrated – redeploy check
 
@@ -141,15 +143,10 @@ export default function TeacherDashboard() {
   const [isAddExistingOpen, setIsAddExistingOpen] = useState(false);
   const [newStudent, setNewStudent] = useState({
     fullName: '',
-    email: '',
-    mobile: '',
+    contact: '', // mobile number or email
     grade: '',
     schoolId: '',
-    classId: '',
-    parentName: '',
-    parentPhone: '',
-    parentEmail: '',
-    address: ''
+    classId: ''
   });
 
   // School and class data for add student modal
@@ -178,6 +175,9 @@ export default function TeacherDashboard() {
   // Help center dialogs
   const [chatOpen, setChatOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [teacherRow, setTeacherRow] = useState<{ id: string; school_id: string } | null>(null);
 
   // Removed per-activity resources quick view
 
@@ -285,10 +285,13 @@ export default function TeacherDashboard() {
       if (teacherError) throw teacherError;
 
       // First create user account with school_id
+      const isEmail = /@/.test(newStudent.contact);
       const { data: userData, error: userError } = await supabase.auth.admin.createUser({
-        email: newStudent.email,
+        email: isEmail ? newStudent.contact : undefined,
+        phone: !isEmail ? newStudent.contact : undefined,
         password: 'temporary123', // Will be changed by user
-        email_confirm: true,
+        email_confirm: isEmail ? true : undefined,
+        phone_confirm: !isEmail ? true : undefined,
         user_metadata: {
           full_name: newStudent.fullName,
           role: 'student'
@@ -300,7 +303,7 @@ export default function TeacherDashboard() {
       // Update user with school_id
       const { error: userUpdateError } = await supabase
         .from('users')
-        .update({ school_id: teacherData.school_id })
+        .update({ school_id: teacherData.school_id, email: isEmail ? newStudent.contact : null, mobile: !isEmail ? newStudent.contact : null })
         .eq('id', userData.user.id);
 
       if (userUpdateError) throw userUpdateError;
@@ -312,10 +315,7 @@ export default function TeacherDashboard() {
           user_id: userData.user.id,
           teacher_id: teacherData.id, // must reference teachers.id for RLS to allow updates
           class_id: newStudent.classId,
-          enrollment_status: 'active',
-          parent_guardian_name: newStudent.parentName,
-          parent_guardian_phone: newStudent.parentPhone,
-          parent_guardian_email: newStudent.parentEmail
+          enrollment_status: 'active'
         });
 
       if (studentError) throw studentError;
@@ -328,15 +328,10 @@ export default function TeacherDashboard() {
       setIsAddStudentOpen(false);
       setNewStudent({
         fullName: '',
-        email: '',
-        mobile: '',
+        contact: '',
         grade: '',
         schoolId: '',
-        classId: '',
-        parentName: '',
-        parentPhone: '',
-        parentEmail: '',
-        address: ''
+        classId: ''
       });
 
       // Reload students
@@ -477,6 +472,8 @@ export default function TeacherDashboard() {
       // Preload activities for Activities tab
       supabase.from('activities').select('id, title, sequence_number').order('sequence_number')
         .then(({ data, error }) => { if (!error) setActivities(data || []); });
+      supabase.from('teachers').select('id, school_id').eq('user_id', userProfile.id).maybeSingle()
+        .then(({ data }) => setTeacherRow(data as any || null));
     }
   }, [userProfile]);
 
@@ -636,6 +633,10 @@ export default function TeacherDashboard() {
         </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={()=> setProfileOpen(true)}>
+                  <User className="w-4 h-4 mr-2" />
+                  My Profile
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={()=> setChatOpen(true)}>
                   <MessageSquare className="w-4 h-4 mr-2" />
                   AI Chatbot
@@ -791,6 +792,10 @@ export default function TeacherDashboard() {
                                 <Button onClick={() => setIsAddExistingOpen(true)} variant="outline">
                                   <Search className="w-4 h-4 mr-2" />
                                   Add Existing Student
+                                </Button>
+                                <Button onClick={()=> setImportOpen(true)} variant="outline">
+                                  <Upload className="w-4 h-4 mr-2" />
+                                  Import CSV
                                 </Button>
                 </div>
                 </CardContent>
@@ -1140,6 +1145,17 @@ export default function TeacherDashboard() {
       </div>
 
       {/* Help Center */}
+      <ProfileDialog open={profileOpen} onOpenChange={setProfileOpen} />
+      {teacherRow && (
+        <ImportStudentsDialog
+          open={importOpen}
+          onOpenChange={setImportOpen}
+          classes={classes}
+          teacherId={teacherRow.id}
+          schoolId={teacherRow.school_id}
+          onImported={loadStudents}
+        />
+      )}
       <ChatbotDialog open={chatOpen} onOpenChange={setChatOpen} />
       <ContactIlpDialog open={contactOpen} onOpenChange={setContactOpen} />
 
@@ -1170,23 +1186,12 @@ export default function TeacherDashboard() {
                   </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email *</Label>
+                  <Label htmlFor="contact">Mobile Number / Email *</Label>
                   <Input
-                    id="email"
-                    type="email"
-                    value={newStudent.email}
-                    onChange={(e) => setNewStudent(prev => ({ ...prev, email: e.target.value }))}
-                    placeholder="Enter student's email"
-                  />
-            </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="mobile">Mobile Number</Label>
-                  <Input
-                    id="mobile"
-                    value={newStudent.mobile}
-                    onChange={(e) => setNewStudent(prev => ({ ...prev, mobile: e.target.value }))}
-                    placeholder="Enter mobile number"
+                    id="contact"
+                    value={newStudent.contact}
+                    onChange={(e) => setNewStudent(prev => ({ ...prev, contact: e.target.value }))}
+                    placeholder="Enter mobile number or email"
                   />
                 </div>
 
