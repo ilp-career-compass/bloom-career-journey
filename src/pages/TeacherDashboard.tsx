@@ -278,7 +278,7 @@ export default function TeacherDashboard() {
       // First get the teacher's school_id
       const { data: teacherData, error: teacherError } = await supabase
         .from('teachers')
-        .select('school_id')
+        .select('id, school_id')
         .eq('user_id', userProfile?.id)
         .single();
 
@@ -310,8 +310,8 @@ export default function TeacherDashboard() {
         .from('students')
         .insert({
           user_id: userData.user.id,
-          teacher_id: userProfile?.id,
-          class_id: newStudent.classId, // Use the selected class ID
+          teacher_id: teacherData.id, // must reference teachers.id for RLS to allow updates
+          class_id: newStudent.classId,
           enrollment_status: 'active',
           parent_guardian_name: newStudent.parentName,
           parent_guardian_phone: newStudent.parentPhone,
@@ -510,15 +510,17 @@ export default function TeacherDashboard() {
     setActivitySaving(prev => ({ ...prev, [activityId]: true }));
     try {
       const payload: any = { student_id: activityStudentId, activity_id: activityId, status: activityProgressMap[activityId]?.status || 'unlocked', completed_at: activityProgressMap[activityId]?.completed_at || null, results: activityProgressMap[activityId]?.results || null, ...data };
-      const { error } = await supabase
+      const { error, status } = await supabase
         .from('student_activity_progress')
         .upsert(payload, { onConflict: 'student_id,activity_id' as any });
       if (error) throw error;
+      // 204 on update, 201 on insert
       await loadProgressForStudent(activityStudentId);
-      toast({ title: 'Saved', description: 'Activity updated' });
-    } catch (err) {
-      console.error('Update progress error:', err);
-      toast({ title: 'Save failed', description: 'Could not update activity', variant: 'destructive' });
+      toast({ title: 'Saved', description: status === 201 ? 'Activity created' : 'Activity updated' });
+    } catch (err: any) {
+      console.error('Update progress error:', err?.message || err);
+      // Show a compact, non-blocking message
+      toast({ title: 'Save failed', description: 'Please check teacher/student linkage and permissions.', variant: 'destructive' });
     } finally {
       setActivitySaving(prev => ({ ...prev, [activityId]: false }));
     }
