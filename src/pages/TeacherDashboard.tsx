@@ -888,6 +888,10 @@ export default function TeacherDashboard() {
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent>
+                                    <DropdownMenuItem onClick={()=> navigate(`/student/${student.id}/summary`)}>
+                                      <FileText className="w-4 h-4 mr-2" />
+                                      View Summary
+                                    </DropdownMenuItem>
                                     <DropdownMenuItem onClick={async ()=>{
                                       setSelectedStudent(student);
                                       try {

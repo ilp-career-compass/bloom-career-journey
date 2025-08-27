@@ -7,6 +7,7 @@ import AuthPage from './pages/AuthPage';
 import AdminDashboard from './pages/AdminDashboard';
 import TeacherDashboard from './pages/TeacherDashboard';
 import StudentDashboard from './pages/StudentDashboard';
+import StudentSummary from './pages/StudentSummary';
 import MyInspirationAssessment from './components/assessments/MyInspirationAssessment';
 import MyDreamsAssessment from './components/assessments/MyDreamsAssessment';
 import MySchoolLearningAssessment from './components/assessments/MySchoolLearningAssessment';
@@ -151,6 +152,14 @@ function App() {
                     <StudentDashboard />
                   </ProtectedRoute>
                 } 
+              />
+              <Route
+                path="/student/:id/summary"
+                element={
+                  <ProtectedRoute allowedRoles={['teacher']}>
+                    <StudentSummary />
+                  </ProtectedRoute>
+                }
               />
             </Routes>
             <Toaster />
