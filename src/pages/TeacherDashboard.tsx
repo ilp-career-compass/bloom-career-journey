@@ -524,6 +524,35 @@ export default function TeacherDashboard() {
     }
   };
 
+  // Map an activity row to its assessment_type key
+  const getAssessmentTypeForActivity = (a: { title: string; sequence_number: number }): 'inspiration' | 'dreams' | 'school_learning' | 'role_models' | 'hobbies' => {
+    if (/inspiration/i.test(a.title) || a.sequence_number === 1) return 'inspiration';
+    if (/dreams/i.test(a.title) || a.sequence_number === 2) return 'dreams';
+    if (/school/i.test(a.title) || a.sequence_number === 3) return 'school_learning';
+    if (/role\s*models?/i.test(a.title) || a.sequence_number === 4) return 'role_models';
+    return 'hobbies';
+  };
+
+  const openAnswersForActivity = async (a: { id:string; title:string; sequence_number:number }) => {
+    try {
+      const student = students.find(s => s.id === activityStudentId);
+      if (student) setSelectedStudent(student);
+      const type = getAssessmentTypeForActivity(a);
+      const { data: answers, error } = await supabase
+        .from('assessment_responses')
+        .select('assessment_type, assessment_title, responses, completed_at')
+        .eq('student_id', activityStudentId)
+        .eq('assessment_type', type)
+        .order('completed_at', { ascending: false });
+      if (error) throw error;
+      setAssessmentAnswers(answers || []);
+      setIsAnswersOpen(true);
+    } catch (err) {
+      console.error('Load activity answers error:', err);
+      toast({ title: 'Could not load answers', variant: 'destructive' });
+    }
+  };
+
   // Load classes when school is selected in add student modal
   useEffect(() => {
     if (newStudent.schoolId) {
@@ -1024,7 +1053,15 @@ export default function TeacherDashboard() {
                                 <div className="text-xs text-gray-500">Status: <span className="font-medium">{prog.status}</span>{prog.completed_at ? ` • Completed: ${new Date(prog.completed_at).toLocaleString()}` : ''}</div>
                               </div>
                               <div className="flex items-center gap-2">
-                                <Button variant="outline" size="sm" disabled={isSaving || prog.status === 'unlocked'} onClick={()=> upsertProgress(a.id, { status: 'unlocked', completed_at: null })}>Start</Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={isSaving || prog.status === 'unlocked'}
+                                  onClick={async ()=>{
+                                    await upsertProgress(a.id, { status: 'unlocked', completed_at: null });
+                                    await openAnswersForActivity(a);
+                                  }}
+                                >Start</Button>
                                 <Button variant="outline" size="sm" disabled={isSaving || prog.status === 'completed'} onClick={()=> upsertProgress(a.id, { status: 'completed', completed_at: new Date().toISOString() })}>Complete</Button>
                               </div>
                             </CardContent>
