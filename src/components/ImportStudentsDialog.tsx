@@ -31,8 +31,24 @@ export default function ImportStudentsDialog({ open, onOpenChange, classes, teac
   const [errors, setErrors] = useState<string[]>([]);
   const [importing, setImporting] = useState(false);
 
-  const classMap = useMemo(() => new Map(classes.map(c => [c.class_id, c.class_name])), [classes]);
-  const nameToId = useMemo(() => new Map(classes.map(c => [c.class_name.toLowerCase(), c.class_id])), [classes]);
+  const classMap = useMemo(() => {
+    const pairs: Array<[string, string]> = [];
+    for (const c of classes as any[]) {
+      const id = String((c as any).class_id ?? (c as any).id ?? '');
+      const name = String((c as any).class_name ?? (c as any).name ?? '');
+      if (id && name) pairs.push([id, name]);
+    }
+    return new Map(pairs);
+  }, [classes]);
+  const nameToId = useMemo(() => {
+    const pairs: Array<[string, string]> = [];
+    for (const c of classes as any[]) {
+      const id = String((c as any).class_id ?? (c as any).id ?? '');
+      const name = String((c as any).class_name ?? (c as any).name ?? '');
+      if (id && name) pairs.push([name.toLowerCase(), id]);
+    }
+    return new Map(pairs);
+  }, [classes]);
 
   const onFile = async (file: File) => {
     const text = await file.text();

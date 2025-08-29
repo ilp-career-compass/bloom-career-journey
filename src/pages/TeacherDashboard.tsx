@@ -1246,11 +1246,14 @@ export default function TeacherDashboard() {
                       <SelectValue placeholder={!newStudent.schoolId ? "Select school first" : classes.length === 0 ? "No classes available" : "Select class"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {classes.map((classItem: any) => (
-                        <SelectItem key={(classItem as any).class_id ?? (classItem as any).id} value={(classItem as any).class_id ?? (classItem as any).id}>
-                          {(classItem as any).class_name ?? (classItem as any).name}
-                        </SelectItem>
-                      ))}
+                      {(classes || []).map((classItem: any) => {
+                        const id = String((classItem as any).class_id ?? (classItem as any).id ?? '');
+                        const name = String((classItem as any).class_name ?? (classItem as any).name ?? '');
+                        if (!id || !name) return null;
+                        return (
+                          <SelectItem key={id} value={id}>{name}</SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                 </div>
