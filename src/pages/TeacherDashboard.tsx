@@ -1246,61 +1246,13 @@ export default function TeacherDashboard() {
                       <SelectValue placeholder={!newStudent.schoolId ? "Select school first" : classes.length === 0 ? "No classes available" : "Select class"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {classes.map((classItem) => (
-                        <SelectItem key={classItem.class_id} value={classItem.class_id}>
-                          {classItem.class_name}
+                      {classes.map((classItem: any) => (
+                        <SelectItem key={(classItem as any).class_id ?? (classItem as any).id} value={(classItem as any).class_id ?? (classItem as any).id}>
+                          {(classItem as any).class_name ?? (classItem as any).name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-              </div>
-            </div>
-
-            {/* Parent/Guardian Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Parent/Guardian Information</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="parentName">Parent/Guardian Name</Label>
-                  <Input
-                    id="parentName"
-                    value={newStudent.parentName}
-                    onChange={(e) => setNewStudent(prev => ({ ...prev, parentName: e.target.value }))}
-                    placeholder="Enter parent/guardian name"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="parentPhone">Parent/Guardian Phone</Label>
-                  <Input
-                    id="parentPhone"
-                    value={newStudent.parentPhone}
-                    onChange={(e) => setNewStudent(prev => ({ ...prev, parentPhone: e.target.value }))}
-                    placeholder="Enter parent/guardian phone"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="parentEmail">Parent/Guardian Email</Label>
-                  <Input
-                    id="parentEmail"
-                    type="email"
-                    value={newStudent.parentEmail}
-                    onChange={(e) => setNewStudent(prev => ({ ...prev, parentEmail: e.target.value }))}
-                    placeholder="Enter parent/guardian email"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="address">Address</Label>
-                  <Input
-                    id="address"
-                    value={newStudent.address}
-                    onChange={(e) => setNewStudent(prev => ({ ...prev, address: e.target.value }))}
-                    placeholder="Enter address"
-                  />
                 </div>
               </div>
             </div>
@@ -1315,7 +1267,7 @@ export default function TeacherDashboard() {
             <Button 
               onClick={handleAddStudent}
               className="bg-green-600 hover:bg-green-700"
-              disabled={!newStudent.fullName || !newStudent.email || !newStudent.grade || !newStudent.schoolId || !newStudent.classId}
+              disabled={!newStudent.fullName || !newStudent.contact || !newStudent.grade || !newStudent.schoolId || !newStudent.classId}
             >
               <Plus className="w-4 h-4 mr-2" />
               Add Student
