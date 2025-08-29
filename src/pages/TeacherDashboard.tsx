@@ -144,9 +144,7 @@ export default function TeacherDashboard() {
   const [newStudent, setNewStudent] = useState({
     fullName: '',
     contact: '', // mobile number or email
-    grade: '',
-    schoolId: '',
-    classId: ''
+    grade: ''
   });
 
   // School and class data for add student modal
@@ -314,7 +312,7 @@ export default function TeacherDashboard() {
         .insert({
           user_id: userData.user.id,
           teacher_id: teacherData.id, // must reference teachers.id for RLS to allow updates
-          class_id: newStudent.classId,
+          class_id: null,
           enrollment_status: 'active'
         });
 
@@ -326,13 +324,7 @@ export default function TeacherDashboard() {
       });
 
       setIsAddStudentOpen(false);
-      setNewStudent({
-        fullName: '',
-        contact: '',
-        grade: '',
-        schoolId: '',
-        classId: ''
-      });
+      setNewStudent({ fullName: '', contact: '', grade: '' });
 
       // Reload students
       loadStudents();
@@ -1207,58 +1199,7 @@ export default function TeacherDashboard() {
               </div>
             </div>
 
-            {/* School and Class Selection */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">School & Class Information</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="school">School *</Label>
-                  <Select 
-                    value={newStudent.schoolId || ''} 
-                    onValueChange={(value) => setNewStudent(prev => ({ ...prev, schoolId: value, classId: '' }))}
-                    disabled={loadingSchools}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={loadingSchools ? "Loading schools..." : "Select school"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {schools.map((school) => (
-                        <SelectItem key={school.school_id} value={school.school_id}>
-                          <div className="flex flex-col">
-                            <span className="font-medium">{school.school_name}</span>
-                            <span className="text-xs text-muted-foreground">{school.school_code}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="class">Class *</Label>
-                  <Select 
-                    value={newStudent.classId || ''} 
-                    onValueChange={(value) => setNewStudent(prev => ({ ...prev, classId: value }))}
-                    disabled={!newStudent.schoolId || classes.length === 0}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={!newStudent.schoolId ? "Select school first" : classes.length === 0 ? "No classes available" : "Select class"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(classes || []).map((classItem: any) => {
-                        const id = String((classItem as any).class_id ?? (classItem as any).id ?? '');
-                        const name = String((classItem as any).class_name ?? (classItem as any).name ?? '');
-                        if (!id || !name) return null;
-                        return (
-                          <SelectItem key={id} value={id}>{name}</SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
+            {/* School & Class Selection removed per request - teacher's school is implied; class can be derived from grade later */}
 
             
           </div>
