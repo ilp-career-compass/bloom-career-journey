@@ -21,4 +21,9 @@ export const COURSE_GUIDANCE_CHART: ResourceLink[] = [
   { id: 'cgc-ta', label: 'Course Guidance Chart for Tamil Nadu', fileId: '1l9VwM60apNcWZtdq5tLIUjy7c6CpT9ii' },
 ];
 
+// Career Details Document (comprehensive occupation information)
+export const CAREER_DETAILS: ResourceLink[] = [
+  { id: 'cd-main', label: 'Career Details Document', fileId: '1e18wNcv160nOO6hTpNfnb07D2ZxGwcCR' },
+];
+
 

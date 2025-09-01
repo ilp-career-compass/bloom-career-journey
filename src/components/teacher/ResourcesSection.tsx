@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
-import { CAREER_PLANNER, COURSE_GUIDANCE_CHART } from '@/data/resources';
+import { CAREER_PLANNER, COURSE_GUIDANCE_CHART, CAREER_DETAILS } from '@/data/resources';
 import { buildDrivePreviewUrl, buildDriveViewUrl, buildDriveDownloadUrl } from '@/utils/driveLinks';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ExternalLink, Download, BookOpen, Map } from 'lucide-react';
+import { ExternalLink, Download, BookOpen, Map, FileText } from 'lucide-react';
 
 type Item = { id: string; label: string; fileId?: string; externalUrl?: string };
 
@@ -15,7 +15,9 @@ const ResourceList = ({ title, description, items }: { title: string; descriptio
     <Card className="border-0 shadow-lg">
       <CardHeader>
         <CardTitle className="text-xl text-gray-800 flex items-center gap-2">
-          {title.includes('Career') ? <BookOpen className="w-5 h-5 text-indigo-600" /> : <Map className="w-5 h-5 text-emerald-600" />}
+          {title.includes('Career Planner') ? <BookOpen className="w-5 h-5 text-indigo-600" /> : 
+           title.includes('Career Details') ? <FileText className="w-5 h-5 text-blue-600" /> : 
+           <Map className="w-5 h-5 text-emerald-600" />}
           {title}
         </CardTitle>
         <CardDescription>{description}</CardDescription>
@@ -58,6 +60,7 @@ export default function ResourcesSection() {
       <Tabs defaultValue="career" className="space-y-6">
         <TabsList className="bg-white shadow-sm">
           <TabsTrigger value="career">Career Planner</TabsTrigger>
+          <TabsTrigger value="details">Career Details</TabsTrigger>
           <TabsTrigger value="course">Course Guidance Chart</TabsTrigger>
         </TabsList>
         <TabsContent value="career" className="space-y-4">
@@ -65,6 +68,13 @@ export default function ResourcesSection() {
             title="Career Planner"
             description="We have collated information about different careers and created a booklet that describes the career, the educational requirements for the career, job prospects and other trends."
             items={CAREER_PLANNER}
+          />
+        </TabsContent>
+        <TabsContent value="details" className="space-y-4">
+          <ResourceList
+            title="Career Details"
+            description="This document outlines all the details about a particular career/occupation. For each career/occupation the document lists the name of the occupation, the field, the required educational qualifications, work environment, job opportunities etc in a standard tabular format."
+            items={CAREER_DETAILS}
           />
         </TabsContent>
         <TabsContent value="course" className="space-y-4">
