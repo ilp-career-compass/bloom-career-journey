@@ -60,6 +60,16 @@ export default function StudentDashboard() {
 
   // Profile dialog state
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileData, setProfileData] = useState({
+    fullName: '',
+    email: '',
+    bio: '',
+    interests: '',
+    careerGoals: '',
+    strengths: '',
+    areasForGrowth: ''
+  });
 
   // CareerChat LM state (no persistence)
   type ChatMsg = { id: string; role: 'user' | 'model'; text: string };

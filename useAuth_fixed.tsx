@@ -14,7 +14,7 @@ interface AuthUser extends User {
 
 interface AuthContextType {
   user: AuthUser | null;
-  session: Session | null;
+  session: Session | null
   loading: boolean;
   signIn: (identifier: string, password: string) => Promise<{ error: any }>;
   signUp: (
@@ -97,27 +97,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Create user profile with robust retries and diagnostics
   const createUserProfile = async (userData: any) => {
     try {
-      console.log('Attempting to create user profile with data:', userData);
+      console.log('Creating user profile for:', userData.id);
+      
+      // Start with minimal payload
+      let minimalPayload = {
+        id: userData.id,
+        password_hash: userData.password_hash || 'handled_by_auth',
+        role: userData.role,
+        full_name: userData.full_name,
+        email: userData.email,
+        mobile: userData.mobile,
+        school_id: userData.school_id || null,
+      };
 
-      // 1) First attempt: full insert
-      let { error: insertError } = await supabase.from('users').insert(userData);
+      // 1) First attempt with full payload
+      let { error: insertError } = await supabase.from('users').insert(minimalPayload);
       if (!insertError) {
-        console.log('User profile created successfully via direct insert');
+        console.log('User profile created successfully on first attempt');
         return { success: true, error: null };
       }
 
-      console.warn('Direct insert failed:', {
-        code: (insertError as any)?.code,
-        message: (insertError as any)?.message,
-        details: (insertError as any)?.details,
-        hint: (insertError as any)?.hint,
-      });
-
-      // 2) If FK violation on school_id (23503), retry without school_id (last resort)
-      const code = (insertError as any)?.code;
-      const message = (insertError as any)?.message || '';
-      let minimalPayload = { ...userData } as any;
-
+      // 2) If foreign key violation (23503) for school_id, retry without it
+      const { code, message } = insertError as any;
       if (code === '23503' && message.includes('school_id')) {
         console.warn('Retrying insert without school_id due to FK violation');
         /* remove school_id for retry */
@@ -182,71 +183,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  useEffect(() => {
-    console.log('AuthProvider useEffect running');
-    
-    // Test database connection
-    testDatabase();
-
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log('Auth state change:', event, session?.user?.id);
-        setSession(session);
-        setUser(session?.user as AuthUser || null);
-        
-        if (session?.user) {
-          // Fetch user profile data
-          setTimeout(() => {
-            fetchUserProfile(session.user.id);
-          }, 0);
-        } else {
-          setUserProfile(null);
-        }
-        
-        setLoading(false);
-      }
-    );
-
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Initial session check:', session?.user?.id);
-      setSession(session);
-      setUser(session?.user as AuthUser || null);
-      
-      if (session?.user) {
-        fetchUserProfile(session.user.id);
-      }
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
   const fetchUserProfile = async (userId: string) => {
     try {
       console.log('Fetching user profile for:', userId);
       console.log('Current user state:', user);
       console.log('User metadata:', user?.user_metadata);
       
-      // 🔧 RLS BYPASS: For custom authenticated students, create profile from auth data
+      // For custom authenticated students, we already have the user data
+      // from the authenticate_student function, so we can create the profile directly
       if (user && user.user_metadata?.role === 'student') {
-        console.log('🚀 RLS BYPASS: Using existing student data from authentication');
+        console.log('Using existing student data from authentication');
         const studentProfile = {
           id: userId,
           full_name: user.user_metadata.full_name,
           email: user.user_metadata.email,
           mobile: user.user_metadata.mobile,
           role: 'student',
-          school_id: null,
-          studentProfile: null
+          school_id: null, // Will be fetched from students table
+          studentProfile: null // Will be fetched below
         };
         
-        // Set the profile immediately - this will trigger routing!
+        // Set the basic profile first
         setUserProfile(studentProfile);
-        console.log('✅ Student profile set from auth data:', studentProfile);
+        console.log('Student profile set from auth data:', studentProfile);
         
-        // Try to fetch additional student data (optional, might fail due to RLS)
+        // Now try to fetch additional student data (this might fail due to RLS, but that's okay)
         try {
           const { data: studentData, error: studentError } = await supabase
             .from('students')
@@ -255,29 +216,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             .single();
           
           if (!studentError && studentData) {
-            console.log('📚 Additional student data fetched:', studentData);
+            console.log('Additional student data fetched:', studentData);
             const enhancedProfile = { ...studentProfile, studentProfile: studentData };
             setUserProfile(enhancedProfile);
-            console.log('✅ Enhanced student profile set:', enhancedProfile);
+            console.log('Enhanced student profile set:', enhancedProfile);
           } else {
-            console.log('ℹ️ No additional student data (RLS restriction expected):', studentError);
+            console.log('No additional student data available (RLS restriction expected):', studentError);
           }
         } catch (roleDataError) {
-          console.log('ℹ️ Expected RLS restriction on students table:', roleDataError);
+          console.log('Expected RLS restriction on students table:', roleDataError);
         }
         
-        console.log('🎯 RLS BYPASS COMPLETE - Student should now be redirected!');
-        
-        // Debug: Check if userProfile was actually set
-        setTimeout(() => {
-          console.log('🔍 DEBUG: userProfile state after RLS bypass:', { userProfile });
-        }, 100);
-        
-        return; // Exit early - no need to query database
+        return; // Exit early for custom authenticated students
       }
       
       // Original logic for Supabase Auth users (teachers/admins)
-      console.log('🔍 Fetching profile for Supabase Auth user (database query)');
+      console.log('Fetching profile for Supabase Auth user');
       
       // Retry a few times because profile insert may race with auth state change
       let attempts = 0;
@@ -424,11 +378,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           await fetchUserProfile(studentUser.user_id); // Use user_id from function result
           console.log('User profile fetched, current userProfile state should be updated');
           
-          // Add a small delay and check the state
-          setTimeout(() => {
-            console.log('Checking userProfile state after delay:', { userProfile });
-          }, 100);
-          
           toast({
             title: "Sign in successful! ✨",
             description: `Welcome back, ${studentUser.full_name}!`,
@@ -520,263 +469,178 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     gender?: 'male' | 'female'
   ) => {
     try {
-      console.log('Starting signUp process:', { mobile, email, fullName, role, schoolId, classId, gender });
-
-      // Enforce class selection for students at the API layer too
-      if (role === 'student' && !classId) {
-        const err = { message: 'Class selection is required for student registration' } as any;
-        console.error('SignUp blocked:', err);
-        return { error: err };
-      }
+      console.log('SignUp attempt for:', { mobile, email, fullName, role, schoolId, classId, gender });
       
-      // Handle email/mobile logic
-      let finalEmail = email;
-      let finalMobile = mobile;
-      
-      if (!email && mobile) {
-        // If only mobile is provided, generate an email for Supabase auth
-        finalEmail = `${mobile}@internal.app`;
-        console.log('Generated email for mobile:', finalEmail);
-      } else if (!mobile && email) {
-        // If only email is provided, mobile is null
-        finalMobile = null;
-        console.log('Using provided email:', finalEmail);
-      }
-
-      // Check if email already exists
-      console.log('Checking if email exists:', finalEmail);
-      const { data: existingUserByEmail, error: emailCheckError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('email', finalEmail)
-        .maybeSingle();
-      
-      if (emailCheckError) {
-        console.error('Error checking email:', emailCheckError);
-        return { error: { message: 'Failed to check email availability' } };
-      }
-
-      if (existingUserByEmail) {
-        console.log('Email already exists:', finalEmail);
-        return { error: { message: 'Email address already registered' } };
-      }
-
-      // Check if mobile already exists (if provided)
-      if (finalMobile) {
-        console.log('Checking if mobile exists:', finalMobile);
-        const { data: existingUserByMobile, error: mobileCheckError } = await supabase
-          .from('users')
-          .select('id')
-          .eq('mobile', finalMobile)
-          .maybeSingle();
-        
-        if (mobileCheckError) {
-          console.error('Error checking mobile:', mobileCheckError);
-          return { error: { message: 'Failed to check mobile availability' } };
-        }
-
-        if (existingUserByMobile) {
-          console.log('Mobile already exists:', finalMobile);
-          return { error: { message: 'Mobile number already registered' } };
-        }
-      }
-
-      // Create Supabase auth user
-      console.log('Creating Supabase auth user with email:', finalEmail);
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: finalEmail,
+      // Create user in Supabase Auth
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email,
         password,
         options: {
           data: {
-            mobile: finalMobile,
-            email: finalEmail,
             full_name: fullName,
-            role,
+            role: role,
+            mobile: mobile,
+            school_id: schoolId
           }
         }
       });
 
-      if (authError) {
-        console.error('Supabase auth error:', authError);
+      if (signUpError) {
+        console.error('SignUp error:', signUpError);
         toast({
-          title: "Registration failed",
-          description: authError.message,
+          title: "Sign up failed",
+          description: signUpError.message || "Failed to create account",
           variant: "destructive",
         });
-        return { error: authError };
+        return { error: signUpError };
       }
 
-      console.log('Supabase auth user created:', authData.user?.id);
-
-      if (authData.user) {
-        // Insert into custom users table
-        console.log('Inserting user profile into database');
-        const userProfileData: any = {
-            id: authData.user.id,
-            password_hash: 'handled_by_auth',
-            role,
-            full_name: fullName,
+      if (signUpData?.user) {
+        console.log('User created in Supabase Auth:', signUpData.user.id);
+        
+        // Create user profile in our custom users table
+        const profileResult = await createUserProfile({
+          id: signUpData.user.id,
+          role: role,
+          full_name: fullName,
+          email: email,
+          mobile: mobile,
           school_id: schoolId,
-        };
-        
-        // Only add email and mobile if the columns exist
-        if (finalEmail) {
-          userProfileData.email = finalEmail;
-        }
-        if (finalMobile) {
-          userProfileData.mobile = finalMobile;
-        }
-        
-        // Add gender for students
-        if (role === 'student' && gender) {
-          userProfileData.gender = gender;
-        }
-        
-        // Use the new createUserProfile function
-        const { success, error: userInsertError } = await createUserProfile(userProfileData);
+          password_hash: 'handled_by_auth'
+        });
 
-        if (!success) {
-          console.error('Error creating user profile:', userInsertError);
-          toast({
-            title: "Registration failed",
-            description: "Failed to create user profile. Please contact support.",
-            variant: "destructive",
-          });
-          return { error: userInsertError };
+        if (!profileResult.success) {
+          console.error('Failed to create user profile:', profileResult.error);
+          // Don't fail the signup if profile creation fails
         }
 
-        console.log('User profile created successfully');
-
-        // Create role-specific profile (teacher or student)
+        // Create role-specific profile
         try {
           if (role === 'teacher') {
-            // Create teacher profile
             const { error: teacherError } = await supabase
               .from('teachers')
               .insert({
-                user_id: authData.user.id,
-                school_id: schoolId,
-                is_active: true,
-                joining_date: new Date().toISOString(),
+                user_id: signUpData.user.id,
+                school_id: schoolId
               });
-
+            
             if (teacherError) {
-              console.error('Error creating teacher profile:', teacherError);
-              toast({
-                title: "Registration warning",
-                description: "Account created but teacher profile setup failed. Please contact support.",
-                variant: "destructive",
-              });
+              console.error('Failed to create teacher profile:', teacherError);
             }
-          } else if (role === 'student') {
-            // Create student profile (class is optional in Phase 1)
+          } else if (role === 'student' && classId) {
             const { error: studentError } = await supabase
               .from('students')
               .insert({
-                user_id: authData.user.id,
-                class_id: classId || null,
-                teacher_id: null, // Will be assigned by admin/teacher later
-                enrollment_date: new Date().toISOString(),
-                enrollment_status: 'pending',
+                user_id: signUpData.user.id,
+                class_id: classId,
+                enrollment_status: 'active'
               });
-
+            
             if (studentError) {
-              console.error('Error creating student profile:', studentError);
-              toast({
-                title: "Registration warning",
-                description: "Account created but student profile setup failed. Please contact support.",
-                variant: "destructive",
-              });
+              console.error('Failed to create student profile:', studentError);
             }
           }
-        } catch (profileError) {
-          console.error('Error creating role profile:', profileError);
-          // Don't fail registration for profile creation errors
+        } catch (roleError) {
+          console.error('Error creating role-specific profile:', roleError);
         }
 
-        // For Phase 1: Bypass email confirmation and sign in immediately
-        try {
-          console.log('Attempting auto sign-in');
-          // Wait a moment for the user profile to be fully created
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
-          const { error: signInError } = await supabase.auth.signInWithPassword({
-            email: finalEmail,
-            password,
-          });
-          
-          if (signInError) {
-            console.error('Auto sign-in failed:', signInError);
-            // Even if auto sign-in fails, registration was successful
-            toast({
-              title: "Registration successful",
-              description: `Welcome to CareerCompass, ${fullName}! Please sign in manually.`,
-            });
-          } else {
-            console.log('Auto sign-in successful');
-            // Auto sign-in successful
-            toast({
-              title: "Registration successful",
-              description: `Welcome to CareerCompass, ${fullName}! You're now signed in.`,
-            });
-          }
-        } catch (signInError) {
-          console.error('Auto sign-in error:', signInError);
         toast({
-          title: "Registration successful",
-            description: `Welcome to CareerCompass, ${fullName}! Please sign in manually.`,
+          title: "Account created! ✨",
+          description: "Please check your email to verify your account.",
         });
-        }
+
+        return { error: null };
       }
 
-      return { error: null };
-    } catch (error) {
+      return { error: new Error('Sign up failed') };
+    } catch (error: any) {
       console.error('SignUp error:', error);
+      toast({
+        title: "Sign up failed",
+        description: error.message || "An unexpected error occurred",
+        variant: "destructive",
+      });
       return { error };
     }
   };
 
-
-
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast({
-        title: "Sign out failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      setUser(null);
+      setSession(null);
+      setUserProfile(null);
+      
       toast({
         title: "Signed out",
-        description: "You have been signed out successfully",
+        description: "You have been successfully signed out.",
+      });
+    } catch (error) {
+      console.error('Sign out error:', error);
+      toast({
+        title: "Sign out failed",
+        description: "An error occurred while signing out.",
+        variant: "destructive",
       });
     }
   };
 
-  const value = {
-    user,
-    session,
-    loading,
-    signIn,
-    signUp,
-    signOut,
-    userProfile,
-  };
+  useEffect(() => {
+    console.log('AuthProvider useEffect running');
+    
+    // Test database connection
+    testDatabase();
 
-  console.log('AuthProvider rendering with value:', { 
-    user: !!user, 
-    loading, 
-    userProfile: userProfile ? {
-      id: userProfile.id,
-      role: userProfile.role,
-      hasStudentProfile: !!userProfile.studentProfile,
-      hasTeacherProfile: !!userProfile.teacherProfile
-    } : null 
-  });
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log('Auth state change:', event, session?.user?.id);
+        setSession(session);
+        setUser(session?.user as AuthUser || null);
+        
+        if (session?.user) {
+          // Fetch user profile data
+          setTimeout(() => {
+            fetchUserProfile(session.user.id);
+          }, 0);
+        } else {
+          setUserProfile(null);
+        }
+        
+        setLoading(false);
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session check:', session?.user?.id);
+      setSession(session);
+      setUser(session?.user as AuthUser || null);
+      
+      if (session?.user) {
+        fetchUserProfile(session.user.id);
+      }
+      
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  console.log('AuthProvider rendering with value:', { user, loading, userProfile });
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{
+      user,
+      session,
+      loading,
+      signIn,
+      signUp,
+      signOut,
+      userProfile
+    }}>
       {children}
     </AuthContext.Provider>
   );

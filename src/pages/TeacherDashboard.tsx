@@ -282,7 +282,24 @@ export default function TeacherDashboard() {
 
       if (teacherError) throw teacherError;
 
-      // Create user record directly in users table
+      // Find the class based on the selected grade
+      let classId = null;
+      if (newStudent.grade) {
+        const { data: classData, error: classError } = await supabase
+          .from('classes')
+          .select('id')
+          .eq('name', `Class ${newStudent.grade}`)
+          .eq('school_id', teacherData.school_id)
+          .single();
+        
+        if (!classError && classData) {
+          classId = classData.id;
+        } else {
+          console.warn(`Class ${newStudent.grade} not found for school ${teacherData.school_id}`);
+        }
+      }
+
+      // Create user record directly in users table (this will work with teacher permissions)
       const isEmail = /@/.test(newStudent.contact);
       const { data: userData, error: userError } = await supabase
         .from('users')
@@ -292,28 +309,44 @@ export default function TeacherDashboard() {
           mobile: !isEmail ? newStudent.contact : null,
           school_id: teacherData.school_id,
           role: 'student',
-          password_hash: 'temporary123' // This will be a placeholder - students will set real password on first login
+          password_hash: 'temporary123' // This will be a placeholder
         })
         .select()
         .single();
 
       if (userError) throw userError;
 
-      // Create student record
+      // Create student record with the found class_id
       const { error: studentError } = await supabase
         .from('students')
         .insert({
           user_id: userData.id,
-          teacher_id: teacherData.id, // must reference teachers.id for RLS to allow updates
-          class_id: null,
+          teacher_id: teacherData.id,
+          class_id: classId,
           enrollment_status: 'active'
         });
 
       if (studentError) throw studentError;
 
+      // Create authentication credentials for the student
+      const { error: authError } = await supabase
+        .from('student_auth_credentials')
+        .insert({
+          user_id: userData.id,
+          email: isEmail ? newStudent.contact : null,
+          mobile: !isEmail ? newStudent.contact : null,
+          password_hash: 'temporary123',
+          is_active: true
+        });
+
+      if (authError) {
+        console.warn('Auth credentials creation failed, but student was created:', authError);
+        // Don't fail the entire operation if auth setup fails
+      }
+
       toast({
         title: "Student Added! ✨",
-        description: `${newStudent.fullName} has been successfully enrolled.`,
+        description: `${newStudent.fullName} has been successfully enrolled${classId ? ` to Class ${newStudent.grade}` : ''}. Login: ${isEmail ? newStudent.contact : newStudent.contact}, Password: temporary123`,
       });
 
       setIsAddStudentOpen(false);
@@ -321,11 +354,11 @@ export default function TeacherDashboard() {
 
       // Reload students
       loadStudents();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding student:', error);
       toast({
         title: "Error",
-        description: "Failed to add student. Please try again.",
+        description: `Failed to add student: ${error.message}`,
         variant: "destructive",
       });
     }

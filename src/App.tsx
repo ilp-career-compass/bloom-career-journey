@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './hooks/useAuth';
-import { Toaster } from './hooks/use-toast.tsx';
+import { Toaster } from '@/components/ui/toaster';
 import ProtectedRoute from './components/ProtectedRoute';
 import Index from './pages/Index';
 import AuthPage from './pages/AuthPage';
@@ -8,6 +8,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import TeacherDashboard from './pages/TeacherDashboard';
 import StudentDashboard from './pages/StudentDashboard';
 import StudentSummary from './pages/StudentSummary';
+import NotFound from './pages/NotFound';
 import MyInspirationAssessment from './components/assessments/MyInspirationAssessment';
 import MyDreamsAssessment from './components/assessments/MyDreamsAssessment';
 import MySchoolLearningAssessment from './components/assessments/MySchoolLearningAssessment';
@@ -161,6 +162,9 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+              
+              {/* Catch-all route for 404 */}
+              <Route path="*" element={<NotFound />} />
             </Routes>
             <Toaster />
           </div>
