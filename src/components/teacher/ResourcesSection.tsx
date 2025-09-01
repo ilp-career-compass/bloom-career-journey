@@ -66,21 +66,21 @@ export default function ResourcesSection() {
         <TabsContent value="career" className="space-y-4">
           <ResourceList
             title="Career Planner"
-            description="We have collated information about different careers and created a booklet that describes the career, the educational requirements for the career, job prospects and other trends."
+            description="Comprehensive booklet containing detailed information about different careers, including educational requirements, job prospects, and industry trends to guide student career planning."
             items={CAREER_PLANNER}
           />
         </TabsContent>
         <TabsContent value="details" className="space-y-4">
           <ResourceList
             title="Career Details"
-            description="This document outlines all the details about a particular career/occupation. For each career/occupation the document lists the name of the occupation, the field, the required educational qualifications, work environment, job opportunities etc in a standard tabular format."
+            description="Detailed document outlining specific career information in tabular format, including occupation names, fields, educational qualifications, work environment, and job opportunities."
             items={CAREER_DETAILS}
           />
         </TabsContent>
         <TabsContent value="course" className="space-y-4">
           <ResourceList
             title="Course Guidance Chart"
-            description="A visual way to explore all the course options available to students after their 10th and 12th grades."
+            description="Visual reference chart displaying all available course options and pathways for students after completing their 10th and 12th grade examinations."
             items={COURSE_GUIDANCE_CHART}
           />
         </TabsContent>
