@@ -34,7 +34,7 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
       try {
         const studentRes = await supabase
           .from('students')
-          .select('class_id, classes(name, schools(name)), teachers( users:users(full_name) )')
+          .select('class_id, classes(name, schools(name)), teachers(id, user_id, users(full_name))')
           .eq('user_id', userProfile.id)
           .maybeSingle();
         const teacherRes = await supabase
@@ -42,12 +42,20 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
           .select('school_id, schools(name)')
           .eq('user_id', userProfile.id)
           .maybeSingle();
+        let teacherName = (studentRes.data as any)?.teachers?.users?.full_name || '';
+        if (!teacherName) {
+          const teacherUserId = (studentRes.data as any)?.teachers?.user_id;
+          if (teacherUserId) {
+            const { data: tu } = await supabase.from('users').select('full_name').eq('id', teacherUserId).maybeSingle();
+            teacherName = tu?.full_name || '';
+          }
+        }
         setMeta({
           email: (userProfile as any).email || null,
           mobile: (userProfile as any).mobile || null,
           school: studentRes.data?.classes?.schools?.name || teacherRes.data?.schools?.name || '',
           className: studentRes.data?.classes?.name || '',
-          teacher: (studentRes.data as any)?.teachers?.users?.full_name || '',
+          teacher: teacherName,
         });
       } catch (e) {
         // swallow optional meta fetch errors
@@ -78,8 +86,24 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
       if (error) throw error;
       // password change
       if (password) {
-        const { error: pwErr } = await supabase.auth.updateUser({ password });
-        if (pwErr) throw pwErr;
+        if (!isTeacher) {
+          // Custom-auth students: update student_auth_credentials
+          const identifierNormalized = (meta?.email ? meta?.email.toLowerCase() : meta?.mobile || null);
+          const { error: credErr } = await supabase
+            .from('student_auth_credentials')
+            .upsert({
+              user_id: userProfile.id,
+              email: meta?.email ? meta?.email.toLowerCase() : null,
+              mobile: meta?.mobile || null,
+              password_hash: password,
+              is_active: true
+            }, { onConflict: 'user_id' as any });
+          if (credErr) throw credErr;
+        } else {
+          // Supabase-auth users (teachers/admins)
+          const { error: pwErr } = await supabase.auth.updateUser({ password });
+          if (pwErr) throw pwErr;
+        }
       }
       onOpenChange(false);
     } catch (err) {

@@ -496,6 +496,13 @@ export default function TeacherDashboard() {
     }
   }, [userProfile]);
 
+  // Ensure classes are loaded for the teacher's school so CSV import can validate class_name
+  useEffect(() => {
+    if (teacherRow?.school_id) {
+      loadClasses(teacherRow.school_id);
+    }
+  }, [teacherRow?.school_id]);
+
   const loadProgressForStudent = async (studentId: string) => {
     try {
       const { data, error } = await supabase

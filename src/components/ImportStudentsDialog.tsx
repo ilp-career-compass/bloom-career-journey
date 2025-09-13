@@ -89,26 +89,38 @@ export default function ImportStudentsDialog({ open, onOpenChange, classes, teac
       const r = rows[i];
       try {
         const isEmail = /@/.test(r.contact);
-        const { data: userData, error: userErr } = await supabase.auth.admin.createUser({
-          email: isEmail ? r.contact : undefined,
-          phone: !isEmail ? r.contact : undefined,
-          password: 'temporary123',
-          email_confirm: isEmail ? true : undefined,
-          phone_confirm: !isEmail ? true : undefined,
-          user_metadata: { full_name: r.full_name, role: 'student' }
-        });
-        if (userErr || !userData?.user) throw userErr || new Error('createUser failed');
-
-        const { error: updErr } = await supabase
+        // 1) Create user directly in public.users (RLS allows teacher to insert students)
+        const { data: userRow, error: userErr } = await supabase
           .from('users')
-          .update({ school_id: schoolId, email: isEmail ? r.contact : null, mobile: !isEmail ? r.contact : null })
-          .eq('id', userData.user.id);
-        if (updErr) throw updErr;
+          .insert({
+            full_name: r.full_name,
+            email: isEmail ? r.contact : null,
+            mobile: !isEmail ? r.contact : null,
+            role: 'student',
+            school_id: schoolId,
+            password_hash: 'temporary123'
+          })
+          .select('id')
+          .single();
+        if (userErr || !userRow?.id) throw userErr || new Error('Could not create user');
 
+        // 2) Link student to teacher and class
         const { error: sErr } = await supabase
           .from('students')
-          .insert({ user_id: userData.user.id, teacher_id: teacherId, class_id: r.class_id, enrollment_status: 'active' });
+          .insert({ user_id: userRow.id, teacher_id: teacherId, class_id: r.class_id, enrollment_status: 'active' });
         if (sErr) throw sErr;
+
+        // 3) Create auth credentials for custom login
+        const { error: credErr } = await supabase
+          .from('student_auth_credentials')
+          .insert({
+            user_id: userRow.id,
+            email: isEmail ? r.contact : null,
+            mobile: !isEmail ? r.contact : null,
+            password_hash: 'temporary123',
+            is_active: true
+          });
+        if (credErr) throw credErr;
       } catch (e: any) {
         failed.push(`Row ${i+2}: ${e?.message || e}`);
       }

@@ -408,10 +408,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // First, try custom authentication for students
       try {
         console.log('🔄 Attempting custom authentication...');
+        const idTrim = identifier.trim();
+        const idForAuth = idTrim.includes('@') ? idTrim.toLowerCase() : idTrim;
+        const pwd = password.trim();
         const { data: customAuthData, error: customAuthError } = await supabase
           .rpc('authenticate_student', {
-            identifier: identifier,
-            password: password
+            identifier: idForAuth,
+            password: pwd
           });
         
         if (!customAuthError && customAuthData && customAuthData.length > 0) {
