@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 
 type Props = {
   open: boolean;
@@ -14,6 +15,7 @@ type Props = {
 
 export default function ProfileDialog({ open, onOpenChange }: Props) {
   const { userProfile } = useAuth();
+  const { toast } = useToast();
   const isTeacher = userProfile?.role === 'teacher';
 
   const [fullName, setFullName] = useState('');
@@ -88,15 +90,7 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
       if (password) {
         if (!isTeacher) {
           // Custom-auth students: update student_auth_credentials
-          // Use the original login identifier from userProfile to ensure consistency
-          const originalEmail = (userProfile as any).email;
-          const originalMobile = (userProfile as any).mobile;
-          
-          console.log('Updating student password for:', { 
-            userId: userProfile.id, 
-            email: originalEmail, 
-            mobile: originalMobile 
-          });
+          console.log('Updating student password for user:', userProfile.id);
           
           const { error: credErr } = await supabase
             .from('student_auth_credentials')
@@ -105,18 +99,45 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
               is_active: true
             })
             .eq('user_id', userProfile.id);
-          if (credErr) throw credErr;
+          
+          if (credErr) {
+            console.error('Password update error:', credErr);
+            throw new Error(`Failed to update password: ${credErr.message}`);
+          }
           
           console.log('Student password updated successfully');
+          toast({
+            title: "Password Updated! 🔐",
+            description: "Your password has been changed successfully. You can now login with your new password.",
+          });
         } else {
           // Supabase-auth users (teachers/admins)
           const { error: pwErr } = await supabase.auth.updateUser({ password });
-          if (pwErr) throw pwErr;
+          if (pwErr) {
+            console.error('Password update error:', pwErr);
+            throw new Error(`Failed to update password: ${pwErr.message}`);
+          }
+          toast({
+            title: "Password Updated! 🔐",
+            description: "Your password has been changed successfully.",
+          });
         }
       }
+      
+      // Show success message
+      toast({
+        title: "Profile Updated! ✨",
+        description: "Your profile has been updated successfully.",
+      });
+      
       onOpenChange(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Profile save error:', err);
+      toast({
+        title: "Update Failed",
+        description: err.message || "Failed to update profile. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }
