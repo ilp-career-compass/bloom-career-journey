@@ -83,7 +83,11 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
       // update users row
       const { error } = await supabase
         .from('users')
-        .update({ full_name: fullName, gender: gender || null, career_goals: isTeacher ? (userProfile as any).career_goals || null : goal || null, profile_picture_url: avatarUrl })
+        .update({ 
+          full_name: fullName, 
+          career_goals: isTeacher ? (userProfile as any).career_goals || null : goal || null, 
+          profile_picture_url: avatarUrl 
+        })
         .eq('id', userProfile.id);
       if (error) throw error;
       // password change
