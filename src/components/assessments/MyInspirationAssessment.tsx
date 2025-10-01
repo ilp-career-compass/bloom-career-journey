@@ -104,13 +104,13 @@ export default function MyInspirationAssessment() {
     {
       id: 1,
       title: "Inspirational Video 1",
-      url: "https://youtu.be/U7-HIfpvQIA",
-      youtubeId: "U7-HIfpvQIA"
+      url: "https://youtu.be/U7-HlfpvQIA?si=_gakjQozpgbZC2aQ",
+      youtubeId: "U7-HlfpvQIA"
     },
     {
       id: 2,
       title: "Inspirational Video 2", 
-      url: "https://youtu.be/xqb1hfgfcl8",
+      url: "https://www.youtube.com/watch?v=xqb1hfgfcl8",
       youtubeId: "xqb1hfgfcl8"
     },
     {
@@ -122,7 +122,7 @@ export default function MyInspirationAssessment() {
     {
       id: 4,
       title: "Inspirational Video 4",
-      url: "https://youtu.be/X9wViEY5tPQ",
+      url: "https://youtu.be/X9wViEY5tPQ?si=qDOuMSUatButKwZk",
       youtubeId: "X9wViEY5tPQ"
     },
     {
@@ -134,8 +134,8 @@ export default function MyInspirationAssessment() {
     {
       id: 6,
       title: "Inspirational Video 6",
-      url: "https://youtu.be/ZgRLkpSA3IQ",
-      youtubeId: "ZgRLkpSA3IQ"
+      url: "https://youtu.be/GPeeZ6viNgY?si=sg4hFF33p3cF4X25",
+      youtubeId: "GPeeZ6viNgY"
     }
   ], []);
 
