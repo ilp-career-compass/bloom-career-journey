@@ -231,7 +231,7 @@ export default function StudentDashboard() {
         .eq('student_id', studentId)
         .eq('assessment_type', 'inspiration')
         .eq('assessment_title', 'My Inspiration')
-        .order('completed_at', { ascending: false })
+        .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
@@ -346,11 +346,11 @@ export default function StudentDashboard() {
 
   // Update completion status when progress changes
   useEffect(() => {
-    const insp = !!assessmentProgress;
-    const dreams = !!dreamsProgress;
-    const school = !!schoolLearningProgress;
-    const roles = !!roleModelsProgress;
-    const hobbies = !!hobbiesProgress;
+    const insp = !!assessmentProgress?.completed_at;
+    const dreams = !!dreamsProgress?.completed_at;
+    const school = !!schoolLearningProgress?.completed_at;
+    const roles = !!roleModelsProgress?.completed_at;
+    const hobbies = !!hobbiesProgress?.completed_at;
     setInspirationCompleted(insp);
     setDreamsCompleted(dreams);
     setSchoolLearningCompleted(school);
@@ -438,15 +438,15 @@ export default function StudentDashboard() {
   const getCompletionStatus = (assessmentType: string) => {
     switch (assessmentType) {
       case 'inspiration':
-        return !!assessmentProgress;
+        return !!assessmentProgress?.completed_at;
       case 'dreams':
-        return !!dreamsProgress;
+        return !!dreamsProgress?.completed_at;
       case 'school_learning':
-        return !!schoolLearningProgress;
+        return !!schoolLearningProgress?.completed_at;
       case 'role_models':
-        return !!roleModelsProgress;
+        return !!roleModelsProgress?.completed_at;
       case 'hobbies':
-        return !!hobbiesProgress;
+        return !!hobbiesProgress?.completed_at;
       default:
         return false;
     }
@@ -592,7 +592,10 @@ export default function StudentDashboard() {
               {getCompletionStatus('inspiration') && (
                 <Badge variant="default" className="mt-2 bg-green-600">Completed ✓</Badge>
               )}
-              {!getCompletionStatus('inspiration') && (
+              {!getCompletionStatus('inspiration') && assessmentProgress && (
+                <Badge variant="outline" className="mt-2 border-yellow-500 text-yellow-600">In Progress</Badge>
+              )}
+              {!getCompletionStatus('inspiration') && !assessmentProgress && (
                 <Badge variant="secondary" className="mt-2">Start Here</Badge>
               )}
                     </CardContent>
@@ -719,8 +722,8 @@ export default function StudentDashboard() {
             <div className="space-y-3">
               <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
                 <span className="font-medium text-green-800">1. My Inspiration</span>
-                <Badge variant={inspirationCompleted ? "default" : "secondary"}>
-                  {inspirationCompleted ? "Completed ✓" : "Not Started"}
+                <Badge variant={inspirationCompleted ? "default" : (assessmentProgress ? "outline" : "secondary")}>
+                  {inspirationCompleted ? "Completed ✓" : (assessmentProgress ? "In Progress" : "Not Started")}
                 </Badge>
               </div>
               <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">

@@ -18,7 +18,8 @@ import {
   TrendingUp,
   Video,
   Youtube,
-  ArrowLeft
+  ArrowLeft,
+  Save
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
@@ -81,6 +82,21 @@ interface AssessmentResponse {
   };
 }
 
+// New interface for individual video progress
+interface VideoProgress {
+  videoId: number;
+  responses: {
+    question1: string;
+    question2: string;
+    question3: string;
+    question4: string;
+    question5: string;
+    question6: string;
+  };
+  isComplete: boolean;
+  savedAt?: string;
+}
+
 export default function MyInspirationAssessment() {
   const { userProfile } = useAuth();
   const { toast } = useToast();
@@ -95,8 +111,11 @@ export default function MyInspirationAssessment() {
     video6: { question1: '', question2: '', question3: '', question4: '', question5: '', question6: '' }
   });
   const [loading, setLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [videoProgress, setVideoProgress] = useState<VideoProgress[]>([]);
   const navigate = useNavigate();
 
   // 6 inspirational videos from the worksheet
@@ -144,8 +163,29 @@ export default function MyInspirationAssessment() {
     setLoading(false);
   }, [defaultVideos]);
 
+  // Initialize video progress
+  useEffect(() => {
+    const initialProgress = defaultVideos.map(video => ({
+      videoId: video.id,
+      responses: {
+        question1: '',
+        question2: '',
+        question3: '',
+        question4: '',
+        question5: '',
+        question6: ''
+      },
+      isComplete: false,
+      savedAt: undefined
+    }));
+    setVideoProgress(initialProgress);
+  }, [defaultVideos]);
+
   const checkExistingResponse = useCallback(async () => {
     if (!userProfile) return;
+
+    console.log('Loading existing response data...');
+    setDataLoading(true);
 
     // Resolve student_id from students table; do not fallback to users.id
     let studentId = userProfile.studentProfile?.id as string | undefined;
@@ -158,40 +198,156 @@ export default function MyInspirationAssessment() {
       studentId = studentRow?.id;
     }
 
-    if (!studentId) return;
+    if (!studentId) {
+      console.log('No student ID found');
+      setDataLoading(false);
+      return;
+    }
 
     try {
+      console.log('Querying database with studentId:', studentId);
+      console.log('Query parameters:', {
+        student_id: studentId,
+        assessment_type: 'inspiration',
+        assessment_title: 'My Inspiration'
+      });
+
       const { data, error } = await supabase
         .from('assessment_responses')
         .select('*')
         .eq('student_id', studentId)
         .eq('assessment_type', 'inspiration')
         .eq('assessment_title', 'My Inspiration')
+        .order('updated_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
+      console.log('Database query result:', { data, error });
+
       if (data && !error) {
-        setIsCompleted(true);
-        setResponses(data.responses || responses);
+        console.log('Found existing data:', data);
+        // Only set as completed if completed_at is not null
+        setIsCompleted(!!data.completed_at);
+        
+        // Update video progress from saved data
+        if (data.responses) {
+          const savedResponses = data.responses as AssessmentResponse;
+          console.log('Loading saved responses:', savedResponses);
+          setResponses(savedResponses);
+          
+          const updatedProgress = defaultVideos.map(video => {
+            const videoKey = `video${video.id}` as keyof AssessmentResponse;
+            const videoResponses = savedResponses[videoKey];
+            const isComplete = Object.values(videoResponses).every((v: string) => v.trim() !== '');
+            // Only mark as saved if the video has actual content (not just empty strings)
+            const hasContent = Object.values(videoResponses).some((v: string) => v.trim() !== '');
+            console.log(`Video ${video.id}: hasContent=${hasContent}, isComplete=${isComplete}`);
+            return {
+              videoId: video.id,
+              responses: videoResponses,
+              isComplete,
+              savedAt: hasContent ? data.updated_at : undefined
+            };
+          });
+          setVideoProgress(updatedProgress);
+          console.log('Updated video progress:', updatedProgress);
+        }
+      } else {
+        console.log('No existing data found. Error:', error);
+        
+        // Let's also check if there are any records at all for this student
+        const { data: allData, error: allError } = await supabase
+          .from('assessment_responses')
+          .select('*')
+          .eq('student_id', studentId);
+        
+        console.log('All assessment responses for this student:', { allData, allError });
+        
+        // If there are multiple records, clean them up by keeping only the most recent one
+        if (allData && allData.length > 1) {
+          console.log(`Found ${allData.length} duplicate records, cleaning up...`);
+          const sortedData = allData.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+          const keepRecord = sortedData[0];
+          const deleteIds = sortedData.slice(1).map(record => record.id);
+          
+          console.log('Keeping record:', keepRecord.id);
+          console.log('Deleting records:', deleteIds);
+          
+          if (deleteIds.length > 0) {
+            const { error: deleteError } = await supabase
+              .from('assessment_responses')
+              .delete()
+              .in('id', deleteIds);
+            
+            if (deleteError) {
+              console.error('Error cleaning up duplicate records:', deleteError);
+            } else {
+              console.log('Successfully cleaned up duplicate records');
+              // Now load the kept record
+              setResponses(keepRecord.responses);
+              setIsCompleted(!!keepRecord.completed_at);
+              
+              const updatedProgress = defaultVideos.map(video => {
+                const videoKey = `video${video.id}` as keyof AssessmentResponse;
+                const videoResponses = keepRecord.responses[videoKey];
+                const isComplete = Object.values(videoResponses).every((v: string) => v.trim() !== '');
+                const hasContent = Object.values(videoResponses).some((v: string) => v.trim() !== '');
+                return {
+                  videoId: video.id,
+                  responses: videoResponses,
+                  isComplete,
+                  savedAt: hasContent ? keepRecord.updated_at : undefined
+                };
+              });
+              setVideoProgress(updatedProgress);
+            }
+          }
+        }
       }
     } catch (error) {
       // No existing response found, which is fine
+      console.log('Error loading existing response:', error);
+    } finally {
+      setDataLoading(false);
     }
-  }, [userProfile, responses]);
+  }, [userProfile, defaultVideos]);
 
-  // Call checkExistingResponse when userProfile changes
+  // Call checkExistingResponse when component mounts and userProfile is available
   useEffect(() => {
-    if (userProfile) {
+    if (userProfile && !loading) {
+      console.log('Component mounted, loading existing data...');
       checkExistingResponse();
     }
-  }, [userProfile, checkExistingResponse]);
+  }, [userProfile, loading, checkExistingResponse]);
+
+  // Note: We removed the automatic sync between videoProgress and responses
+  // to prevent conflicts. The responses state is now the single source of truth.
 
   const handleResponseChange = (videoKey: keyof AssessmentResponse, questionKey: string, value: string) => {
-    setResponses(prev => ({
-      ...prev,
+    // Update responses state
+    const updatedResponses = {
+      ...responses,
       [videoKey]: {
-        ...prev[videoKey],
+        ...responses[videoKey],
         [questionKey]: value
       }
+    };
+    setResponses(updatedResponses);
+
+    // Update video progress to match responses state
+    const videoId = parseInt(videoKey.replace('video', ''));
+    const videoResponses = updatedResponses[videoKey];
+    const isComplete = Object.values(videoResponses).every(v => v.trim() !== '');
+    
+    setVideoProgress(prev => prev.map(video => {
+      if (video.videoId === videoId) {
+        return {
+          ...video,
+          responses: videoResponses,
+          isComplete
+        };
+      }
+      return video;
     }));
   };
 
@@ -204,9 +360,178 @@ export default function MyInspirationAssessment() {
   };
 
   const canSubmit = () => {
-    return Object.values(responses).every(video => 
-      Object.values(video as Record<string, string>).every((v: string) => v.trim() !== '')
-    );
+    return videoProgress.every(video => video.isComplete);
+  };
+
+  const isVideoComplete = (videoIndex: number) => {
+    const video = videoProgress.find(v => v.videoId === videoIndex + 1);
+    return video?.isComplete || false;
+  };
+
+  const isVideoSaved = (videoIndex: number) => {
+    const video = videoProgress.find(v => v.videoId === videoIndex + 1);
+    // A video is considered saved if it has a savedAt timestamp AND has actual content
+    return !!(video?.savedAt && video.isComplete);
+  };
+
+  const getCurrentVideoCompletionStatus = () => {
+    const video = videoProgress.find(v => v.videoId === currentVideoIndex + 1);
+    const totalQuestions = 6;
+    const answeredQuestions = video ? Object.values(video.responses).filter((v: string) => v.trim() !== '').length : 0;
+    return { answered: answeredQuestions, total: totalQuestions, isComplete: answeredQuestions === totalQuestions };
+  };
+
+  const saveVideoProgress = async (videoIndex: number) => {
+    if (!userProfile) {
+      toast({
+        title: "Error",
+        description: "User profile not found. Please try logging in again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const video = videoProgress.find(v => v.videoId === videoIndex + 1);
+    if (!video || !video.isComplete) {
+      toast({
+        title: "Cannot Save Yet",
+        description: "Please complete all 6 questions for this video before saving.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Resolve student_id from students table; do not fallback to users.id
+    let studentId = userProfile.studentProfile?.id as string | undefined;
+    if (!studentId) {
+      const { data: studentRow } = await supabase
+        .from('students')
+        .select('id')
+        .eq('user_id', userProfile.id)
+        .maybeSingle();
+      studentId = studentRow?.id;
+    }
+
+    if (!studentId) {
+      toast({
+        title: "Error",
+        description: "Student profile not found. Please contact your teacher or support.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      console.log('Getting existing responses from database...');
+      console.log('Query parameters for existing data:', {
+        student_id: studentId,
+        assessment_type: 'inspiration',
+        assessment_title: 'My Inspiration'
+      });
+
+      // Get existing responses from database
+      const { data: existingData, error: existingError } = await supabase
+        .from('assessment_responses')
+        .select('responses')
+        .eq('student_id', studentId)
+        .eq('assessment_type', 'inspiration')
+        .eq('assessment_title', 'My Inspiration')
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      console.log('Existing data query result:', { existingData, existingError });
+
+      // Merge only the specific video's responses with existing data
+      const videoKey = `video${videoIndex + 1}` as keyof AssessmentResponse;
+      const existingResponses = existingData?.responses as AssessmentResponse || {
+        video1: { question1: '', question2: '', question3: '', question4: '', question5: '', question6: '' },
+        video2: { question1: '', question2: '', question3: '', question4: '', question5: '', question6: '' },
+        video3: { question1: '', question2: '', question3: '', question4: '', question5: '', question6: '' },
+        video4: { question1: '', question2: '', question3: '', question4: '', question5: '', question6: '' },
+        video5: { question1: '', question2: '', question3: '', question4: '', question5: '', question6: '' },
+        video6: { question1: '', question2: '', question3: '', question4: '', question5: '', question6: '' }
+      };
+
+      console.log('Existing responses from database:', existingResponses);
+
+      const updatedResponses = {
+        ...existingResponses,
+        [videoKey]: video.responses
+      };
+
+      console.log('Saving video progress for video', videoIndex + 1);
+      console.log('Video responses to save:', video.responses);
+      console.log('Updated responses to save:', updatedResponses);
+
+      // First try to update existing record
+      const { data: updateData, error: updateError } = await supabase
+        .from('assessment_responses')
+        .update({
+          responses: updatedResponses,
+          updated_at: new Date().toISOString()
+        })
+        .eq('student_id', studentId)
+        .eq('assessment_type', 'inspiration')
+        .eq('assessment_title', 'My Inspiration')
+        .select();
+
+      console.log('Update result:', { updateData, updateError });
+
+      let error = updateError;
+      
+      // If no rows were updated (no existing record), insert a new one
+      if (!updateError && (!updateData || updateData.length === 0)) {
+        console.log('No existing record found, inserting new one...');
+        const { error: insertError } = await supabase
+          .from('assessment_responses')
+          .insert({
+            student_id: studentId,
+            assessment_type: 'inspiration',
+            assessment_title: 'My Inspiration',
+            responses: updatedResponses,
+            completed_at: null
+          });
+        error = insertError;
+        console.log('Insert result:', { insertError });
+      }
+
+      if (error) {
+        console.error('Error saving to database:', error);
+        throw error;
+      }
+
+      console.log('Successfully saved to database');
+
+      // Update responses state with the merged data
+      setResponses(updatedResponses);
+
+      // Update video progress with saved timestamp and ensure responses are in sync
+      setVideoProgress(prev => prev.map(v => 
+        v.videoId === videoIndex + 1 
+          ? { 
+              ...v, 
+              responses: video.responses,
+              savedAt: new Date().toISOString() 
+            }
+          : v
+      ));
+
+      toast({
+        title: "Video Progress Saved! 💾",
+        description: `Your responses for Video ${videoIndex + 1} have been saved.`,
+      });
+    } catch (error) {
+      console.error('Error saving video progress:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save video progress. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const submitAssessment = async () => {
@@ -214,6 +539,15 @@ export default function MyInspirationAssessment() {
       toast({
         title: "Error",
         description: "User profile not found. Please try logging in again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!canSubmit()) {
+      toast({
+        title: "Cannot Submit Yet",
+        description: "Please complete all 6 videos before submitting the assessment.",
         variant: "destructive",
       });
       return;
@@ -291,12 +625,14 @@ export default function MyInspirationAssessment() {
     return responses[getCurrentVideoKey()];
   };
 
-  if (loading) {
+  if (loading || dataLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-lg text-gray-600">Loading your inspiration assessment...</p>
+          <p className="mt-4 text-lg text-gray-600">
+            {loading ? 'Loading your inspiration assessment...' : 'Loading your saved progress...'}
+          </p>
         </div>
       </div>
     );
@@ -374,7 +710,19 @@ export default function MyInspirationAssessment() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-800">Your Progress</h2>
-              <Badge variant="secondary">{Math.round(getProgressPercentage())}% Complete</Badge>
+              <div className="flex items-center gap-4">
+                <Badge variant="secondary">{Math.round(getProgressPercentage())}% Complete</Badge>
+                <div className="flex items-center gap-3 text-xs text-gray-500">
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span>{videoProgress.filter(v => v.savedAt && v.isComplete).length} saved</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                    <span>{videoProgress.filter(v => v.isComplete).length} complete</span>
+                  </div>
+                </div>
+              </div>
             </div>
             <Progress value={getProgressPercentage()} className="h-3" />
             <div className="flex justify-between text-sm text-gray-600 mt-2">
@@ -389,7 +737,7 @@ export default function MyInspirationAssessment() {
           <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
             <CardTitle className="text-xl text-blue-800">Video Navigation</CardTitle>
             <CardDescription className="text-blue-600">
-              Navigate between inspirational videos to complete your assessment
+              Click on any video to watch and answer questions - no specific order required!
             </CardDescription>
           </CardHeader>
           <CardContent className="p-6">
@@ -397,12 +745,18 @@ export default function MyInspirationAssessment() {
               {inspirationVideos.map((video, index) => (
                 <Button
                   key={video.id}
+                  onClick={() => setCurrentVideoIndex(index)}
                   variant={currentVideoIndex === index ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setCurrentVideoIndex(index)}
-                  className={currentVideoIndex === index ? "bg-blue-600" : ""}
+                  className={`${currentVideoIndex === index ? "bg-blue-600" : ""}`}
                 >
                   Video {index + 1}
+                  {isVideoComplete(index) && (
+                    <CheckCircle className="w-3 h-3 ml-1 text-green-500" />
+                  )}
+                  {isVideoSaved(index) && (
+                    <Save className="w-3 h-3 ml-1 text-blue-500" />
+                  )}
                 </Button>
               ))}
             </div>
@@ -463,96 +817,207 @@ export default function MyInspirationAssessment() {
 
             {/* Questions */}
             <div className="space-y-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Reflection Questions</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Reflection Questions</h3>
+                <div className="text-sm text-gray-600">
+                  {(() => {
+                    const status = getCurrentVideoCompletionStatus();
+                    return (
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        status.isComplete 
+                          ? 'bg-green-100 text-green-700' 
+                          : 'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        {status.answered}/{status.total} questions answered
+                      </span>
+                    );
+                  })()}
+                </div>
+              </div>
               
               {/* Question 1 */}
-              <div className="border-l-4 border-blue-400 pl-6">
+              <div className={`border-l-4 pl-6 ${getCurrentVideoResponses().question1.trim() ? 'border-blue-400' : 'border-red-400'}`}>
                 <label className="block text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
                   <Star className="w-5 h-5 text-blue-500" />
                   1. Which parts of this video/audio did you like most / find most inspirational?
+                  <span className="text-red-500 text-sm">*</span>
                 </label>
                 <Textarea
                   placeholder="Describe the specific parts that resonated with you and why they were inspirational..."
                   value={getCurrentVideoResponses().question1}
                   onChange={(e) => handleResponseChange(getCurrentVideoKey(), 'question1', e.target.value)}
                   rows={4}
-                  className="border-blue-200 focus:border-blue-400 text-base"
+                  className={`text-base ${getCurrentVideoResponses().question1.trim() 
+                    ? 'border-blue-200 focus:border-blue-400' 
+                    : 'border-red-300 focus:border-red-400 bg-red-50'
+                  }`}
+                  required
                 />
+                {!getCurrentVideoResponses().question1.trim() && (
+                  <p className="text-red-500 text-sm mt-1">This question is required</p>
+                )}
               </div>
 
               {/* Question 2 */}
-              <div className="border-l-4 border-green-400 pl-6">
+              <div className={`border-l-4 pl-6 ${getCurrentVideoResponses().question2.trim() ? 'border-green-400' : 'border-red-400'}`}>
                 <label className="block text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
                   <Lightbulb className="w-5 h-5 text-green-500" />
                   2. What can you learn from this video/audio?
+                  <span className="text-red-500 text-sm">*</span>
                 </label>
                 <Textarea
                   placeholder="Share the key lessons and insights you gained from watching this video..."
                   value={getCurrentVideoResponses().question2}
                   onChange={(e) => handleResponseChange(getCurrentVideoKey(), 'question2', e.target.value)}
                   rows={4}
-                  className="border-green-200 focus:border-green-400 text-base"
+                  className={`text-base ${getCurrentVideoResponses().question2.trim() 
+                    ? 'border-green-200 focus:border-green-400' 
+                    : 'border-red-300 focus:border-red-400 bg-red-50'
+                  }`}
+                  required
                 />
+                {!getCurrentVideoResponses().question2.trim() && (
+                  <p className="text-red-500 text-sm mt-1">This question is required</p>
+                )}
               </div>
 
               {/* Question 3 */}
-              <div className="border-l-4 border-purple-400 pl-6">
+              <div className={`border-l-4 pl-6 ${getCurrentVideoResponses().question3.trim() ? 'border-purple-400' : 'border-red-400'}`}>
                 <label className="block text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
                   <Heart className="w-5 h-5 text-purple-500" />
                   3. Which parts of this video/audio would you want to adopt in your personal life?
+                  <span className="text-red-500 text-sm">*</span>
                 </label>
                 <Textarea
                   placeholder="Identify specific behaviors, attitudes, or approaches you'd like to incorporate into your life..."
                   value={getCurrentVideoResponses().question3}
                   onChange={(e) => handleResponseChange(getCurrentVideoKey(), 'question3', e.target.value)}
                   rows={4}
-                  className="border-purple-200 focus:border-purple-400 text-base"
+                  className={`text-base ${getCurrentVideoResponses().question3.trim() 
+                    ? 'border-purple-200 focus:border-purple-400' 
+                    : 'border-red-300 focus:border-red-400 bg-red-50'
+                  }`}
+                  required
                 />
+                {!getCurrentVideoResponses().question3.trim() && (
+                  <p className="text-red-500 text-sm mt-1">This question is required</p>
+                )}
               </div>
 
               {/* Question 4 */}
-              <div className="border-l-4 border-orange-400 pl-6">
+              <div className={`border-l-4 pl-6 ${getCurrentVideoResponses().question4.trim() ? 'border-orange-400' : 'border-red-400'}`}>
                 <label className="block text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
                   <Target className="w-5 h-5 text-orange-500" />
                   4. What changes will the contents of this video/audio bring in your life?
+                  <span className="text-red-500 text-sm">*</span>
                 </label>
                 <Textarea
                   placeholder="Reflect on how this video might change your perspective, goals, or actions..."
                   value={getCurrentVideoResponses().question4}
                   onChange={(e) => handleResponseChange(getCurrentVideoKey(), 'question4', e.target.value)}
                   rows={4}
-                  className="border-orange-200 focus:border-orange-400 text-base"
+                  className={`text-base ${getCurrentVideoResponses().question4.trim() 
+                    ? 'border-orange-200 focus:border-orange-400' 
+                    : 'border-red-300 focus:border-red-400 bg-red-50'
+                  }`}
+                  required
                 />
+                {!getCurrentVideoResponses().question4.trim() && (
+                  <p className="text-red-500 text-sm mt-1">This question is required</p>
+                )}
               </div>
 
               {/* Question 5 */}
-              <div className="border-l-4 border-pink-400 pl-6">
+              <div className={`border-l-4 pl-6 ${getCurrentVideoResponses().question5.trim() ? 'border-pink-400' : 'border-red-400'}`}>
                 <label className="block text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
                   <TrendingUp className="w-5 h-5 text-pink-500" />
                   5. Which qualities of the characters in this video/audio do you identify in yourself?
+                  <span className="text-red-500 text-sm">*</span>
                 </label>
                 <Textarea
                   placeholder="Think about the traits, strengths, or characteristics you share with the people in the video..."
                   value={getCurrentVideoResponses().question5}
                   onChange={(e) => handleResponseChange(getCurrentVideoKey(), 'question5', e.target.value)}
                   rows={4}
-                  className="border-pink-200 focus:border-pink-400 text-base"
+                  className={`text-base ${getCurrentVideoResponses().question5.trim() 
+                    ? 'border-pink-200 focus:border-pink-400' 
+                    : 'border-red-300 focus:border-red-400 bg-red-50'
+                  }`}
+                  required
                 />
+                {!getCurrentVideoResponses().question5.trim() && (
+                  <p className="text-red-500 text-sm mt-1">This question is required</p>
+                )}
               </div>
 
               {/* Question 6 */}
-              <div className="border-l-4 border-indigo-400 pl-6">
+              <div className={`border-l-4 pl-6 ${getCurrentVideoResponses().question6.trim() ? 'border-indigo-400' : 'border-red-400'}`}>
                 <label className="block text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
                   <Play className="w-5 h-5 text-indigo-500" />
                   6. What would your reaction be if you were in the situation depicted in the video/audio?
+                  <span className="text-red-500 text-sm">*</span>
                 </label>
                 <Textarea
                   placeholder="Imagine yourself in the same circumstances and describe how you would respond..."
                   value={getCurrentVideoResponses().question6}
                   onChange={(e) => handleResponseChange(getCurrentVideoKey(), 'question6', e.target.value)}
                   rows={4}
-                  className="border-indigo-200 focus:border-indigo-400 text-base"
+                  className={`text-base ${getCurrentVideoResponses().question6.trim() 
+                    ? 'border-indigo-200 focus:border-indigo-400' 
+                    : 'border-red-300 focus:border-red-400 bg-red-50'
+                  }`}
+                  required
                 />
+                {!getCurrentVideoResponses().question6.trim() && (
+                  <p className="text-red-500 text-sm mt-1">This question is required</p>
+                )}
+              </div>
+            </div>
+
+            {/* Save Progress Button for Current Video */}
+            <div className="mt-8 pt-6 border-t border-gray-200">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  {isVideoSaved(currentVideoIndex) ? (
+                    <div className="flex items-center gap-2 text-green-600">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span>Video {currentVideoIndex + 1} saved</span>
+                    </div>
+                  ) : isVideoComplete(currentVideoIndex) ? (
+                    <div className="flex items-center gap-2 text-yellow-600">
+                      <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                      <span>Video {currentVideoIndex + 1} complete - Ready to save</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-gray-500">
+                      <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+                      <span>Complete all questions to save this video</span>
+                    </div>
+                  )}
+                </div>
+                <Button
+                  onClick={() => saveVideoProgress(currentVideoIndex)}
+                  disabled={!isVideoComplete(currentVideoIndex) || saving || isVideoSaved(currentVideoIndex)}
+                  variant="outline"
+                  className="border-green-200 text-green-700 hover:bg-green-50"
+                >
+                  {saving ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600 mr-2"></div>
+                      Saving...
+                    </>
+                  ) : isVideoSaved(currentVideoIndex) ? (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      Video Saved
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      Save Video Progress
+                    </>
+                  )}
+                </Button>
               </div>
             </div>
           </CardContent>
@@ -594,10 +1059,10 @@ export default function MyInspirationAssessment() {
                 {inspirationVideos.map((video, index) => (
                   <div 
                     key={video.id}
-                    className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                    className={`p-4 rounded-lg border-2 transition-all duration-200 ${
                       currentVideoIndex === index 
                         ? 'border-blue-500 bg-blue-50' 
-                        : 'border-gray-200 hover:border-gray-300'
+                        : 'border-gray-200 hover:border-gray-300 cursor-pointer'
                     }`}
                     onClick={() => setCurrentVideoIndex(index)}
                   >
@@ -605,12 +1070,30 @@ export default function MyInspirationAssessment() {
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
                         currentVideoIndex === index 
                           ? 'bg-blue-500 text-white' 
+                          : isVideoSaved(index)
+                          ? 'bg-green-500 text-white'
+                          : isVideoComplete(index)
+                          ? 'bg-yellow-500 text-white'
                           : 'bg-gray-200 text-gray-600'
                       }`}>
                         {index + 1}
                       </div>
                       <div className="flex-1">
-                        <h4 className="font-medium text-gray-800">Video {index + 1}</h4>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium text-gray-800">Video {index + 1}</h4>
+                          {isVideoSaved(index) && (
+                            <div className="flex items-center gap-1 text-green-600 text-xs">
+                              <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                              <span>Saved</span>
+                            </div>
+                          )}
+                          {!isVideoSaved(index) && isVideoComplete(index) && (
+                            <div className="flex items-center gap-1 text-yellow-600 text-xs">
+                              <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full"></div>
+                              <span>Complete</span>
+                            </div>
+                          )}
+                        </div>
                         <p className="text-sm text-gray-500 truncate">{video.url}</p>
                       </div>
                       <Video className="w-5 h-5 text-gray-400" />
