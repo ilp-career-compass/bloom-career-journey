@@ -146,14 +146,14 @@ export default function StudentDashboard() {
   // Assessment progress states
   const [assessmentProgress, setAssessmentProgress] = useState<Record<string, any> | null>(null);
   const [dreamsProgress, setDreamsProgress] = useState<Record<string, any> | null>(null);
-  const [schoolLearningProgress, setSchoolLearningProgress] = useState<Record<string, any> | null>(null);
+  const [stateLearningProgress, setSchoolLearningProgress] = useState<Record<string, any> | null>(null);
   const [roleModelsProgress, setRoleModelsProgress] = useState<Record<string, any> | null>(null);
   const [hobbiesProgress, setHobbiesProgress] = useState<Record<string, any> | null>(null);
 
   // Assessment completion status
   const [inspirationCompleted, setInspirationCompleted] = useState(false);
   const [dreamsCompleted, setDreamsCompleted] = useState(false);
-  const [schoolLearningCompleted, setSchoolLearningCompleted] = useState(false);
+  const [stateLearningCompleted, setSchoolLearningCompleted] = useState(false);
   const [roleModelsCompleted, setRoleModelsCompleted] = useState(false);
   const [hobbiesCompleted, setHobbiesCompleted] = useState(false);
 
@@ -275,7 +275,7 @@ export default function StudentDashboard() {
         .from('assessment_responses')
         .select('*')
         .eq('student_id', studentId)
-        .eq('assessment_type', 'school_learning')
+        .eq('assessment_type', 'state_learning')
         .eq('assessment_title', 'My School, My Learning and I')
         .order('completed_at', { ascending: false })
         .limit(1)
@@ -348,15 +348,15 @@ export default function StudentDashboard() {
   useEffect(() => {
     const insp = !!assessmentProgress?.completed_at;
     const dreams = !!dreamsProgress?.completed_at;
-    const school = !!schoolLearningProgress?.completed_at;
+    const state = !!stateLearningProgress?.completed_at;
     const roles = !!roleModelsProgress?.completed_at;
     const hobbies = !!hobbiesProgress?.completed_at;
     setInspirationCompleted(insp);
     setDreamsCompleted(dreams);
-    setSchoolLearningCompleted(school);
+    setSchoolLearningCompleted(state);
     setRoleModelsCompleted(roles);
     setHobbiesCompleted(hobbies);
-  }, [assessmentProgress, dreamsProgress, schoolLearningProgress, roleModelsProgress, hobbiesProgress]);
+  }, [assessmentProgress, dreamsProgress, stateLearningProgress, roleModelsProgress, hobbiesProgress]);
 
   const fetchData = async () => {
     if (!userProfile?.id) return;
@@ -367,7 +367,7 @@ export default function StudentDashboard() {
         .from('students')
         .select(`
           *,
-          classes:class_id(name, schools:school_id(name)),
+          classes:class_id(name, states:state_id(name)),
           teachers:teacher_id(users:user_id(full_name))
         `)
         .eq('user_id', userProfile.id)
@@ -388,12 +388,12 @@ export default function StudentDashboard() {
         return true; // Always unlocked
       case 'dreams':
         return inspirationCompleted;
-      case 'school_learning':
+      case 'state_learning':
         return inspirationCompleted && dreamsCompleted;
       case 'role_models':
-        return inspirationCompleted && dreamsCompleted && schoolLearningCompleted;
+        return inspirationCompleted && dreamsCompleted && stateLearningCompleted;
       case 'hobbies':
-        return inspirationCompleted && dreamsCompleted && schoolLearningCompleted && roleModelsCompleted;
+        return inspirationCompleted && dreamsCompleted && stateLearningCompleted && roleModelsCompleted;
       default:
         return false;
     }
@@ -441,8 +441,8 @@ export default function StudentDashboard() {
         return !!assessmentProgress?.completed_at;
       case 'dreams':
         return !!dreamsProgress?.completed_at;
-      case 'school_learning':
-        return !!schoolLearningProgress?.completed_at;
+      case 'state_learning':
+        return !!stateLearningProgress?.completed_at;
       case 'role_models':
         return !!roleModelsProgress?.completed_at;
       case 'hobbies':
@@ -459,7 +459,7 @@ export default function StudentDashboard() {
         return Play;
       case 'dreams':
         return Star;
-      case 'school_learning':
+      case 'state_learning':
         return BookOpen;
       case 'role_models':
         return Heart;
@@ -484,8 +484,8 @@ export default function StudentDashboard() {
       navigate('/assessment/inspiration');
     } else if (assessmentType === 'dreams') {
       navigate('/assessment/dreams');
-    } else if (assessmentType === 'school_learning') {
-      navigate('/assessment/school-learning');
+    } else if (assessmentType === 'state_learning') {
+      navigate('/assessment/state-learning');
     } else if (assessmentType === 'role_models') {
       navigate('/assessment/role-models');
     } else if (assessmentType === 'hobbies') {
@@ -496,7 +496,7 @@ export default function StudentDashboard() {
   // Calculate overall progress
   const getOverallProgress = () => {
     const totalAssessments = 5;
-    const completedAssessments = [inspirationCompleted, dreamsCompleted, schoolLearningCompleted, roleModelsCompleted, hobbiesCompleted]
+    const completedAssessments = [inspirationCompleted, dreamsCompleted, stateLearningCompleted, roleModelsCompleted, hobbiesCompleted]
       .filter(Boolean).length;
     return (completedAssessments / totalAssessments) * 100;
   };
@@ -519,11 +519,24 @@ export default function StudentDashboard() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center space-x-2 hover:bg-gray-100">
-                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
-                    <span className="text-white font-semibold text-sm">
-                      {userProfile?.full_name?.charAt(0)?.toUpperCase() || 'S'}
-                    </span>
-                  </div>
+                  {userProfile?.profile_picture_url ? (
+                    <img 
+                      src={userProfile.profile_picture_url} 
+                      alt={userProfile?.full_name || 'Student'}
+                      className="w-12 h-12 rounded-full object-cover"
+                      onError={(e) => {
+                        console.log('❌ Image failed to load:', userProfile.profile_picture_url);
+                        e.currentTarget.style.display = 'none';
+                      }}
+                      onLoad={() => console.log('✅ Image loaded successfully:', userProfile.profile_picture_url)}
+                    />
+                  ) : (
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
+                      <span className="text-white font-semibold text-lg">
+                        {userProfile?.full_name?.charAt(0)?.toUpperCase() || 'S'}
+                      </span>
+                    </div>
+                  )}
                   <span className="text-gray-700 font-medium">{userProfile?.full_name || 'Student'}</span>
                   <ChevronDown className="w-4 h-4 text-gray-500" />
                 </Button>
@@ -630,26 +643,26 @@ export default function StudentDashboard() {
 
           {/* 3. My School & Learning - Unlocked after Dreams */}
           <Card
-            className={getAssessmentStatus('school_learning').className}
-            onClick={() => startAssessment('school_learning')}
+            className={getAssessmentStatus('state_learning').className}
+            onClick={() => startAssessment('state_learning')}
           >
             <CardContent className="p-6 text-center">
-              {React.createElement(getAssessmentStatus('school_learning').icon, {
-                className: `w-12 h-12 ${getAssessmentStatus('school_learning').iconColor} mx-auto mb-3`
+              {React.createElement(getAssessmentStatus('state_learning').icon, {
+                className: `w-12 h-12 ${getAssessmentStatus('state_learning').iconColor} mx-auto mb-3`
               })}
-              <h3 className={`font-semibold ${getAssessmentStatus('school_learning').textColor} mb-2`}>
+              <h3 className={`font-semibold ${getAssessmentStatus('state_learning').textColor} mb-2`}>
                 3. My School & Learning
               </h3>
-              <p className={`text-sm ${getAssessmentStatus('school_learning').descriptionColor} mb-2`}>
+              <p className={`text-sm ${getAssessmentStatus('state_learning').descriptionColor} mb-2`}>
                 Reflect on your learning journey
               </p>
-              {getCompletionStatus('school_learning') && (
+              {getCompletionStatus('state_learning') && (
                 <Badge variant="default" className="mt-2 bg-green-600">Completed ✓</Badge>
               )}
-              {!getCompletionStatus('school_learning') && isAssessmentUnlocked('school_learning') && (
+              {!getCompletionStatus('state_learning') && isAssessmentUnlocked('state_learning') && (
                 <Badge variant="secondary" className="mt-2">Available</Badge>
               )}
-              {!isAssessmentUnlocked('school_learning') && (
+              {!isAssessmentUnlocked('state_learning') && (
                 <Badge variant="outline" className="mt-2">Locked 🔒</Badge>
               )}
               </CardContent>
@@ -734,14 +747,14 @@ export default function StudentDashboard() {
               </div>
               <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
                 <span className="font-medium text-purple-800">3. My School & Learning</span>
-                <Badge variant={schoolLearningCompleted ? "default" : (dreamsCompleted ? "secondary" : "outline")}>
-                  {schoolLearningCompleted ? "Completed ✓" : (dreamsCompleted ? "Available" : "Locked 🔒")}
+                <Badge variant={stateLearningCompleted ? "default" : (dreamsCompleted ? "secondary" : "outline")}>
+                  {stateLearningCompleted ? "Completed ✓" : (dreamsCompleted ? "Available" : "Locked 🔒")}
                 </Badge>
               </div>
               <div className="flex items-center justify-between p-3 bg-pink-50 rounded-lg">
                 <span className="font-medium text-pink-800">4. My Role Models</span>
-                <Badge variant={roleModelsCompleted ? "default" : (schoolLearningCompleted ? "secondary" : "outline")}>
-                  {roleModelsCompleted ? "Completed ✓" : (schoolLearningCompleted ? "Available" : "Locked 🔒")}
+                <Badge variant={roleModelsCompleted ? "default" : (stateLearningCompleted ? "secondary" : "outline")}>
+                  {roleModelsCompleted ? "Completed ✓" : (stateLearningCompleted ? "Available" : "Locked 🔒")}
                 </Badge>
                   </div>
               <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">

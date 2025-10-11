@@ -43,7 +43,7 @@ interface DreamAssessmentResponse {
     question14: string; // First step
     question15: string; // Willpower and enthusiasm
     question16: string; // Obstacles
-    question17: string; // Is school education enough
+    question17: string; // Is state education enough
   };
 }
 
@@ -549,7 +549,7 @@ export default function MyDreamsAssessment() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    17. Is school education enough to make your dreams come true? How?
+                    17. Is state education enough to make your dreams come true? How?
                   </label>
                   <Textarea
                     placeholder="Evaluate if formal education is sufficient or what else you need..."

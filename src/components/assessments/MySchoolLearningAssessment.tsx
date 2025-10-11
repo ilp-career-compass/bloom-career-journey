@@ -375,11 +375,11 @@ export default function MySchoolLearningAssessment() {
           </div>
         </div>
 
-        {/* Part 1: School Experience */}
+        {/* Part 1: State Experience */}
         {currentPart === 'part1' && (
           <Card className="border-0 shadow-lg">
             <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50">
-              <CardTitle className="text-xl text-green-800">Part 1: Your School Experience</CardTitle>
+              <CardTitle className="text-xl text-green-800">Part 1: Your State Experience</CardTitle>
               <CardDescription className="text-green-600">
                 Share your thoughts about coming to school and your preferences
               </CardDescription>

@@ -9,7 +9,7 @@ type Props = {
   onOpenChange: (v: boolean) => void;
   classes: Array<{ class_id: string; class_name: string }>; // for validation
   teacherId: string; // teachers.id (not users.id)
-  schoolId: string; // for user update linkage
+  stateId: string; // for user update linkage
   onImported?: () => void;
 };
 
@@ -25,7 +25,7 @@ function parseCSV(text: string): Array<Record<string, string>> {
   });
 }
 
-export default function ImportStudentsDialog({ open, onOpenChange, classes, teacherId, schoolId, onImported }: Props) {
+export default function ImportStudentsDialog({ open, onOpenChange, classes, teacherId, stateId, onImported }: Props) {
   const { userProfile } = useAuth();
   const [rows, setRows] = useState<Array<Record<string, string>>>([]);
   const [errors, setErrors] = useState<string[]>([]);
@@ -97,7 +97,7 @@ export default function ImportStudentsDialog({ open, onOpenChange, classes, teac
             email: isEmail ? r.contact : null,
             mobile: !isEmail ? r.contact : null,
             role: 'student',
-            school_id: schoolId,
+            state_id: stateId,
             password_hash: 'temporary123'
           })
           .select('id')

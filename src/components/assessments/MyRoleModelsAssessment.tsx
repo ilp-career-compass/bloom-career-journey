@@ -401,7 +401,7 @@ export default function MyRoleModelsAssessment() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        2. Is this person from your family/school/village/acquaintance?
+                        2. Is this person from your family/state/village/acquaintance?
                       </label>
                       <Input
                         placeholder="e.g., Family, School, Village, Acquaintance..."
@@ -479,7 +479,7 @@ export default function MyRoleModelsAssessment() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        2. Is this person from your family/school/village/acquaintance?
+                        2. Is this person from your family/state/village/acquaintance?
                       </label>
                       <Input
                         placeholder="e.g., Family, School, Village, Acquaintance..."
@@ -557,7 +557,7 @@ export default function MyRoleModelsAssessment() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        2. Is this person from your family/school/village/acquaintance?
+                        2. Is this person from your family/state/village/acquaintance?
                       </label>
                       <Input
                         placeholder="e.g., Family, School, Village, Acquaintance..."

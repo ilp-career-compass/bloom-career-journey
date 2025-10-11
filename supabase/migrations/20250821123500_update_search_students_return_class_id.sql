@@ -1,5 +1,8 @@
 -- Enhance search_students to also return current_class_id for preselecting in UI
 
+-- Drop previous signature to allow changing OUT parameters (Postgres limitation)
+DROP FUNCTION IF EXISTS public.search_students(uuid, text);
+
 CREATE OR REPLACE FUNCTION public.search_students(
   teacher_user_id uuid,
   query text

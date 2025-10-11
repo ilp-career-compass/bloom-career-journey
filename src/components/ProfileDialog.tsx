@@ -14,58 +14,68 @@ type Props = {
 };
 
 export default function ProfileDialog({ open, onOpenChange }: Props) {
-  const { userProfile } = useAuth();
+  const { userProfile, refreshUserProfile } = useAuth();
   const { toast } = useToast();
   const isTeacher = userProfile?.role === 'teacher';
 
   const [fullName, setFullName] = useState('');
   const [gender, setGender] = useState<'male' | 'female' | ''>('');
   const [goal, setGoal] = useState('');
+  const [school, setSchool] = useState('');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [password, setPassword] = useState('');
   const [saving, setSaving] = useState(false);
-  const [meta, setMeta] = useState<{ email?: string | null; mobile?: string | null; school?: string; className?: string; teacher?: string }>();
+  const [meta, setMeta] = useState<{ email?: string | null; mobile?: string | null; state?: string }>();
 
   useEffect(() => {
     if (!userProfile?.id) return;
+    console.log('🔄 ProfileDialog: Loading user profile data:', userProfile);
     setFullName(userProfile.full_name || '');
     setGender((userProfile as any).gender || '');
     setGoal((userProfile as any).career_goals || '');
-    // Load school/class/teacher labels and contact
+    setSchool((userProfile as any).school || '');
+    // Load state label and contact
     (async () => {
       try {
         const studentRes = await supabase
           .from('students')
-          .select('class_id, classes(name, schools(name)), teachers(id, user_id, users(full_name))')
+          .select('class_id, classes(name, states(state_name))')
           .eq('user_id', userProfile.id)
           .maybeSingle();
         const teacherRes = await supabase
           .from('teachers')
-          .select('school_id, schools(name)')
+          .select('state_id, class_id, states(state_name), classes(name)')
           .eq('user_id', userProfile.id)
           .maybeSingle();
-        let teacherName = (studentRes.data as any)?.teachers?.users?.full_name || '';
-        if (!teacherName) {
-          const teacherUserId = (studentRes.data as any)?.teachers?.user_id;
-          if (teacherUserId) {
-            const { data: tu } = await supabase.from('users').select('full_name').eq('id', teacherUserId).maybeSingle();
-            teacherName = tu?.full_name || '';
-          }
-        }
+        const userStateRes = await supabase
+          .from('users')
+          .select('state_id, states(state_name)')
+          .eq('id', userProfile.id)
+          .maybeSingle();
         setMeta({
           email: (userProfile as any).email || null,
           mobile: (userProfile as any).mobile || null,
-          school: studentRes.data?.classes?.schools?.name || teacherRes.data?.schools?.name || '',
-          className: studentRes.data?.classes?.name || '',
-          teacher: teacherName,
+          state:
+            studentRes.data?.classes?.states?.state_name ||
+            teacherRes.data?.states?.state_name ||
+            (userStateRes.data as any)?.states?.state_name ||
+            '',
         });
       } catch (e) {
         // swallow optional meta fetch errors
       }
     })();
-  }, [userProfile?.id]);
+  }, [userProfile?.id, userProfile?.full_name, userProfile?.gender, userProfile?.school, userProfile?.career_goals, userProfile?.profile_picture_url]);
 
   const contactLabel = useMemo(() => meta?.email || meta?.mobile || '', [meta]);
+
+  // Refresh profile data when dialog opens
+  useEffect(() => {
+    if (open && userProfile?.id) {
+      console.log('🔄 ProfileDialog opened - refreshing profile data');
+      refreshUserProfile();
+    }
+  }, [open, userProfile?.id]);
 
   const saveProfile = async () => {
     if (!userProfile?.id) return;
@@ -74,21 +84,46 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
       // avatar upload
       let avatarUrl = (userProfile as any).profile_picture_url || null;
       if (avatarFile) {
-        const path = `${userProfile.id}/${Date.now()}_${avatarFile.name}`;
-        const { error: upErr } = await supabase.storage.from('avatars').upload(path, avatarFile, { upsert: true });
-        if (upErr) throw upErr;
-        const { data } = supabase.storage.from('avatars').getPublicUrl(path);
-        avatarUrl = data.publicUrl;
+        try {
+          const path = `${userProfile.id}/${Date.now()}_${avatarFile.name}`;
+          const { error: upErr } = await supabase.storage.from('avatars').upload(path, avatarFile, { upsert: true });
+          if (upErr) {
+            console.error('Avatar upload error:', upErr);
+            if (upErr.message?.includes('Bucket not found')) {
+              throw new Error('Storage bucket not configured. Please contact support to set up file storage.');
+            }
+            throw upErr;
+          }
+          const { data } = supabase.storage.from('avatars').getPublicUrl(path);
+          avatarUrl = data.publicUrl;
+        } catch (uploadError) {
+          console.error('Avatar upload failed:', uploadError);
+          throw new Error(`Failed to upload profile picture: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`);
+        }
       }
       // update users row
-      const { error } = await supabase
+      const updateData = { 
+        full_name: fullName, 
+        gender: gender || null,
+        school: school || null,
+        profile_picture_url: avatarUrl,
+        career_goals: isTeacher ? (userProfile as any).career_goals || null : goal || null
+      };
+      
+      console.log('🔄 Updating user profile with data:', updateData);
+      
+      const { data: updateResult, error } = await supabase
         .from('users')
-        .update({ 
-          full_name: fullName, 
-          career_goals: isTeacher ? (userProfile as any).career_goals || null : goal || null
-        })
-        .eq('id', userProfile.id);
-      if (error) throw error;
+        .update(updateData)
+        .eq('id', userProfile.id)
+        .select();
+        
+      if (error) {
+        console.error('❌ Database update error:', error);
+        throw error;
+      }
+      
+      console.log('✅ Database update successful:', updateResult);
       // password change
       if (password) {
         if (!isTeacher) {
@@ -133,6 +168,16 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
         description: "Your profile has been updated successfully.",
       });
       
+      // Small delay to ensure database update is complete
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Refresh user profile to show updated picture
+      console.log('🔄 Refreshing user profile after update...');
+      await refreshUserProfile();
+      
+      // Force re-render of profile dialog with fresh data
+      console.log('🔄 Profile dialog will re-render with fresh data');
+      
       onOpenChange(false);
     } catch (err: any) {
       console.error('Profile save error:', err);
@@ -162,36 +207,30 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
             <Label>Phone / Email</Label>
             <Input value={contactLabel} disabled />
           </div>
-          {!isTeacher && (
-            <div>
-              <Label>Gender</Label>
-              <Select value={gender} onValueChange={(v: any)=> setGender(v)}>
-                <SelectTrigger><SelectValue placeholder="Select gender" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="male">Male</SelectItem>
-                  <SelectItem value="female">Female</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-          {/* View-only labels */}
+          <div>
+            <Label>Gender</Label>
+            <Select value={gender} onValueChange={(v: any)=> setGender(v)}>
+              <SelectTrigger><SelectValue placeholder="Select gender" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="male">Male</SelectItem>
+                <SelectItem value="female">Female</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {/* State and School - Side by side */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <Label>School</Label>
-              <Input value={meta?.school || ''} disabled />
+              <Label>State</Label>
+              <Input value={meta?.state || ''} disabled />
             </div>
-            {!isTeacher && (
-              <>
-                <div>
-                  <Label>Class</Label>
-                  <Input value={meta?.className || ''} disabled />
-                </div>
-                <div>
-                  <Label>Teacher</Label>
-                  <Input value={meta?.teacher || ''} disabled />
-                </div>
-              </>
-            )}
+            <div>
+              <Label>School</Label>
+              <Input 
+                value={school} 
+                onChange={(e) => setSchool(e.target.value)} 
+                placeholder="Enter your school name"
+              />
+            </div>
           </div>
           {!isTeacher && (
             <div>
@@ -207,6 +246,7 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
             <Label>Change Password</Label>
             <Input type="password" value={password} onChange={(e)=> setPassword(e.target.value)} placeholder="New password" />
           </div>
+          
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={()=> onOpenChange(false)}>Close</Button>
             <Button className="bg-green-600 hover:bg-green-700" onClick={saveProfile} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>

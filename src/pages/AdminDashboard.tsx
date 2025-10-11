@@ -42,7 +42,7 @@ interface Teacher {
     full_name: string;
     mobile: string;
   };
-  schools: {
+  states: {
     name: string;
   };
   classes?: {
@@ -58,7 +58,7 @@ interface Student {
   };
   classes: {
     name: string;
-    schools: {
+    states: {
       name: string;
     };
   };
@@ -74,7 +74,7 @@ export default function AdminDashboard() {
   const { toast } = useToast();
   
   const [organizations, setOrganizations] = useState<Organization[]>([]);
-  const [schools, setSchools] = useState<School[]>([]);
+  const [states, setSchools] = useState<School[]>([]);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
@@ -98,13 +98,13 @@ export default function AdminDashboard() {
 
       if (orgsError) throw orgsError;
 
-      // Fetch schools
-      const { data: schoolsData, error: schoolsError } = await supabase
-        .from('schools')
+      // Fetch states
+      const { data: statesData, error: statesError } = await supabase
+        .from('states')
         .select('*, orgs:org_id(name)')
         .order('created_at', { ascending: false });
 
-      if (schoolsError) throw schoolsError;
+      if (statesError) throw statesError;
 
       // Fetch teachers
       const { data: teachersData, error: teachersError } = await supabase
@@ -112,7 +112,7 @@ export default function AdminDashboard() {
         .select(`
           *,
           users:user_id(full_name, mobile),
-          schools:school_id(name),
+          states:state_id(name),
           classes:class_id(name)
         `)
         .order('created_at', { ascending: false });
@@ -125,7 +125,7 @@ export default function AdminDashboard() {
         .select(`
           *,
           users:user_id(full_name, mobile),
-          classes:class_id(name, schools:school_id(name)),
+          classes:class_id(name, states:state_id(name)),
           teachers:teacher_id(users:user_id(full_name))
         `)
         .order('created_at', { ascending: false });
@@ -133,7 +133,7 @@ export default function AdminDashboard() {
       if (studentsError) throw studentsError;
 
       setOrganizations(orgsData || []);
-      setSchools(schoolsData || []);
+      setSchools(statesData || []);
       setTeachers(teachersData || []);
       setStudents(studentsData || []);
     } catch (error) {
@@ -180,7 +180,7 @@ export default function AdminDashboard() {
 
     try {
       const { error } = await supabase
-        .from('schools')
+        .from('states')
         .insert({ 
           name: newSchoolName.trim(),
           org_id: selectedOrgForSchool
@@ -197,17 +197,17 @@ export default function AdminDashboard() {
       setSelectedOrgForSchool('');
       fetchData();
     } catch (error) {
-      console.error('Error creating school:', error);
+      console.error('Error creating state:', error);
       toast({
         title: "Error",
-        description: "Failed to create school",
+        description: "Failed to create state",
         variant: "destructive",
       });
     }
   };
 
   const deleteOrganization = async (id: string) => {
-    if (!confirm('Are you sure? This will delete all associated schools and data.')) return;
+    if (!confirm('Are you sure? This will delete all associated states and data.')) return;
 
     try {
       const { error } = await supabase
@@ -238,7 +238,7 @@ export default function AdminDashboard() {
 
     try {
       const { error } = await supabase
-        .from('schools')
+        .from('states')
         .delete()
         .eq('id', id);
 
@@ -251,10 +251,10 @@ export default function AdminDashboard() {
 
       fetchData();
     } catch (error) {
-      console.error('Error deleting school:', error);
+      console.error('Error deleting state:', error);
       toast({
         title: "Error",
-        description: "Failed to delete school",
+        description: "Failed to delete state",
         variant: "destructive",
       });
     }
@@ -305,7 +305,7 @@ export default function AdminDashboard() {
               <School className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{schools.length}</div>
+              <div className="text-2xl font-bold">{states.length}</div>
             </CardContent>
           </Card>
           
@@ -333,7 +333,7 @@ export default function AdminDashboard() {
         <Tabs defaultValue="organizations" className="space-y-6">
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="organizations">Organizations</TabsTrigger>
-            <TabsTrigger value="schools">Schools</TabsTrigger>
+            <TabsTrigger value="states">Schools</TabsTrigger>
             <TabsTrigger value="teachers">Teachers</TabsTrigger>
             <TabsTrigger value="students">Students</TabsTrigger>
             <TabsTrigger value="reports">Reports</TabsTrigger>
@@ -393,11 +393,11 @@ export default function AdminDashboard() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="schools" className="space-y-4">
+          <TabsContent value="states" className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle>Create New School</CardTitle>
-                <CardDescription>Add a new school to an organization</CardDescription>
+                <CardDescription>Add a new state to an organization</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex gap-4">
@@ -443,13 +443,13 @@ export default function AdminDashboard() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {schools.map(school => (
-                      <TableRow key={school.id}>
-                        <TableCell>{school.name}</TableCell>
-                        <TableCell>{school.orgs?.name}</TableCell>
-                        <TableCell>{new Date(school.created_at).toLocaleDateString()}</TableCell>
+                    {states.map(state => (
+                      <TableRow key={state.id}>
+                        <TableCell>{state.name}</TableCell>
+                        <TableCell>{state.orgs?.name}</TableCell>
+                        <TableCell>{new Date(state.created_at).toLocaleDateString()}</TableCell>
                         <TableCell>
-                          <Button variant="destructive" size="sm" onClick={() => deleteSchool(school.id)}>
+                          <Button variant="destructive" size="sm" onClick={() => deleteSchool(state.id)}>
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </TableCell>
@@ -483,7 +483,7 @@ export default function AdminDashboard() {
                       <TableRow key={teacher.id}>
                         <TableCell>{teacher.users?.full_name}</TableCell>
                         <TableCell>{teacher.users?.mobile}</TableCell>
-                        <TableCell>{teacher.schools?.name}</TableCell>
+                        <TableCell>{teacher.states?.name}</TableCell>
                         <TableCell>{teacher.classes?.name || 'Unassigned'}</TableCell>
                         <TableCell>
                           <Badge variant="secondary">Active</Badge>
@@ -519,7 +519,7 @@ export default function AdminDashboard() {
                       <TableRow key={student.id}>
                         <TableCell>{student.users?.full_name}</TableCell>
                         <TableCell>{student.users?.mobile}</TableCell>
-                        <TableCell>{student.classes?.schools?.name}</TableCell>
+                        <TableCell>{student.classes?.states?.name}</TableCell>
                         <TableCell>{student.classes?.name}</TableCell>
                         <TableCell>{student.teachers?.users?.full_name}</TableCell>
                         <TableCell>

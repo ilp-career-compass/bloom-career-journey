@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { AudioRecorder } from '@/components/ui/AudioRecorder';
 
 interface InspirationVideo {
   id: number;
@@ -110,6 +111,7 @@ export default function MyInspirationAssessment() {
     video5: { question1: '', question2: '', question3: '', question4: '', question5: '', question6: '' },
     video6: { question1: '', question2: '', question3: '', question4: '', question5: '', question6: '' }
   });
+  const [audioResponses, setAudioResponses] = useState<{[key: string]: Blob | null}>({});
   const [loading, setLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -349,6 +351,21 @@ export default function MyInspirationAssessment() {
       }
       return video;
     }));
+  };
+
+  // Handle audio responses
+  const handleAudioResponse = (videoKey: keyof AssessmentResponse, questionKey: string, audioBlob: Blob, transcription?: string) => {
+    // Store the audio blob
+    const audioKey = `${videoKey}_${questionKey}`;
+    setAudioResponses(prev => ({
+      ...prev,
+      [audioKey]: audioBlob
+    }));
+
+    // If there's a transcription, also update the text response
+    if (transcription) {
+      handleResponseChange(videoKey, questionKey, transcription);
+    }
   };
 
   const getProgressPercentage = () => {
@@ -835,13 +852,63 @@ export default function MyInspirationAssessment() {
                 </div>
               </div>
               
+              {/* Recording Instructions */}
+              <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      <span className="text-blue-600 text-lg">🎙️</span>
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-blue-800 mb-2">Audio Recording Instructions</h3>
+                    <p className="text-sm text-blue-700 mb-2">
+                      <strong>You may either type or record your answer.</strong> If recording, speak clearly for up to 2 minutes. 
+                      Recording will start when you click the 🎙️ Record button. Your answer will be saved automatically.
+                    </p>
+                    <div className="flex flex-wrap gap-2 text-xs text-blue-600">
+                      <span className="flex items-center gap-1">
+                        <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                        Speak clearly in your own words
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                        You have 2 minutes per question
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                        Recording is saved automatically
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Question 1 */}
               <div className={`border-l-4 pl-6 ${getCurrentVideoResponses().question1.trim() ? 'border-blue-400' : 'border-red-400'}`}>
-                <label className="block text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                  <Star className="w-5 h-5 text-blue-500" />
-                  1. Which parts of this video/audio did you like most / find most inspirational?
-                  <span className="text-red-500 text-sm">*</span>
-                </label>
+                <div className="flex items-start justify-between mb-3">
+                  <label className="block text-lg font-semibold text-gray-800 flex items-center gap-2">
+                    <Star className="w-5 h-5 text-blue-500" />
+                    1. Which parts of this video/audio did you like most / find most inspirational?
+                    <span className="text-red-500 text-sm">*</span>
+                  </label>
+                  <div className="ml-4 flex-shrink-0">
+                    <AudioRecorder
+                      key={`${getCurrentVideoKey()}_question1`}
+                      questionId={`${getCurrentVideoKey()}_question1`}
+                      onRecordingComplete={(audioBlob, transcription) => {
+                        handleAudioResponse(getCurrentVideoKey(), 'question1', audioBlob, transcription);
+                      }}
+                      maxDuration={120000} // 2 minutes
+                      language="en-IN"
+                      studentId={userProfile?.id || 'test-student-123'}
+                      assessmentId="inspiration-assessment"
+                      assessmentType="inspiration"
+                      assessmentTitle="My Inspiration Assessment"
+                      compact={true}
+                    />
+                  </div>
+                </div>
                 <Textarea
                   placeholder="Describe the specific parts that resonated with you and why they were inspirational..."
                   value={getCurrentVideoResponses().question1}
@@ -860,11 +927,29 @@ export default function MyInspirationAssessment() {
 
               {/* Question 2 */}
               <div className={`border-l-4 pl-6 ${getCurrentVideoResponses().question2.trim() ? 'border-green-400' : 'border-red-400'}`}>
-                <label className="block text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                  <Lightbulb className="w-5 h-5 text-green-500" />
-                  2. What can you learn from this video/audio?
-                  <span className="text-red-500 text-sm">*</span>
-                </label>
+                <div className="flex items-start justify-between mb-3">
+                  <label className="block text-lg font-semibold text-gray-800 flex items-center gap-2">
+                    <Lightbulb className="w-5 h-5 text-green-500" />
+                    2. What can you learn from this video/audio?
+                    <span className="text-red-500 text-sm">*</span>
+                  </label>
+                  <div className="ml-4 flex-shrink-0">
+                    <AudioRecorder
+                      key={`${getCurrentVideoKey()}_question2`}
+                      questionId={`${getCurrentVideoKey()}_question2`}
+                      onRecordingComplete={(audioBlob, transcription) => {
+                        handleAudioResponse(getCurrentVideoKey(), 'question2', audioBlob, transcription);
+                      }}
+                      maxDuration={120000} // 2 minutes
+                      language="en-IN"
+                      studentId={userProfile?.id || 'test-student-123'}
+                      assessmentId="inspiration-assessment"
+                      assessmentType="inspiration"
+                      assessmentTitle="My Inspiration Assessment"
+                      compact={true}
+                    />
+                  </div>
+                </div>
                 <Textarea
                   placeholder="Share the key lessons and insights you gained from watching this video..."
                   value={getCurrentVideoResponses().question2}
@@ -883,11 +968,29 @@ export default function MyInspirationAssessment() {
 
               {/* Question 3 */}
               <div className={`border-l-4 pl-6 ${getCurrentVideoResponses().question3.trim() ? 'border-purple-400' : 'border-red-400'}`}>
-                <label className="block text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                  <Heart className="w-5 h-5 text-purple-500" />
-                  3. Which parts of this video/audio would you want to adopt in your personal life?
-                  <span className="text-red-500 text-sm">*</span>
-                </label>
+                <div className="flex items-start justify-between mb-3">
+                  <label className="block text-lg font-semibold text-gray-800 flex items-center gap-2">
+                    <Heart className="w-5 h-5 text-purple-500" />
+                    3. Which parts of this video/audio would you want to adopt in your personal life?
+                    <span className="text-red-500 text-sm">*</span>
+                  </label>
+                  <div className="ml-4 flex-shrink-0">
+                    <AudioRecorder
+                      key={`${getCurrentVideoKey()}_question3`}
+                      questionId={`${getCurrentVideoKey()}_question3`}
+                      onRecordingComplete={(audioBlob, transcription) => {
+                        handleAudioResponse(getCurrentVideoKey(), 'question3', audioBlob, transcription);
+                      }}
+                      maxDuration={120000} // 2 minutes
+                      language="en-IN"
+                      studentId={userProfile?.id || 'test-student-123'}
+                      assessmentId="inspiration-assessment"
+                      assessmentType="inspiration"
+                      assessmentTitle="My Inspiration Assessment"
+                      compact={true}
+                    />
+                  </div>
+                </div>
                 <Textarea
                   placeholder="Identify specific behaviors, attitudes, or approaches you'd like to incorporate into your life..."
                   value={getCurrentVideoResponses().question3}
@@ -906,11 +1009,29 @@ export default function MyInspirationAssessment() {
 
               {/* Question 4 */}
               <div className={`border-l-4 pl-6 ${getCurrentVideoResponses().question4.trim() ? 'border-orange-400' : 'border-red-400'}`}>
-                <label className="block text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                  <Target className="w-5 h-5 text-orange-500" />
-                  4. What changes will the contents of this video/audio bring in your life?
-                  <span className="text-red-500 text-sm">*</span>
-                </label>
+                <div className="flex items-start justify-between mb-3">
+                  <label className="block text-lg font-semibold text-gray-800 flex items-center gap-2">
+                    <Target className="w-5 h-5 text-orange-500" />
+                    4. What changes will the contents of this video/audio bring in your life?
+                    <span className="text-red-500 text-sm">*</span>
+                  </label>
+                  <div className="ml-4 flex-shrink-0">
+                    <AudioRecorder
+                      key={`${getCurrentVideoKey()}_question4`}
+                      questionId={`${getCurrentVideoKey()}_question4`}
+                      onRecordingComplete={(audioBlob, transcription) => {
+                        handleAudioResponse(getCurrentVideoKey(), 'question4', audioBlob, transcription);
+                      }}
+                      maxDuration={120000} // 2 minutes
+                      language="en-IN"
+                      studentId={userProfile?.id || 'test-student-123'}
+                      assessmentId="inspiration-assessment"
+                      assessmentType="inspiration"
+                      assessmentTitle="My Inspiration Assessment"
+                      compact={true}
+                    />
+                  </div>
+                </div>
                 <Textarea
                   placeholder="Reflect on how this video might change your perspective, goals, or actions..."
                   value={getCurrentVideoResponses().question4}
@@ -929,11 +1050,29 @@ export default function MyInspirationAssessment() {
 
               {/* Question 5 */}
               <div className={`border-l-4 pl-6 ${getCurrentVideoResponses().question5.trim() ? 'border-pink-400' : 'border-red-400'}`}>
-                <label className="block text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-pink-500" />
-                  5. Which qualities of the characters in this video/audio do you identify in yourself?
-                  <span className="text-red-500 text-sm">*</span>
-                </label>
+                <div className="flex items-start justify-between mb-3">
+                  <label className="block text-lg font-semibold text-gray-800 flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-pink-500" />
+                    5. Which qualities of the characters in this video/audio do you identify in yourself?
+                    <span className="text-red-500 text-sm">*</span>
+                  </label>
+                  <div className="ml-4 flex-shrink-0">
+                    <AudioRecorder
+                      key={`${getCurrentVideoKey()}_question5`}
+                      questionId={`${getCurrentVideoKey()}_question5`}
+                      onRecordingComplete={(audioBlob, transcription) => {
+                        handleAudioResponse(getCurrentVideoKey(), 'question5', audioBlob, transcription);
+                      }}
+                      maxDuration={120000} // 2 minutes
+                      language="en-IN"
+                      studentId={userProfile?.id || 'test-student-123'}
+                      assessmentId="inspiration-assessment"
+                      assessmentType="inspiration"
+                      assessmentTitle="My Inspiration Assessment"
+                      compact={true}
+                    />
+                  </div>
+                </div>
                 <Textarea
                   placeholder="Think about the traits, strengths, or characteristics you share with the people in the video..."
                   value={getCurrentVideoResponses().question5}
@@ -952,11 +1091,29 @@ export default function MyInspirationAssessment() {
 
               {/* Question 6 */}
               <div className={`border-l-4 pl-6 ${getCurrentVideoResponses().question6.trim() ? 'border-indigo-400' : 'border-red-400'}`}>
-                <label className="block text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                  <Play className="w-5 h-5 text-indigo-500" />
-                  6. What would your reaction be if you were in the situation depicted in the video/audio?
-                  <span className="text-red-500 text-sm">*</span>
-                </label>
+                <div className="flex items-start justify-between mb-3">
+                  <label className="block text-lg font-semibold text-gray-800 flex items-center gap-2">
+                    <Play className="w-5 h-5 text-indigo-500" />
+                    6. What would your reaction be if you were in the situation depicted in the video/audio?
+                    <span className="text-red-500 text-sm">*</span>
+                  </label>
+                  <div className="ml-4 flex-shrink-0">
+                    <AudioRecorder
+                      key={`${getCurrentVideoKey()}_question6`}
+                      questionId={`${getCurrentVideoKey()}_question6`}
+                      onRecordingComplete={(audioBlob, transcription) => {
+                        handleAudioResponse(getCurrentVideoKey(), 'question6', audioBlob, transcription);
+                      }}
+                      maxDuration={120000} // 2 minutes
+                      language="en-IN"
+                      studentId={userProfile?.id || 'test-student-123'}
+                      assessmentId="inspiration-assessment"
+                      assessmentType="inspiration"
+                      assessmentTitle="My Inspiration Assessment"
+                      compact={true}
+                    />
+                  </div>
+                </div>
                 <Textarea
                   placeholder="Imagine yourself in the same circumstances and describe how you would respond..."
                   value={getCurrentVideoResponses().question6}

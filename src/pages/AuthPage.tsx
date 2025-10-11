@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BookOpen, Users, GraduationCap } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { SchoolInfo, SchoolClass } from '@/integrations/supabase/types';
+import { StateInfo, SchoolClass } from '@/integrations/supabase/types';
 
 export default function AuthPage() {
   console.log('AuthPage: Component rendering');
@@ -21,91 +21,121 @@ export default function AuthPage() {
     password: '', 
     fullName: '', 
     role: 'student' as 'teacher' | 'student',
-    schoolId: '',
-    classId: '',
-    gender: '' as 'male' | 'female'
+    stateId: '',
+    classId: ''
   });
   const [loading, setLoading] = useState(false);
-  const [schools, setSchools] = useState<SchoolInfo[]>([]);
+  const [states, setStates] = useState<StateInfo[]>([]);
   const [classes, setClasses] = useState<SchoolClass[]>([]);
-  const [loadingSchools, setLoadingSchools] = useState(false);
+  const [loadingStates, setLoadingStates] = useState(false);
 
-  // Load schools on component mount
+  // Load states on component mount
   useEffect(() => {
-    console.log('AuthPage: useEffect triggered, calling loadSchools');
-    loadSchools();
+    console.log('AuthPage: useEffect triggered, calling loadStates');
+    loadStates();
   }, []);
 
-  // Load classes when school is selected
+  // Load classes when state is selected
   useEffect(() => {
-    if (signUpForm.schoolId) {
-      loadClasses(signUpForm.schoolId);
+    if (signUpForm.stateId) {
+      loadClasses(signUpForm.stateId);
     } else {
       setClasses([]);
     }
-  }, [signUpForm.schoolId]);
+  }, [signUpForm.stateId]);
 
-  // Load schools from database
-  const loadSchools = async () => {
-    console.log('Loading schools...');
-    setLoadingSchools(true);
+  // Load states from database
+  const loadStates = async () => {
+    console.log('Loading states...');
+    setLoadingStates(true);
     try {
-      // Attempt 1: id, name, school_code
+      // Attempt 1: Full query with organization data
       let { data, error } = await supabase
-        .from('schools')
-        .select('id, name, school_code')
-        .order('name');
+        .from('states')
+        .select('id, state_name, state_code, org_id, orgs(name)')
+        .order('state_name');
       if (error) {
-        console.warn('Primary school query failed, retrying without school_code:', error);
-        // Attempt 2: id, name
+        console.warn('Full state query failed, retrying with basic fields:', error);
+        // Attempt 2: Basic fields only
         const retry = await supabase
-          .from('schools')
-          .select('id, name')
-          .order('name');
+          .from('states')
+          .select('id, state_name, org_id, orgs(name)')
+          .order('state_name');
         data = retry.data as any[] | null;
         error = retry.error as any;
       }
       if (error) {
-        console.error('School query failed after retry:', error);
-        // As a final fallback, populate a minimal list so the page works
-        setSchools([
-          { school_id: 'fallback-1', school_name: 'ILP-Tamil Nadu', school_code: 'ILP-TN', org_name: '' },
+        console.error('State query failed after retry:', error);
+        console.log('🔄 States table may not exist, using fallback data');
+        // As a final fallback, populate a comprehensive list so the page works
+        setStates([
+          { state_id: 'fallback-1', state_name: 'ILP-Tamil Nadu', state_code: 'ILP-TN', org_name: 'ILP Foundation' },
+          { state_id: 'fallback-2', state_name: 'ILP-Telangana', state_code: 'ILP-TG', org_name: 'ILP Foundation' },
+          { state_id: 'fallback-3', state_name: 'ILP-Karnataka', state_code: 'ILP-KA', org_name: 'ILP Foundation' },
+          { state_id: 'fallback-4', state_name: 'ILP-Maharashtra', state_code: 'ILP-MH', org_name: 'ILP Foundation' },
         ]);
         return;
       }
-      const rawSchools = (data || []).filter((s: any) => s && s.id && s.name);
-      const uniqueSchools = Array.from(new Map(rawSchools.map((s: any) => [s.id, s])).values());
-      const schoolsData = uniqueSchools.map((school: any) => ({
-        school_id: String(school.id),
-        school_name: String(school.name),
-        school_code: String((school as any).school_code || ''),
-        org_name: ''
+      console.log('Raw states data received:', data);
+      const rawStates = (data || []).filter((s: any) => s && s.id && s.state_name);
+      console.log('Filtered states:', rawStates);
+      const uniqueStates = Array.from(new Map(rawStates.map((s: any) => [s.id, s])).values());
+      const statesData = uniqueStates.map((state: any) => ({
+        state_id: String(state.id),
+        state_name: String(state.state_name),
+        state_code: String((state as any).state_code || ''),
+        org_name: String((state as any).orgs?.name || '')
       }));
-      setSchools(schoolsData);
+      console.log('Final states data:', statesData);
+      setStates(statesData);
     } catch (error) {
-      console.error('Error loading schools:', error);
-      setSchools([]);
+      console.error('Error loading states:', error);
+      setStates([]);
     } finally {
-      setLoadingSchools(false);
+      setLoadingStates(false);
     }
   };
 
-  // Load classes for selected school
-  const loadClasses = async (schoolId: string) => {
+  // Load classes for selected state
+  const loadClasses = async (stateId: string) => {
     try {
-      console.log('Loading classes for school:', schoolId);
+      console.log('Loading classes for state:', stateId);
+      
+      // Check if it's a fallback state
+      if (stateId.startsWith('fallback-')) {
+        console.log('🔄 Using fallback classes for fallback state');
+        const fallbackClasses = [
+          { class_id: 'fallback-class-1', class_name: 'Class 8' },
+          { class_id: 'fallback-class-2', class_name: 'Class 9' },
+          { class_id: 'fallback-class-3', class_name: 'Class 10' },
+          { class_id: 'fallback-class-4', class_name: 'Class 11' },
+          { class_id: 'fallback-class-5', class_name: 'Class 12' },
+        ];
+        setClasses(fallbackClasses);
+        return;
+      }
+      
       const { data, error } = await supabase
         .from('classes')
         .select('id, name')
-        .eq('school_id', schoolId)
+        .eq('state_id', stateId)
         .order('name');
-      if (error) throw error;
+      
+      if (error) {
+        console.error('Error loading classes:', error);
+        setClasses([]);
+        return;
+      }
+      
+      console.log('Classes data received:', data);
       const rawClasses = (data || []).filter((r: any) => r && r.id && r.name);
       const uniqueClasses = Array.from(new Map(rawClasses.map((r: any) => [r.id, r])).values());
       const classesData = uniqueClasses.map((row: any) => ({
         class_id: String(row.id),
         class_name: String(row.name),
       }));
+      
+      console.log('Processed classes data:', classesData);
       setClasses(classesData);
     } catch (error) {
       console.error('Error loading classes:', error);
@@ -136,8 +166,8 @@ export default function AuthPage() {
     setLoading(true);
     
     // Validate required fields based on role
-    if (!signUpForm.schoolId) {
-      console.error('School selection is required');
+    if (!signUpForm.stateId) {
+      console.error('State selection is required');
       setLoading(false);
       return;
     }
@@ -159,9 +189,8 @@ export default function AuthPage() {
       signUpForm.password, 
       signUpForm.fullName, 
       signUpForm.role,
-      signUpForm.schoolId,
-      signUpForm.classId,
-      signUpForm.gender
+      signUpForm.stateId,
+      signUpForm.classId
     );
     setLoading(false);
     if (error) {
@@ -259,7 +288,7 @@ export default function AuthPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="role">Role</Label>
-                    <Select value={signUpForm.role} onValueChange={(value: 'teacher' | 'student') => setSignUpForm({ ...signUpForm, role: value, classId: '', schoolId: '' })}>
+                    <Select value={signUpForm.role} onValueChange={(value: 'teacher' | 'student') => setSignUpForm({ ...signUpForm, role: value, classId: '', stateId: '' })}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -280,30 +309,30 @@ export default function AuthPage() {
                     </Select>
                   </div>
 
-                  {/* School Selection */}
+                  {/* State Selection */}
                   <div className="space-y-2">
-                    <Label htmlFor="school">School *</Label>
+                    <Label htmlFor="state">State *</Label>
                     <Select 
-                      value={signUpForm.schoolId} 
-                      onValueChange={(value) => setSignUpForm({ ...signUpForm, schoolId: value, classId: '' })}
-                      disabled={loadingSchools}
+                      value={signUpForm.stateId} 
+                      onValueChange={(value) => setSignUpForm({ ...signUpForm, stateId: value, classId: '' })}
+                      disabled={loadingStates}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder={loadingSchools ? "Loading schools..." : "Select your school"} />
+                        <SelectValue placeholder={loadingStates ? "Loading states..." : "Select your state"} />
                       </SelectTrigger>
                       <SelectContent>
-                        {schools.length === 0 ? (
+                        {states.length === 0 ? (
                           <>
-                            {loadingSchools ? null : (
-                              <div className="px-3 py-2 text-sm text-muted-foreground">No schools available</div>
+                            {loadingStates ? null : (
+                              <div className="px-3 py-2 text-sm text-muted-foreground">No states available</div>
                             )}
                           </>
                         ) : (
-                          schools.map((school) => (
-                            <SelectItem key={school.school_id} value={school.school_id}>
+                          states.map((state) => (
+                            <SelectItem key={state.state_id} value={state.state_id}>
                               <div className="flex flex-col">
-                                <span className="font-medium">{school.school_name}</span>
-                                <span className="text-xs text-muted-foreground">{school.school_code}</span>
+                                <span className="font-medium">{state.state_name}</span>
+                                <span className="text-xs text-muted-foreground">{state.state_code}</span>
                               </div>
                             </SelectItem>
                           ))
@@ -319,10 +348,10 @@ export default function AuthPage() {
                       <Select 
                         value={signUpForm.classId} 
                         onValueChange={(value) => setSignUpForm({ ...signUpForm, classId: value })}
-                        disabled={!signUpForm.schoolId || classes.length === 0}
+                        disabled={!signUpForm.stateId || classes.length === 0}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder={!signUpForm.schoolId ? "Select school first" : classes.length === 0 ? "No classes available" : "Select your class"} />
+                          <SelectValue placeholder={!signUpForm.stateId ? "Select state first" : classes.length === 0 ? "No classes available" : "Select your class"} />
                         </SelectTrigger>
                         <SelectContent>
                           {classes.map((classItem) => (
@@ -335,24 +364,6 @@ export default function AuthPage() {
                     </div>
                   )}
 
-                  {/* Gender Selection - Only for Students */}
-                  {signUpForm.role === 'student' && (
-                    <div className="space-y-2">
-                      <Label htmlFor="gender">Gender</Label>
-                      <Select 
-                        value={signUpForm.gender} 
-                        onValueChange={(value: 'male' | 'female') => setSignUpForm({ ...signUpForm, gender: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select gender" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="male">Male</SelectItem>
-                          <SelectItem value="female">Female</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? 'Creating Account...' : 'Create Account'}
                   </Button>

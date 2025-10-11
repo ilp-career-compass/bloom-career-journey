@@ -6,11 +6,11 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-// Helper function return types for school-based architecture
-export type SchoolInfo = {
-  school_id: string
-  school_name: string
-  school_code: string
+// Helper function return types for state-based architecture
+export type StateInfo = {
+  state_id: string
+  state_name: string
+  state_code: string
   org_name: string
 }
 
@@ -89,19 +89,19 @@ export type Database = {
         Row: {
           id: string
           name: string
-          school_id: string
+          state_id: string
           created_at: string
         }
         Insert: {
           id?: string
           name: string
-          school_id: string
+          state_id: string
           created_at?: string
         }
         Update: {
           id?: string
           name?: string
-          school_id?: string
+          state_id?: string
           created_at?: string
         }
       }
@@ -151,26 +151,26 @@ export type Database = {
           created_at?: string
         }
       }
-      schools: {
+      states: {
         Row: {
           id: string
-          name: string
+          state_name: string
           org_id: string
-          school_code: string
+          state_code: string
           created_at: string
         }
         Insert: {
           id?: string
-          name: string
+          state_name: string
           org_id: string
-          school_code: string
+          state_code: string
           created_at?: string
         }
         Update: {
           id?: string
-          name?: string
+          state_name?: string
           org_id?: string
-          school_code?: string
+          state_code?: string
           created_at?: string
         }
       }
@@ -241,7 +241,7 @@ export type Database = {
         Row: {
           id: string
           user_id: string
-          school_id: string
+          state_id: string
           specialization: string | null
           experience_years: number
           qualification: string | null
@@ -256,7 +256,7 @@ export type Database = {
         Insert: {
           id?: string
           user_id: string
-          school_id: string
+          state_id: string
           specialization?: string | null
           experience_years?: number
           qualification?: string | null
@@ -271,7 +271,7 @@ export type Database = {
         Update: {
           id?: string
           user_id?: string
-          school_id?: string
+          state_id?: string
           specialization?: string | null
           experience_years?: number
           qualification?: string | null
@@ -292,7 +292,8 @@ export type Database = {
           full_name: string
           mobile: string | null
           email: string
-          school_id: string | null
+          state_id: string | null
+          school: string | null
           bio: string | null
           interests: string | null
           career_goals: string | null
@@ -314,7 +315,8 @@ export type Database = {
           full_name: string
           mobile?: string | null
           email: string
-          school_id?: string | null
+          state_id?: string | null
+          school?: string | null
           bio?: string | null
           interests?: string | null
           career_goals?: string | null
@@ -336,7 +338,8 @@ export type Database = {
           full_name?: string
           mobile?: string | null
           email?: string
-          school_id?: string | null
+          state_id?: string | null
+          school?: string | null
           bio?: string | null
           interests?: string | null
           career_goals?: string | null
@@ -521,7 +524,7 @@ export type Database = {
           name: string
           description: string | null
           teacher_id: string
-          school_id: string
+          state_id: string
           class_id: string
           max_students: number
           is_active: boolean
@@ -533,7 +536,7 @@ export type Database = {
           name: string
           description?: string | null
           teacher_id: string
-          school_id: string
+          state_id: string
           class_id: string
           max_students?: number
           is_active?: boolean
@@ -545,7 +548,7 @@ export type Database = {
           name?: string
           description?: string | null
           teacher_id?: string
-          school_id?: string
+          state_id?: string
           class_id?: string
           max_students?: number
           is_active?: boolean

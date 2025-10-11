@@ -23,12 +23,12 @@ interface AuthContextType {
     password: string, 
     fullName: string, 
     role: 'teacher' | 'student',
-    schoolId: string,
-    classId?: string,
-    gender?: 'male' | 'female'
+    stateId: string,
+    classId?: string
   ) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   userProfile: any;
+  refreshUserProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -120,18 +120,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         hint: (insertError as any)?.hint,
       });
 
-      // 2) If FK violation on school_id (23503), retry without school_id (last resort)
+      // 2) If FK violation on state_id (23503), retry without state_id (last resort)
       const code = (insertError as any)?.code;
       const message = (insertError as any)?.message || '';
       let minimalPayload = { ...userData } as any;
 
-      if (code === '23503' && message.includes('school_id')) {
-        console.warn('Retrying insert without school_id due to FK violation');
-        /* remove school_id for retry */
-        delete minimalPayload.school_id;
+      if (code === '23503' && message.includes('state_id')) {
+        console.warn('Retrying insert without state_id due to FK violation');
+        /* remove state_id for retry */
+        delete minimalPayload.state_id;
         const retry = await supabase.from('users').insert(minimalPayload);
         if (!retry.error) {
-          console.log('User profile created successfully on retry without school_id');
+          console.log('User profile created successfully on retry without state_id');
           return { success: true, error: null };
         }
         insertError = retry.error;
@@ -145,7 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           password_hash: userData.password_hash || 'handled_by_auth',
           role: userData.role,
           full_name: userData.full_name,
-          school_id: userData.school_id || null,
+          state_id: userData.state_id || null,
         };
         const retry = await supabase.from('users').insert(minimalPayload);
         if (!retry.error) {
@@ -167,7 +167,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             full_name: userData.full_name,
             email: userData.email,
             mobile: userData.mobile,
-            school_id: userData.school_id || null,
+            state_id: userData.state_id || null,
           },
           { onConflict: 'id' }
         );
@@ -233,7 +233,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchUserProfile = async (userId: string, userOverride?: AuthUser) => {
     try {
       console.log('🔍 Fetching user profile for:', userId);
-      // Use the passed user if available, otherwise fall back to state
+      
+      // ALWAYS fetch fresh data from database first
+      console.log('🔄 Fetching fresh profile data from database...');
+      const { data: freshProfile, error: dbError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (!dbError && freshProfile) {
+        console.log('✅ Fresh profile data loaded from database:', freshProfile);
+        setUserProfile(freshProfile);
+        return;
+      }
+      
+      // Fallback to auth data only if database fetch fails
+      console.log('⚠️ Database fetch failed, falling back to auth data');
       const currentUser = userOverride || user;
       console.log('Current user state:', currentUser);
       console.log('User metadata:', currentUser?.user_metadata);
@@ -247,7 +263,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email: currentUser.user_metadata.email,
           mobile: currentUser.user_metadata.mobile,
           role: 'student',
-          school_id: null,
+          state_id: null,
           studentProfile: null
         };
         
@@ -547,12 +563,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     password: string, 
     fullName: string, 
     role: 'teacher' | 'student',
-    schoolId: string,
-    classId?: string,
-    gender?: 'male' | 'female'
+    stateId: string,
+    classId?: string
   ) => {
     try {
-      console.log('Starting signUp process:', { mobile, email, fullName, role, schoolId, classId, gender });
+      console.log('Starting signUp process:', { mobile, email, fullName, role, stateId, classId });
 
       // Enforce class selection for students at the API layer too
       if (role === 'student' && !classId) {
@@ -648,7 +663,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             password_hash: 'handled_by_auth',
             role,
             full_name: fullName,
-          school_id: schoolId,
+          state_id: stateId,
         };
         
         // Only add email and mobile if the columns exist
@@ -659,10 +674,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           userProfileData.mobile = finalMobile;
         }
         
-        // Add gender for students
-        if (role === 'student' && gender) {
-          userProfileData.gender = gender;
-        }
         
         // Use the new createUserProfile function
         const { success, error: userInsertError } = await createUserProfile(userProfileData);
@@ -687,7 +698,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               .from('teachers')
               .insert({
                 user_id: authData.user.id,
-                school_id: schoolId,
+                state_id: stateId,
                 is_active: true,
                 joining_date: new Date().toISOString(),
               });
@@ -786,6 +797,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const refreshUserProfile = async () => {
+    if (user?.id) {
+      console.log('🔄 Refreshing user profile from database...');
+      try {
+        // Use the same fetchUserProfile function to ensure consistency
+        await fetchUserProfile(user.id);
+        console.log('✅ User profile refreshed successfully');
+      } catch (error) {
+        console.error('Error refreshing user profile:', error);
+      }
+    }
+  };
+
   const value = {
     user,
     session,
@@ -794,6 +818,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signUp,
     signOut,
     userProfile,
+    refreshUserProfile,
   };
 
   console.log('AuthProvider rendering with value:', { 

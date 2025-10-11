@@ -14,6 +14,7 @@ import MyDreamsAssessment from './components/assessments/MyDreamsAssessment';
 import MySchoolLearningAssessment from './components/assessments/MySchoolLearningAssessment';
 import MyRoleModelsAssessment from './components/assessments/MyRoleModelsAssessment';
 import MyHobbiesAssessment from './components/assessments/MyHobbiesAssessment';
+import AudioTestPage from './pages/AudioTestPage';
 import { useEffect, Component, ErrorInfo, ReactNode } from 'react';
 
 // Error Boundary Component
@@ -86,6 +87,9 @@ function App() {
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<AuthPage />} />
+              
+              {/* Audio Test Route */}
+              <Route path="/audio-test" element={<AudioTestPage />} />
               
               {/* Assessment Routes */}
               <Route 
