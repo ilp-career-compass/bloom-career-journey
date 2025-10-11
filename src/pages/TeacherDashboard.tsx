@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { SchoolInfo, SchoolClass } from '@/integrations/supabase/types';
+import { StateInfo, SchoolClass } from '@/integrations/supabase/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -91,7 +91,7 @@ interface Student {
   teacher_id: string;
   enrollment_date: string;
   enrollment_status: string;
-  previous_school?: string;
+  previous_state?: string;
   special_needs?: string;
   parent_guardian_name?: string;
   parent_guardian_phone?: string;
@@ -121,7 +121,7 @@ interface StudentStats {
 }
 
 export default function TeacherDashboard() {
-  const { userProfile, signOut } = useAuth();
+  const { user, userProfile, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -145,13 +145,14 @@ export default function TeacherDashboard() {
   const [newStudent, setNewStudent] = useState({
     fullName: '',
     contact: '', // mobile number or email
-    grade: ''
+    grade: '',
+    stateId: ''
   });
 
-  // School and class data for add student modal
-  const [schools, setSchools] = useState<SchoolInfo[]>([]);
+  // State and class data for add student modal
+  const [states, setStates] = useState<StateInfo[]>([]);
   const [classes, setClasses] = useState<SchoolClass[]>([]);
-  const [loadingSchools, setLoadingSchools] = useState(false);
+  const [loadingStates, setLoadingStates] = useState(false);
   const [existingQuery, setExistingQuery] = useState('');
   const [existingResults, setExistingResults] = useState<any[]>([]);
   const [enrollTarget, setEnrollTarget] = useState<{ userId: string; name: string } | null>(null);
@@ -176,7 +177,7 @@ export default function TeacherDashboard() {
   const [contactOpen, setContactOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
-  const [teacherRow, setTeacherRow] = useState<{ id: string; school_id: string } | null>(null);
+  const [teacherRow, setTeacherRow] = useState<{ id: string; state_id: string } | null>(null);
 
   // Removed per-activity resources quick view
 
@@ -217,13 +218,13 @@ export default function TeacherDashboard() {
       // First get the teacher row
       const { data: teacherData, error: teacherError } = await supabase
         .from('teachers')
-        .select('id, school_id')
+        .select('id, state_id')
         .eq('user_id', userProfile?.id)
         .single();
 
       if (teacherError) throw teacherError;
 
-      // Get students from the teacher's school using the new school-based approach
+      // Get students from the teacher's state using the new state-based approach
       const { data, error } = await supabase
         .from('students')
           .select(`
@@ -274,10 +275,10 @@ export default function TeacherDashboard() {
 
   const handleAddStudent = async () => {
     try {
-      // First get the teacher's school_id
+      // First get the teacher's state_id
       const { data: teacherData, error: teacherError } = await supabase
         .from('teachers')
-        .select('id, school_id')
+        .select('id, state_id')
         .eq('user_id', userProfile?.id)
         .single();
 
@@ -290,13 +291,13 @@ export default function TeacherDashboard() {
           .from('classes')
           .select('id')
           .eq('name', `Class ${newStudent.grade}`)
-          .eq('school_id', teacherData.school_id)
+          .eq('state_id', teacherData.state_id)
           .single();
         
         if (!classError && classData) {
           classId = classData.id;
         } else {
-          console.warn(`Class ${newStudent.grade} not found for school ${teacherData.school_id}`);
+          console.warn(`Class ${newStudent.grade} not found for state ${teacherData.state_id}`);
         }
       }
 
@@ -308,7 +309,7 @@ export default function TeacherDashboard() {
           full_name: newStudent.fullName,
           email: isEmail ? newStudent.contact : null,
           mobile: !isEmail ? newStudent.contact : null,
-          school_id: teacherData.school_id,
+          state_id: teacherData.state_id,
           role: 'student',
           password_hash: 'temporary123' // This will be a placeholder
         })
@@ -378,71 +379,71 @@ export default function TeacherDashboard() {
     }
   };
 
-  // Load schools and classes for add student modal
-  const loadSchools = async () => {
+  // Load states and classes for add student modal
+  const loadStates = async () => {
     try {
-      console.log('TeacherDashboard: Loading schools...');
-      setLoadingSchools(true);
+      console.log('TeacherDashboard: Loading states...');
+      setLoadingStates(true);
       
-      // First check if schools table exists
+      // First check if states table exists
       const { data: tableCheck, error: tableError } = await supabase
-        .from('schools')
+        .from('states')
         .select('count')
         .limit(1);
       
       if (tableError) {
-        console.error('TeacherDashboard: Schools table error:', tableError);
-        console.log('TeacherDashboard: Schools table does not exist - using fallback data');
+        console.error('TeacherDashboard: States table error:', tableError);
+        console.log('TeacherDashboard: States table does not exist - using fallback data');
         
-        // Fallback schools data for testing until migration is applied
-        const fallbackSchools = [
-          { school_id: 'temp-1', school_name: 'ILP-Tamil Nadu', school_code: 'ILP-TN', org_name: 'ILP' },
-          { school_id: 'temp-2', school_name: 'ILP-Karnataka', school_code: 'ILP-KA', org_name: 'ILP' },
-          { school_id: 'temp-3', school_name: 'ILP-Andhra Pradesh', school_code: 'ILP-AP', org_name: 'ILP' },
-          { school_id: 'temp-4', school_name: 'ILP-Telangana', school_code: 'ILP-TG', org_name: 'ILP' },
-          { school_id: 'temp-5', school_name: 'ILP-Bihar', school_code: 'ILP-BH', org_name: 'ILP' },
-          { school_id: 'temp-6', school_name: 'ILP-Jharkhand', school_code: 'ILP-JH', org_name: 'ILP' },
-          { school_id: 'temp-7', school_name: 'ILP-Odisha', school_code: 'ILP-OD', org_name: 'ILP' }
+        // Fallback states data for testing until migration is applied
+        const fallbackStates = [
+          { state_id: 'temp-1', state_name: 'ILP-Tamil Nadu', state_code: 'ILP-TN', org_name: 'ILP' },
+          { state_id: 'temp-2', state_name: 'ILP-Karnataka', state_code: 'ILP-KA', org_name: 'ILP' },
+          { state_id: 'temp-3', state_name: 'ILP-Andhra Pradesh', state_code: 'ILP-AP', org_name: 'ILP' },
+          { state_id: 'temp-4', state_name: 'ILP-Telangana', state_code: 'ILP-TG', org_name: 'ILP' },
+          { state_id: 'temp-5', state_name: 'ILP-Bihar', state_code: 'ILP-BH', org_name: 'ILP' },
+          { state_id: 'temp-6', state_name: 'ILP-Jharkhand', state_code: 'ILP-JH', org_name: 'ILP' },
+          { state_id: 'temp-7', state_name: 'ILP-Odisha', state_code: 'ILP-OD', org_name: 'ILP' }
         ];
         
-        setSchools(fallbackSchools);
+        setStates(fallbackStates);
         return;
       }
       
-      console.log('TeacherDashboard: Schools table exists, fetching data...');
+      console.log('TeacherDashboard: States table exists, fetching data...');
       
       const { data, error } = await supabase
-        .from('schools')
-        .select('id, name, school_code, orgs(name)')
-        .order('name');
+        .from('states')
+        .select('id, state_name, state_code, orgs(name)')
+        .order('state_name');
       
       if (error) {
-        console.error('TeacherDashboard: Error fetching schools:', error);
+        console.error('TeacherDashboard: Error fetching states:', error);
         throw error;
       }
       
-      console.log('TeacherDashboard: Schools data received:', data);
+      console.log('TeacherDashboard: States data received:', data);
       
-      const schoolsData = data?.map(school => ({
-        school_id: school.id,
-        school_name: school.name,
-        school_code: school.school_code,
-        org_name: school.orgs?.name || 'ILP'
+      const statesData = data?.map(state => ({
+        state_id: state.id,
+        state_name: state.state_name,
+        state_code: state.state_code,
+        org_name: state.orgs?.name || 'ILP'
       })) || [];
       
-      console.log('TeacherDashboard: Processed schools data:', schoolsData);
-      setSchools(schoolsData);
+      console.log('TeacherDashboard: Processed states data:', statesData);
+      setStates(statesData);
     } catch (error) {
-      console.error('TeacherDashboard: Error loading schools:', error);
-      setSchools([]);
+      console.error('TeacherDashboard: Error loading states:', error);
+      setStates([]);
     } finally {
-      setLoadingSchools(false);
+      setLoadingStates(false);
     }
   };
 
-  const loadClasses = async (schoolId: string) => {
+  const loadClasses = async (stateId: string) => {
     try {
-      console.log('TeacherDashboard: Loading classes for school:', schoolId);
+      console.log('TeacherDashboard: Loading classes for state:', stateId);
       
       // Check if classes table exists
       const { data: tableCheck, error: tableError } = await supabase
@@ -470,7 +471,7 @@ export default function TeacherDashboard() {
       const { data, error } = await supabase
         .from('classes')
         .select('id, name')
-        .eq('school_id', schoolId)
+        .eq('state_id', stateId)
         .order('name');
       
       if (error) throw error;
@@ -484,24 +485,30 @@ export default function TeacherDashboard() {
 
   // Load students data after functions are defined
   useEffect(() => {
-    if (userProfile?.id) {
-      loadStudents();
-      loadStudentStats();
-      loadSchools(); // Load schools for add student modal
-      // Preload activities for Activities tab
-      supabase.from('activities').select('id, title, sequence_number').order('sequence_number')
-        .then(({ data, error }) => { if (!error) setActivities(data || []); });
-      supabase.from('teachers').select('id, school_id').eq('user_id', userProfile.id).maybeSingle()
-        .then(({ data }) => setTeacherRow(data as any || null));
-    }
-  }, [userProfile]);
+    if (!userProfile?.id) return;
+    loadStudents();
+    loadStudentStats();
+    loadStates(); // Load states for add student modal
+    // Preload activities for Activities tab
+    supabase
+      .from('activities')
+      .select('id, title, sequence_number')
+      .order('sequence_number')
+      .then(({ data, error }) => { if (!error) setActivities(data || []); });
+    supabase
+      .from('teachers')
+      .select('id, state_id')
+      .eq('user_id', userProfile.id)
+      .maybeSingle()
+      .then(({ data }) => setTeacherRow((data as any) || null));
+  }, [userProfile?.id]);
 
-  // Ensure classes are loaded for the teacher's school so CSV import can validate class_name
+  // Ensure classes are loaded for the teacher's state so CSV import can validate class_name
   useEffect(() => {
-    if (teacherRow?.school_id) {
-      loadClasses(teacherRow.school_id);
+    if (teacherRow?.state_id) {
+      loadClasses(teacherRow.state_id);
     }
-  }, [teacherRow?.school_id]);
+  }, [teacherRow?.state_id]);
 
   const loadProgressForStudent = async (studentId: string) => {
     try {
@@ -578,14 +585,14 @@ export default function TeacherDashboard() {
     }
   };
 
-  // Load classes when school is selected in add student modal
+  // Load classes when state is selected in add student modal
   useEffect(() => {
-    if (newStudent.schoolId) {
-      loadClasses(newStudent.schoolId);
+    if (newStudent.stateId) {
+      loadClasses(newStudent.stateId);
     } else {
       setClasses([]);
     }
-  }, [newStudent.schoolId]);
+  }, [newStudent.stateId]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -642,14 +649,27 @@ export default function TeacherDashboard() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center space-x-2 hover:bg-gray-100">
-                  <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
-                    <span className="text-white font-semibold text-sm">
-                      {userProfile?.full_name?.charAt(0)?.toUpperCase() || 'T'}
-                    </span>
-                  </div>
+                  {userProfile?.profile_picture_url ? (
+                    <img 
+                      src={userProfile.profile_picture_url} 
+                      alt={userProfile?.full_name || 'Teacher'}
+                      className="w-12 h-12 rounded-full object-cover"
+                      onError={(e) => {
+                        console.log('❌ Image failed to load:', userProfile.profile_picture_url);
+                        e.currentTarget.style.display = 'none';
+                      }}
+                      onLoad={() => console.log('✅ Image loaded successfully:', userProfile.profile_picture_url)}
+                    />
+                  ) : (
+                    <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
+                      <span className="text-white font-semibold text-lg">
+                        {userProfile?.full_name?.charAt(0)?.toUpperCase() || 'T'}
+                      </span>
+                    </div>
+                  )}
                   <span className="text-gray-700 font-medium">{userProfile?.full_name || 'Teacher'}</span>
                   <ChevronDown className="w-4 h-4 text-gray-500" />
-          </Button>
+                </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end">
                 <DropdownMenuItem onClick={()=> setProfileOpen(true)}>
@@ -1156,7 +1176,7 @@ export default function TeacherDashboard() {
           onOpenChange={setImportOpen}
           classes={classes}
           teacherId={teacherRow.id}
-          schoolId={teacherRow.school_id}
+          schoolId={teacherRow.state_id}
           onImported={loadStudents}
         />
       )}
@@ -1382,7 +1402,7 @@ export default function TeacherDashboard() {
               <Input placeholder="Enter student mobile / email / name" value={existingQuery} onChange={(e)=>setExistingQuery(e.target.value)} />
               <Button onClick={async ()=>{
                 try {
-                  const { data, error } = await supabase.rpc('search_students', { teacher_user_id: userProfile?.id, query: existingQuery });
+                  const { data, error } = await supabase.rpc('search_students', { teacher_user_id: user?.id, query: existingQuery });
                   if (error) throw error;
                   setExistingResults(data || []);
                 } catch (err) {
@@ -1414,7 +1434,7 @@ export default function TeacherDashboard() {
                         <td className="py-2 px-3">{row.mobile || row.email}</td>
                         <td className="py-2 px-3">{row.current_class || '—'}</td>
                         <td className="py-2 px-3">
-                          <Button size="sm" variant="outline" onClick={()=>{ setEnrollTarget({ userId: row.student_user_id, name: row.full_name }); setEnrollClassId(''); }}>
+                          <Button size="sm" variant="outline" onClick={()=>{ setEnrollTarget({ userId: row.student_user_id, name: row.full_name }); setEnrollClassId(row.current_class_id || ''); }}>
                             Enroll
                   </Button>
                         </td>
@@ -1428,30 +1448,45 @@ export default function TeacherDashboard() {
             {enrollTarget && (
               <div className="mt-4 space-y-3 rounded-md border p-3 bg-white">
                 <div className="text-sm text-gray-700">Enroll <span className="font-medium">{enrollTarget.name}</span></div>
-                <div className="flex gap-2">
-                  <Button disabled={enrolling} onClick={async ()=>{
-                    try {
-                      setEnrolling(true);
-                      const { error } = await supabase.rpc('enroll_student_by_user_id', {
-                        teacher_user_id: userProfile?.id,
-                        student_user_id: enrollTarget?.userId,
-                        class_id: null,
-                      });
-                      if (error) throw error;
-                      toast({ title: 'Student enrolled', description: 'Student has been linked to you.' });
-                      setIsAddExistingOpen(false);
-                      setEnrollTarget(null);
-                      loadStudents();
-                    } catch (err) {
-                      console.error('Enroll error:', err);
-                      toast({ title: 'Enrollment failed', description: 'Could not enroll student', variant: 'destructive' });
-                    } finally {
-                      setEnrolling(false);
-                    }
-                  }}>
-                    Confirm Enroll
-                  </Button>
-                  <Button variant="ghost" onClick={()=> setEnrollTarget(null)}>Cancel</Button>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 items-end">
+                  <div className="space-y-1 md:col-span-2">
+                    <div className="text-sm text-gray-600">Select Class (required)</div>
+                    <Select value={enrollClassId} onValueChange={setEnrollClassId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={classes.length ? 'Choose class' : 'No classes available'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {classes.map((c: any) => (
+                          <SelectItem key={c.id || c.class_id} value={(c.id || c.class_id) as string}>{c.name || c.class_name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex gap-2 justify-end md:justify-start">
+                    <Button disabled={enrolling || !enrollClassId} onClick={async ()=>{
+                      try {
+                        setEnrolling(true);
+                        const { error } = await supabase.rpc('enroll_student_by_user_id', {
+                          teacher_user_id: user?.id,
+                          student_user_id: enrollTarget?.userId,
+                          class_id: enrollClassId || null,
+                        });
+                        if (error) throw error;
+                        toast({ title: 'Student enrolled', description: 'Student has been linked to you.' });
+                        setIsAddExistingOpen(false);
+                        setEnrollTarget(null);
+                        loadStudents();
+                      } catch (err) {
+                        console.error('Enroll error:', err);
+                        toast({ title: 'Enrollment failed', description: 'Could not enroll student', variant: 'destructive' });
+                      } finally {
+                        setEnrolling(false);
+                      }
+                    }}>
+                      Confirm Enroll
+                    </Button>
+                    <Button variant="ghost" onClick={()=> setEnrollTarget(null)}>Cancel</Button>
+                  </div>
                 </div>
               </div>
             )}
