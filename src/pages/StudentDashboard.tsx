@@ -71,6 +71,9 @@ export default function StudentDashboard() {
     areasForGrowth: ''
   });
 
+  // Mentor display name (assigned teacher)
+  const [mentorName, setMentorName] = useState<string | null>(null);
+
   // CareerChat LM state (no persistence)
   type ChatMsg = { id: string; role: 'user' | 'model'; text: string };
   const [ccMessages, setCcMessages] = useState<ChatMsg[]>([]);
@@ -374,6 +377,8 @@ export default function StudentDashboard() {
         .single();
 
       if (studentError) throw studentError;
+      // Set mentor name for student-facing UI
+      setMentorName(studentData?.teachers?.users?.full_name || 'ILP Mentor');
     } catch (error) {
       console.error('Error fetching student data:', error);
     }
@@ -568,6 +573,9 @@ export default function StudentDashboard() {
           <p className="text-xl text-gray-600">
             Complete assessments in sequence to unlock your full potential
           </p>
+          <div className="mt-3 text-sm text-gray-700">
+            <span className="font-medium">Your Mentor:</span> {mentorName || 'ILP Mentor'}
+          </div>
         </div>
 
         {/* Overall Progress */}

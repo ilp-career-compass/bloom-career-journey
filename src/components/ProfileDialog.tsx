@@ -25,7 +25,7 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [password, setPassword] = useState('');
   const [saving, setSaving] = useState(false);
-  const [meta, setMeta] = useState<{ email?: string | null; mobile?: string | null; state?: string }>();
+  const [meta, setMeta] = useState<{ email?: string | null; mobile?: string | null; state?: string; className?: string; teacherName?: string }>();
 
   useEffect(() => {
     if (!userProfile?.id) return;
@@ -39,7 +39,7 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
       try {
         const studentRes = await supabase
           .from('students')
-          .select('class_id, classes(name, states(state_name))')
+          .select('class_id, classes(name, states(state_name)), teachers:teacher_id(users:user_id(full_name))')
           .eq('user_id', userProfile.id)
           .maybeSingle();
         const teacherRes = await supabase
@@ -60,6 +60,8 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
             teacherRes.data?.states?.state_name ||
             (userStateRes.data as any)?.states?.state_name ||
             '',
+          className: studentRes.data?.classes?.name || teacherRes.data?.classes?.name || '',
+          teacherName: (studentRes.data as any)?.teachers?.users?.full_name || '',
         });
       } catch (e) {
         // swallow optional meta fetch errors
@@ -232,6 +234,18 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
               />
             </div>
           </div>
+          {!isTeacher && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <Label>Teacher</Label>
+                <Input value={meta?.teacherName || ''} disabled />
+              </div>
+              <div>
+                <Label>Class</Label>
+                <Input value={meta?.className || ''} disabled />
+              </div>
+            </div>
+          )}
           {!isTeacher && (
             <div>
               <Label>Aspiration / Career Goal</Label>

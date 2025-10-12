@@ -66,6 +66,7 @@ interface Student {
     users: {
       full_name: string;
     };
+    is_default?: boolean;
   };
 }
 
@@ -77,6 +78,7 @@ export default function AdminDashboard() {
   const [states, setSchools] = useState<School[]>([]);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
+  const [showMentorOnly, setShowMentorOnly] = useState(false);
   const [loading, setLoading] = useState(true);
   
   // Form states
@@ -126,7 +128,7 @@ export default function AdminDashboard() {
           *,
           users:user_id(full_name, mobile),
           classes:class_id(name, states:state_id(name)),
-          teachers:teacher_id(users:user_id(full_name))
+          teachers:teacher_id(users:user_id(full_name), is_default)
         `)
         .order('created_at', { ascending: false });
 
@@ -288,7 +290,7 @@ export default function AdminDashboard() {
 
       <main className="container mx-auto px-4 py-8">
         {/* Stats Overview */}
-        <div className="grid gap-4 md:grid-cols-4 mb-8">
+        <div className="grid gap-4 md:grid-cols-5 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Organizations</CardTitle>
@@ -326,6 +328,19 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{students.length}</div>
+            </CardContent>
+          </Card>
+
+          {/* Under ILP Mentor analytics */}
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-teal-50 to-teal-100">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-teal-600 text-sm font-medium">Under ILP Mentor</p>
+                  <p className="text-3xl font-bold text-teal-800">{students.filter(s => s.teachers?.is_default).length}</p>
+                </div>
+                <Users className="w-8 h-8 text-teal-600" />
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -503,6 +518,15 @@ export default function AdminDashboard() {
                 <CardDescription>Manage student accounts and assignments</CardDescription>
               </CardHeader>
               <CardContent>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-sm text-muted-foreground">Filters</div>
+                  <div className="flex items-center gap-3">
+                    <label className="flex items-center gap-2 text-sm">
+                      <input type="checkbox" checked={showMentorOnly} onChange={(e)=> setShowMentorOnly(e.target.checked)} />
+                      Students under ILP Mentor (Unassigned)
+                    </label>
+                  </div>
+                </div>
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -515,7 +539,7 @@ export default function AdminDashboard() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {students.map(student => (
+                    {(showMentorOnly ? students.filter(s => s.teachers?.is_default) : students).map(student => (
                       <TableRow key={student.id}>
                         <TableCell>{student.users?.full_name}</TableCell>
                         <TableCell>{student.users?.mobile}</TableCell>
@@ -540,10 +564,64 @@ export default function AdminDashboard() {
                 <CardDescription>Generate reports and analytics</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-12 text-muted-foreground">
-                  <BarChart3 className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <p>Reporting features coming soon...</p>
-                  <p className="text-sm mt-2">This will include activity completion rates, user engagement metrics, etc.</p>
+                <div className="space-y-6">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Card className="border shadow-sm">
+                      <CardHeader>
+                        <CardTitle className="text-base">Students under ILP Mentor by State</CardTitle>
+                        <CardDescription>Current distribution</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>State</TableHead>
+                              <TableHead className="text-right">Count</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {(() => {
+                              const byState: Record<string, number> = {};
+                              students.filter(s => s.teachers?.is_default).forEach(s => {
+                                const key = s.classes?.states?.name || '—';
+                                byState[key] = (byState[key] || 0) + 1;
+                              });
+                              const rows = Object.entries(byState).sort((a,b)=> a[0].localeCompare(b[0]));
+                              return rows.length ? rows.map(([state, count]) => (
+                                <TableRow key={state}>
+                                  <TableCell>{state}</TableCell>
+                                  <TableCell className="text-right">{count}</TableCell>
+                                </TableRow>
+                              )) : (
+                                <TableRow>
+                                  <TableCell colSpan={2} className="text-center text-sm text-muted-foreground">No data</TableCell>
+                                </TableRow>
+                              );
+                            })()}
+                          </TableBody>
+                        </Table>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border shadow-sm">
+                      <CardHeader>
+                        <CardTitle className="text-base">Overview</CardTitle>
+                        <CardDescription>Mentor assignment snapshot</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex items-center justify-between">
+                            <span>Under ILP Mentor</span>
+                            <span className="font-medium">{students.filter(s => s.teachers?.is_default).length}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span>Total Students</span>
+                            <span className="font-medium">{students.length}</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
                 </div>
               </CardContent>
             </Card>

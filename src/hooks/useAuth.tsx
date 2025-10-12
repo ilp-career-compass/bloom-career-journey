@@ -254,54 +254,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('Current user state:', currentUser);
       console.log('User metadata:', currentUser?.user_metadata);
       
-      // 🔧 RLS BYPASS: For custom authenticated students, create profile from auth data
-      if (currentUser && currentUser.user_metadata?.role === 'student') {
-        console.log('🚀 RLS BYPASS: Using existing student data from authentication');
-        const studentProfile = {
+      // General fallback: derive role from auth metadata for all roles
+      if (currentUser && currentUser.user_metadata?.role) {
+        const derivedRole = currentUser.user_metadata.role;
+        const baseProfile: any = {
           id: userId,
           full_name: currentUser.user_metadata.full_name,
           email: currentUser.user_metadata.email,
           mobile: currentUser.user_metadata.mobile,
-          role: 'student',
-          state_id: null,
-          studentProfile: null
+          role: derivedRole,
+          state_id: null
         };
-        
-        // Set the profile immediately - this will trigger routing!
-        setUserProfile(studentProfile);
-        console.log('✅ Student profile set from auth data:', studentProfile);
-        
-        // Small delay to ensure React processes the state change
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Try to fetch additional student data (optional, might fail due to RLS)
+
+        setUserProfile(baseProfile);
+        console.log('✅ Profile set from auth metadata:', baseProfile);
+
+        // Try to fetch role-specific records without blocking routing
         try {
-          const { data: studentData, error: studentError } = await supabase
-            .from('students')
-            .select('*')
-            .eq('user_id', userId)
-            .single();
-          
-          if (!studentError && studentData) {
-            console.log('📚 Additional student data fetched:', studentData);
-            const enhancedProfile = { ...studentProfile, studentProfile: studentData };
-            setUserProfile(enhancedProfile);
-            console.log('✅ Enhanced student profile set:', enhancedProfile);
-          } else {
-            console.log('ℹ️ No additional student data (RLS restriction expected):', studentError);
+          if (derivedRole === 'student') {
+            const { data: studentData } = await supabase
+              .from('students')
+              .select('*')
+              .eq('user_id', userId)
+              .maybeSingle();
+            if (studentData) setUserProfile((prev:any) => ({ ...prev, studentProfile: studentData }));
+          } else if (derivedRole === 'teacher') {
+            const { data: teacherData } = await supabase
+              .from('teachers')
+              .select('*')
+              .eq('user_id', userId)
+              .maybeSingle();
+            if (teacherData) setUserProfile((prev:any) => ({ ...prev, teacherProfile: teacherData }));
           }
-        } catch (roleDataError) {
-          console.log('ℹ️ Expected RLS restriction on students table:', roleDataError);
-        }
-        
-        console.log('🎯 RLS BYPASS COMPLETE - Student should now be redirected!');
-        
-        // Debug: Check if userProfile was actually set
-        setTimeout(() => {
-          console.log('🔍 DEBUG: userProfile state after RLS bypass:', { userProfile });
-        }, 100);
-        
-        return; // Exit early - no need to query database
+        } catch {}
+        return;
       }
       
       // Original logic for Supabase Auth users (teachers/admins)
@@ -421,74 +407,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       console.log('🔐 Sign in attempt for:', identifier);
       
-      // First, try custom authentication for students
-      try {
-        console.log('🔄 Attempting custom authentication...');
-        const idTrim = identifier.trim();
-        const idForAuth = idTrim.includes('@') ? idTrim.toLowerCase() : idTrim;
-        const pwd = password.trim();
-        const { data: customAuthData, error: customAuthError } = await supabase
-          .rpc('authenticate_student', {
-            identifier: idForAuth,
-            password: pwd
-          });
-        
-        if (!customAuthError && customAuthData && customAuthData.length > 0) {
-          const studentUser = customAuthData[0];
-          console.log('✅ Custom authentication successful for student:', studentUser);
-          
-          // Create a mock Supabase user object for the student
-          const mockUser: AuthUser = {
-            id: studentUser.user_id,
-            email: studentUser.email || undefined,
-            phone: studentUser.mobile || undefined,
-            user_metadata: {
-              full_name: studentUser.full_name,
-              role: studentUser.role,
-              mobile: studentUser.mobile,
-              email: studentUser.email
-            }
-          } as AuthUser;
-          
-          // Create a mock session for custom auth
-          const mockSession = {
-            user: mockUser,
-            access_token: 'custom-auth-token',
-            refresh_token: 'custom-auth-refresh',
-            expires_at: Date.now() + (24 * 60 * 60 * 1000), // 24 hours from now
-            token_type: 'bearer'
-          } as Session;
-          
-          // Set all the required state for custom authentication
-          setUser(mockUser);
-          setSession(mockSession);
-          console.log('👤 Mock user and session set for custom auth');
-          
-          // Wait for user state to be set before fetching profile
-          await new Promise(resolve => setTimeout(resolve, 50));
-          
-          // Now fetch the profile - pass the mockUser directly to avoid state race condition
-          await fetchUserProfile(studentUser.user_id, mockUser);
-          console.log('📋 User profile fetched for custom auth student');
-          
-          // Ensure loading is false for custom auth
-          setLoading(false);
-          
-          // Small delay to ensure all state changes are processed
-          await new Promise(resolve => setTimeout(resolve, 50));
-          
-          toast({
-            title: "Sign in successful! ✨",
-            description: `Welcome back, ${studentUser.full_name}!`,
-          });
-          
-          return { error: null };
-        }
-      } catch (customAuthError) {
-        console.log('❌ Custom authentication failed, trying Supabase Auth:', customAuthError);
-      }
-      
-      // Fallback to Supabase Auth for teachers and admins
+      // Try Supabase Auth first (teachers/admins/students with email)
       // Determine if identifier is email or mobile
       const isEmail = identifier.includes('@');
       let emailForAuth: string;
@@ -544,6 +463,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         return { error: null };
       }
+
+      // If Supabase Auth failed, try custom student auth
+      try {
+        console.log('🔄 Attempting custom student authentication...');
+        const idTrim = identifier.trim();
+        const idForAuth = idTrim.includes('@') ? idTrim.toLowerCase() : idTrim;
+        const pwd = password.trim();
+        const { data: customAuthData } = await supabase
+          .rpc('authenticate_student', { identifier: idForAuth, password: pwd });
+        if (customAuthData && customAuthData.length > 0) {
+          const studentUser = customAuthData[0];
+          const mockUser: AuthUser = {
+            id: studentUser.user_id,
+            email: studentUser.email || undefined,
+            phone: studentUser.mobile || undefined,
+            user_metadata: {
+              full_name: studentUser.full_name,
+              role: 'student',
+              mobile: studentUser.mobile,
+              email: studentUser.email
+            }
+          } as AuthUser;
+          const mockSession = {
+            user: mockUser,
+            access_token: 'custom-auth-token',
+            refresh_token: 'custom-auth-refresh',
+            expires_at: Date.now() + (24 * 60 * 60 * 1000),
+            token_type: 'bearer'
+          } as Session;
+          setUser(mockUser);
+          setSession(mockSession);
+          await fetchUserProfile(studentUser.user_id, mockUser);
+          setLoading(false);
+          toast({ title: 'Sign in successful! ✨', description: `Welcome back, ${studentUser.full_name}!` });
+          return { error: null };
+        }
+      } catch {}
 
       return { error: new Error('Sign in failed') };
     } catch (error) {
