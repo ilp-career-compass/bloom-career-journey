@@ -265,17 +265,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           role: derivedRole,
           state_id: null
         };
-
+        
         setUserProfile(baseProfile);
         console.log('✅ Profile set from auth metadata:', baseProfile);
-
+        
         // Try to fetch role-specific records without blocking routing
         try {
           if (derivedRole === 'student') {
             const { data: studentData } = await supabase
-              .from('students')
-              .select('*')
-              .eq('user_id', userId)
+            .from('students')
+            .select('*')
+            .eq('user_id', userId)
               .maybeSingle();
             if (studentData) setUserProfile((prev:any) => ({ ...prev, studentProfile: studentData }));
           } else if (derivedRole === 'teacher') {

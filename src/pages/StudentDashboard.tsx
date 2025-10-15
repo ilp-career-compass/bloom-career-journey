@@ -73,6 +73,7 @@ export default function StudentDashboard() {
 
   // Mentor display name (assigned teacher)
   const [mentorName, setMentorName] = useState<string | null>(null);
+  const [mentorIds, setMentorIds] = useState<{ studentId: string | null; teacherId: string | null }>({ studentId: null, teacherId: null });
 
   // CareerChat LM state (no persistence)
   type ChatMsg = { id: string; role: 'user' | 'model'; text: string };
@@ -371,14 +372,15 @@ export default function StudentDashboard() {
         .select(`
           *,
           classes:class_id(name, states:state_id(name)),
-          teachers:teacher_id(users:user_id(full_name))
+          teachers:teacher_id(id, users:user_id(full_name))
         `)
         .eq('user_id', userProfile.id)
         .single();
 
       if (studentError) throw studentError;
-      // Set mentor name for student-facing UI
+      // Set mentor name and ids for chat
       setMentorName(studentData?.teachers?.users?.full_name || 'ILP Mentor');
+      setMentorIds({ studentId: studentData?.id || null, teacherId: studentData?.teachers?.id || null });
     } catch (error) {
       console.error('Error fetching student data:', error);
     }
@@ -570,12 +572,9 @@ export default function StudentDashboard() {
         {/* Welcome Section */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-800 mb-4">Welcome to Your Career Journey</h1>
-          <p className="text-xl text-gray-600">
-            Complete assessments in sequence to unlock your full potential
+          <p className="mt-4 text-base text-gray-700 max-w-4xl mx-auto leading-relaxed">
+            Welcome, young explorer, to the thrilling <strong>Career Discovery Journey!</strong> We invite you to step into this interactive space with curiosity and embark on a curated journey of <strong>Self-Discovery</strong> and comprehensive career exposure, designed to pave your path toward a productive future. Through engaging and carefully developed modules, you will explore your core interests, unlock your unique abilities, and define your personal dreams and aspirations. This journey is personalized, allowing ample time for reflection and exploration. Our specialized <strong>Vidya Saathis</strong> are integral to this process; they actively review your input, helping you chart your course, offering expert assessment, mentorship, and personalized guidance every step of the way to ensure you make informed decisions about your educational and career choices.
           </p>
-          <div className="mt-3 text-sm text-gray-700">
-            <span className="font-medium">Your Mentor:</span> {mentorName || 'ILP Mentor'}
-          </div>
         </div>
 
         {/* Overall Progress */}
@@ -731,6 +730,8 @@ export default function StudentDashboard() {
           </Card>
         </div>
 
+        {/* Message Mentor button removed as per request */}
+
         {/* Progress Summary */}
         <Card className="border-0 shadow-lg">
                 <CardHeader>
@@ -775,6 +776,24 @@ export default function StudentDashboard() {
                 </CardContent>
               </Card>
 
+        {/* Psychometric Tests – launcher row matching assessment UI */}
+        <Card className="mt-8 border-0 shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-xl text-gray-800">Psychometric Tests</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <button
+              type="button"
+              onClick={() => navigate('/holland-test')}
+              className="w-full text-left"
+            >
+              <div className="flex items-center justify-between p-4 bg-teal-50 rounded-lg hover:bg-teal-100 transition-colors">
+                <span className="font-medium text-teal-800">Psychometric Tests – Holland Code Assessment</span>
+                <Badge variant="outline" className="text-xs">Open 🔓</Badge>
+              </div>
+            </button>
+          </CardContent>
+        </Card>
         {/* CareerChat LM Section */}
         <div className="mt-12">
           <Card className="border-0 shadow-lg">

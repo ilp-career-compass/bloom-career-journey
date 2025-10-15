@@ -15,6 +15,7 @@ import MySchoolLearningAssessment from './components/assessments/MySchoolLearnin
 import MyRoleModelsAssessment from './components/assessments/MyRoleModelsAssessment';
 import MyHobbiesAssessment from './components/assessments/MyHobbiesAssessment';
 import AudioTestPage from './pages/AudioTestPage';
+import HollandTest from './pages/HollandTest';
 import { useEffect, Component, ErrorInfo, ReactNode } from 'react';
 
 // Error Boundary Component
@@ -131,6 +132,16 @@ function App() {
                     <MyHobbiesAssessment />
                   </ProtectedRoute>
                 } 
+              />
+
+              {/* Psychometric Test Route */}
+              <Route
+                path="/holland-test"
+                element={
+                  <ProtectedRoute allowedRoles={["student"]}>
+                    <HollandTest />
+                  </ProtectedRoute>
+                }
               />
               
               {/* Dashboard Routes */}

@@ -80,6 +80,7 @@ export default function AdminDashboard() {
   const [students, setStudents] = useState<Student[]>([]);
   const [showMentorOnly, setShowMentorOnly] = useState(false);
   const [loading, setLoading] = useState(true);
+  // Chat viewer removed as per request
   
   // Form states
   const [newOrgName, setNewOrgName] = useState('');
@@ -535,6 +536,7 @@ export default function AdminDashboard() {
                       <TableHead>School</TableHead>
                       <TableHead>Class</TableHead>
                       <TableHead>Teacher</TableHead>
+                      
                       <TableHead>Status</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -546,6 +548,7 @@ export default function AdminDashboard() {
                         <TableCell>{student.classes?.states?.name}</TableCell>
                         <TableCell>{student.classes?.name}</TableCell>
                         <TableCell>{student.teachers?.users?.full_name}</TableCell>
+                        
                         <TableCell>
                           <Badge variant="secondary">Active</Badge>
                         </TableCell>
@@ -627,6 +630,7 @@ export default function AdminDashboard() {
             </Card>
           </TabsContent>
         </Tabs>
+        
       </main>
     </div>
   );

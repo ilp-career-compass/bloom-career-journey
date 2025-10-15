@@ -19,7 +19,8 @@ import {
   Video,
   Youtube,
   ArrowLeft,
-  Save
+  Save,
+  BookOpen
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
@@ -40,6 +41,7 @@ interface AssessmentResponse {
     question4: string;
     question5: string;
     question6: string;
+    question7: string;
   };
   video2: {
     question1: string;
@@ -48,6 +50,7 @@ interface AssessmentResponse {
     question4: string;
     question5: string;
     question6: string;
+    question7: string;
   };
   video3: {
     question1: string;
@@ -56,6 +59,7 @@ interface AssessmentResponse {
     question4: string;
     question5: string;
     question6: string;
+    question7: string;
   };
   video4: {
     question1: string;
@@ -64,6 +68,7 @@ interface AssessmentResponse {
     question4: string;
     question5: string;
     question6: string;
+    question7: string;
   };
   video5: {
     question1: string;
@@ -72,6 +77,7 @@ interface AssessmentResponse {
     question4: string;
     question5: string;
     question6: string;
+    question7: string;
   };
   video6: {
     question1: string;
@@ -80,6 +86,7 @@ interface AssessmentResponse {
     question4: string;
     question5: string;
     question6: string;
+    question7: string;
   };
 }
 
@@ -104,12 +111,12 @@ export default function MyInspirationAssessment() {
   const [inspirationVideos, setInspirationVideos] = useState<InspirationVideo[]>([]);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [responses, setResponses] = useState<AssessmentResponse>({
-    video1: { question1: '', question2: '', question3: '', question4: '', question5: '', question6: '' },
-    video2: { question1: '', question2: '', question3: '', question4: '', question5: '', question6: '' },
-    video3: { question1: '', question2: '', question3: '', question4: '', question5: '', question6: '' },
-    video4: { question1: '', question2: '', question3: '', question4: '', question5: '', question6: '' },
-    video5: { question1: '', question2: '', question3: '', question4: '', question5: '', question6: '' },
-    video6: { question1: '', question2: '', question3: '', question4: '', question5: '', question6: '' }
+    video1: { question1: '', question2: '', question3: '', question4: '', question5: '', question6: '', question7: '' },
+    video2: { question1: '', question2: '', question3: '', question4: '', question5: '', question6: '', question7: '' },
+    video3: { question1: '', question2: '', question3: '', question4: '', question5: '', question6: '', question7: '' },
+    video4: { question1: '', question2: '', question3: '', question4: '', question5: '', question6: '', question7: '' },
+    video5: { question1: '', question2: '', question3: '', question4: '', question5: '', question6: '', question7: '' },
+    video6: { question1: '', question2: '', question3: '', question4: '', question5: '', question6: '', question7: '' }
   });
   const [audioResponses, setAudioResponses] = useState<{[key: string]: Blob | null}>({});
   const [loading, setLoading] = useState(true);
@@ -175,7 +182,8 @@ export default function MyInspirationAssessment() {
         question3: '',
         question4: '',
         question5: '',
-        question6: ''
+        question6: '',
+        question7: ''
       },
       isComplete: false,
       savedAt: undefined
@@ -233,13 +241,30 @@ export default function MyInspirationAssessment() {
         
         // Update video progress from saved data
         if (data.responses) {
-          const savedResponses = data.responses as AssessmentResponse;
-          console.log('Loading saved responses:', savedResponses);
-          setResponses(savedResponses);
+          const savedResponses = data.responses as Partial<AssessmentResponse>;
+          const mergeVideo = (vr: any) => ({
+            question1: vr?.question1 ?? '',
+            question2: vr?.question2 ?? '',
+            question3: vr?.question3 ?? '',
+            question4: vr?.question4 ?? '',
+            question5: vr?.question5 ?? '',
+            question6: vr?.question6 ?? '',
+            question7: vr?.question7 ?? ''
+          });
+          const mergedResponses: AssessmentResponse = {
+            video1: mergeVideo((savedResponses as any).video1 || {}),
+            video2: mergeVideo((savedResponses as any).video2 || {}),
+            video3: mergeVideo((savedResponses as any).video3 || {}),
+            video4: mergeVideo((savedResponses as any).video4 || {}),
+            video5: mergeVideo((savedResponses as any).video5 || {}),
+            video6: mergeVideo((savedResponses as any).video6 || {})
+          };
+          console.log('Loading saved responses:', mergedResponses);
+          setResponses(mergedResponses);
           
           const updatedProgress = defaultVideos.map(video => {
             const videoKey = `video${video.id}` as keyof AssessmentResponse;
-            const videoResponses = savedResponses[videoKey];
+            const videoResponses = mergedResponses[videoKey];
             const isComplete = Object.values(videoResponses).every((v: string) => v.trim() !== '');
             // Only mark as saved if the video has actual content (not just empty strings)
             const hasContent = Object.values(videoResponses).some((v: string) => v.trim() !== '');
@@ -289,9 +314,18 @@ export default function MyInspirationAssessment() {
               setResponses(keepRecord.responses);
               setIsCompleted(!!keepRecord.completed_at);
               
+              const mergeVideo2 = (vr: any) => ({
+                question1: vr?.question1 ?? '',
+                question2: vr?.question2 ?? '',
+                question3: vr?.question3 ?? '',
+                question4: vr?.question4 ?? '',
+                question5: vr?.question5 ?? '',
+                question6: vr?.question6 ?? '',
+                question7: vr?.question7 ?? ''
+              });
               const updatedProgress = defaultVideos.map(video => {
                 const videoKey = `video${video.id}` as keyof AssessmentResponse;
-                const videoResponses = keepRecord.responses[videoKey];
+                const videoResponses = mergeVideo2((keepRecord as any).responses[videoKey]);
                 const isComplete = Object.values(videoResponses).every((v: string) => v.trim() !== '');
                 const hasContent = Object.values(videoResponses).some((v: string) => v.trim() !== '');
                 return {
@@ -369,7 +403,7 @@ export default function MyInspirationAssessment() {
   };
 
   const getProgressPercentage = () => {
-    const totalQuestions = 6 * 6; // 6 videos × 6 questions
+    const totalQuestions = 6 * 7; // 6 videos × 7 questions
     const answeredQuestions = Object.values(responses).reduce((total, video) => {
       return total + Object.values(video as Record<string, string>).filter((v: string) => v.trim() !== '').length;
     }, 0);
@@ -393,7 +427,7 @@ export default function MyInspirationAssessment() {
 
   const getCurrentVideoCompletionStatus = () => {
     const video = videoProgress.find(v => v.videoId === currentVideoIndex + 1);
-    const totalQuestions = 6;
+    const totalQuestions = 7;
     const answeredQuestions = video ? Object.values(video.responses).filter((v: string) => v.trim() !== '').length : 0;
     return { answered: answeredQuestions, total: totalQuestions, isComplete: answeredQuestions === totalQuestions };
   };
@@ -412,7 +446,7 @@ export default function MyInspirationAssessment() {
     if (!video || !video.isComplete) {
       toast({
         title: "Cannot Save Yet",
-        description: "Please complete all 6 questions for this video before saving.",
+        description: "Please complete all 7 questions for this video before saving.",
         variant: "destructive",
       });
       return;
@@ -462,14 +496,22 @@ export default function MyInspirationAssessment() {
 
       // Merge only the specific video's responses with existing data
       const videoKey = `video${videoIndex + 1}` as keyof AssessmentResponse;
-      const existingResponses = existingData?.responses as AssessmentResponse || {
-        video1: { question1: '', question2: '', question3: '', question4: '', question5: '', question6: '' },
-        video2: { question1: '', question2: '', question3: '', question4: '', question5: '', question6: '' },
-        video3: { question1: '', question2: '', question3: '', question4: '', question5: '', question6: '' },
-        video4: { question1: '', question2: '', question3: '', question4: '', question5: '', question6: '' },
-        video5: { question1: '', question2: '', question3: '', question4: '', question5: '', question6: '' },
-        video6: { question1: '', question2: '', question3: '', question4: '', question5: '', question6: '' }
-      };
+      const existingResponses = (existingData?.responses as Partial<AssessmentResponse>) || {};
+      const ensureShape = (vr: any) => ({
+        question1: vr?.question1 ?? '',
+        question2: vr?.question2 ?? '',
+        question3: vr?.question3 ?? '',
+        question4: vr?.question4 ?? '',
+        question5: vr?.question5 ?? '',
+        question6: vr?.question6 ?? '',
+        question7: vr?.question7 ?? ''
+      });
+      (existingResponses as any).video1 = ensureShape((existingResponses as any).video1 || {});
+      (existingResponses as any).video2 = ensureShape((existingResponses as any).video2 || {});
+      (existingResponses as any).video3 = ensureShape((existingResponses as any).video3 || {});
+      (existingResponses as any).video4 = ensureShape((existingResponses as any).video4 || {});
+      (existingResponses as any).video5 = ensureShape((existingResponses as any).video5 || {});
+      (existingResponses as any).video6 = ensureShape((existingResponses as any).video6 || {});
 
       console.log('Existing responses from database:', existingResponses);
 
@@ -1126,6 +1168,47 @@ export default function MyInspirationAssessment() {
                   required
                 />
                 {!getCurrentVideoResponses().question6.trim() && (
+                  <p className="text-red-500 text-sm mt-1">This question is required</p>
+                )}
+              </div>
+
+              {/* Question 7 */}
+              <div className={`border-l-4 pl-6 ${getCurrentVideoResponses().question7?.trim() ? 'border-teal-400' : 'border-red-400'}`}>
+                <div className="flex items-start justify-between mb-3">
+                  <label className="block text-lg font-semibold text-gray-800 flex items-center gap-2">
+                    <BookOpen className="w-5 h-5 text-teal-500" />
+                    7. Write about the situation in this video/audio which you have seen, that inspired you.
+                    <span className="text-red-500 text-sm">*</span>
+                  </label>
+                  <div className="ml-4 flex-shrink-0">
+                    <AudioRecorder
+                      key={`${getCurrentVideoKey()}_question7`}
+                      questionId={`${getCurrentVideoKey()}_question7`}
+                      onRecordingComplete={(audioBlob, transcription) => {
+                        handleAudioResponse(getCurrentVideoKey(), 'question7', audioBlob, transcription);
+                      }}
+                      maxDuration={120000} // 2 minutes
+                      language="en-IN"
+                      studentId={userProfile?.id || 'test-student-123'}
+                      assessmentId="inspiration-assessment"
+                      assessmentType="inspiration"
+                      assessmentTitle="My Inspiration Assessment"
+                      compact={true}
+                    />
+                  </div>
+                </div>
+                <Textarea
+                  placeholder="Describe the situation from the video/audio that inspired you..."
+                  value={getCurrentVideoResponses().question7 || ''}
+                  onChange={(e) => handleResponseChange(getCurrentVideoKey(), 'question7', e.target.value)}
+                  rows={4}
+                  className={`text-base ${getCurrentVideoResponses().question7?.trim() 
+                    ? 'border-teal-200 focus:border-teal-400' 
+                    : 'border-red-300 focus:border-red-400 bg-red-50'
+                  }`}
+                  required
+                />
+                {!getCurrentVideoResponses().question7?.trim() && (
                   <p className="text-red-500 text-sm mt-1">This question is required</p>
                 )}
               </div>

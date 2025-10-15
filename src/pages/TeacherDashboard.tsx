@@ -171,9 +171,9 @@ export default function TeacherDashboard() {
   const [activityNotesMap, setActivityNotesMap] = useState<Record<string, string>>({});
   const [activitySaving, setActivitySaving] = useState<Record<string, boolean>>({});
   const [assessmentAnswers, setAssessmentAnswers] = useState<any[]>([]);
+  const [unreadMap, setUnreadMap] = useState<Record<string, boolean>>({});
 
   // Help center dialogs
-  const [chatOpen, setChatOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -237,7 +237,13 @@ export default function TeacherDashboard() {
 
       if (error) throw error;
 
-      setStudents(data || []);
+      const rows = data || [];
+      setStudents(rows);
+      // Load unread flags per student
+      try {
+        const studentIds = rows.map((r:any)=> r.id);
+        // removed chat unread fetch per request
+      } catch {}
     } catch (error) {
       console.error('Error loading students:', error);
       toast({
@@ -954,6 +960,7 @@ export default function TeacherDashboard() {
                                 }}>
                                   <Eye className="w-4 h-4" />
                                 </Button>
+                                {/* Chat button removed as per request */}
                                 <Button variant="ghost" size="sm">
                                   <Edit className="w-4 h-4" />
                                 </Button>
@@ -1180,7 +1187,8 @@ export default function TeacherDashboard() {
           onImported={loadStudents}
         />
       )}
-      <ChatbotDialog open={chatOpen} onOpenChange={setChatOpen} />
+      {/* Keep ChatbotDialog unrelated to mentor chat */}
+      <ChatbotDialog open={false} onOpenChange={()=>{}} />
       <ContactIlpDialog open={contactOpen} onOpenChange={setContactOpen} />
 
       {/* Add Student Modal */}
