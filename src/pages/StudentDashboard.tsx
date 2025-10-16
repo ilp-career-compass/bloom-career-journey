@@ -149,6 +149,7 @@ export default function StudentDashboard() {
 
   // Assessment progress states
   const [assessmentProgress, setAssessmentProgress] = useState<Record<string, any> | null>(null);
+  const [aboutMeProgress, setAboutMeProgress] = useState<Record<string, any> | null>(null);
   const [dreamsProgress, setDreamsProgress] = useState<Record<string, any> | null>(null);
   const [stateLearningProgress, setSchoolLearningProgress] = useState<Record<string, any> | null>(null);
   const [roleModelsProgress, setRoleModelsProgress] = useState<Record<string, any> | null>(null);
@@ -156,6 +157,7 @@ export default function StudentDashboard() {
 
   // Assessment completion status
   const [inspirationCompleted, setInspirationCompleted] = useState(false);
+  const [aboutMeCompleted, setAboutMeCompleted] = useState(false);
   const [dreamsCompleted, setDreamsCompleted] = useState(false);
   const [stateLearningCompleted, setSchoolLearningCompleted] = useState(false);
   const [roleModelsCompleted, setRoleModelsCompleted] = useState(false);
@@ -247,6 +249,29 @@ export default function StudentDashboard() {
     }
   };
 
+  const checkAboutMeProgress = async () => {
+    const studentId = await getStudentId();
+    if (!studentId) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('assessment_responses')
+        .select('*')
+        .eq('student_id', studentId)
+        .eq('assessment_type', 'about_me')
+        .eq('assessment_title', 'About Me')
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (data && !error) {
+        setAboutMeProgress(data);
+      }
+    } catch (error) {
+      // ignore
+    }
+  };
+
   const checkDreamsProgress = async () => {
     const studentId = await getStudentId();
     if (!studentId) return;
@@ -258,7 +283,7 @@ export default function StudentDashboard() {
         .eq('student_id', studentId)
         .eq('assessment_type', 'dreams')
         .eq('assessment_title', 'My Dreams')
-        .order('completed_at', { ascending: false })
+        .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
@@ -281,7 +306,7 @@ export default function StudentDashboard() {
         .eq('student_id', studentId)
         .eq('assessment_type', 'state_learning')
         .eq('assessment_title', 'My School, My Learning and I')
-        .order('completed_at', { ascending: false })
+        .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
@@ -302,7 +327,7 @@ export default function StudentDashboard() {
         .eq('student_id', studentId)
         .eq('assessment_type', 'role_models')
         .eq('assessment_title', 'My Role Models')
-        .order('completed_at', { ascending: false })
+        .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
@@ -325,6 +350,7 @@ export default function StudentDashboard() {
         .eq('student_id', studentId)
         .eq('assessment_type', 'hobbies')
         .eq('assessment_title', 'My Hobbies')
+        .not('completed_at', 'is', null)
         .order('completed_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -342,6 +368,7 @@ export default function StudentDashboard() {
     if (!userProfile?.id) return;
     fetchData();
     checkAssessmentProgress();
+    checkAboutMeProgress();
     checkDreamsProgress();
     checkSchoolLearningProgress();
     checkRoleModelsProgress();
@@ -351,16 +378,18 @@ export default function StudentDashboard() {
   // Update completion status when progress changes
   useEffect(() => {
     const insp = !!assessmentProgress?.completed_at;
+    const about = !!aboutMeProgress?.completed_at;
     const dreams = !!dreamsProgress?.completed_at;
     const state = !!stateLearningProgress?.completed_at;
     const roles = !!roleModelsProgress?.completed_at;
     const hobbies = !!hobbiesProgress?.completed_at;
     setInspirationCompleted(insp);
+    setAboutMeCompleted(about);
     setDreamsCompleted(dreams);
     setSchoolLearningCompleted(state);
     setRoleModelsCompleted(roles);
     setHobbiesCompleted(hobbies);
-  }, [assessmentProgress, dreamsProgress, stateLearningProgress, roleModelsProgress, hobbiesProgress]);
+  }, [assessmentProgress, aboutMeProgress, dreamsProgress, stateLearningProgress, roleModelsProgress, hobbiesProgress]);
 
   const fetchData = async () => {
     if (!userProfile?.id) return;
@@ -393,14 +422,16 @@ export default function StudentDashboard() {
     switch (assessmentType) {
       case 'inspiration':
         return true; // Always unlocked
-      case 'dreams':
+      case 'about_me':
         return inspirationCompleted;
+      case 'dreams':
+        return inspirationCompleted && aboutMeCompleted;
       case 'state_learning':
-        return inspirationCompleted && dreamsCompleted;
+        return inspirationCompleted && aboutMeCompleted && dreamsCompleted;
       case 'role_models':
-        return inspirationCompleted && dreamsCompleted && stateLearningCompleted;
+        return inspirationCompleted && aboutMeCompleted && dreamsCompleted && stateLearningCompleted;
       case 'hobbies':
-        return inspirationCompleted && dreamsCompleted && stateLearningCompleted && roleModelsCompleted;
+        return inspirationCompleted && aboutMeCompleted && dreamsCompleted && stateLearningCompleted && roleModelsCompleted;
       default:
         return false;
     }
@@ -446,6 +477,8 @@ export default function StudentDashboard() {
     switch (assessmentType) {
       case 'inspiration':
         return !!assessmentProgress?.completed_at;
+      case 'about_me':
+        return !!aboutMeProgress?.completed_at;
       case 'dreams':
         return !!dreamsProgress?.completed_at;
       case 'state_learning':
@@ -464,6 +497,8 @@ export default function StudentDashboard() {
     switch (assessmentType) {
       case 'inspiration':
         return Play;
+      case 'about_me':
+        return User;
       case 'dreams':
         return Star;
       case 'state_learning':
@@ -489,10 +524,13 @@ export default function StudentDashboard() {
 
     if (assessmentType === 'inspiration') {
       navigate('/assessment/inspiration');
+    } else if (assessmentType === 'about_me') {
+      navigate('/assessment/about-me');
     } else if (assessmentType === 'dreams') {
       navigate('/assessment/dreams');
     } else if (assessmentType === 'state_learning') {
-      navigate('/assessment/state-learning');
+      // Correct route for School & Learning assessment
+      navigate('/assessment/school-learning');
     } else if (assessmentType === 'role_models') {
       navigate('/assessment/role-models');
     } else if (assessmentType === 'hobbies') {
@@ -502,8 +540,8 @@ export default function StudentDashboard() {
 
   // Calculate overall progress
   const getOverallProgress = () => {
-    const totalAssessments = 5;
-    const completedAssessments = [inspirationCompleted, dreamsCompleted, stateLearningCompleted, roleModelsCompleted, hobbiesCompleted]
+    const totalAssessments = 6;
+    const completedAssessments = [inspirationCompleted, aboutMeCompleted, dreamsCompleted, stateLearningCompleted, roleModelsCompleted, hobbiesCompleted]
       .filter(Boolean).length;
     return (completedAssessments / totalAssessments) * 100;
   };
@@ -586,14 +624,14 @@ export default function StudentDashboard() {
                           </div>
             <Progress value={getOverallProgress()} className="h-3" />
             <div className="flex justify-between text-sm text-gray-600 mt-2">
-              <span>5 Assessments Total</span>
+              <span>6 Assessments Total</span>
               <span>{Math.round(getOverallProgress())}% Complete</span>
                         </div>
           </CardContent>
         </Card>
 
         {/* Assessment Cards - Sequential Unlocking */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 mb-8">
           {/* 1. My Inspiration - Always Unlocked */}
           <Card
             className={getAssessmentStatus('inspiration').className}
@@ -621,7 +659,34 @@ export default function StudentDashboard() {
                     </CardContent>
                   </Card>
 
-          {/* 2. My Dreams - Unlocked after Inspiration */}
+          {/* 2. About Me - Unlocked after Inspiration */}
+          <Card
+            className={getAssessmentStatus('about_me').className}
+            onClick={() => startAssessment('about_me')}
+          >
+            <CardContent className="p-6 text-center">
+              {React.createElement(getAssessmentStatus('about_me').icon, {
+                className: `w-12 h-12 ${getAssessmentStatus('about_me').iconColor} mx-auto mb-3`
+              })}
+              <h3 className={`font-semibold ${getAssessmentStatus('about_me').textColor} mb-2`}>
+                2. About Me
+              </h3>
+              <p className={`text-sm ${getAssessmentStatus('about_me').descriptionColor} mb-2`}>
+                Reflect about yourself and your strengths
+              </p>
+              {getCompletionStatus('about_me') && (
+                <Badge variant="default" className="mt-2 bg-green-600">Completed ✓</Badge>
+              )}
+              {!getCompletionStatus('about_me') && isAssessmentUnlocked('about_me') && (
+                <Badge variant="secondary" className="mt-2">Available</Badge>
+              )}
+              {!isAssessmentUnlocked('about_me') && (
+                <Badge variant="outline" className="mt-2">Locked 🔒</Badge>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* 3. My Dreams - Unlocked after About Me */}
           <Card
             className={getAssessmentStatus('dreams').className}
             onClick={() => startAssessment('dreams')}
@@ -631,7 +696,7 @@ export default function StudentDashboard() {
                 className: `w-12 h-12 ${getAssessmentStatus('dreams').iconColor} mx-auto mb-3`
               })}
               <h3 className={`font-semibold ${getAssessmentStatus('dreams').textColor} mb-2`}>
-                2. My Dreams
+                3. My Dreams
               </h3>
               <p className={`text-sm ${getAssessmentStatus('dreams').descriptionColor} mb-2`}>
                 Explore your future aspirations
@@ -658,7 +723,7 @@ export default function StudentDashboard() {
                 className: `w-12 h-12 ${getAssessmentStatus('state_learning').iconColor} mx-auto mb-3`
               })}
               <h3 className={`font-semibold ${getAssessmentStatus('state_learning').textColor} mb-2`}>
-                3. My School & Learning
+                4. My School & Learning
               </h3>
               <p className={`text-sm ${getAssessmentStatus('state_learning').descriptionColor} mb-2`}>
                 Reflect on your learning journey
@@ -685,7 +750,7 @@ export default function StudentDashboard() {
                 className: `w-12 h-12 ${getAssessmentStatus('role_models').iconColor} mx-auto mb-3`
               })}
               <h3 className={`font-semibold ${getAssessmentStatus('role_models').textColor} mb-2`}>
-                4. My Role Models
+                5. My Role Models
               </h3>
               <p className={`text-sm ${getAssessmentStatus('role_models').descriptionColor} mb-2`}>
                 Identify your inspiring role models
@@ -712,7 +777,7 @@ export default function StudentDashboard() {
                 className: `w-12 h-12 ${getAssessmentStatus('hobbies').iconColor} mx-auto mb-3`
               })}
               <h3 className={`font-semibold ${getAssessmentStatus('hobbies').textColor} mb-2`}>
-                5. My Hobbies
+                6. My Hobbies
               </h3>
               <p className={`text-sm ${getAssessmentStatus('hobbies').descriptionColor} mb-2`}>
                 Discover career paths from your interests
@@ -749,25 +814,31 @@ export default function StudentDashboard() {
                 </Badge>
               </div>
               <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                <span className="font-medium text-blue-800">2. My Dreams</span>
-                <Badge variant={dreamsCompleted ? "default" : (inspirationCompleted ? "secondary" : "outline")}>
-                  {dreamsCompleted ? "Completed ✓" : (inspirationCompleted ? "Available" : "Locked 🔒")}
+                <span className="font-medium text-blue-800">2. About Me</span>
+                <Badge variant={aboutMeCompleted ? "default" : (inspirationCompleted ? "secondary" : "outline")}>
+                  {aboutMeCompleted ? "Completed ✓" : (inspirationCompleted ? "Available" : "Locked 🔒")}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                <span className="font-medium text-blue-800">3. My Dreams</span>
+                <Badge variant={dreamsCompleted ? "default" : (aboutMeCompleted ? "secondary" : "outline")}>
+                  {dreamsCompleted ? "Completed ✓" : (aboutMeCompleted ? "Available" : "Locked 🔒")}
                 </Badge>
               </div>
               <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
-                <span className="font-medium text-purple-800">3. My School & Learning</span>
+                <span className="font-medium text-purple-800">4. My School & Learning</span>
                 <Badge variant={stateLearningCompleted ? "default" : (dreamsCompleted ? "secondary" : "outline")}>
                   {stateLearningCompleted ? "Completed ✓" : (dreamsCompleted ? "Available" : "Locked 🔒")}
                 </Badge>
               </div>
               <div className="flex items-center justify-between p-3 bg-pink-50 rounded-lg">
-                <span className="font-medium text-pink-800">4. My Role Models</span>
+                <span className="font-medium text-pink-800">5. My Role Models</span>
                 <Badge variant={roleModelsCompleted ? "default" : (stateLearningCompleted ? "secondary" : "outline")}>
                   {roleModelsCompleted ? "Completed ✓" : (stateLearningCompleted ? "Available" : "Locked 🔒")}
                 </Badge>
                   </div>
               <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
-                <span className="font-medium text-orange-800">5. My Hobbies</span>
+                <span className="font-medium text-orange-800">6. My Hobbies</span>
                 <Badge variant={hobbiesCompleted ? "default" : (roleModelsCompleted ? "secondary" : "outline")}>
                   {hobbiesCompleted ? "Completed ✓" : (roleModelsCompleted ? "Available" : "Locked 🔒")}
                 </Badge>

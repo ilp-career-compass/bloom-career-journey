@@ -14,6 +14,7 @@ import MyDreamsAssessment from './components/assessments/MyDreamsAssessment';
 import MySchoolLearningAssessment from './components/assessments/MySchoolLearningAssessment';
 import MyRoleModelsAssessment from './components/assessments/MyRoleModelsAssessment';
 import MyHobbiesAssessment from './components/assessments/MyHobbiesAssessment';
+import AboutMeAssessment from './components/assessments/AboutMeAssessment';
 import AudioTestPage from './pages/AudioTestPage';
 import HollandTest from './pages/HollandTest';
 import { useEffect, Component, ErrorInfo, ReactNode } from 'react';
@@ -98,6 +99,14 @@ function App() {
                 element={
                   <ProtectedRoute allowedRoles={['student']}>
                     <MyInspirationAssessment />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/assessment/about-me" 
+                element={
+                  <ProtectedRoute allowedRoles={['student']}>
+                    <AboutMeAssessment />
                   </ProtectedRoute>
                 } 
               />

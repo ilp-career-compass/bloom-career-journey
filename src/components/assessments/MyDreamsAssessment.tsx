@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface DreamAssessmentResponse {
   part1: {
@@ -43,7 +45,6 @@ interface DreamAssessmentResponse {
     question14: string; // First step
     question15: string; // Willpower and enthusiasm
     question16: string; // Obstacles
-    question17: string; // Is state education enough
   };
 }
 
@@ -70,8 +71,7 @@ export default function MyDreamsAssessment() {
       question13: '',
       question14: '',
       question15: '',
-      question16: '',
-      question17: ''
+      question16: ''
     }
   });
   const [loading, setLoading] = useState(true);
@@ -82,6 +82,32 @@ export default function MyDreamsAssessment() {
   useEffect(() => {
     checkExistingResponse();
   }, []);
+
+  // Auto-save draft when responses change (debounced)
+  useEffect(() => {
+    if (loading || isCompleted) return;
+    const t = setTimeout(async () => {
+      try {
+        if (!userProfile?.id) return;
+        // Resolve student_id
+        let studentId = userProfile.studentProfile?.id as string | undefined;
+        if (!studentId) {
+          const { data: row } = await supabase.from('students').select('id').eq('user_id', userProfile.id).maybeSingle();
+          studentId = row?.id;
+        }
+        if (!studentId) return;
+        await supabase.from('assessment_responses').upsert({
+          student_id: studentId,
+          assessment_type: 'dreams',
+          assessment_title: 'My Dreams',
+          responses,
+          updated_at: new Date().toISOString(),
+          completed_at: null
+        });
+      } catch {}
+    }, 800);
+    return () => clearTimeout(t);
+  }, [responses, loading, isCompleted, userProfile]);
 
   const checkExistingResponse = async () => {
     if (!userProfile) return;
@@ -130,7 +156,7 @@ export default function MyDreamsAssessment() {
   };
 
   const getProgressPercentage = () => {
-    const totalQuestions = 17;
+    const totalQuestions = 16;
     const answeredQuestions = Object.values(responses.part1).filter(v => v.trim() !== '').length +
                              Object.values(responses.part2).filter(v => v.trim() !== '').length;
     return totalQuestions > 0 ? (answeredQuestions / totalQuestions) * 100 : 0;
@@ -181,7 +207,8 @@ export default function MyDreamsAssessment() {
           assessment_type: 'dreams',
           assessment_title: 'My Dreams',
           responses: responses,
-          completed_at: new Date().toISOString()
+          completed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         });
 
       if (error) throw error;
@@ -258,6 +285,17 @@ export default function MyDreamsAssessment() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 py-8">
       <div className="container mx-auto px-4">
+        <div className="mb-4">
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/student')}
+            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </Button>
+        </div>
+        <TooltipProvider>
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-blue-800 mb-2">🌟 My Dreams Assessment</h1>
@@ -323,11 +361,17 @@ export default function MyDreamsAssessment() {
             <CardContent className="p-6">
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                     1. What dreams do you have for your future?
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" aria-label="Help" className="text-blue-600 hover:text-blue-700">💬</button>
+                      </TooltipTrigger>
+                      <TooltipContent>Write about what you wish to become or achieve in life.</TooltipContent>
+                    </Tooltip>
                   </label>
                   <Textarea
-                    placeholder="Describe your biggest dreams and aspirations..."
+                  placeholder="Write about what you wish to become or achieve in life."
                     value={responses.part1.question1}
                     onChange={(e) => handleResponseChange('part1', 'question1', e.target.value)}
                     rows={4}
@@ -337,11 +381,17 @@ export default function MyDreamsAssessment() {
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      2. Educational degree that you aspire to get?
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                      2. What educational degree that you aspire to get?
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button type="button" aria-label="Help" className="text-blue-600 hover:text-blue-700">💬</button>
+                        </TooltipTrigger>
+                        <TooltipContent>Mention the course or degree you want to study in the future.</TooltipContent>
+                      </Tooltip>
                     </label>
                     <Textarea
-                      placeholder="What degree do you want to pursue?"
+                      placeholder="Mention the course or degree you want to study in the future."
                       value={responses.part1.question2}
                       onChange={(e) => handleResponseChange('part1', 'question2', e.target.value)}
                       rows={2}
@@ -350,11 +400,17 @@ export default function MyDreamsAssessment() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      3. Your aspirational career?
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                      3. What is your aspirational career?
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button type="button" aria-label="Help" className="text-blue-600 hover:text-blue-700">💬</button>
+                        </TooltipTrigger>
+                        <TooltipContent>Write about the job or profession you wish to do when you grow up.</TooltipContent>
+                      </Tooltip>
                     </label>
                     <Textarea
-                      placeholder="What career do you dream of having?"
+                      placeholder="Write about the job or profession you wish to do when you grow up."
                       value={responses.part1.question3}
                       onChange={(e) => handleResponseChange('part1', 'question3', e.target.value)}
                       rows={2}
@@ -363,11 +419,17 @@ export default function MyDreamsAssessment() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                       4. A sport that you aspire to play professionally
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button type="button" aria-label="Help" className="text-blue-600 hover:text-blue-700">💬</button>
+                        </TooltipTrigger>
+                        <TooltipContent>Write the name of the sport you dream of playing as a career.</TooltipContent>
+                      </Tooltip>
                     </label>
                     <Textarea
-                      placeholder="Which sport would you love to play professionally?"
+                      placeholder="Write the name of the sport you dream of playing as a career."
                       value={responses.part1.question4}
                       onChange={(e) => handleResponseChange('part1', 'question4', e.target.value)}
                       rows={2}
@@ -376,11 +438,17 @@ export default function MyDreamsAssessment() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                       5. If you can become a writer, you will write about
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button type="button" aria-label="Help" className="text-blue-600 hover:text-blue-700">💬</button>
+                        </TooltipTrigger>
+                        <TooltipContent>Mention what topics or stories you would like to write about.</TooltipContent>
+                      </Tooltip>
                     </label>
                     <Textarea
-                      placeholder="What would you write about?"
+                      placeholder="Mention what topics or stories you would like to write about."
                       value={responses.part1.question5}
                       onChange={(e) => handleResponseChange('part1', 'question5', e.target.value)}
                       rows={2}
@@ -389,11 +457,17 @@ export default function MyDreamsAssessment() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                       6. The musical instrument you desire to play
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button type="button" aria-label="Help" className="text-blue-600 hover:text-blue-700">💬</button>
+                        </TooltipTrigger>
+                        <TooltipContent>Write the name of the instrument you wish to learn or play.</TooltipContent>
+                      </Tooltip>
                     </label>
                     <Textarea
-                      placeholder="Which instrument would you love to play?"
+                      placeholder="Write the name of the instrument you wish to learn or play."
                       value={responses.part1.question6}
                       onChange={(e) => handleResponseChange('part1', 'question6', e.target.value)}
                       rows={2}
@@ -402,11 +476,17 @@ export default function MyDreamsAssessment() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                       7. The college you would like to study in
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button type="button" aria-label="Help" className="text-blue-600 hover:text-blue-700">💬</button>
+                        </TooltipTrigger>
+                        <TooltipContent>Mention the college or type of college you dream of joining.</TooltipContent>
+                      </Tooltip>
                     </label>
                     <Textarea
-                      placeholder="Which college is your dream college?"
+                      placeholder="Mention the college or type of college you dream of joining."
                       value={responses.part1.question7}
                       onChange={(e) => handleResponseChange('part1', 'question7', e.target.value)}
                       rows={2}
@@ -415,11 +495,17 @@ export default function MyDreamsAssessment() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                       8. If you can help anyone or anything in this world, that is
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button type="button" aria-label="Help" className="text-blue-600 hover:text-blue-700">💬</button>
+                        </TooltipTrigger>
+                        <TooltipContent>Write about the person, group, or cause you want to help and why.</TooltipContent>
+                      </Tooltip>
                     </label>
                     <Textarea
-                      placeholder="Who or what would you help?"
+                      placeholder="Write about the person, group, or cause you want to help and why."
                       value={responses.part1.question8}
                       onChange={(e) => handleResponseChange('part1', 'question8', e.target.value)}
                       rows={2}
@@ -428,11 +514,17 @@ export default function MyDreamsAssessment() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                       9. If you can live anywhere in the world, that would be in
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button type="button" aria-label="Help" className="text-blue-600 hover:text-blue-700">💬</button>
+                        </TooltipTrigger>
+                        <TooltipContent>Write the place or country where you would love to live.</TooltipContent>
+                      </Tooltip>
                     </label>
                     <Textarea
-                      placeholder="Where would you love to live?"
+                      placeholder="Write the place or country where you would love to live."
                       value={responses.part1.question9}
                       onChange={(e) => handleResponseChange('part1', 'question9', e.target.value)}
                       rows={2}
@@ -441,11 +533,17 @@ export default function MyDreamsAssessment() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                       10. If you can become an artiste, the art that you would choose would be
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button type="button" aria-label="Help" className="text-blue-600 hover:text-blue-700">💬</button>
+                        </TooltipTrigger>
+                        <TooltipContent>Mention what kind of art you would like to do — like painting, dance, music, etc.</TooltipContent>
+                      </Tooltip>
                     </label>
                     <Textarea
-                      placeholder="Which form of art would you choose?"
+                      placeholder="Mention what kind of art you would like to do — like painting, dance, music, etc."
                       value={responses.part1.question10}
                       onChange={(e) => handleResponseChange('part1', 'question10', e.target.value)}
                       rows={2}
@@ -454,8 +552,14 @@ export default function MyDreamsAssessment() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                       11. Others
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button type="button" aria-label="Help" className="text-blue-600 hover:text-blue-700">💬</button>
+                        </TooltipTrigger>
+                        <TooltipContent>Any other dreams or aspirations you have.</TooltipContent>
+                      </Tooltip>
                     </label>
                     <Textarea
                       placeholder="Any other dreams or aspirations?"
@@ -467,11 +571,17 @@ export default function MyDreamsAssessment() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                       12. Would you want to make your dream come true?
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button type="button" aria-label="Help" className="text-blue-600 hover:text-blue-700">💬</button>
+                        </TooltipTrigger>
+                        <TooltipContent>Write 'Yes' or 'No' and share your reason.</TooltipContent>
+                      </Tooltip>
                     </label>
                     <Textarea
-                      placeholder="How committed are you to achieving your dreams?"
+                      placeholder="Write 'Yes' or 'No' and share your reason."
                       value={responses.part1.question12}
                       onChange={(e) => handleResponseChange('part1', 'question12', e.target.value)}
                       rows={2}
@@ -496,11 +606,17 @@ export default function MyDreamsAssessment() {
             <CardContent className="p-6">
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                     13. What do you need to make your dreams come true? (For any one of your dreams)
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" aria-label="Help" className="text-green-700 hover:text-green-800">💬</button>
+                      </TooltipTrigger>
+                      <TooltipContent>Write what support, skills, or things you need to reach your goal.</TooltipContent>
+                    </Tooltip>
                   </label>
                   <Textarea
-                    placeholder="What resources, skills, or support do you need?"
+                    placeholder="Write what support, skills, or things you need to reach your goal."
                     value={responses.part2.question13}
                     onChange={(e) => handleResponseChange('part2', 'question13', e.target.value)}
                     rows={3}
@@ -509,11 +625,17 @@ export default function MyDreamsAssessment() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                     14. What is the first step you need to take to make your dreams come true?
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" aria-label="Help" className="text-green-700 hover:text-green-800">💬</button>
+                      </TooltipTrigger>
+                      <TooltipContent>Write the first small action you can start with to move toward your dream.</TooltipContent>
+                    </Tooltip>
                   </label>
                   <Textarea
-                    placeholder="What's the very first action you should take?"
+                    placeholder="Write the first small action you can start with to move toward your dream."
                     value={responses.part2.question14}
                     onChange={(e) => handleResponseChange('part2', 'question14', e.target.value)}
                     rows={3}
@@ -522,11 +644,17 @@ export default function MyDreamsAssessment() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                     15. Do you have the will power and enthusiasm to make your dream a reality?
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" aria-label="Help" className="text-green-700 hover:text-green-800">💬</button>
+                      </TooltipTrigger>
+                      <TooltipContent>Write about how determined and excited you feel to work for your dream.</TooltipContent>
+                    </Tooltip>
                   </label>
                   <Textarea
-                    placeholder="Assess your motivation and determination..."
+                    placeholder="Write about how determined and excited you feel to work for your dream."
                     value={responses.part2.question15}
                     onChange={(e) => handleResponseChange('part2', 'question15', e.target.value)}
                     rows={3}
@@ -535,11 +663,17 @@ export default function MyDreamsAssessment() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                     16. Are there any obstacles to reach your dream? If there are any, which ones?
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" aria-label="Help" className="text-green-700 hover:text-green-800">💬</button>
+                      </TooltipTrigger>
+                      <TooltipContent>Write about the problems or challenges that may stop you from reaching your dream.</TooltipContent>
+                    </Tooltip>
                   </label>
                   <Textarea
-                    placeholder="What challenges or barriers might you face?"
+                    placeholder="Write about the problems or challenges that may stop you from reaching your dream."
                     value={responses.part2.question16}
                     onChange={(e) => handleResponseChange('part2', 'question16', e.target.value)}
                     rows={3}
@@ -547,37 +681,7 @@ export default function MyDreamsAssessment() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    17. Is state education enough to make your dreams come true? How?
-                  </label>
-                  <Textarea
-                    placeholder="Evaluate if formal education is sufficient or what else you need..."
-                    value={responses.part2.question17}
-                    onChange={(e) => handleResponseChange('part2', 'question17', e.target.value)}
-                    rows={3}
-                    className="border-green-200 focus:border-green-400"
-                  />
-                </div>
-
-                {/* Video Section */}
-                <div className="mt-8 p-6 bg-gray-50 rounded-lg">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                    <Play className="w-5 h-5 text-blue-600" />
-                    Additional Inspiration
-                  </h3>
-                  <p className="text-gray-600 mb-4">
-                    Watch this video to get inspired about pursuing your dreams:
-                  </p>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => window.open('https://youtu.be/Bi-7pho5XB8', '_blank')}
-                    className="border-blue-200 text-blue-700 hover:bg-blue-50"
-                  >
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    Watch Video
-                  </Button>
-                </div>
+                
               </div>
             </CardContent>
           </Card>
@@ -613,6 +717,7 @@ export default function MyDreamsAssessment() {
             </Button>
           )}
         </div>
+        </TooltipProvider>
       </div>
     </div>
   );

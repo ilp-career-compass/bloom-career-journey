@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface HobbiesAssessmentResponse {
   question1: string; // What do you do in your spare time?
@@ -35,6 +36,11 @@ interface HobbiesAssessmentResponse {
   question5: string; // Where did the inspiration for your hobby come from? From whom?
   question6: string; // Do you know someone who has your hobby? Who?
   question7: string; // List the talents you have
+  question8: string; // Do you practise to improve your talent?
+  question9: string; // Do you have opportunities and encouragement at school and home to practise your hobbies?
+  question10: string; // Do any of your hobbies complement your talents?
+  question11: string; // Could you turn any hobby/talent into your career? If yes, how?
+  question12: string; // Has someone you know made a career out of their hobby or talent?
 }
 
 export default function MyHobbiesAssessment() {
@@ -48,7 +54,12 @@ export default function MyHobbiesAssessment() {
     question4: '',
     question5: '',
     question6: '',
-    question7: ''
+    question7: '',
+    question8: '',
+    question9: '',
+    question10: '',
+    question11: '',
+    question12: ''
   });
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -57,6 +68,31 @@ export default function MyHobbiesAssessment() {
   useEffect(() => {
     checkExistingResponse();
   }, []);
+
+  // Auto-save drafts when answers change (debounced)
+  useEffect(() => {
+    if (loading || isCompleted) return;
+    const t = setTimeout(async () => {
+      try {
+        if (!userProfile?.id) return;
+        let studentId = userProfile.studentProfile?.id as string | undefined;
+        if (!studentId) {
+          const { data: row } = await supabase.from('students').select('id').eq('user_id', userProfile.id).maybeSingle();
+          studentId = row?.id;
+        }
+        if (!studentId) return;
+        await supabase.from('assessment_responses').upsert({
+          student_id: studentId,
+          assessment_type: 'hobbies',
+          assessment_title: 'My Hobbies',
+          responses,
+          updated_at: new Date().toISOString(),
+          completed_at: null
+        });
+      } catch {}
+    }, 800);
+    return () => clearTimeout(t);
+  }, [responses, loading, isCompleted, userProfile]);
 
   const checkExistingResponse = async () => {
     if (!userProfile) return;
@@ -102,7 +138,7 @@ export default function MyHobbiesAssessment() {
   };
 
   const getProgressPercentage = () => {
-    const totalQuestions = 7;
+    const totalQuestions = Object.keys(responses).length;
     const answeredQuestions = Object.values(responses).filter(v => v.trim() !== '').length;
     return totalQuestions > 0 ? (answeredQuestions / totalQuestions) * 100 : 0;
   };
@@ -150,7 +186,8 @@ export default function MyHobbiesAssessment() {
           assessment_type: 'hobbies',
           assessment_title: 'My Hobbies',
           responses: responses,
-          completed_at: new Date().toISOString()
+          completed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         });
 
       if (error) throw error;
@@ -225,8 +262,15 @@ export default function MyHobbiesAssessment() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-pink-50 py-8">
-      <div className="container mx-auto px-4">
+		<div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-pink-50 py-8">
+			<div className="container mx-auto px-4">
+				<TooltipProvider>
+        <div className="text-left mb-2">
+          <Button variant="ghost" onClick={() => navigate('/student')} className="text-orange-700 hover:text-orange-800 hover:bg-orange-50">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 mr-2"><path fillRule="evenodd" d="M12.53 3.47a.75.75 0 010 1.06L6.31 10.75H21a.75.75 0 010 1.5H6.31l6.22 6.22a.75.75 0 11-1.06 1.06l-7.5-7.5a.75.75 0 010-1.06l7.5-7.5a.75.75 0 011.06 0z" clipRule="evenodd" /></svg>
+            Back to Dashboard
+          </Button>
+        </div>
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-orange-800 mb-2">🎨 My Hobbies</h1>
@@ -247,7 +291,7 @@ export default function MyHobbiesAssessment() {
             </div>
             <Progress value={getProgressPercentage()} className="h-3" />
             <div className="flex justify-between text-sm text-gray-600 mt-2">
-              <span>7 Questions Total</span>
+              <span>12 Questions Total</span>
               <span>{Math.round(getProgressPercentage())}% Complete</span>
             </div>
           </CardContent>
@@ -268,9 +312,15 @@ export default function MyHobbiesAssessment() {
                 <label className="block text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
                   <Palette className="w-5 h-5 text-orange-500" />
                   1. What do you do in your spare time?
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button type="button" aria-label="Help" className="text-orange-600 hover:text-orange-700">💬</button>
+                    </TooltipTrigger>
+                    <TooltipContent>Write about what you like to do when you are free.</TooltipContent>
+                  </Tooltip>
                 </label>
                 <Textarea
-                  placeholder="Describe how you spend your free time, what activities you enjoy, and what makes you happy..."
+                  placeholder="Write about what you like to do when you are free."
                   value={responses.question1}
                   onChange={(e) => handleResponseChange('question1', e.target.value)}
                   rows={4}
@@ -283,9 +333,15 @@ export default function MyHobbiesAssessment() {
                 <label className="block text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
                   <Heart className="w-5 h-5 text-pink-500" />
                   2. Do you have any hobbies? If yes, what are they?
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button type="button" aria-label="Help" className="text-pink-600 hover:text-pink-700">💬</button>
+                    </TooltipTrigger>
+                    <TooltipContent>Write the activities you enjoy doing regularly, like drawing, reading, or playing games.</TooltipContent>
+                  </Tooltip>
                 </label>
                 <Textarea
-                  placeholder="List all your hobbies, interests, and activities that you regularly engage in..."
+                  placeholder="Write the activities you enjoy doing regularly, like drawing, reading, or playing games."
                   value={responses.question2}
                   onChange={(e) => handleResponseChange('question2', e.target.value)}
                   rows={4}
@@ -298,9 +354,15 @@ export default function MyHobbiesAssessment() {
                 <label className="block text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
                   <Star className="w-5 h-5 text-purple-500" />
                   3. Based on the above answer, what hobby do you like and enjoy the most and why?
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button type="button" aria-label="Help" className="text-purple-600 hover:text-purple-700">💬</button>
+                    </TooltipTrigger>
+                    <TooltipContent>Write your favourite hobby and explain why you like it the most.</TooltipContent>
+                  </Tooltip>
                 </label>
                 <Textarea
-                  placeholder="Choose your favorite hobby and explain what makes it special, why you enjoy it, and how it makes you feel..."
+                  placeholder="Write your favourite hobby and explain why you like it the most."
                   value={responses.question3}
                   onChange={(e) => handleResponseChange('question3', e.target.value)}
                   rows={4}
@@ -313,9 +375,15 @@ export default function MyHobbiesAssessment() {
                 <label className="block text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
                   <TrendingUp className="w-5 h-5 text-blue-500" />
                   4. Have your hobbies ever changed?
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button type="button" aria-label="Help" className="text-blue-600 hover:text-blue-700">💬</button>
+                    </TooltipTrigger>
+                    <TooltipContent>Write if your hobbies have become different over time.</TooltipContent>
+                  </Tooltip>
                 </label>
                 <Textarea
-                  placeholder="Reflect on how your interests have evolved over time, what hobbies you used to have, and how they've changed..."
+                  placeholder="Write if your hobbies have become different over time."
                   value={responses.question4}
                   onChange={(e) => handleResponseChange('question4', e.target.value)}
                   rows={4}
@@ -328,9 +396,15 @@ export default function MyHobbiesAssessment() {
                 <label className="block text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
                   <Lightbulb className="w-5 h-5 text-green-500" />
                   5. Where did the inspiration for your hobby come from? From whom?
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button type="button" aria-label="Help" className="text-green-600 hover:text-green-700">💬</button>
+                    </TooltipTrigger>
+                    <TooltipContent>Write who or what made you start liking this hobby.</TooltipContent>
+                  </Tooltip>
                 </label>
                 <Textarea
-                  placeholder="Think about who or what inspired you to start this hobby - was it a person, a book, a video, an experience..."
+                  placeholder="Write who or what made you start liking this hobby."
                   value={responses.question5}
                   onChange={(e) => handleResponseChange('question5', e.target.value)}
                   rows={4}
@@ -343,9 +417,15 @@ export default function MyHobbiesAssessment() {
                 <label className="block text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
                   <Target className="w-5 h-5 text-indigo-500" />
                   6. Do you know someone who has your hobby? Who?
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button type="button" aria-label="Help" className="text-indigo-600 hover:text-indigo-700">💬</button>
+                    </TooltipTrigger>
+                    <TooltipContent>Write the name of a person (friend, family, or teacher) who also enjoys the same hobby.</TooltipContent>
+                  </Tooltip>
                 </label>
                 <Textarea
-                  placeholder="Identify people in your life who share your hobby - friends, family members, classmates, or others..."
+                  placeholder="Write the name of a person (friend, family, or teacher) who also enjoys the same hobby."
                   value={responses.question6}
                   onChange={(e) => handleResponseChange('question6', e.target.value)}
                   rows={4}
@@ -358,13 +438,124 @@ export default function MyHobbiesAssessment() {
                 <label className="block text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
                   <Award className="w-5 h-5 text-red-500" />
                   7. List the talents you have
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button type="button" aria-label="Help" className="text-red-600 hover:text-red-700">💬</button>
+                    </TooltipTrigger>
+                    <TooltipContent>Write about the skills or things you are naturally good at.</TooltipContent>
+                  </Tooltip>
                 </label>
                 <Textarea
-                  placeholder="Identify your natural abilities, skills you're good at, and talents that come naturally to you..."
+                  placeholder="Write about the skills or things you are naturally good at."
                   value={responses.question7}
                   onChange={(e) => handleResponseChange('question7', e.target.value)}
                   rows={4}
                   className="border-red-200 focus:border-red-400 text-base"
+                />
+              </div>
+
+              {/* Question 8 */}
+              <div className="border-l-4 border-yellow-400 pl-6">
+                <label className="block text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-yellow-500" />
+                  8. Do you practise to improve your talent?
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button type="button" aria-label="Help" className="text-yellow-600 hover:text-yellow-700">💬</button>
+                    </TooltipTrigger>
+                    <TooltipContent>Write how you try to get better at your skill or talent.</TooltipContent>
+                  </Tooltip>
+                </label>
+                <Textarea
+                  placeholder="Write how you try to get better at your skill or talent."
+                  value={responses.question8}
+                  onChange={(e) => handleResponseChange('question8', e.target.value)}
+                  rows={4}
+                  className="border-yellow-200 focus:border-yellow-400 text-base"
+                />
+              </div>
+
+              {/* Question 9 */}
+              <div className="border-l-4 border-teal-400 pl-6">
+                <label className="block text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                  <BookOpen className="w-5 h-5 text-teal-500" />
+                  9. Do you have opportunities and encouragement at school and at home to practise your hobbies?
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button type="button" aria-label="Help" className="text-teal-600 hover:text-teal-700">💬</button>
+                    </TooltipTrigger>
+                    <TooltipContent>Write if your family or school supports and gives time for your hobbies.</TooltipContent>
+                  </Tooltip>
+                </label>
+                <Textarea
+                  placeholder="Write if your family or school supports and gives time for your hobbies."
+                  value={responses.question9}
+                  onChange={(e) => handleResponseChange('question9', e.target.value)}
+                  rows={4}
+                  className="border-teal-200 focus:border-teal-400 text-base"
+                />
+              </div>
+
+              {/* Question 10 */}
+              <div className="border-l-4 border-emerald-400 pl-6">
+                <label className="block text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-emerald-500" />
+                  10. Do any of your hobbies complement your talents?
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button type="button" aria-label="Help" className="text-emerald-600 hover:text-emerald-700">💬</button>
+                    </TooltipTrigger>
+                    <TooltipContent>Write if any of your hobbies help you use or grow your talents.</TooltipContent>
+                  </Tooltip>
+                </label>
+                <Textarea
+                  placeholder="Write if any of your hobbies help you use or grow your talents."
+                  value={responses.question10}
+                  onChange={(e) => handleResponseChange('question10', e.target.value)}
+                  rows={4}
+                  className="border-emerald-200 focus:border-emerald-400 text-base"
+                />
+              </div>
+
+              {/* Question 11 */}
+              <div className="border-l-4 border-sky-400 pl-6">
+                <label className="block text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                  <Target className="w-5 h-5 text-sky-500" />
+                  11. Could you turn any of your hobbies or talents into your career? If yes, how?
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button type="button" aria-label="Help" className="text-sky-600 hover:text-sky-700">💬</button>
+                    </TooltipTrigger>
+                    <TooltipContent>Write how your hobby or talent could become your future job.</TooltipContent>
+                  </Tooltip>
+                </label>
+                <Textarea
+                  placeholder="Write how your hobby or talent could become your future job."
+                  value={responses.question11}
+                  onChange={(e) => handleResponseChange('question11', e.target.value)}
+                  rows={4}
+                  className="border-sky-200 focus:border-sky-400 text-base"
+                />
+              </div>
+
+              {/* Question 12 */}
+              <div className="border-l-4 border-rose-400 pl-6">
+                <label className="block text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                  <Users className="w-5 h-5 text-rose-500" />
+                  12. Has someone you know, made a career out of their hobby or talent?
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button type="button" aria-label="Help" className="text-rose-600 hover:text-rose-700">💬</button>
+                    </TooltipTrigger>
+                    <TooltipContent>Write about a person you know who turned their hobby into their job.</TooltipContent>
+                  </Tooltip>
+                </label>
+                <Textarea
+                  placeholder="Write about a person you know who turned their hobby into their job."
+                  value={responses.question12}
+                  onChange={(e) => handleResponseChange('question12', e.target.value)}
+                  rows={4}
+                  className="border-rose-200 focus:border-rose-400 text-base"
                 />
               </div>
             </div>
@@ -427,7 +618,8 @@ export default function MyHobbiesAssessment() {
             </div>
           </div>
         </div>
-      </div>
+				</TooltipProvider>
+			</div>
     </div>
   );
 }

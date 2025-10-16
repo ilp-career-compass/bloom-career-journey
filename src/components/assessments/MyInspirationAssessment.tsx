@@ -25,6 +25,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { AudioRecorder } from '@/components/ui/AudioRecorder';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface InspirationVideo {
   id: number;
@@ -108,6 +109,15 @@ interface VideoProgress {
 export default function MyInspirationAssessment() {
   const { userProfile } = useAuth();
   const { toast } = useToast();
+  const helpTexts = {
+    question1: 'Write about the moments or messages you enjoyed or that made you feel motivated.',
+    question2: 'Mention the main lessons or ideas you got from watching or listening.',
+    question3: 'Say what actions, habits, or thoughts from the video you want to try in your own life.',
+    question4: 'Write how this video might change the way you think, feel, or behave.',
+    question5: 'Write about the good qualities or values in the characters that you also have.',
+    question6: 'Describe what you would do or feel if you were in the same situation.',
+    question7: 'Write about the part of the video/audio that motivated or inspired you the most.'
+  } as const;
   const [inspirationVideos, setInspirationVideos] = useState<InspirationVideo[]>([]);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [responses, setResponses] = useState<AssessmentResponse>({
@@ -125,7 +135,11 @@ export default function MyInspirationAssessment() {
   const [isCompleted, setIsCompleted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [videoProgress, setVideoProgress] = useState<VideoProgress[]>([]);
+  const [helpOpen, setHelpOpen] = useState<Record<string, boolean>>({});
   const navigate = useNavigate();
+
+  const helpKey = (q: keyof typeof helpTexts) => `${getCurrentVideoKey()}_${q}`;
+  const toggleHelp = (k: string) => setHelpOpen(prev => ({ ...prev, [k]: !prev[k] }));
 
   // 6 inspirational videos from the worksheet
   const defaultVideos: InspirationVideo[] = useMemo(() => [
@@ -171,6 +185,35 @@ export default function MyInspirationAssessment() {
     setInspirationVideos(defaultVideos);
     setLoading(false);
   }, [defaultVideos]);
+
+  // Auto-save draft on changes (debounced)
+  useEffect(() => {
+    if (loading || isCompleted) return;
+    const t = setTimeout(async () => {
+      try {
+        if (!userProfile?.id) return;
+        let studentId = userProfile.studentProfile?.id as string | undefined;
+        if (!studentId) {
+          const { data: studentRow } = await supabase
+            .from('students')
+            .select('id')
+            .eq('user_id', userProfile.id)
+            .maybeSingle();
+          studentId = studentRow?.id;
+        }
+        if (!studentId) return;
+        await supabase.from('assessment_responses').upsert({
+          student_id: studentId,
+          assessment_type: 'inspiration',
+          assessment_title: 'My Inspiration',
+          responses,
+          updated_at: new Date().toISOString(),
+          completed_at: null
+        });
+      } catch {}
+    }, 800);
+    return () => clearTimeout(t);
+  }, [responses, loading, isCompleted, userProfile]);
 
   // Initialize video progress
   useEffect(() => {
@@ -875,6 +918,7 @@ export default function MyInspirationAssessment() {
             </div>
 
             {/* Questions */}
+            <TooltipProvider>
             <div className="space-y-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-800">Reflection Questions</h3>
@@ -933,7 +977,25 @@ export default function MyInspirationAssessment() {
                     <Star className="w-5 h-5 text-blue-500" />
                     1. Which parts of this video/audio did you like most / find most inspirational?
                     <span className="text-red-500 text-sm">*</span>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          aria-label="Help"
+                          className="ml-2 text-blue-600 hover:text-blue-700"
+                          onClick={() => toggleHelp(helpKey('question1'))}
+                        >
+                          💬
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>{helpTexts.question1}</TooltipContent>
+                    </Tooltip>
                   </label>
+                  {helpOpen[helpKey('question1')] && (
+                    <div className="mt-2 mb-2 p-3 rounded border bg-blue-50 border-blue-200 text-sm text-blue-800">
+                      {helpTexts.question1}
+                    </div>
+                  )}
                   <div className="ml-4 flex-shrink-0">
                     <AudioRecorder
                       key={`${getCurrentVideoKey()}_question1`}
@@ -952,7 +1014,7 @@ export default function MyInspirationAssessment() {
                   </div>
                 </div>
                 <Textarea
-                  placeholder="Describe the specific parts that resonated with you and why they were inspirational..."
+                  placeholder={helpTexts.question1}
                   value={getCurrentVideoResponses().question1}
                   onChange={(e) => handleResponseChange(getCurrentVideoKey(), 'question1', e.target.value)}
                   rows={4}
@@ -974,7 +1036,25 @@ export default function MyInspirationAssessment() {
                     <Lightbulb className="w-5 h-5 text-green-500" />
                     2. What can you learn from this video/audio?
                     <span className="text-red-500 text-sm">*</span>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          aria-label="Help"
+                          className="ml-2 text-green-600 hover:text-green-700"
+                          onClick={() => toggleHelp(helpKey('question2'))}
+                        >
+                          💬
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>{helpTexts.question2}</TooltipContent>
+                    </Tooltip>
                   </label>
+                  {helpOpen[helpKey('question2')] && (
+                    <div className="mt-2 mb-2 p-3 rounded border bg-green-50 border-green-200 text-sm text-green-800">
+                      {helpTexts.question2}
+                    </div>
+                  )}
                   <div className="ml-4 flex-shrink-0">
                     <AudioRecorder
                       key={`${getCurrentVideoKey()}_question2`}
@@ -993,7 +1073,7 @@ export default function MyInspirationAssessment() {
                   </div>
                 </div>
                 <Textarea
-                  placeholder="Share the key lessons and insights you gained from watching this video..."
+                  placeholder={helpTexts.question2}
                   value={getCurrentVideoResponses().question2}
                   onChange={(e) => handleResponseChange(getCurrentVideoKey(), 'question2', e.target.value)}
                   rows={4}
@@ -1015,7 +1095,25 @@ export default function MyInspirationAssessment() {
                     <Heart className="w-5 h-5 text-purple-500" />
                     3. Which parts of this video/audio would you want to adopt in your personal life?
                     <span className="text-red-500 text-sm">*</span>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          aria-label="Help"
+                          className="ml-2 text-purple-600 hover:text-purple-700"
+                          onClick={() => toggleHelp(helpKey('question3'))}
+                        >
+                          💬
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>{helpTexts.question3}</TooltipContent>
+                    </Tooltip>
                   </label>
+                  {helpOpen[helpKey('question3')] && (
+                    <div className="mt-2 mb-2 p-3 rounded border bg-purple-50 border-purple-200 text-sm text-purple-800">
+                      {helpTexts.question3}
+                    </div>
+                  )}
                   <div className="ml-4 flex-shrink-0">
                     <AudioRecorder
                       key={`${getCurrentVideoKey()}_question3`}
@@ -1034,7 +1132,7 @@ export default function MyInspirationAssessment() {
                   </div>
                 </div>
                 <Textarea
-                  placeholder="Identify specific behaviors, attitudes, or approaches you'd like to incorporate into your life..."
+                  placeholder={helpTexts.question3}
                   value={getCurrentVideoResponses().question3}
                   onChange={(e) => handleResponseChange(getCurrentVideoKey(), 'question3', e.target.value)}
                   rows={4}
@@ -1056,7 +1154,25 @@ export default function MyInspirationAssessment() {
                     <Target className="w-5 h-5 text-orange-500" />
                     4. What changes will the contents of this video/audio bring in your life?
                     <span className="text-red-500 text-sm">*</span>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          aria-label="Help"
+                          className="ml-2 text-orange-600 hover:text-orange-700"
+                          onClick={() => toggleHelp(helpKey('question4'))}
+                        >
+                          💬
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>{helpTexts.question4}</TooltipContent>
+                    </Tooltip>
                   </label>
+                  {helpOpen[helpKey('question4')] && (
+                    <div className="mt-2 mb-2 p-3 rounded border bg-orange-50 border-orange-200 text-sm text-orange-800">
+                      {helpTexts.question4}
+                    </div>
+                  )}
                   <div className="ml-4 flex-shrink-0">
                     <AudioRecorder
                       key={`${getCurrentVideoKey()}_question4`}
@@ -1075,7 +1191,7 @@ export default function MyInspirationAssessment() {
                   </div>
                 </div>
                 <Textarea
-                  placeholder="Reflect on how this video might change your perspective, goals, or actions..."
+                  placeholder={helpTexts.question4}
                   value={getCurrentVideoResponses().question4}
                   onChange={(e) => handleResponseChange(getCurrentVideoKey(), 'question4', e.target.value)}
                   rows={4}
@@ -1097,7 +1213,25 @@ export default function MyInspirationAssessment() {
                     <TrendingUp className="w-5 h-5 text-pink-500" />
                     5. Which qualities of the characters in this video/audio do you identify in yourself?
                     <span className="text-red-500 text-sm">*</span>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          aria-label="Help"
+                          className="ml-2 text-pink-600 hover:text-pink-700"
+                          onClick={() => toggleHelp(helpKey('question5'))}
+                        >
+                          💬
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>{helpTexts.question5}</TooltipContent>
+                    </Tooltip>
                   </label>
+                  {helpOpen[helpKey('question5')] && (
+                    <div className="mt-2 mb-2 p-3 rounded border bg-pink-50 border-pink-200 text-sm text-pink-800">
+                      {helpTexts.question5}
+                    </div>
+                  )}
                   <div className="ml-4 flex-shrink-0">
                     <AudioRecorder
                       key={`${getCurrentVideoKey()}_question5`}
@@ -1116,7 +1250,7 @@ export default function MyInspirationAssessment() {
                   </div>
                 </div>
                 <Textarea
-                  placeholder="Think about the traits, strengths, or characteristics you share with the people in the video..."
+                  placeholder={helpTexts.question5}
                   value={getCurrentVideoResponses().question5}
                   onChange={(e) => handleResponseChange(getCurrentVideoKey(), 'question5', e.target.value)}
                   rows={4}
@@ -1138,7 +1272,25 @@ export default function MyInspirationAssessment() {
                     <Play className="w-5 h-5 text-indigo-500" />
                     6. What would your reaction be if you were in the situation depicted in the video/audio?
                     <span className="text-red-500 text-sm">*</span>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          aria-label="Help"
+                          className="ml-2 text-indigo-600 hover:text-indigo-700"
+                          onClick={() => toggleHelp(helpKey('question6'))}
+                        >
+                          💬
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>{helpTexts.question6}</TooltipContent>
+                    </Tooltip>
                   </label>
+                  {helpOpen[helpKey('question6')] && (
+                    <div className="mt-2 mb-2 p-3 rounded border bg-indigo-50 border-indigo-200 text-sm text-indigo-800">
+                      {helpTexts.question6}
+                    </div>
+                  )}
                   <div className="ml-4 flex-shrink-0">
                     <AudioRecorder
                       key={`${getCurrentVideoKey()}_question6`}
@@ -1157,7 +1309,7 @@ export default function MyInspirationAssessment() {
                   </div>
                 </div>
                 <Textarea
-                  placeholder="Imagine yourself in the same circumstances and describe how you would respond..."
+                  placeholder={helpTexts.question6}
                   value={getCurrentVideoResponses().question6}
                   onChange={(e) => handleResponseChange(getCurrentVideoKey(), 'question6', e.target.value)}
                   rows={4}
@@ -1179,7 +1331,25 @@ export default function MyInspirationAssessment() {
                     <BookOpen className="w-5 h-5 text-teal-500" />
                     7. Write about the situation in this video/audio which you have seen, that inspired you.
                     <span className="text-red-500 text-sm">*</span>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          aria-label="Help"
+                          className="ml-2 text-teal-600 hover:text-teal-700"
+                          onClick={() => toggleHelp(helpKey('question7'))}
+                        >
+                          💬
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>{helpTexts.question7}</TooltipContent>
+                    </Tooltip>
                   </label>
+                  {helpOpen[helpKey('question7')] && (
+                    <div className="mt-2 mb-2 p-3 rounded border bg-teal-50 border-teal-200 text-sm text-teal-800">
+                      {helpTexts.question7}
+                    </div>
+                  )}
                   <div className="ml-4 flex-shrink-0">
                     <AudioRecorder
                       key={`${getCurrentVideoKey()}_question7`}
@@ -1213,6 +1383,7 @@ export default function MyInspirationAssessment() {
                 )}
               </div>
             </div>
+            </TooltipProvider>
 
             {/* Save Progress Button for Current Video */}
             <div className="mt-8 pt-6 border-t border-gray-200">

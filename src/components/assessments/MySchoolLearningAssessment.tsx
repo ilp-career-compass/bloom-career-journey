@@ -24,6 +24,8 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface SchoolLearningAssessmentResponse {
   part1: {
@@ -106,6 +108,31 @@ export default function MySchoolLearningAssessment() {
   useEffect(() => {
     checkExistingResponse();
   }, []);
+
+  // Auto-save drafts on change (debounced)
+  useEffect(() => {
+    if (loading || isCompleted) return;
+    const t = setTimeout(async () => {
+      try {
+        if (!userProfile?.id) return;
+        let studentId = userProfile.studentProfile?.id as string | undefined;
+        if (!studentId) {
+          const { data: row } = await supabase.from('students').select('id').eq('user_id', userProfile.id).maybeSingle();
+          studentId = row?.id;
+        }
+        if (!studentId) return;
+        await supabase.from('assessment_responses').upsert({
+          student_id: studentId,
+          assessment_type: 'school_learning',
+          assessment_title: 'My School, My Learning and I',
+          responses,
+          updated_at: new Date().toISOString(),
+          completed_at: null
+        });
+      } catch {}
+    }, 800);
+    return () => clearTimeout(t);
+  }, [responses, loading, isCompleted, userProfile]);
 
   const checkExistingResponse = async () => {
     if (!userProfile) return;
@@ -232,10 +259,11 @@ export default function MySchoolLearningAssessment() {
         .from('assessment_responses')
         .upsert({
           student_id: studentId,
-          assessment_type: 'school_learning',
+          assessment_type: 'state_learning',
           assessment_title: 'My School, My Learning and I',
           responses: responses,
-          completed_at: new Date().toISOString()
+          completed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         });
 
       if (error) throw error;
@@ -312,8 +340,14 @@ export default function MySchoolLearningAssessment() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 py-8">
       <div className="container mx-auto px-4">
+        <TooltipProvider>
         {/* Header */}
         <div className="text-center mb-8">
+          <div className="text-left mb-2">
+            <Button variant="ghost" onClick={() => navigate('/student')} className="text-green-700 hover:text-green-800 hover:bg-green-50">
+              <ArrowLeft className="w-4 h-4 mr-2" />Back to Dashboard
+            </Button>
+          </div>
           <h1 className="text-3xl font-bold text-green-800 mb-2">🏫 My School, My Learning and I</h1>
           <p className="text-green-600 text-lg">
             In this practice sheet, you can share your thoughts about your school and your learning.
@@ -387,11 +421,17 @@ export default function MySchoolLearningAssessment() {
             <CardContent className="p-6">
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                     1. Do you like to come to school?
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" aria-label="Help" className="text-green-700 hover:text-green-800">💬</button>
+                      </TooltipTrigger>
+                      <TooltipContent>Write ‘Yes’ or ‘No’ and say how you feel about school.</TooltipContent>
+                    </Tooltip>
                   </label>
                   <Textarea
-                    placeholder="Share your feelings about coming to school..."
+                    placeholder="Write ‘Yes’ or ‘No’ and say how you feel about school."
                     value={responses.part1.question1}
                     onChange={(e) => handleResponseChange('part1', 'question1', e.target.value)}
                     rows={3}
@@ -400,11 +440,17 @@ export default function MySchoolLearningAssessment() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                     2. Why do you like to come to school?
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" aria-label="Help" className="text-green-700 hover:text-green-800">💬</button>
+                      </TooltipTrigger>
+                      <TooltipContent>Write what you enjoy about school — friends, teachers, learning, etc.</TooltipContent>
+                    </Tooltip>
                   </label>
                   <Textarea
-                    placeholder="What makes you enjoy coming to school?"
+                    placeholder="Write what you enjoy about school — friends, teachers, learning, etc."
                     value={responses.part1.question2}
                     onChange={(e) => handleResponseChange('part1', 'question2', e.target.value)}
                     rows={3}
@@ -413,11 +459,17 @@ export default function MySchoolLearningAssessment() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                     3. Why don't you like coming to school?
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" aria-label="Help" className="text-green-700 hover:text-green-800">💬</button>
+                      </TooltipTrigger>
+                      <TooltipContent>Write what makes school difficult or less enjoyable for you.</TooltipContent>
+                    </Tooltip>
                   </label>
                   <Textarea
-                    placeholder="What concerns or issues do you have with school?"
+                    placeholder="Write what makes school difficult or less enjoyable for you."
                     value={responses.part1.question3}
                     onChange={(e) => handleResponseChange('part1', 'question3', e.target.value)}
                     rows={3}
@@ -426,11 +478,17 @@ export default function MySchoolLearningAssessment() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    4. Who is your best friend (most liked) at the school?
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                    4. Who is your best friend at school?
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" aria-label="Help" className="text-green-700 hover:text-green-800">💬</button>
+                      </TooltipTrigger>
+                      <TooltipContent>Write the name of your best friend or someone you like spending time with.</TooltipContent>
+                    </Tooltip>
                   </label>
                   <Textarea
-                    placeholder="Tell us about your best friend or favorite person at school..."
+                    placeholder="Write the name of your best friend or someone you like spending time with."
                     value={responses.part1.question4}
                     onChange={(e) => handleResponseChange('part1', 'question4', e.target.value)}
                     rows={3}
@@ -439,11 +497,17 @@ export default function MySchoolLearningAssessment() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    5. Which is your favourite subject / topics?
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                    5. Which is your favourite subject/topic?
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" aria-label="Help" className="text-green-700 hover:text-green-800">💬</button>
+                      </TooltipTrigger>
+                      <TooltipContent>Write the subject or topic you enjoy learning the most.</TooltipContent>
+                    </Tooltip>
                   </label>
                   <Textarea
-                    placeholder="What subjects or topics do you enjoy the most?"
+                    placeholder="Write the subject or topic you enjoy learning the most."
                     value={responses.part1.question5}
                     onChange={(e) => handleResponseChange('part1', 'question5', e.target.value)}
                     rows={3}
@@ -452,11 +516,17 @@ export default function MySchoolLearningAssessment() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                     6. Why do you like these topics?
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" aria-label="Help" className="text-green-700 hover:text-green-800">💬</button>
+                      </TooltipTrigger>
+                      <TooltipContent>Write what makes this subject interesting or fun for you.</TooltipContent>
+                    </Tooltip>
                   </label>
                   <Textarea
-                    placeholder="What makes these subjects interesting to you?"
+                    placeholder="Write what makes this subject interesting or fun for you."
                     value={responses.part1.question6}
                     onChange={(e) => handleResponseChange('part1', 'question6', e.target.value)}
                     rows={3}
@@ -465,11 +535,17 @@ export default function MySchoolLearningAssessment() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    7. Which subject/s do you not like?
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                    7. Which subject(s) do you not like?
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" aria-label="Help" className="text-green-700 hover:text-green-800">💬</button>
+                      </TooltipTrigger>
+                      <TooltipContent>Write the subject(s) you find boring or hard to understand.</TooltipContent>
+                    </Tooltip>
                   </label>
                   <Textarea
-                    placeholder="Which subjects do you find challenging or uninteresting?"
+                    placeholder="Write the subject(s) you find boring or hard to understand."
                     value={responses.part1.question7}
                     onChange={(e) => handleResponseChange('part1', 'question7', e.target.value)}
                     rows={3}
@@ -493,11 +569,17 @@ export default function MySchoolLearningAssessment() {
             <CardContent className="p-6">
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                     8. Why do you not like these subjects?
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" aria-label="Help" className="text-blue-700 hover:text-blue-800">💬</button>
+                      </TooltipTrigger>
+                      <TooltipContent>Explain what makes these subjects difficult or uninteresting for you.</TooltipContent>
+                    </Tooltip>
                   </label>
                   <Textarea
-                    placeholder="What makes these subjects difficult or unappealing?"
+                    placeholder="Explain what makes these subjects difficult or uninteresting for you."
                     value={responses.part2.question8}
                     onChange={(e) => handleResponseChange('part2', 'question8', e.target.value)}
                     rows={3}
@@ -506,11 +588,17 @@ export default function MySchoolLearningAssessment() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    9. In which subject/s do you score more marks?
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                    9. In which subject(s) do you score more marks?
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" aria-label="Help" className="text-blue-700 hover:text-blue-800">💬</button>
+                      </TooltipTrigger>
+                      <TooltipContent>Write the subjects where you usually get high marks.</TooltipContent>
+                    </Tooltip>
                   </label>
                   <Textarea
-                    placeholder="Which subjects are you good at and score well in?"
+                    placeholder="Write the subjects where you usually get high marks."
                     value={responses.part2.question9}
                     onChange={(e) => handleResponseChange('part2', 'question9', e.target.value)}
                     rows={3}
@@ -519,11 +607,17 @@ export default function MySchoolLearningAssessment() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    10. In which subject/s do you score less marks?
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                    10. In which subject(s) do you score less marks?
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" aria-label="Help" className="text-blue-700 hover:text-blue-800">💬</button>
+                      </TooltipTrigger>
+                      <TooltipContent>Write the subjects where your marks are usually low.</TooltipContent>
+                    </Tooltip>
                   </label>
                   <Textarea
-                    placeholder="Which subjects do you find challenging and score lower in?"
+                    placeholder="Write the subjects where your marks are usually low."
                     value={responses.part2.question10}
                     onChange={(e) => handleResponseChange('part2', 'question10', e.target.value)}
                     rows={3}
@@ -532,8 +626,14 @@ export default function MySchoolLearningAssessment() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                     11. Which of the following learning methods do you like best?
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" aria-label="Help" className="text-blue-700 hover:text-blue-800">💬</button>
+                      </TooltipTrigger>
+                      <TooltipContent>Tick the ways of learning that help you understand better.</TooltipContent>
+                    </Tooltip>
                   </label>
                   <div className="space-y-3">
                     <div className="flex items-center space-x-2">
@@ -631,8 +731,14 @@ export default function MySchoolLearningAssessment() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                     12. Apart from the school curriculum, what are the other factors that attract you to the school?
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" aria-label="Help" className="text-blue-700 hover:text-blue-800">💬</button>
+                      </TooltipTrigger>
+                      <TooltipContent>Write what else you like about school — friends, games, teachers, or events.</TooltipContent>
+                    </Tooltip>
                   </label>
                   <Textarea
                     placeholder="What non-academic aspects of school do you enjoy?"
@@ -659,8 +765,14 @@ export default function MySchoolLearningAssessment() {
             <CardContent className="p-6">
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                     13. Make a list of the school activities in which you would like to participate.
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" aria-label="Help" className="text-purple-700 hover:text-purple-800">💬</button>
+                      </TooltipTrigger>
+                      <TooltipContent>Write the clubs, events, or competitions you want to join.</TooltipContent>
+                    </Tooltip>
                   </label>
                   <Textarea
                     placeholder="What school activities interest you most?"
@@ -672,8 +784,14 @@ export default function MySchoolLearningAssessment() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                     14. If there is something about your school that you would want to change, what would that be?
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" aria-label="Help" className="text-purple-700 hover:text-purple-800">💬</button>
+                      </TooltipTrigger>
+                      <TooltipContent>Write what you wish could be better in your school.</TooltipContent>
+                    </Tooltip>
                   </label>
                   <Textarea
                     placeholder="What improvements would you suggest for your school?"
@@ -685,8 +803,14 @@ export default function MySchoolLearningAssessment() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                     15. Which is your favourite place to study? Why?
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" aria-label="Help" className="text-purple-700 hover:text-purple-800">💬</button>
+                      </TooltipTrigger>
+                      <TooltipContent>Write where you like to study and explain why it helps you focus.</TooltipContent>
+                    </Tooltip>
                   </label>
                   <Textarea
                     placeholder="Where do you prefer to study and what makes it special?"
@@ -698,8 +822,14 @@ export default function MySchoolLearningAssessment() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                     16. Is school important for your learning?
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" aria-label="Help" className="text-purple-700 hover:text-purple-800">💬</button>
+                      </TooltipTrigger>
+                      <TooltipContent>Write ‘Yes’ or ‘No’ and say why you think so.</TooltipContent>
+                    </Tooltip>
                   </label>
                   <Textarea
                     placeholder="How important is school in your learning journey?"
@@ -711,8 +841,14 @@ export default function MySchoolLearningAssessment() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                     17. How can schooling help you realise your dreams?
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" aria-label="Help" className="text-purple-700 hover:text-purple-800">💬</button>
+                      </TooltipTrigger>
+                      <TooltipContent>Write how school lessons or activities can help you reach your goals.</TooltipContent>
+                    </Tooltip>
                   </label>
                   <Textarea
                     placeholder="How does school education connect to your future goals?"
@@ -775,6 +911,7 @@ export default function MySchoolLearningAssessment() {
             )}
           </div>
         </div>
+        </TooltipProvider>
       </div>
     </div>
   );
