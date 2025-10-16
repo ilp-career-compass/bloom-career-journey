@@ -77,6 +77,7 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ChatbotDialog from '@/components/ChatbotDialog';
+import ChatBubble from '@/components/chat/ChatBubble';
 import ResourcesSection from '@/components/teacher/ResourcesSection';
 import ContactIlpDialog from '@/components/ContactIlpDialog';
 import ProfileDialog from '@/components/ProfileDialog';
@@ -682,10 +683,6 @@ export default function TeacherDashboard() {
                   <User className="w-4 h-4 mr-2" />
                   My Profile
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={()=> setChatOpen(true)}>
-                  <MessageSquare className="w-4 h-4 mr-2" />
-                  AI Chatbot
-                </DropdownMenuItem>
                 <DropdownMenuItem onClick={()=> setContactOpen(true)}>
                   <LifeBuoy className="w-4 h-4 mr-2" />
                   Contact ILP
@@ -1190,6 +1187,9 @@ export default function TeacherDashboard() {
       {/* Keep ChatbotDialog unrelated to mentor chat */}
       <ChatbotDialog open={false} onOpenChange={()=>{}} />
       <ContactIlpDialog open={contactOpen} onOpenChange={setContactOpen} />
+
+      {/* Chat Bubble */}
+      <ChatBubble role="teacher" />
 
       {/* Add Student Modal */}
       <Dialog open={isAddStudentOpen} onOpenChange={setIsAddStudentOpen}>

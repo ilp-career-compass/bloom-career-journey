@@ -41,6 +41,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import ProfileDialog from '@/components/ProfileDialog';
+import ChatBubble from '@/components/chat/ChatBubble';
 import {
   Dialog,
   DialogContent,
@@ -946,6 +947,9 @@ export default function StudentDashboard() {
               </Card>
             </div>
       </div>
+
+      {/* Chat Bubble */}
+      <ChatBubble role="student" />
 
       {/* Profile Editing Modal */}
       <ProfileDialog open={isProfileOpen} onOpenChange={setIsProfileOpen} />

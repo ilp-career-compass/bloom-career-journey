@@ -613,11 +613,80 @@ export type Database = {
           created_by?: string | null
         }
       }
+      
+      chat_channels: {
+        Row: {
+          id: string
+          student_id: string
+          teacher_id: string
+          last_message_at: string
+          student_last_read_at: string | null
+          teacher_last_read_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          student_id: string
+          teacher_id: string
+          last_message_at?: string
+          student_last_read_at?: string | null
+          teacher_last_read_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          student_id?: string
+          teacher_id?: string
+          last_message_at?: string
+          student_last_read_at?: string | null
+          teacher_last_read_at?: string | null
+          created_at?: string
+        }
+      }
+      
+      chat_messages: {
+        Row: {
+          id: string
+          channel_id: string
+          sender_user_id: string
+          content: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          channel_id: string
+          sender_user_id: string
+          content: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          channel_id?: string
+          sender_user_id?: string
+          content?: string
+          created_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      get_or_create_chat_channel: {
+        Args: {
+          p_student_id: string
+          p_teacher_id: string
+        }
+        Returns: {
+          id: string
+          student_id: string
+          teacher_id: string
+          last_message_at: string
+          student_last_read_at: string | null
+          teacher_last_read_at: string | null
+          created_at: string
+        }
+      }
       get_student_assessment_responses: {
         Args: {
           teacher_user_id: string
