@@ -63,6 +63,14 @@ export type Database = {
           completed_at: string
           created_at: string
           updated_at: string
+          review_status?: 'unreviewed' | 'in_review' | 'reviewed' | 'needs_revision' | 'flagged'
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          review_notes?: string | null
+          review_rating?: number | null
+          needs_follow_up?: boolean
+          follow_up_due_at?: string | null
+          follow_up_status?: 'pending' | 'contacted' | 'resolved' | null
         }
         Insert: {
           id?: string
@@ -73,6 +81,14 @@ export type Database = {
           completed_at?: string
           created_at?: string
           updated_at?: string
+          review_status?: 'unreviewed' | 'in_review' | 'reviewed' | 'needs_revision' | 'flagged'
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          review_notes?: string | null
+          review_rating?: number | null
+          needs_follow_up?: boolean
+          follow_up_due_at?: string | null
+          follow_up_status?: 'pending' | 'contacted' | 'resolved' | null
         }
         Update: {
           id?: string
@@ -83,6 +99,14 @@ export type Database = {
           completed_at?: string
           created_at?: string
           updated_at?: string
+          review_status?: 'unreviewed' | 'in_review' | 'reviewed' | 'needs_revision' | 'flagged'
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          review_notes?: string | null
+          review_rating?: number | null
+          needs_follow_up?: boolean
+          follow_up_due_at?: string | null
+          follow_up_status?: 'pending' | 'contacted' | 'resolved' | null
         }
       }
       classes: {
@@ -693,16 +717,59 @@ export type Database = {
           assessment_type_filter?: 'inspiration' | 'dreams' | 'school_learning' | 'role_models' | 'hobbies' | 'personality' | 'career_aptitude'
         }
         Returns: {
+          assessment_response_id: string
           student_name: string
           student_class: string
           assessment_title: string
           responses: Json
           completed_at: string
+          review_status: 'unreviewed' | 'in_review' | 'reviewed' | 'needs_revision' | 'flagged'
+          reviewed_by: string | null
+          reviewed_at: string | null
+          review_notes: string | null
+          review_rating: number | null
+          needs_follow_up: boolean
+          follow_up_due_at: string | null
+          follow_up_status: 'pending' | 'contacted' | 'resolved' | null
+          reviewer_name: string | null
         }[]
+      }
+      get_review_overview: {
+        Args: {
+          teacher_user_id: string
+        }
+        Returns: {
+          unreviewed_count: number
+          reviewed_count: number
+          needs_revision_count: number
+          flagged_count: number
+          followups_due_this_week: number
+        }[]
+      }
+      get_student_review_progress: {
+        Args: {
+          teacher_user_id: string
+        }
+        Returns: {
+          student_id: string
+          student_name: string
+          reviewed_count: number
+          total_count: number
+        }[]
+      }
+      update_assessment_review: {
+        Args: {
+          teacher_user_id: string
+          assessment_response_id: string
+          review: Json
+        }
+        Returns: void
       }
     }
     Enums: {
       assessment_type: 'inspiration' | 'dreams' | 'school_learning' | 'role_models' | 'hobbies' | 'personality' | 'career_aptitude'
+      review_status: 'unreviewed' | 'in_review' | 'reviewed' | 'needs_revision' | 'flagged'
+      follow_up_status: 'pending' | 'contacted' | 'resolved'
     }
   }
 }

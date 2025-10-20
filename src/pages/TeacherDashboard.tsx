@@ -171,8 +171,14 @@ export default function TeacherDashboard() {
   const [activityProgressMap, setActivityProgressMap] = useState<Record<string, {status:string; completed_at?: string; results?: string}>>({});
   const [activityNotesMap, setActivityNotesMap] = useState<Record<string, string>>({});
   const [activitySaving, setActivitySaving] = useState<Record<string, boolean>>({});
+  // Reviews tab state
+  const [reviewStudentId, setReviewStudentId] = useState<string>('');
+  const [studentAssessments, setStudentAssessments] = useState<Array<{ id:string; assessment_type:string; assessment_title:string; completed_at:string|null; review_status?:string|null; reviewed_at?:string|null; reviewer_name?:string|null; needs_follow_up?: boolean; follow_up_status?: string|null; follow_up_due_at?: string|null }>>([]);
+  const [reviewSaving, setReviewSaving] = useState<Record<string, boolean>>({});
   const [assessmentAnswers, setAssessmentAnswers] = useState<any[]>([]);
   const [unreadMap, setUnreadMap] = useState<Record<string, boolean>>({});
+  const [reviewOverview, setReviewOverview] = useState<{unreviewed_count:number;reviewed_count:number;needs_revision_count:number;flagged_count:number;followups_due_this_week:number}>({unreviewed_count:0,reviewed_count:0,needs_revision_count:0,flagged_count:0,followups_due_this_week:0});
+  const [studentReviewMap, setStudentReviewMap] = useState<Record<string, {reviewed:number; total:number}>>({});
 
   // Help center dialogs
   const [contactOpen, setContactOpen] = useState(false);
@@ -508,7 +514,46 @@ export default function TeacherDashboard() {
       .eq('user_id', userProfile.id)
       .maybeSingle()
       .then(({ data }) => setTeacherRow((data as any) || null));
+    // Load review overview and per-student review progress
+    (async () => {
+      try {
+        const { data: ov } = await supabase.rpc('get_review_overview', { teacher_user_id: userProfile.id });
+        if (ov && ov[0]) setReviewOverview(ov[0] as any);
+        const { data: sp } = await supabase.rpc('get_student_review_progress', { teacher_user_id: userProfile.id });
+        const map: Record<string, {reviewed:number; total:number}> = {};
+        (sp||[]).forEach((row:any) => { map[row.student_id] = { reviewed: Number(row.reviewed_count||0), total: Number(row.total_count||0) }; });
+        setStudentReviewMap(map);
+      } catch {}
+    })();
   }, [userProfile?.id]);
+
+  // Load assessments for selected student in Reviews tab
+  useEffect(() => {
+    const loadStudentAssessments = async () => {
+      if (!reviewStudentId) return setStudentAssessments([]);
+      const { data, error } = await supabase
+        .from('assessment_responses')
+        .select('id, assessment_type, assessment_title, completed_at, updated_at, review_status, reviewed_at, needs_follow_up, follow_up_status, follow_up_due_at')
+        .eq('student_id', reviewStudentId)
+        .order('completed_at', { ascending: false })
+        .order('updated_at', { ascending: false });
+      if (!error) {
+        const rows: any[] = (data as any) || [];
+        // Keep only the latest row per assessment_type (by completed_at then updated_at)
+        const seen = new Set<string>();
+        const latest: any[] = [];
+        for (const r of rows) {
+          const key = r.assessment_type;
+          if (!seen.has(key)) {
+            seen.add(key);
+            latest.push(r);
+          }
+        }
+        setStudentAssessments(latest);
+      }
+    };
+    loadStudentAssessments();
+  }, [reviewStudentId]);
 
   // Ensure classes are loaded for the teacher's state so CSV import can validate class_name
   useEffect(() => {
@@ -758,6 +803,40 @@ export default function TeacherDashboard() {
           </Card>
         </div>
 
+        {/* Review Overview Counters */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+          <Card className="border-0 shadow-sm bg-white">
+            <CardContent className="p-4 text-center">
+              <div className="text-sm text-gray-600">Unreviewed</div>
+              <div className="text-2xl font-bold text-gray-800">{reviewOverview.unreviewed_count}</div>
+            </CardContent>
+          </Card>
+          <Card className="border-0 shadow-sm bg-white">
+            <CardContent className="p-4 text-center">
+              <div className="text-sm text-gray-600">Reviewed</div>
+              <div className="text-2xl font-bold text-blue-700">{reviewOverview.reviewed_count}</div>
+            </CardContent>
+          </Card>
+          <Card className="border-0 shadow-sm bg-white">
+            <CardContent className="p-4 text-center">
+              <div className="text-sm text-gray-600">Needs Revision</div>
+              <div className="text-2xl font-bold text-yellow-600">{reviewOverview.needs_revision_count}</div>
+            </CardContent>
+          </Card>
+          <Card className="border-0 shadow-sm bg-white">
+            <CardContent className="p-4 text-center">
+              <div className="text-sm text-gray-600">Flagged</div>
+              <div className="text-2xl font-bold text-red-600">{reviewOverview.flagged_count}</div>
+            </CardContent>
+          </Card>
+          <Card className="border-0 shadow-sm bg-white">
+            <CardContent className="p-4 text-center">
+              <div className="text-sm text-gray-600">Follow-ups Due This Week</div>
+              <div className="text-2xl font-bold text-rose-600">{reviewOverview.followups_due_this_week}</div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Main Content Tabs */}
         <Tabs defaultValue="students" className="space-y-6">
           <TabsList className="grid w-full grid-cols-4 bg-white shadow-sm">
@@ -765,9 +844,9 @@ export default function TeacherDashboard() {
               <Users className="w-4 h-4" />
               <span>Students</span>
             </TabsTrigger>
-            <TabsTrigger value="activities" className="flex items-center space-x-2">
+            <TabsTrigger value="reviews" className="flex items-center space-x-2">
               <Activity className="w-4 h-4" />
-              <span>Activities</span>
+              <span>Reviews</span>
             </TabsTrigger>
             <TabsTrigger value="resources" className="flex items-center space-x-2">
               <BookOpen className="w-4 h-4" />
@@ -890,6 +969,11 @@ export default function TeacherDashboard() {
                               <div>
                                 <p className="font-medium text-gray-900">{student.user?.full_name}</p>
                                 <p className="text-sm text-gray-500">{student.user?.email}</p>
+                                <div className="mt-1">
+                                  <Badge variant="outline">
+                                    {studentReviewMap[student.id]?.reviewed || 0}/{studentReviewMap[student.id]?.total || 0} reviewed
+                                  </Badge>
+                                </div>
                                 {student.parent_guardian_name && (
                                   <p className="text-xs text-gray-400">Parent: {student.parent_guardian_name}</p>
                                 )}
@@ -1060,86 +1144,172 @@ export default function TeacherDashboard() {
             </Card>
           </TabsContent>
 
-          {/* Activities Tab */}
-          <TabsContent value="activities" className="space-y-6">
+          {/* Reviews Tab */}
+          <TabsContent value="reviews" className="space-y-6">
             <Card className="border-0 shadow-lg">
-                <CardHeader>
-                <CardTitle className="text-xl text-gray-800">Counselling Activities</CardTitle>
-                <CardDescription>
-                  Manage and track student activities and progress
-                </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Student selector */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div className="space-y-1">
-                      <div className="text-sm text-gray-600">Select Student</div>
-                      <Select value={activityStudentId} onValueChange={setActivityStudentId}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Choose a student" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {students.map(s => (
-                            <SelectItem key={s.id} value={s.id}>{s.user?.full_name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+              <CardHeader>
+                <CardTitle className="text-xl text-gray-800">Reviews</CardTitle>
+                <CardDescription>Read answers and set review status for your students</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <div className="text-sm text-gray-600">Select Student</div>
+                    <Select value={reviewStudentId} onValueChange={(v)=>{ setReviewStudentId(v); }}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose a student" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {students.map(s => (
+                          <SelectItem key={s.id} value={s.id}>{s.user?.full_name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
+                </div>
 
-                  {/* Activities list */}
-                  {!activityStudentId ? (
-                    <div className="text-sm text-gray-500">Pick a student to manage activities.</div>
-                  ) : (
-                    <div className="space-y-3">
-                      {activities.map(a => {
-                        const prog = activityProgressMap[a.id] || { status: 'unlocked' };
-                        const isSaving = activitySaving[a.id];
-                          return (
-                          <Card key={a.id} className="border shadow-sm">
-                            <CardContent className="p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                              <div>
-                                <div className="text-sm text-gray-500">#{a.sequence_number}</div>
-                                <div className="font-medium">{a.title}</div>
-                                <div className="text-xs text-gray-500">Status: <span className="font-medium">{prog.status}</span>{prog.completed_at ? ` • Completed: ${new Date(prog.completed_at).toLocaleString()}` : ''}</div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  disabled={isSaving}
-                                  onClick={async ()=>{
-                                    await upsertProgress(a.id, { status: 'unlocked', completed_at: null });
-                                    await openAnswersForActivity(a);
-                                  }}
-                                >Start</Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  disabled={isSaving || prog.status === 'completed'}
-                                  onClick={()=> upsertProgress(a.id, { status: 'completed', completed_at: new Date().toISOString() })}
-                                >Complete</Button>
-                                {prog.status === 'completed' && (
+                {!reviewStudentId ? (
+                  <div className="text-sm text-gray-500">Pick a student to review assessments.</div>
+                ) : (
+                  <div className="space-y-3">
+                    {studentAssessments.length === 0 ? (
+                      <div className="text-sm text-gray-500">No submissions yet.</div>
+                    ) : (
+                      studentAssessments.map(ar => {
+                        const isSaving = !!reviewSaving[ar.id];
+                        const status = (ar.review_status || 'unreviewed') as string;
+                        const badgeClass = status === 'reviewed' ? 'bg-blue-600 text-white' : status === 'needs_revision' ? 'bg-yellow-500 text-white' : status === 'flagged' ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-800';
+                        return (
+                          <Card key={ar.id} className="border shadow-sm">
+                            <CardContent className="p-4">
+                              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                                <div>
+                                  <div className="text-sm text-gray-500 capitalize">{ar.assessment_type.replace('_',' ')}</div>
+                                  <div className="font-medium">{ar.assessment_title}</div>
+                                  <div className="text-xs text-gray-500">Submitted: {ar.completed_at ? new Date(ar.completed_at).toLocaleString() : '—'}</div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className={`px-2 py-1 rounded text-xs ${badgeClass}`}>{status.replace('_',' ')}</span>
                                   <Button
-                                    variant="ghost"
                                     size="sm"
-                                    onClick={()=> upsertProgress(a.id, { status: 'unlocked', completed_at: null })}
-                                  >Reopen</Button>
-                                )}
+                                    className="bg-green-600 hover:bg-green-700"
+                                    disabled={isSaving || status === 'reviewed'}
+                                    onClick={async ()=>{
+                                      setReviewSaving(prev=>({ ...prev, [ar.id]: true }));
+                                      try {
+                                        const { error } = await supabase.rpc('update_assessment_review', {
+                                          teacher_user_id: userProfile?.id,
+                                          assessment_response_id: ar.id,
+                                          review: { review_status: 'reviewed' }
+                                        } as any);
+                                        if (error) throw error;
+                                        setStudentAssessments(prev=> prev.map(x=> x.id===ar.id ? { ...x, review_status: 'reviewed', reviewed_at: new Date().toISOString(), reviewer_name: userProfile?.full_name || null } : x));
+                                        // refresh counters
+                                        const { data: ov } = await supabase.rpc('get_review_overview', { teacher_user_id: userProfile?.id });
+                                        if (ov && ov[0]) setReviewOverview(ov[0] as any);
+                                        const { data: sp } = await supabase.rpc('get_student_review_progress', { teacher_user_id: userProfile?.id });
+                                        const map: Record<string, {reviewed:number; total:number}> = {};
+                                        (sp||[]).forEach((row:any) => { map[row.student_id] = { reviewed: Number(row.reviewed_count||0), total: Number(row.total_count||0) }; });
+                                        setStudentReviewMap(map);
+                                      } catch (err) {
+                                        console.error('Mark reviewed failed', err);
+                                      } finally {
+                                        setReviewSaving(prev=>({ ...prev, [ar.id]: false }));
+                                      }
+                                    }}
+                                  >Mark Reviewed</Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    disabled={isSaving}
+                                    onClick={async ()=>{
+                                      setReviewSaving(prev=>({ ...prev, [ar.id]: true }));
+                                      try {
+                                        const { error } = await supabase.rpc('update_assessment_review', {
+                                          teacher_user_id: userProfile?.id,
+                                          assessment_response_id: ar.id,
+                                          review: { review_status: 'needs_revision' }
+                                        } as any);
+                                        if (error) throw error;
+                                        setStudentAssessments(prev=> prev.map(x=> x.id===ar.id ? { ...x, review_status: 'needs_revision' } : x));
+                                      } finally {
+                                        setReviewSaving(prev=>({ ...prev, [ar.id]: false }));
+                                      }
+                                    }}
+                                  >Needs Revision</Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    disabled={isSaving}
+                                    onClick={async ()=>{
+                                      setReviewSaving(prev=>({ ...prev, [ar.id]: true }));
+                                      try {
+                                        const { error } = await supabase.rpc('update_assessment_review', {
+                                          teacher_user_id: userProfile?.id,
+                                          assessment_response_id: ar.id,
+                                          review: { review_status: 'flagged' }
+                                        } as any);
+                                        if (error) throw error;
+                                        setStudentAssessments(prev=> prev.map(x=> x.id===ar.id ? { ...x, review_status: 'flagged' } : x));
+                                      } finally {
+                                        setReviewSaving(prev=>({ ...prev, [ar.id]: false }));
+                                      }
+                                    }}
+                                  >Flag</Button>
+                                </div>
                               </div>
-                            </CardContent>
-                            <CardContent className="pt-0">
-                              <div className="text-sm text-gray-600 mb-1">Notes / Results</div>
-                              <Textarea value={activityNotesMap[a.id] || ''} onChange={(e)=> setActivityNotesMap(prev=> ({ ...prev, [a.id]: e.target.value }))} placeholder="Enter results or notes for this activity" />
-                              <div className="mt-2 flex justify-end">
-                                <Button size="sm" disabled={isSaving} onClick={()=> upsertProgress(a.id, { results: activityNotesMap[a.id] || null })}>Save Notes</Button>
-                            </div>
+                              <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-2">
+                                <div className="text-xs text-gray-600">Follow-up</div>
+                                <div className="flex items-center gap-2">
+                                  <Select value={(ar.follow_up_status || 'pending') as any} onValueChange={async (v)=>{
+                                    setReviewSaving(prev=>({ ...prev, [ar.id]: true }));
+                                    try {
+                                      const { error } = await supabase.rpc('update_assessment_review', {
+                                        teacher_user_id: userProfile?.id,
+                                        assessment_response_id: ar.id,
+                                        review: { needs_follow_up: true, follow_up_status: v }
+                                      } as any);
+                                      if (error) throw error;
+                                      setStudentAssessments(prev=> prev.map(x=> x.id===ar.id ? { ...x, needs_follow_up: true, follow_up_status: v } : x));
+                                    } finally {
+                                      setReviewSaving(prev=>({ ...prev, [ar.id]: false }));
+                                    }
+                                  }}>
+                                    <SelectTrigger className="w-40">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="pending">pending</SelectItem>
+                                      <SelectItem value="contacted">contacted</SelectItem>
+                                      <SelectItem value="resolved">resolved</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <input type="date" className="border rounded px-2 py-1 text-sm"
+                                    value={ar.follow_up_due_at ? new Date(ar.follow_up_due_at).toISOString().slice(0,10) : ''}
+                                    onChange={async (e)=>{
+                                      const date = e.target.value ? new Date(e.target.value).toISOString() : null;
+                                      setReviewSaving(prev=>({ ...prev, [ar.id]: true }));
+                                      try {
+                                        const { error } = await supabase.rpc('update_assessment_review', {
+                                          teacher_user_id: userProfile?.id,
+                                          assessment_response_id: ar.id,
+                                          review: { follow_up_due_at: date }
+                                        } as any);
+                                        if (error) throw error;
+                                        setStudentAssessments(prev=> prev.map(x=> x.id===ar.id ? { ...x, follow_up_due_at: date } : x));
+                                      } finally {
+                                        setReviewSaving(prev=>({ ...prev, [ar.id]: false }));
+                                      }
+                                    }} />
+                                </div>
+                              </div>
                             </CardContent>
                           </Card>
-                          );
-                        })}
-                      </div>
-                  )}
+                        );
+                      })
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

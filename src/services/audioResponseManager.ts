@@ -5,6 +5,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { speechToTextService } from './speechToTextService';
 import { supabaseUploadService } from './supabaseUploadService';
+import { transcriptCleanupService } from './transcriptCleanupService';
 
 export interface AudioResponseData {
   questionId: string;
@@ -92,21 +93,38 @@ class AudioResponseManager {
       let transcription = audioData.transcription;
       let confidence = audioData.confidence;
       let languageDetected = audioData.languageDetected;
+      let cleanedTranscription: string | undefined;
 
       if (this.config.enableTranscription && this.isOnline) {
         try {
-          const transcriptionResult = await speechToTextService.transcribe(
-            audioData.audioBlob,
-            {
-              language: 'en-IN',
-              useEnhanced: true,
-              enableAutomaticPunctuation: true,
-            }
-          );
+          // Use Indian English only
+          let transcriptionResult;
+          // If over 60s, use long-running recognize with the uploaded URL
+          if (audioData.duration > 60000) {
+            // Use the public URL we just uploaded
+            transcriptionResult = await speechToTextService.transcribeLongRunningByUri(
+              uploadResult.url!,
+              { language: 'en-IN' }
+            );
+          } else {
+            transcriptionResult = await speechToTextService.transcribe(
+              audioData.audioBlob,
+              { language: 'en-IN' }
+            );
+          }
 
           transcription = transcriptionResult.transcript;
           confidence = transcriptionResult.confidence;
           languageDetected = transcriptionResult.languageCode;
+
+          // Optional AI cleanup using Gemini (non-blocking fallback to raw on error)
+          try {
+            const cleaned = await transcriptCleanupService.clean(
+              transcription || '',
+              languageDetected || 'en-IN'
+            );
+            cleanedTranscription = cleaned.cleanedText?.trim() || transcription || undefined;
+          } catch {}
 
           onProgress?.(80);
         } catch (error) {
@@ -119,7 +137,7 @@ class AudioResponseManager {
       const dbResult = await this.saveAudioResponse({
         questionId: audioData.questionId,
         audioUrl: uploadResult.url!,
-        transcription,
+        transcription: cleanedTranscription || transcription,
         confidence,
         languageDetected,
         duration: audioData.duration,
@@ -249,54 +267,69 @@ class AudioResponseManager {
         throw audioFileError;
       }
 
-      // Update assessment_responses with audio data
-      const audioResponseData = {
-        [data.questionId]: {
-          text: data.transcription || '',
-          audio_url: data.audioUrl,
-          audio_duration: data.duration,
-          file_size: data.fileSize,
-          language_detected: data.languageDetected,
-          confidence_score: data.confidence,
-          uploaded_at: new Date().toISOString(),
-        },
-      };
+      // Update assessment_responses.audio_responses if the column exists
+      try {
+        const audioResponseData = {
+          [data.questionId]: {
+            text: data.transcription || '',
+            audio_url: data.audioUrl,
+            audio_duration: data.duration,
+            file_size: data.fileSize,
+            language_detected: data.languageDetected,
+            confidence_score: data.confidence,
+            uploaded_at: new Date().toISOString(),
+          },
+        };
 
-      // For testing, skip assessment_responses update if using test data
-      if (this.config!.assessmentId === 'test-assessment-456') {
-        console.log('Test mode: Skipping assessment_responses update');
-        return { success: true };
-      }
+        // For testing, skip assessment_responses update if using test data
+        if (this.config!.assessmentId === 'test-assessment-456') {
+          console.log('Test mode: Skipping assessment_responses update');
+          return { success: true };
+        }
 
-      // Get existing audio_responses
-      const { data: existingData, error: fetchError } = await supabase
-        .from('assessment_responses')
-        .select('audio_responses')
-        .eq('id', this.config!.assessmentId)
-        .single();
+        // Try selecting the column; if it doesn't exist, PostgREST returns undefined_column
+        const { data: existingData, error: fetchError } = await supabase
+          .from('assessment_responses')
+          .select('audio_responses')
+          .eq('id', this.config!.assessmentId)
+          .single();
 
-      if (fetchError && fetchError.code !== 'PGRST116') {
-        throw fetchError;
-      }
+        // If column missing, skip gracefully
+        if (fetchError && (fetchError.code === '42703' || (fetchError.message || '').includes('audio_responses'))) {
+          console.warn('audio_responses column missing, skipping column update');
+          return { success: true };
+        }
 
-      // Merge with existing audio_responses
-      const existingAudioResponses = existingData?.audio_responses || {};
-      const updatedAudioResponses = {
-        ...existingAudioResponses,
-        ...audioResponseData,
-      };
+        if (fetchError && fetchError.code !== 'PGRST116') {
+          throw fetchError;
+        }
 
-      // Update assessment_responses
-      const { error: updateError } = await supabase
-        .from('assessment_responses')
-        .update({
-          audio_responses: updatedAudioResponses,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', this.config!.assessmentId);
+        const existingAudioResponses = existingData?.audio_responses || {};
+        const updatedAudioResponses = {
+          ...existingAudioResponses,
+          ...audioResponseData,
+        };
 
-      if (updateError) {
-        throw updateError;
+        const { error: updateError } = await supabase
+          .from('assessment_responses')
+          .update({
+            audio_responses: updatedAudioResponses,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', this.config!.assessmentId);
+
+        // If column missing on update, skip gracefully
+        if (updateError && (updateError.code === '42703' || (updateError.message || '').includes('audio_responses'))) {
+          console.warn('audio_responses column missing on update, skipping');
+        } else if (updateError) {
+          throw updateError;
+        }
+      } catch (colError: any) {
+        // Do not fail the whole save for column-related issues
+        if (!(colError?.code === '42703' || (colError?.message || '').includes('audio_responses'))) {
+          throw colError;
+        }
+        console.warn('Skipping audio_responses update due to column error:', colError);
       }
 
       return { success: true };

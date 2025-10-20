@@ -23,7 +23,7 @@ type Resource = {
 const activityTags = [
   { key: 'inspiration', label: 'Inspiration' },
   { key: 'dreams', label: 'Dreams' },
-  { key: 'state_learning', label: 'State' },
+  { key: 'school_learning', label: 'School' },
   { key: 'role_models', label: 'Role Models' },
   { key: 'hobbies', label: 'Hobbies' },
 ];

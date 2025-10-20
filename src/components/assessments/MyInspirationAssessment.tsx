@@ -137,6 +137,11 @@ export default function MyInspirationAssessment() {
   const [videoProgress, setVideoProgress] = useState<VideoProgress[]>([]);
   const [helpOpen, setHelpOpen] = useState<Record<string, boolean>>({});
   const navigate = useNavigate();
+  const [assessmentRecordId, setAssessmentRecordId] = useState<string | null>(null);
+  const [resolvedStudentId, setResolvedStudentId] = useState<string | null>(null);
+  const [audioResponsesMap, setAudioResponsesMap] = useState<Record<string, any>>({});
+  const [audioAnswered, setAudioAnswered] = useState<Record<string, boolean>>({});
+  const [transcribedPrefill, setTranscribedPrefill] = useState<Record<string, boolean>>({});
 
   const helpKey = (q: keyof typeof helpTexts) => `${getCurrentVideoKey()}_${q}`;
   const toggleHelp = (k: string) => setHelpOpen(prev => ({ ...prev, [k]: !prev[k] }));
@@ -185,6 +190,66 @@ export default function MyInspirationAssessment() {
     setInspirationVideos(defaultVideos);
     setLoading(false);
   }, [defaultVideos]);
+
+  // Ensure an assessment_responses row exists and capture its id for audio uploads
+  useEffect(() => {
+    const ensureAssessmentRecord = async () => {
+      if (!userProfile || loading) return;
+
+      // Resolve student_id from students table; do not fallback to users.id
+      let studentId = userProfile.studentProfile?.id as string | undefined;
+      if (!studentId) {
+        const { data: studentRow } = await supabase
+          .from('students')
+          .select('id')
+          .eq('user_id', userProfile.id)
+          .maybeSingle();
+        studentId = studentRow?.id;
+      }
+      if (!studentId) return;
+
+      setResolvedStudentId(studentId);
+
+      try {
+        // Try to find existing assessment record
+        const { data: existing, error: selectError } = await supabase
+          .from('assessment_responses')
+          .select('id')
+          .eq('student_id', studentId)
+          .eq('assessment_type', 'inspiration')
+          .eq('assessment_title', 'My Inspiration')
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (existing && !selectError) {
+          setAssessmentRecordId(existing.id);
+          return;
+        }
+
+        // Create a new placeholder record to attach audio responses
+        const { data: inserted, error: insertError } = await supabase
+          .from('assessment_responses')
+          .insert({
+            student_id: studentId,
+            assessment_type: 'inspiration',
+            assessment_title: 'My Inspiration',
+            responses,
+            completed_at: null,
+            updated_at: new Date().toISOString(),
+          })
+          .select('id')
+          .single();
+
+        if (insertError) throw insertError;
+        setAssessmentRecordId(inserted.id);
+      } catch (e) {
+        console.error('Failed to ensure assessment record for audio responses:', e);
+      }
+    };
+
+    ensureAssessmentRecord();
+  }, [userProfile, loading, responses]);
 
   // Auto-save draft on changes (debounced)
   useEffect(() => {
@@ -281,6 +346,12 @@ export default function MyInspirationAssessment() {
         console.log('Found existing data:', data);
         // Only set as completed if completed_at is not null
         setIsCompleted(!!data.completed_at);
+        // Load audio_responses map and answered flags
+        const audioRes = (data as any).audio_responses || {};
+        setAudioResponsesMap(audioRes);
+        const answered: Record<string, boolean> = {};
+        Object.keys(audioRes).forEach((k) => { answered[k] = true; });
+        setAudioAnswered(answered);
         
         // Update video progress from saved data
         if (data.responses) {
@@ -308,9 +379,15 @@ export default function MyInspirationAssessment() {
           const updatedProgress = defaultVideos.map(video => {
             const videoKey = `video${video.id}` as keyof AssessmentResponse;
             const videoResponses = mergedResponses[videoKey];
-            const isComplete = Object.values(videoResponses).every((v: string) => v.trim() !== '');
+            const isComplete = Object.entries(videoResponses).every(([q, v]) => {
+              const qId = `${videoKey}_${q}`;
+              return (typeof v === 'string' && v.trim() !== '') || !!answered[qId];
+            });
             // Only mark as saved if the video has actual content (not just empty strings)
-            const hasContent = Object.values(videoResponses).some((v: string) => v.trim() !== '');
+            const hasContent = Object.entries(videoResponses).some(([q, v]) => {
+              const qId = `${videoKey}_${q}`;
+              return (typeof v === 'string' && v.trim() !== '') || !!answered[qId];
+            });
             console.log(`Video ${video.id}: hasContent=${hasContent}, isComplete=${isComplete}`);
             return {
               videoId: video.id,
@@ -399,18 +476,103 @@ export default function MyInspirationAssessment() {
     }
   }, [userProfile, loading, checkExistingResponse]);
 
+  // Load audio summary for this assessment and mark audio-answered questions; prefill transcripts
+  useEffect(() => {
+    const loadAudioSummary = async () => {
+      if (!resolvedStudentId || !assessmentRecordId) return;
+      try {
+        // Prefer direct table query to include file_url and created_at
+        const { data: files, error: filesError } = await supabase
+          .from('audio_files')
+          .select('question_id, file_url, created_at, transcription, confidence_score')
+          .eq('assessment_id', assessmentRecordId);
+
+        if (filesError) {
+          console.warn('audio_files fetch failed:', filesError);
+          return;
+        }
+        let list = files || [];
+
+        // Fallback: if nothing found (older saves may have missing/placeholder assessment_id),
+        // fetch latest per question for this student
+        if (list.length === 0) {
+          const { data: fallback } = await supabase
+            .from('audio_files')
+            .select('question_id, file_url, created_at, transcription, confidence_score')
+            .eq('student_id', resolvedStudentId)
+            .like('question_id', 'video%_question%')
+            .order('created_at', { ascending: false });
+          list = fallback || [];
+        }
+
+        const answeredMap: Record<string, boolean> = {};
+        const newAudioMap: Record<string, any> = {};
+        let didPrefill = false;
+        const nextResponses: AssessmentResponse = {
+          video1: { ...responses.video1 },
+          video2: { ...responses.video2 },
+          video3: { ...responses.video3 },
+          video4: { ...responses.video4 },
+          video5: { ...responses.video5 },
+          video6: { ...responses.video6 },
+        };
+        const prefillFlags: Record<string, boolean> = {};
+
+        list.forEach((item: any) => {
+          const qId = item.question_id as string; // e.g., video1_question3
+          answeredMap[qId] = true;
+          newAudioMap[qId] = {
+            url: item.file_url,
+            savedAt: item.created_at,
+            confidence: item.confidence_score,
+            transcript: item.transcription,
+          };
+
+          // Prefill transcript into text area only if empty
+          const [videoKey, questionKey] = qId.split('_') as [keyof AssessmentResponse, string];
+          const current = (nextResponses as any)[videoKey]?.[questionKey];
+          if (typeof current === 'string' && current.trim() === '' && item.transcription) {
+            (nextResponses as any)[videoKey][questionKey] = item.transcription as string;
+            prefillFlags[qId] = true;
+            didPrefill = true;
+          }
+        });
+
+        if (Object.keys(answeredMap).length > 0) {
+          setAudioAnswered(prev => ({ ...prev, ...answeredMap }));
+        }
+        if (Object.keys(newAudioMap).length > 0) {
+          setAudioResponsesMap(prev => ({ ...prev, ...newAudioMap }));
+        }
+        if (Object.keys(prefillFlags).length > 0) {
+          setTranscribedPrefill(prev => ({ ...prev, ...prefillFlags }));
+        }
+
+        if (didPrefill) {
+          setResponses(nextResponses);
+        }
+      } catch (e) {
+        console.warn('Failed to load assessment audio summary:', e);
+      }
+    };
+
+    loadAudioSummary();
+  }, [resolvedStudentId, assessmentRecordId]);
+
   // Note: We removed the automatic sync between videoProgress and responses
   // to prevent conflicts. The responses state is now the single source of truth.
 
   const handleResponseChange = (videoKey: keyof AssessmentResponse, questionKey: string, value: string) => {
     // Update responses state
-    const updatedResponses = {
-      ...responses,
-      [videoKey]: {
-        ...responses[videoKey],
-        [questionKey]: value
-      }
+    const updatedResponses: AssessmentResponse = {
+      video1: { ...responses.video1 },
+      video2: { ...responses.video2 },
+      video3: { ...responses.video3 },
+      video4: { ...responses.video4 },
+      video5: { ...responses.video5 },
+      video6: { ...responses.video6 },
     };
+    (updatedResponses as any)[videoKey][questionKey] = value;
     setResponses(updatedResponses);
 
     // Update video progress to match responses state
@@ -439,27 +601,47 @@ export default function MyInspirationAssessment() {
       [audioKey]: audioBlob
     }));
 
-    // If there's a transcription, also update the text response
-    if (transcription) {
-      handleResponseChange(videoKey, questionKey, transcription);
-    }
+    // Ensure the text box reflects what was recorded for validation/progress
+    // Prefer transcription; if unavailable, add a clear placeholder line
+    const fallbackText = 'Audio recorded — transcription unavailable.';
+    handleResponseChange(videoKey, questionKey, (transcription && transcription.trim()) ? transcription : fallbackText);
+
+    // Mark this question as answered via audio for completion rules
+    const qId = `${videoKey}_${questionKey}`;
+    setAudioAnswered(prev => ({ ...prev, [qId]: true }));
   };
 
   const getProgressPercentage = () => {
     const totalQuestions = 6 * 7; // 6 videos × 7 questions
-    const answeredQuestions = Object.values(responses).reduce((total, video) => {
-      return total + Object.values(video as Record<string, string>).filter((v: string) => v.trim() !== '').length;
+    const answeredQuestions = Object.entries(responses).reduce((total, [videoKey, video]) => {
+      const answered = Object.entries(video as Record<string, string>).filter(([q, v]) => {
+        const qId = `${videoKey}_${q}`;
+        return (v?.trim?.() ?? '') !== '' || !!audioAnswered[qId];
+      }).length;
+      return total + answered;
     }, 0);
     return totalQuestions > 0 ? (answeredQuestions / totalQuestions) * 100 : 0;
   };
 
   const canSubmit = () => {
-    return videoProgress.every(video => video.isComplete);
+    const videoKeys: (keyof AssessmentResponse)[] = ['video1','video2','video3','video4','video5','video6'];
+    return videoKeys.every((vk) => {
+      const questions = responses[vk];
+      const answered = Object.entries(questions).every(([q, v]) => {
+        const qId = `${vk}_${q}`;
+        return (v as string).trim() !== '' || !!audioAnswered[qId];
+      });
+      return answered;
+    });
   };
 
   const isVideoComplete = (videoIndex: number) => {
-    const video = videoProgress.find(v => v.videoId === videoIndex + 1);
-    return video?.isComplete || false;
+    const videoKey = (`video${videoIndex + 1}`) as keyof AssessmentResponse;
+    const questions = responses[videoKey];
+    return Object.entries(questions).every(([q, v]) => {
+      const qId = `${videoKey}_${q}`;
+      return (v as string).trim() !== '' || !!audioAnswered[qId];
+    });
   };
 
   const isVideoSaved = (videoIndex: number) => {
@@ -469,9 +651,12 @@ export default function MyInspirationAssessment() {
   };
 
   const getCurrentVideoCompletionStatus = () => {
-    const video = videoProgress.find(v => v.videoId === currentVideoIndex + 1);
+    const videoKey = getCurrentVideoKey();
     const totalQuestions = 7;
-    const answeredQuestions = video ? Object.values(video.responses).filter((v: string) => v.trim() !== '').length : 0;
+    const answeredQuestions = Object.entries(responses[videoKey]).filter(([q, v]) => {
+      const qId = `${videoKey}_${q}`;
+      return (v as string).trim() !== '' || !!audioAnswered[qId];
+    }).length;
     return { answered: answeredQuestions, total: totalQuestions, isComplete: answeredQuestions === totalQuestions };
   };
 
@@ -558,9 +743,14 @@ export default function MyInspirationAssessment() {
 
       console.log('Existing responses from database:', existingResponses);
 
-      const updatedResponses = {
-        ...existingResponses,
-        [videoKey]: video.responses
+      // Build a fully-typed AssessmentResponse object
+      const updatedResponses: AssessmentResponse = {
+        video1: (videoKey === 'video1') ? (video.responses as any) : (existingResponses as any).video1,
+        video2: (videoKey === 'video2') ? (video.responses as any) : (existingResponses as any).video2,
+        video3: (videoKey === 'video3') ? (video.responses as any) : (existingResponses as any).video3,
+        video4: (videoKey === 'video4') ? (video.responses as any) : (existingResponses as any).video4,
+        video5: (videoKey === 'video5') ? (video.responses as any) : (existingResponses as any).video5,
+        video6: (videoKey === 'video6') ? (video.responses as any) : (existingResponses as any).video6,
       };
 
       console.log('Saving video progress for video', videoIndex + 1);
@@ -997,21 +1187,34 @@ export default function MyInspirationAssessment() {
                     </div>
                   )}
                   <div className="ml-4 flex-shrink-0">
-                    <AudioRecorder
-                      key={`${getCurrentVideoKey()}_question1`}
-                      questionId={`${getCurrentVideoKey()}_question1`}
-                      onRecordingComplete={(audioBlob, transcription) => {
-                        handleAudioResponse(getCurrentVideoKey(), 'question1', audioBlob, transcription);
-                      }}
-                      maxDuration={120000} // 2 minutes
-                      language="en-IN"
-                      studentId={userProfile?.id || 'test-student-123'}
-                      assessmentId="inspiration-assessment"
-                      assessmentType="inspiration"
-                      assessmentTitle="My Inspiration Assessment"
-                      compact={true}
-                    />
+                  {(resolvedStudentId && assessmentRecordId) ? (
+                      <AudioRecorder
+                        key={`${getCurrentVideoKey()}_question1`}
+                        questionId={`${getCurrentVideoKey()}_question1`}
+                        onRecordingComplete={(audioBlob, transcription) => {
+                          handleAudioResponse(getCurrentVideoKey(), 'question1', audioBlob, transcription);
+                        }}
+                        maxDuration={120000} // 2 minutes
+                        language="en-IN"
+                      studentId={resolvedStudentId ?? userProfile.studentProfile.id}
+                      assessmentId={assessmentRecordId ?? 'inspiration-assessment'}
+                        assessmentType="inspiration"
+                      assessmentTitle="My Inspiration"
+                        initialSavedAt={audioResponsesMap[`${getCurrentVideoKey()}_question1`]?.savedAt ?? null}
+                        initialAudioUrl={audioResponsesMap[`${getCurrentVideoKey()}_question1`]?.url ?? null}
+                        initialTranscription={audioResponsesMap[`${getCurrentVideoKey()}_question1`]?.transcript ?? null}
+                        initialConfidence={audioResponsesMap[`${getCurrentVideoKey()}_question1`]?.confidence ?? null}
+                        compact={true}
+                      />
+                    ) : (
+                      <div className="text-sm text-gray-500">Loading audio recorder...</div>
+                    )}
                   </div>
+                </div>
+                <div className="flex items-center gap-2 mb-1">
+                  {transcribedPrefill[`${getCurrentVideoKey()}_question1`] && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">Transcribed</span>
+                  )}
                 </div>
                 <Textarea
                   placeholder={helpTexts.question1}
@@ -1056,21 +1259,34 @@ export default function MyInspirationAssessment() {
                     </div>
                   )}
                   <div className="ml-4 flex-shrink-0">
-                    <AudioRecorder
-                      key={`${getCurrentVideoKey()}_question2`}
-                      questionId={`${getCurrentVideoKey()}_question2`}
-                      onRecordingComplete={(audioBlob, transcription) => {
-                        handleAudioResponse(getCurrentVideoKey(), 'question2', audioBlob, transcription);
-                      }}
-                      maxDuration={120000} // 2 minutes
-                      language="en-IN"
-                      studentId={userProfile?.id || 'test-student-123'}
-                      assessmentId="inspiration-assessment"
-                      assessmentType="inspiration"
-                      assessmentTitle="My Inspiration Assessment"
-                      compact={true}
-                    />
+                  {(resolvedStudentId && assessmentRecordId) ? (
+                      <AudioRecorder
+                        key={`${getCurrentVideoKey()}_question2`}
+                        questionId={`${getCurrentVideoKey()}_question2`}
+                        onRecordingComplete={(audioBlob, transcription) => {
+                          handleAudioResponse(getCurrentVideoKey(), 'question2', audioBlob, transcription);
+                        }}
+                        maxDuration={120000} // 2 minutes
+                        language="en-IN"
+                        studentId={resolvedStudentId ?? userProfile.studentProfile.id}
+                        assessmentId={assessmentRecordId ?? 'inspiration-assessment'}
+                        assessmentType="inspiration"
+                        assessmentTitle="My Inspiration"
+                        initialSavedAt={audioResponsesMap[`${getCurrentVideoKey()}_question2`]?.savedAt ?? null}
+                        initialAudioUrl={audioResponsesMap[`${getCurrentVideoKey()}_question2`]?.url ?? null}
+                        initialTranscription={audioResponsesMap[`${getCurrentVideoKey()}_question2`]?.transcript ?? null}
+                        initialConfidence={audioResponsesMap[`${getCurrentVideoKey()}_question2`]?.confidence ?? null}
+                        compact={true}
+                      />
+                    ) : (
+                      <div className="text-sm text-gray-500">Loading...</div>
+                    )}
                   </div>
+                </div>
+                <div className="flex items-center gap-2 mb-1">
+                  {transcribedPrefill[`${getCurrentVideoKey()}_question2`] && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">Transcribed</span>
+                  )}
                 </div>
                 <Textarea
                   placeholder={helpTexts.question2}
@@ -1115,21 +1331,34 @@ export default function MyInspirationAssessment() {
                     </div>
                   )}
                   <div className="ml-4 flex-shrink-0">
-                    <AudioRecorder
-                      key={`${getCurrentVideoKey()}_question3`}
-                      questionId={`${getCurrentVideoKey()}_question3`}
-                      onRecordingComplete={(audioBlob, transcription) => {
-                        handleAudioResponse(getCurrentVideoKey(), 'question3', audioBlob, transcription);
-                      }}
-                      maxDuration={120000} // 2 minutes
-                      language="en-IN"
-                      studentId={userProfile?.id || 'test-student-123'}
-                      assessmentId="inspiration-assessment"
-                      assessmentType="inspiration"
-                      assessmentTitle="My Inspiration Assessment"
-                      compact={true}
-                    />
+                  {(resolvedStudentId && assessmentRecordId) ? (
+                      <AudioRecorder
+                        key={`${getCurrentVideoKey()}_question3`}
+                        questionId={`${getCurrentVideoKey()}_question3`}
+                        onRecordingComplete={(audioBlob, transcription) => {
+                          handleAudioResponse(getCurrentVideoKey(), 'question3', audioBlob, transcription);
+                        }}
+                        maxDuration={120000} // 2 minutes
+                        language="en-IN"
+                        studentId={resolvedStudentId ?? userProfile.studentProfile.id}
+                        assessmentId={assessmentRecordId ?? 'inspiration-assessment'}
+                        assessmentType="inspiration"
+                        assessmentTitle="My Inspiration"
+                        initialSavedAt={audioResponsesMap[`${getCurrentVideoKey()}_question3`]?.savedAt ?? null}
+                        initialAudioUrl={audioResponsesMap[`${getCurrentVideoKey()}_question3`]?.url ?? null}
+                        initialTranscription={audioResponsesMap[`${getCurrentVideoKey()}_question3`]?.transcript ?? null}
+                        initialConfidence={audioResponsesMap[`${getCurrentVideoKey()}_question3`]?.confidence ?? null}
+                        compact={true}
+                      />
+                    ) : (
+                      <div className="text-sm text-gray-500">Loading...</div>
+                    )}
                   </div>
+                </div>
+                <div className="flex items-center gap-2 mb-1">
+                  {transcribedPrefill[`${getCurrentVideoKey()}_question3`] && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">Transcribed</span>
+                  )}
                 </div>
                 <Textarea
                   placeholder={helpTexts.question3}
@@ -1174,21 +1403,34 @@ export default function MyInspirationAssessment() {
                     </div>
                   )}
                   <div className="ml-4 flex-shrink-0">
-                    <AudioRecorder
-                      key={`${getCurrentVideoKey()}_question4`}
-                      questionId={`${getCurrentVideoKey()}_question4`}
-                      onRecordingComplete={(audioBlob, transcription) => {
-                        handleAudioResponse(getCurrentVideoKey(), 'question4', audioBlob, transcription);
-                      }}
-                      maxDuration={120000} // 2 minutes
-                      language="en-IN"
-                      studentId={userProfile?.id || 'test-student-123'}
-                      assessmentId="inspiration-assessment"
-                      assessmentType="inspiration"
-                      assessmentTitle="My Inspiration Assessment"
-                      compact={true}
-                    />
+                  {(resolvedStudentId && assessmentRecordId) ? (
+                      <AudioRecorder
+                        key={`${getCurrentVideoKey()}_question4`}
+                        questionId={`${getCurrentVideoKey()}_question4`}
+                        onRecordingComplete={(audioBlob, transcription) => {
+                          handleAudioResponse(getCurrentVideoKey(), 'question4', audioBlob, transcription);
+                        }}
+                        maxDuration={120000} // 2 minutes
+                        language="en-IN"
+                        studentId={resolvedStudentId ?? userProfile.studentProfile.id}
+                        assessmentId={assessmentRecordId ?? 'inspiration-assessment'}
+                        assessmentType="inspiration"
+                        assessmentTitle="My Inspiration"
+                        initialSavedAt={audioResponsesMap[`${getCurrentVideoKey()}_question4`]?.savedAt ?? null}
+                        initialAudioUrl={audioResponsesMap[`${getCurrentVideoKey()}_question4`]?.url ?? null}
+                        initialTranscription={audioResponsesMap[`${getCurrentVideoKey()}_question4`]?.transcript ?? null}
+                        initialConfidence={audioResponsesMap[`${getCurrentVideoKey()}_question4`]?.confidence ?? null}
+                        compact={true}
+                      />
+                    ) : (
+                      <div className="text-sm text-gray-500">Loading...</div>
+                    )}
                   </div>
+                </div>
+                <div className="flex items-center gap-2 mb-1">
+                  {transcribedPrefill[`${getCurrentVideoKey()}_question4`] && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">Transcribed</span>
+                  )}
                 </div>
                 <Textarea
                   placeholder={helpTexts.question4}
@@ -1233,21 +1475,34 @@ export default function MyInspirationAssessment() {
                     </div>
                   )}
                   <div className="ml-4 flex-shrink-0">
-                    <AudioRecorder
-                      key={`${getCurrentVideoKey()}_question5`}
-                      questionId={`${getCurrentVideoKey()}_question5`}
-                      onRecordingComplete={(audioBlob, transcription) => {
-                        handleAudioResponse(getCurrentVideoKey(), 'question5', audioBlob, transcription);
-                      }}
-                      maxDuration={120000} // 2 minutes
-                      language="en-IN"
-                      studentId={userProfile?.id || 'test-student-123'}
-                      assessmentId="inspiration-assessment"
-                      assessmentType="inspiration"
-                      assessmentTitle="My Inspiration Assessment"
-                      compact={true}
-                    />
+                  {(resolvedStudentId && assessmentRecordId) ? (
+                      <AudioRecorder
+                        key={`${getCurrentVideoKey()}_question5`}
+                        questionId={`${getCurrentVideoKey()}_question5`}
+                        onRecordingComplete={(audioBlob, transcription) => {
+                          handleAudioResponse(getCurrentVideoKey(), 'question5', audioBlob, transcription);
+                        }}
+                        maxDuration={120000} // 2 minutes
+                        language="en-IN"
+                        studentId={resolvedStudentId ?? userProfile.studentProfile.id}
+                        assessmentId={assessmentRecordId ?? 'inspiration-assessment'}
+                        assessmentType="inspiration"
+                        assessmentTitle="My Inspiration"
+                        initialSavedAt={audioResponsesMap[`${getCurrentVideoKey()}_question5`]?.savedAt ?? null}
+                        initialAudioUrl={audioResponsesMap[`${getCurrentVideoKey()}_question5`]?.url ?? null}
+                        initialTranscription={audioResponsesMap[`${getCurrentVideoKey()}_question5`]?.transcript ?? null}
+                        initialConfidence={audioResponsesMap[`${getCurrentVideoKey()}_question5`]?.confidence ?? null}
+                        compact={true}
+                      />
+                    ) : (
+                      <div className="text-sm text-gray-500">Loading...</div>
+                    )}
                   </div>
+                </div>
+                <div className="flex items-center gap-2 mb-1">
+                  {transcribedPrefill[`${getCurrentVideoKey()}_question5`] && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">Transcribed</span>
+                  )}
                 </div>
                 <Textarea
                   placeholder={helpTexts.question5}
@@ -1292,21 +1547,34 @@ export default function MyInspirationAssessment() {
                     </div>
                   )}
                   <div className="ml-4 flex-shrink-0">
-                    <AudioRecorder
-                      key={`${getCurrentVideoKey()}_question6`}
-                      questionId={`${getCurrentVideoKey()}_question6`}
-                      onRecordingComplete={(audioBlob, transcription) => {
-                        handleAudioResponse(getCurrentVideoKey(), 'question6', audioBlob, transcription);
-                      }}
-                      maxDuration={120000} // 2 minutes
-                      language="en-IN"
-                      studentId={userProfile?.id || 'test-student-123'}
-                      assessmentId="inspiration-assessment"
-                      assessmentType="inspiration"
-                      assessmentTitle="My Inspiration Assessment"
-                      compact={true}
-                    />
+                  {(resolvedStudentId && assessmentRecordId) ? (
+                      <AudioRecorder
+                        key={`${getCurrentVideoKey()}_question6`}
+                        questionId={`${getCurrentVideoKey()}_question6`}
+                        onRecordingComplete={(audioBlob, transcription) => {
+                          handleAudioResponse(getCurrentVideoKey(), 'question6', audioBlob, transcription);
+                        }}
+                        maxDuration={120000} // 2 minutes
+                        language="en-IN"
+                        studentId={resolvedStudentId ?? userProfile.studentProfile.id}
+                        assessmentId={assessmentRecordId ?? 'inspiration-assessment'}
+                        assessmentType="inspiration"
+                        assessmentTitle="My Inspiration"
+                        initialSavedAt={audioResponsesMap[`${getCurrentVideoKey()}_question6`]?.savedAt ?? null}
+                        initialAudioUrl={audioResponsesMap[`${getCurrentVideoKey()}_question6`]?.url ?? null}
+                        initialTranscription={audioResponsesMap[`${getCurrentVideoKey()}_question6`]?.transcript ?? null}
+                        initialConfidence={audioResponsesMap[`${getCurrentVideoKey()}_question6`]?.confidence ?? null}
+                        compact={true}
+                      />
+                    ) : (
+                      <div className="text-sm text-gray-500">Loading...</div>
+                    )}
                   </div>
+                </div>
+                <div className="flex items-center gap-2 mb-1">
+                  {transcribedPrefill[`${getCurrentVideoKey()}_question6`] && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">Transcribed</span>
+                  )}
                 </div>
                 <Textarea
                   placeholder={helpTexts.question6}
@@ -1351,21 +1619,34 @@ export default function MyInspirationAssessment() {
                     </div>
                   )}
                   <div className="ml-4 flex-shrink-0">
-                    <AudioRecorder
-                      key={`${getCurrentVideoKey()}_question7`}
-                      questionId={`${getCurrentVideoKey()}_question7`}
-                      onRecordingComplete={(audioBlob, transcription) => {
-                        handleAudioResponse(getCurrentVideoKey(), 'question7', audioBlob, transcription);
-                      }}
-                      maxDuration={120000} // 2 minutes
-                      language="en-IN"
-                      studentId={userProfile?.id || 'test-student-123'}
-                      assessmentId="inspiration-assessment"
-                      assessmentType="inspiration"
-                      assessmentTitle="My Inspiration Assessment"
-                      compact={true}
-                    />
+                  {(resolvedStudentId && assessmentRecordId) ? (
+                      <AudioRecorder
+                        key={`${getCurrentVideoKey()}_question7`}
+                        questionId={`${getCurrentVideoKey()}_question7`}
+                        onRecordingComplete={(audioBlob, transcription) => {
+                          handleAudioResponse(getCurrentVideoKey(), 'question7', audioBlob, transcription);
+                        }}
+                        maxDuration={120000} // 2 minutes
+                        language="en-IN"
+                        studentId={resolvedStudentId ?? userProfile.studentProfile.id}
+                        assessmentId={assessmentRecordId ?? 'inspiration-assessment'}
+                        assessmentType="inspiration"
+                        assessmentTitle="My Inspiration"
+                        initialSavedAt={audioResponsesMap[`${getCurrentVideoKey()}_question7`]?.savedAt ?? null}
+                        initialAudioUrl={audioResponsesMap[`${getCurrentVideoKey()}_question7`]?.url ?? null}
+                        initialTranscription={audioResponsesMap[`${getCurrentVideoKey()}_question7`]?.transcript ?? null}
+                        initialConfidence={audioResponsesMap[`${getCurrentVideoKey()}_question7`]?.confidence ?? null}
+                        compact={true}
+                      />
+                    ) : (
+                      <div className="text-sm text-gray-500">Loading...</div>
+                    )}
                   </div>
+                </div>
+                <div className="flex items-center gap-2 mb-1">
+                  {transcribedPrefill[`${getCurrentVideoKey()}_question7`] && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">Transcribed</span>
+                  )}
                 </div>
                 <Textarea
                   placeholder="Describe the situation from the video/audio that inspired you..."

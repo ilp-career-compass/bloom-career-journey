@@ -71,22 +71,48 @@ class SpeechToTextService {
       // Convert blob to base64
       const base64Audio = await this.blobToBase64(audioBlob);
       
-      // Prepare request for Google Speech-to-Text API
+      // Prepare request for Google Speech-to-Text API (v1 compatible payload)
+      // Add domain phrase hints to improve recognition for assessment context
+      const PHRASE_HINTS = [
+        // General assessment words
+        'inspiration', 'inspirational', 'motivated', 'motivation', 'values', 'qualities', 'characters', 'yourself',
+        'video', 'audio', 'lesson', 'learn', 'learning', 'habit', 'action', 'thoughts', 'situation',
+        'answer', 'response', 'question', 'record', 'speak clearly',
+        // Prompts phrasing
+        'which parts did you like most', 'find most inspirational',
+        'what can you learn from this video or audio',
+        'what actions or habits will you try',
+        'how will this change the way you think feel or behave',
+        'which qualities of the characters do you identify in yourself',
+        // Common confusions (bias the correct words)
+        'this', 'that', 'they', 'them', 'with', 'the', 'you', 'your', 'identify', 'qualities', 'characters'
+      ];
+
+      const config: any = {
+        encoding: options.encoding,
+        sampleRateHertz: options.sampleRateHertz,
+        languageCode: options.language,
+        enableAutomaticPunctuation: options.enableAutomaticPunctuation,
+        enableWordTimeOffsets: options.enableWordTimeOffsets,
+        maxAlternatives: 3,
+        speechContexts: [
+          {
+            phrases: PHRASE_HINTS,
+            boost: 15.0,
+          },
+        ],
+      };
+
+      // Do not set model/useEnhanced; many languages (e.g., en-IN) aren't supported by enhanced models
+
+      // Google v1 expects sampleRateHertz to either be omitted or match the file header.
+      // Our recorder uses WEBM OPUS @ 48000 Hz; when using WEBM_OPUS, omit sampleRateHertz.
+      if (options.encoding === 'WEBM_OPUS') {
+        delete config.sampleRateHertz;
+      }
+
       const requestBody = {
-        config: {
-          encoding: options.encoding,
-          sampleRateHertz: options.sampleRateHertz,
-          languageCode: options.language,
-          enableAutomaticPunctuation: options.enableAutomaticPunctuation,
-          enableWordTimeOffsets: options.enableWordTimeOffsets,
-          model: options.useEnhanced ? 'latest_long' : options.model,
-          useEnhanced: options.useEnhanced,
-          // Enhanced model for better Indian accent recognition
-          alternativeLanguageCodes: options.language === 'en-IN' ? ['hi-IN'] : ['en-IN'],
-          enableSpeakerDiarization: false,
-          diarizationSpeakerCount: 1,
-          enableSeparateRecognitionPerChannel: false,
-        },
+        config,
         audio: {
           content: base64Audio,
         },
@@ -114,21 +140,33 @@ class SpeechToTextService {
         throw new Error('No transcription results received');
       }
 
-      const result = data.results[0];
-      const alternative = result.alternatives[0];
+      // Flatten alternatives across results and pick the best by confidence, then by length
+      let bestAlt: any = null;
+      for (const res of data.results) {
+        for (const alt of (res.alternatives || [])) {
+          if (!bestAlt) {
+            bestAlt = alt;
+            continue;
+          }
+          const bestScore = (bestAlt.confidence || 0) + ((bestAlt.transcript?.length || 0) / 10000);
+          const altScore = (alt.confidence || 0) + ((alt.transcript?.length || 0) / 10000);
+          if (altScore > bestScore) {
+            bestAlt = alt;
+          }
+        }
+      }
 
       return {
-        transcript: alternative.transcript,
-        confidence: alternative.confidence || 0,
-        words: alternative.words?.map((word: any) => ({
+        transcript: this.postProcessTranscript(bestAlt?.transcript || '', bestAlt?.confidence || 0, options.language),
+        confidence: bestAlt?.confidence || 0,
+        words: bestAlt?.words?.map((word: any) => ({
           word: word.word,
           startTime: word.startTime,
           endTime: word.endTime,
           confidence: word.confidence || 0,
         })),
-        languageCode: result.languageCode || options.language,
-        alternativeTranscripts: result.alternatives
-          ?.slice(1)
+        languageCode: options.language,
+        alternativeTranscripts: (data.results?.[0]?.alternatives || [])
           .map((alt: any) => alt.transcript)
           .filter(Boolean),
       };
@@ -137,6 +175,46 @@ class SpeechToTextService {
       console.error('Google Speech-to-Text error:', error);
       throw error;
     }
+  }
+
+  /**
+   * Light post-processing for common Indian-English phonetic spellings.
+   * Only replaces whole-word matches to avoid overcorrection.
+   */
+  private postProcessTranscript(text: string, confidence: number, language: string): string {
+    if (!text || language !== 'en-IN') return text;
+    const MAP: Record<string, string> = {
+      'dis': 'this',
+      'dat': 'that',
+      'dey': 'they',
+      'dem': 'them',
+      'wid': 'with',
+      'wit': 'with',
+      'wiv': 'with',
+      'da': 'the',
+      'd': 'the',
+      'aur': 'or',
+      'u': 'you',
+      'ur': 'your',
+      'abt': 'about',
+      'rite': 'write',
+      'ryt': 'write',
+      'med': 'made',
+    };
+
+    const parts = text.split(/(\b)/);
+    const fixed = parts.map(part => {
+      const low = part.toLowerCase();
+      if (!/^[A-Za-z]+$/.test(part)) return part;
+      const rep = MAP[low];
+      if (!rep) return part;
+      if (part[0] === part[0].toUpperCase() && part.slice(1) === part.slice(1).toLowerCase()) {
+        return rep.charAt(0).toUpperCase() + rep.slice(1);
+      }
+      return rep;
+    }).join('');
+
+    return fixed;
   }
 
   /**
@@ -210,9 +288,9 @@ class SpeechToTextService {
       language: 'en-IN',
       enableAutomaticPunctuation: true,
       enableWordTimeOffsets: true,
-      model: 'latest_long',
-      useEnhanced: true, // Better for Indian accents
-      sampleRateHertz: 16000,
+      model: 'latest_short',
+      useEnhanced: false,
+      sampleRateHertz: 48000,
       encoding: 'WEBM_OPUS',
     };
 
@@ -224,7 +302,7 @@ class SpeechToTextService {
     } catch (googleError) {
       console.warn('Google transcription failed, trying Azure:', googleError);
       
-      if (this.config.fallbackEnabled) {
+      if (this.config.fallbackEnabled && this.config.azureKey && this.config.azureRegion) {
         try {
           return await this.transcribeWithAzure(audioBlob, finalOptions);
         } catch (azureError) {
@@ -235,6 +313,147 @@ class SpeechToTextService {
         throw googleError;
       }
     }
+  }
+
+  /**
+   * Long-running transcription using Google v1 operations API with a URI.
+   * Expects a gs:// or public https URL. Suitable for >60s audio.
+   */
+  async transcribeLongRunningByUri(
+    fileUri: string,
+    options: Partial<TranscriptionOptions> = {}
+  ): Promise<TranscriptionResult> {
+    if (!this.config.googleApiKey) {
+      throw new Error('Google API key not configured');
+    }
+    if (!this.isOnline) {
+      throw new Error('Offline mode - transcription not available');
+    }
+
+    const finalOptions: TranscriptionOptions = {
+      language: 'en-IN',
+      enableAutomaticPunctuation: true,
+      enableWordTimeOffsets: true,
+      model: 'latest_short',
+      useEnhanced: false,
+      sampleRateHertz: 48000,
+      encoding: 'WEBM_OPUS',
+      ...options,
+    };
+
+    // Kick off operation
+    const startBody: any = {
+      config: {
+        encoding: finalOptions.encoding,
+        languageCode: finalOptions.language,
+        enableAutomaticPunctuation: finalOptions.enableAutomaticPunctuation,
+        enableWordTimeOffsets: finalOptions.enableWordTimeOffsets,
+        maxAlternatives: 3,
+        speechContexts: [
+          {
+            phrases: [
+              'inspiration','motivated','values','qualities','characters','identify','yourself','video','audio','question','response','answer','learn','learning'
+            ],
+            boost: 15.0,
+          },
+        ],
+      },
+      audio: {
+        uri: fileUri,
+      },
+    };
+
+    const startResp = await fetch(`https://speech.googleapis.com/v1/speech:longrunningrecognize?key=${this.config.googleApiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(startBody),
+      }
+    );
+
+    if (!startResp.ok) {
+      const err = await startResp.text();
+      throw new Error(`Failed to start long-running recognize: ${err}`);
+    }
+    const startData = await startResp.json();
+    const operationName = startData?.name;
+    if (!operationName) throw new Error('No operation name returned by Google STT');
+
+    // Poll operation until done (simple polling with backoff)
+    const pollUrl = `https://speech.googleapis.com/v1/operations/${operationName}?key=${this.config.googleApiKey}`;
+    const startTime = Date.now();
+    let delay = 1000;
+    while (true) {
+      await new Promise(r => setTimeout(r, delay));
+      const pollResp = await fetch(pollUrl);
+      const op = await pollResp.json();
+      if (op?.done) {
+        const data = op.response;
+        if (!data?.results || data.results.length === 0) {
+          throw new Error('No transcription results received');
+        }
+        // Pick best alternative across results
+        let bestAlt: any = null;
+        for (const res of data.results) {
+          for (const alt of (res.alternatives || [])) {
+            if (!bestAlt) { bestAlt = alt; continue; }
+            const bestScore = (bestAlt.confidence || 0) + ((bestAlt.transcript?.length || 0) / 10000);
+            const altScore = (alt.confidence || 0) + ((alt.transcript?.length || 0) / 10000);
+            if (altScore > bestScore) bestAlt = alt;
+          }
+        }
+        return {
+          transcript: this.postProcessTranscript(bestAlt?.transcript || '', bestAlt?.confidence || 0, finalOptions.language),
+          confidence: bestAlt?.confidence || 0,
+          languageCode: finalOptions.language,
+          alternativeTranscripts: (data.results?.[0]?.alternatives || []).map((a: any) => a.transcript).filter(Boolean),
+        };
+      }
+      // increase delay up to 5s, timeout after 60s
+      delay = Math.min(delay + 500, 5000);
+      if (Date.now() - startTime > 60000) {
+        throw new Error('Transcription operation timed out');
+      }
+    }
+  }
+
+  /**
+   * Auto-detect between multiple Indian languages by trying each and choosing best by confidence/length
+   */
+  async transcribeAutoDetect(audioBlob: Blob): Promise<TranscriptionResult> {
+    const candidateLanguages: Array<'en-IN' | 'hi-IN' | 'ta-IN' | 'te-IN' | 'kn-IN'> = [
+      'en-IN', 'hi-IN', 'ta-IN', 'te-IN', 'kn-IN'
+    ];
+
+    let best: TranscriptionResult | null = null;
+    let bestScore = -1;
+
+    for (const lang of candidateLanguages) {
+      try {
+        const res = await this.transcribeWithGoogle(audioBlob, {
+          language: lang,
+          enableAutomaticPunctuation: true,
+          enableWordTimeOffsets: true,
+          model: 'latest_short',
+          useEnhanced: false,
+          sampleRateHertz: 48000,
+          encoding: 'WEBM_OPUS',
+        });
+
+        const score = (res.confidence ?? 0) + ((res.transcript?.length ?? 0) / 10000);
+        if (score > bestScore) {
+          best = res;
+          bestScore = score;
+        }
+      } catch (e) {
+        // Continue with next language
+      }
+    }
+
+    if (!best) {
+      throw new Error('No transcription available for any candidate language');
+    }
+    return best;
   }
 
   /**
@@ -419,3 +638,4 @@ export const speechToTextService = new SpeechToTextService({
 });
 
 export default speechToTextService;
+

@@ -259,7 +259,7 @@ export default function MySchoolLearningAssessment() {
         .from('assessment_responses')
         .upsert({
           student_id: studentId,
-          assessment_type: 'state_learning',
+          assessment_type: 'school_learning',
           assessment_title: 'My School, My Learning and I',
           responses: responses,
           completed_at: new Date().toISOString(),

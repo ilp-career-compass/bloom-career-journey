@@ -64,12 +64,13 @@ class SupabaseUploadService {
     } = options;
 
     try {
-      // Check if file is too small for chunking
-      if (file.size <= chunkSize) {
+      // For audio files, always use single chunk upload to avoid MIME type issues
+      // Most audio recordings are small enough (<5MB)
+      if (file.size <= chunkSize || file.type.startsWith('audio/')) {
         return await this.uploadSingleChunk(bucket, path, file, onProgress);
       }
 
-      // Upload in chunks
+      // Upload in chunks for large non-audio files
       return await this.uploadInChunks(
         bucket,
         path,
@@ -108,6 +109,7 @@ class SupabaseUploadService {
         .upload(path, file, {
           cacheControl: '3600',
           upsert: true,
+          contentType: file.type || 'application/octet-stream', // Explicitly set content type
         });
 
       if (error) {
@@ -158,7 +160,8 @@ class SupabaseUploadService {
       for (let i = 0; i < totalChunks; i++) {
         const start = i * chunkSize;
         const end = Math.min(start + chunkSize, file.size);
-        const chunk = file.slice(start, end);
+        // Preserve MIME type when slicing
+        const chunk = file.slice(start, end, file.type);
         const chunkPath = `${path}.chunk.${i}`;
 
         let retryCount = 0;
@@ -172,6 +175,7 @@ class SupabaseUploadService {
               .upload(chunkPath, chunk, {
                 cacheControl: '3600',
                 upsert: true,
+                contentType: file.type, // Explicitly set content type for chunks
               });
 
             if (error) {
@@ -202,7 +206,7 @@ class SupabaseUploadService {
       }
 
       // Combine chunks into final file
-      const finalFile = await this.combineChunks(bucket, path, totalChunks);
+      const finalFile = await this.combineChunks(bucket, path, totalChunks, file.type);
       
       // Clean up chunk files
       await this.cleanupChunks(bucket, path, totalChunks);
@@ -236,7 +240,8 @@ class SupabaseUploadService {
   private async combineChunks(
     bucket: string,
     path: string,
-    totalChunks: number
+    totalChunks: number,
+    mimeType: string
   ): Promise<Blob> {
     const chunks: Blob[] = [];
 
@@ -254,8 +259,8 @@ class SupabaseUploadService {
       chunks.push(data);
     }
 
-    // Combine chunks into single blob
-    return new Blob(chunks, { type: 'audio/webm;codecs=opus' });
+    // Combine chunks into single blob with original MIME type
+    return new Blob(chunks, { type: mimeType });
   }
 
   /**

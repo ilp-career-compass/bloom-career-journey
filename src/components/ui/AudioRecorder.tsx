@@ -68,6 +68,9 @@ interface RecordingState {
   countdownValue: number;
   showPreview: boolean;
   previewUrl: string | null;
+  // Transcription indicators
+  hasTranscription: boolean;
+  transcriptionConfidence: number | null;
 }
 
 interface AudioRecorderProps {
@@ -87,6 +90,13 @@ interface AudioRecorderProps {
   assessmentTitle?: string;
   enableTranscription?: boolean;
   enableOfflineMode?: boolean;
+  // Initial persisted state for revisit
+  initialAudioUrl?: string | null;
+  initialTranscription?: string | null;
+  initialConfidence?: number | null;
+  initialSavedAt?: string | null;
+  // Lock recording after a successful save (one attempt per question)
+  lockAfterSave?: boolean;
 }
 
 export function AudioRecorder({
@@ -106,6 +116,11 @@ export function AudioRecorder({
   assessmentTitle,
   enableTranscription = true,
   enableOfflineMode = true,
+  initialAudioUrl = null,
+  initialTranscription = null,
+  initialConfidence = null,
+  initialSavedAt = null,
+  lockAfterSave = true,
 }: AudioRecorderProps) {
   const { toast } = useToast();
   
@@ -147,7 +162,35 @@ export function AudioRecorder({
     countdownValue: 3,
     showPreview: false,
     previewUrl: null,
+    // Transcription indicators
+    hasTranscription: !!initialTranscription,
+    transcriptionConfidence: initialConfidence ?? null,
   });
+
+  // Initialize from persisted state (when revisiting)
+  useEffect(() => {
+    if (initialAudioUrl || initialSavedAt) {
+      setState(prev => ({
+        ...prev,
+        audioUrl: initialAudioUrl ?? prev.audioUrl,
+        buttonState: 'saved',
+        savedAt: initialSavedAt ?? prev.savedAt,
+      }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialAudioUrl, initialSavedAt]);
+
+  // Reflect initial transcription props
+  useEffect(() => {
+    if (initialTranscription || initialConfidence !== null) {
+      setState(prev => ({
+        ...prev,
+        hasTranscription: !!initialTranscription,
+        transcriptionConfidence: initialConfidence ?? prev.transcriptionConfidence,
+      }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialTranscription, initialConfidence]);
 
   // Error handling functions (moved before useEffect to avoid hoisting issues)
   const setErrorState = useCallback((errorState: 'none' | 'warning' | 'error', message?: string) => {
@@ -274,6 +317,21 @@ export function AudioRecorder({
 
   // Reset state when questionId changes
   useEffect(() => {
+    // Clean up any active recordings and streams
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+    
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    
+    if (recordingIntervalRef.current) {
+      clearInterval(recordingIntervalRef.current);
+      recordingIntervalRef.current = null;
+    }
+    
     setState(prev => ({
       ...prev,
       isRecording: false,
@@ -305,6 +363,41 @@ export function AudioRecorder({
       previewUrl: null,
     }));
   }, [questionId]);
+
+  // Cleanup on component unmount
+  useEffect(() => {
+    const currentAudioUrl = state.audioUrl;
+    const currentPreviewUrl = state.previewUrl;
+    
+    return () => {
+      // Stop any active recording
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        try {
+          mediaRecorderRef.current.stop();
+        } catch (e) {
+          console.log('Error stopping MediaRecorder on cleanup:', e);
+        }
+      }
+      
+      // Stop all media tracks
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+      
+      // Clear intervals
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+      }
+      
+      // Revoke object URLs to free memory
+      if (currentAudioUrl) {
+        URL.revokeObjectURL(currentAudioUrl);
+      }
+      if (currentPreviewUrl) {
+        URL.revokeObjectURL(currentPreviewUrl);
+      }
+    };
+  }, [state.audioUrl, state.previewUrl]);
 
 
   // Countdown functionality
@@ -499,8 +592,10 @@ export function AudioRecorder({
           ...prev, 
           isUploading: false,
           buttonState: 'saved' as RecordingButtonState,
-          savedAt: new Date().toLocaleTimeString(),
-          isSaving: false
+          savedAt: new Date().toISOString(),
+          isSaving: false,
+          hasTranscription: !!result.transcription,
+          transcriptionConfidence: typeof result.confidence === 'number' ? result.confidence : prev.transcriptionConfidence,
         }));
 
         toast({
@@ -574,9 +669,26 @@ export function AudioRecorder({
     try {
       console.log('🔍 Starting actual recording process...');
       
-      // Ensure we have a valid stream
-      if (!streamRef.current) {
-        console.log('📡 No stream found, requesting new stream...');
+      // Guard: Don't start if already recording
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        console.log('⚠️ Already recording, skipping...');
+        return;
+      }
+      
+      // Check if we have a valid stream with active tracks
+      const hasActiveStream = streamRef.current && 
+        streamRef.current.getTracks().length > 0 &&
+        streamRef.current.getTracks().some(track => track.readyState === 'live');
+      
+      if (!hasActiveStream) {
+        console.log('📡 No active stream found, requesting new stream...');
+        
+        // Stop any existing tracks first
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop());
+        }
+        
+        // Request a fresh stream
         const stream = await navigator.mediaDevices.getUserMedia({
           audio: {
             sampleRate: AUDIO_CONFIG.sampleRate,
@@ -587,32 +699,18 @@ export function AudioRecorder({
           }
         });
         streamRef.current = stream;
-        console.log('✅ New stream obtained');
+        console.log('✅ New active stream obtained with', stream.getTracks().length, 'tracks');
+      } else {
+        console.log('✅ Using existing active stream');
       }
 
-      // Check if stream is active
-      if (streamRef.current.getTracks().length === 0) {
-        console.log('⚠️ Stream has no active tracks, requesting new stream...');
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            sampleRate: AUDIO_CONFIG.sampleRate,
-            channelCount: AUDIO_CONFIG.channels,
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-          }
-        });
-        streamRef.current = stream;
-        console.log('✅ New active stream obtained');
-      }
-
-      // Check if any track is active
+      // Double-check we have active tracks
       const activeTracks = streamRef.current.getTracks().filter(track => track.readyState === 'live');
       if (activeTracks.length === 0) {
-        console.log('⚠️ No active audio tracks found');
+        console.log('⚠️ No active audio tracks found after stream check');
         throw new Error('No active audio tracks available for recording');
       }
-      console.log('✅ Active audio tracks found:', activeTracks.length);
+      console.log('✅ Active audio tracks confirmed:', activeTracks.length);
 
       // Create MediaRecorder with simplified approach
       let mediaRecorder: MediaRecorder;
@@ -740,31 +838,45 @@ export function AudioRecorder({
         collectWaveformData();
       }
       
-      toast({
-        title: "Recording Started",
-        description: "Speak clearly into your microphone. Tap stop when finished.",
-      });
+      // Use setTimeout to avoid setState during render warning
+      setTimeout(() => {
+        toast({
+          title: "Recording Started",
+          description: "Speak clearly into your microphone. Tap stop when finished.",
+        });
+      }, 0);
       
     } catch (error) {
       console.error('❌ Error starting recording:', error);
       
       setErrorState('error', 'Failed to start recording. Please check your microphone and try again.');
       
-      toast({
-        title: "Recording Error",
-        description: "Failed to start recording. Please try again.",
-        variant: "destructive",
-      });
+      // Use setTimeout to avoid setState during render warning
+      setTimeout(() => {
+        toast({
+          title: "Recording Error",
+          description: "Failed to start recording. Please try again.",
+          variant: "destructive",
+        });
+      }, 0);
     }
-  }, [state.hasPermission, state.isOnline, maxDuration, processAudioResponse, toast, setErrorState, state.isRecording]);
+  }, [state.hasPermission, state.isOnline, maxDuration, processAudioResponse, toast, setErrorState]);
 
   // Handle countdown completion
+  const hasStartedRecordingRef = useRef(false);
+  
   useEffect(() => {
-    if (!state.countdownActive && state.countdownValue === 3 && state.buttonState === 'recording') {
+    if (!state.countdownActive && state.countdownValue === 3 && state.buttonState === 'recording' && !hasStartedRecordingRef.current) {
       // Countdown just finished, start actual recording
+      hasStartedRecordingRef.current = true;
       startActualRecording();
     }
-  }, [state.countdownActive, state.countdownValue, state.buttonState, startActualRecording]);
+    
+    // Reset the flag when not in recording state
+    if (state.buttonState !== 'recording') {
+      hasStartedRecordingRef.current = false;
+    }
+  }, [state.countdownActive, state.countdownValue, state.buttonState]);
 
   // Stop recording
   const stopRecording = useCallback(() => {
@@ -890,9 +1002,9 @@ export function AudioRecorder({
             icon: <Mic className="w-4 h-4" />,
             variant: 'default' as const,
             className: 'bg-blue-500 hover:bg-blue-600 text-white',
-            disabled: disabled,
+            disabled: disabled || (lockAfterSave && (state.buttonState === 'saved' || !!initialAudioUrl || !!initialSavedAt || !!initialTranscription)),
             onClick: startRecording,
-            extraUI: 'Ready to record'
+            extraUI: lockAfterSave && (state.buttonState === 'saved' || !!initialAudioUrl || !!initialSavedAt || !!initialTranscription) ? 'Recording locked after save' : 'Ready to record'
           };
         case 'recording':
           return {
@@ -927,7 +1039,7 @@ export function AudioRecorder({
             className: 'bg-green-50 border-green-200 text-green-700',
             disabled: false,
             onClick: () => {},
-            extraUI: state.savedAt ? `Saved at ${new Date(state.savedAt).toLocaleTimeString()}` : 'Audio saved successfully'
+            extraUI: (state.savedAt || initialSavedAt) ? `Saved at ${new Date(state.savedAt || initialSavedAt as string).toLocaleTimeString()}` : 'Audio saved successfully'
           };
         default:
           return {
@@ -935,9 +1047,9 @@ export function AudioRecorder({
             icon: <Mic className="w-4 h-4" />,
             variant: 'default' as const,
             className: 'bg-blue-500 hover:bg-blue-600 text-white',
-            disabled: disabled || !state.hasPermission,
+            disabled: disabled || !state.hasPermission || (lockAfterSave && (state.buttonState === 'saved' || !!initialAudioUrl || !!initialSavedAt || !!initialTranscription)),
             onClick: startRecording,
-            extraUI: 'Ready to record'
+            extraUI: lockAfterSave && (state.buttonState === 'saved' || !!initialAudioUrl || !!initialSavedAt || !!initialTranscription) ? 'Recording locked after save' : 'Ready to record'
           };
       }
     };
@@ -976,6 +1088,11 @@ export function AudioRecorder({
               
               {/* Status indicators */}
               <div className="flex items-center gap-1">
+                {state.buttonState === 'saved' && (
+                  <Badge variant="default" className="text-xs bg-green-100 text-green-700">
+                    Saved
+                  </Badge>
+                )}
                 {state.hasPermission ? (
                   <Badge variant="default" className="text-xs bg-green-100 text-green-700">
                     Ready
@@ -983,6 +1100,11 @@ export function AudioRecorder({
                 ) : (
                   <Badge variant="destructive" className="text-xs">
                     Allow Mic
+                  </Badge>
+                )}
+                {state.hasTranscription && (
+                  <Badge variant="outline" className="text-xs text-blue-700 border-blue-200">
+                    Transcribed{typeof state.transcriptionConfidence === 'number' ? ` • ${state.transcriptionConfidence.toFixed(2)}` : ''}
                   </Badge>
                 )}
                 {!state.isOnline && (

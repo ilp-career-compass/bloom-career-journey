@@ -636,12 +636,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (!success) {
           console.error('Error creating user profile:', userInsertError);
-          toast({
-            title: "Registration failed",
-            description: "Failed to create user profile. Please contact support.",
-            variant: "destructive",
-          });
-          return { error: userInsertError };
+          
+          // Verify if the profile was actually created despite the error
+          console.log('Verifying if user profile exists despite error...');
+          const { data: existingProfile, error: checkError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('id', authData.user.id)
+            .maybeSingle();
+          
+          if (existingProfile) {
+            console.log('✅ User profile exists despite error - continuing with registration');
+            // Profile exists, so we can continue
+          } else {
+            // Profile truly doesn't exist
+            console.error('❌ User profile truly does not exist');
+            toast({
+              title: "Registration failed",
+              description: "Failed to create user profile. Please contact support.",
+              variant: "destructive",
+            });
+            return { error: userInsertError };
+          }
         }
 
         console.log('User profile created successfully');

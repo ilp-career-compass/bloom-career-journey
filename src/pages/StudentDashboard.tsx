@@ -305,7 +305,7 @@ export default function StudentDashboard() {
         .from('assessment_responses')
         .select('*')
         .eq('student_id', studentId)
-        .eq('assessment_type', 'state_learning')
+        .eq('assessment_type', 'school_learning')
         .eq('assessment_title', 'My School, My Learning and I')
         .order('updated_at', { ascending: false })
         .limit(1)
@@ -427,7 +427,7 @@ export default function StudentDashboard() {
         return inspirationCompleted;
       case 'dreams':
         return inspirationCompleted && aboutMeCompleted;
-      case 'state_learning':
+      case 'school_learning':
         return inspirationCompleted && aboutMeCompleted && dreamsCompleted;
       case 'role_models':
         return inspirationCompleted && aboutMeCompleted && dreamsCompleted && stateLearningCompleted;
@@ -482,7 +482,7 @@ export default function StudentDashboard() {
         return !!aboutMeProgress?.completed_at;
       case 'dreams':
         return !!dreamsProgress?.completed_at;
-      case 'state_learning':
+      case 'school_learning':
         return !!stateLearningProgress?.completed_at;
       case 'role_models':
         return !!roleModelsProgress?.completed_at;
@@ -502,7 +502,7 @@ export default function StudentDashboard() {
         return User;
       case 'dreams':
         return Star;
-      case 'state_learning':
+      case 'school_learning':
         return BookOpen;
       case 'role_models':
         return Heart;
@@ -529,7 +529,7 @@ export default function StudentDashboard() {
       navigate('/assessment/about-me');
     } else if (assessmentType === 'dreams') {
       navigate('/assessment/dreams');
-    } else if (assessmentType === 'state_learning') {
+    } else if (assessmentType === 'school_learning') {
       // Correct route for School & Learning assessment
       navigate('/assessment/school-learning');
     } else if (assessmentType === 'role_models') {
@@ -716,26 +716,26 @@ export default function StudentDashboard() {
 
           {/* 3. My School & Learning - Unlocked after Dreams */}
           <Card
-            className={getAssessmentStatus('state_learning').className}
-            onClick={() => startAssessment('state_learning')}
+            className={getAssessmentStatus('school_learning').className}
+            onClick={() => startAssessment('school_learning')}
           >
             <CardContent className="p-6 text-center">
-              {React.createElement(getAssessmentStatus('state_learning').icon, {
-                className: `w-12 h-12 ${getAssessmentStatus('state_learning').iconColor} mx-auto mb-3`
+              {React.createElement(getAssessmentStatus('school_learning').icon, {
+                className: `w-12 h-12 ${getAssessmentStatus('school_learning').iconColor} mx-auto mb-3`
               })}
-              <h3 className={`font-semibold ${getAssessmentStatus('state_learning').textColor} mb-2`}>
+              <h3 className={`font-semibold ${getAssessmentStatus('school_learning').textColor} mb-2`}>
                 4. My School & Learning
               </h3>
-              <p className={`text-sm ${getAssessmentStatus('state_learning').descriptionColor} mb-2`}>
+              <p className={`text-sm ${getAssessmentStatus('school_learning').descriptionColor} mb-2`}>
                 Reflect on your learning journey
               </p>
-              {getCompletionStatus('state_learning') && (
+              {getCompletionStatus('school_learning') && (
                 <Badge variant="default" className="mt-2 bg-green-600">Completed ✓</Badge>
               )}
-              {!getCompletionStatus('state_learning') && isAssessmentUnlocked('state_learning') && (
+              {!getCompletionStatus('school_learning') && isAssessmentUnlocked('school_learning') && (
                 <Badge variant="secondary" className="mt-2">Available</Badge>
               )}
-              {!isAssessmentUnlocked('state_learning') && (
+              {!isAssessmentUnlocked('school_learning') && (
                 <Badge variant="outline" className="mt-2">Locked 🔒</Badge>
               )}
               </CardContent>
