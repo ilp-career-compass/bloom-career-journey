@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { StateInfo, SchoolClass } from '@/integrations/supabase/types';
 import AssessmentResponsesView from '@/components/teacher/AssessmentResponsesView';
 import { Button } from '@/components/ui/button';
+import NotificationBell from '@/components/NotificationBell';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -791,7 +792,9 @@ export default function TeacherDashboard() {
               <h1 className="text-xl font-bold text-gray-800">Vidya Saathi</h1>
             </div>
 
-            {/* Profile Dropdown */}
+            {/* Notifications + Profile */}
+            <div className="flex items-center gap-2">
+              {userProfile?.id && <NotificationBell userId={userProfile.id} />}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center space-x-2 hover:bg-gray-100">
@@ -833,6 +836,7 @@ export default function TeacherDashboard() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            </div>
           </div>
         </div>
       </div>

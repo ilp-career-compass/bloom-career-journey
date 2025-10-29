@@ -23,12 +23,13 @@ import {
   BookOpen
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { safeObjectEntries, handleDatabaseError, validateApiResponse } from '@/utils/errorHandler';
 import { AudioRecorder } from '@/components/ui/AudioRecorder';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { aiSummaryService } from '@/services/aiSummaryService';
 import { summaryDatabaseService } from '@/services/summaryDatabaseService';
+import { notificationService } from '@/services/notificationService';
 
 interface InspirationVideo {
   id: number;
@@ -111,6 +112,9 @@ interface VideoProgress {
 
 export default function MyInspirationAssessment() {
   const { userProfile } = useAuth();
+  const [searchParams] = useSearchParams();
+  const viewParam = searchParams.get('readonly') || searchParams.get('view');
+  const readOnlyView = viewParam === '1' || viewParam === 'true';
   const { toast } = useToast();
   const [helpTexts, setHelpTexts] = useState({
     question1: 'Write about the moments or messages you enjoyed or that made you feel motivated.',
@@ -677,6 +681,7 @@ export default function MyInspirationAssessment() {
   // to prevent conflicts. The responses state is now the single source of truth.
 
   const handleResponseChange = (videoKey: keyof AssessmentResponse, questionKey: string, value: string) => {
+    if (readOnlyView) return;
     // Update responses state
     const updatedResponses: AssessmentResponse = {
       video1: { ...responses.video1 },
@@ -708,6 +713,7 @@ export default function MyInspirationAssessment() {
 
   // Handle audio responses
   const handleAudioResponse = (videoKey: keyof AssessmentResponse, questionKey: string, audioBlob: Blob, transcription?: string) => {
+    if (readOnlyView) return;
     // Store the audio blob
     const audioKey = `${videoKey}_${questionKey}`;
     setAudioResponses(prev => ({
@@ -796,6 +802,7 @@ export default function MyInspirationAssessment() {
   };
 
   const saveVideoProgress = async (videoIndex: number) => {
+    if (readOnlyView) return;
     if (!userProfile) {
       toast({
         title: "Error",
@@ -962,6 +969,7 @@ export default function MyInspirationAssessment() {
   };
 
   const submitAssessment = async () => {
+    if (readOnlyView) return;
     if (!userProfile) {
       toast({
         title: "Error",
@@ -1024,6 +1032,33 @@ export default function MyInspirationAssessment() {
         description: "Generating your reflection summary...",
       });
 
+      // Notify student (self) and teacher of submission (best-effort)
+      try {
+        await notificationService.create({
+          userId: userProfile.id,
+          type: 'system',
+          title: 'Inspiration submitted',
+          message: 'Your Inspiration assessment has been submitted.',
+          link: '/student'
+        });
+        // find teacher for this student
+        const { data: studentRow } = await supabase
+          .from('students')
+          .select('teachers:teacher_id(user_id)')
+          .eq('user_id', userProfile.id)
+          .maybeSingle();
+        const teacherUserId = (studentRow as any)?.teachers?.user_id;
+        if (teacherUserId) {
+          await notificationService.create({
+            userId: teacherUserId,
+            type: 'assessment_submitted',
+            title: `${userProfile.full_name || 'Student'} submitted Inspiration`,
+            message: 'A new Inspiration assessment is ready to review.',
+            link: '/teacher#reviews'
+          });
+        }
+      } catch {}
+
       // Generate AI summary in the background
       try {
         if (aiSummaryService.isConfigured()) {
@@ -1044,6 +1079,7 @@ export default function MyInspirationAssessment() {
                 title: "Summary Generated! 📝",
                 description: "Your teacher will review your reflection summary.",
               });
+              // no notification here; approval will notify student
             } else {
               console.error('Failed to save summary:', saveResult.error);
               toast({
@@ -1122,7 +1158,7 @@ export default function MyInspirationAssessment() {
     );
   }
 
-  if (isCompleted) {
+  if (isCompleted && !readOnlyView) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-8">
         <div className="container mx-auto px-4">
@@ -1139,14 +1175,7 @@ export default function MyInspirationAssessment() {
                 <p className="text-gray-600">
                   Thank you for completing the inspiration assessment! Your reflections on the inspirational videos have been saved and your teacher can now review them to help guide your career journey.
                 </p>
-                <div className="flex justify-center gap-4">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setIsCompleted(false)}
-                    className="border-blue-200 text-blue-700 hover:bg-blue-50"
-                  >
-                    Review My Responses
-                  </Button>
+                <div className="flex justify-center">
                   <Button 
                     onClick={() => navigate('/student')}
                     className="bg-blue-600 hover:bg-blue-700"
@@ -1411,6 +1440,7 @@ export default function MyInspirationAssessment() {
                   placeholder={helpTexts.question1}
                   value={getCurrentVideoResponses().question1}
                   onChange={(e) => handleResponseChange(getCurrentVideoKey(), 'question1', e.target.value)}
+                  readOnly={readOnlyView}
                   rows={4}
                   className={`text-base ${getCurrentVideoResponses().question1.trim() 
                     ? 'border-blue-200 focus:border-blue-400' 
@@ -1483,6 +1513,7 @@ export default function MyInspirationAssessment() {
                   placeholder={helpTexts.question2}
                   value={getCurrentVideoResponses().question2}
                   onChange={(e) => handleResponseChange(getCurrentVideoKey(), 'question2', e.target.value)}
+                  readOnly={readOnlyView}
                   rows={4}
                   className={`text-base ${getCurrentVideoResponses().question2.trim() 
                     ? 'border-green-200 focus:border-green-400' 
@@ -1555,6 +1586,7 @@ export default function MyInspirationAssessment() {
                   placeholder={helpTexts.question3}
                   value={getCurrentVideoResponses().question3}
                   onChange={(e) => handleResponseChange(getCurrentVideoKey(), 'question3', e.target.value)}
+                  readOnly={readOnlyView}
                   rows={4}
                   className={`text-base ${getCurrentVideoResponses().question3.trim() 
                     ? 'border-purple-200 focus:border-purple-400' 
@@ -1627,6 +1659,7 @@ export default function MyInspirationAssessment() {
                   placeholder={helpTexts.question4}
                   value={getCurrentVideoResponses().question4}
                   onChange={(e) => handleResponseChange(getCurrentVideoKey(), 'question4', e.target.value)}
+                  readOnly={readOnlyView}
                   rows={4}
                   className={`text-base ${getCurrentVideoResponses().question4.trim() 
                     ? 'border-orange-200 focus:border-orange-400' 
@@ -1699,6 +1732,7 @@ export default function MyInspirationAssessment() {
                   placeholder={helpTexts.question5}
                   value={getCurrentVideoResponses().question5}
                   onChange={(e) => handleResponseChange(getCurrentVideoKey(), 'question5', e.target.value)}
+                  readOnly={readOnlyView}
                   rows={4}
                   className={`text-base ${getCurrentVideoResponses().question5.trim() 
                     ? 'border-pink-200 focus:border-pink-400' 
@@ -1771,6 +1805,7 @@ export default function MyInspirationAssessment() {
                   placeholder={helpTexts.question6}
                   value={getCurrentVideoResponses().question6}
                   onChange={(e) => handleResponseChange(getCurrentVideoKey(), 'question6', e.target.value)}
+                  readOnly={readOnlyView}
                   rows={4}
                   className={`text-base ${getCurrentVideoResponses().question6.trim() 
                     ? 'border-indigo-200 focus:border-indigo-400' 
@@ -1843,6 +1878,7 @@ export default function MyInspirationAssessment() {
                   placeholder="Describe the situation from the video/audio that inspired you..."
                   value={getCurrentVideoResponses().question7 || ''}
                   onChange={(e) => handleResponseChange(getCurrentVideoKey(), 'question7', e.target.value)}
+                  readOnly={readOnlyView}
                   rows={4}
                   className={`text-base ${getCurrentVideoResponses().question7?.trim() 
                     ? 'border-teal-200 focus:border-teal-400' 
@@ -1880,7 +1916,7 @@ export default function MyInspirationAssessment() {
                 </div>
                 <Button
                   onClick={() => saveVideoProgress(currentVideoIndex)}
-                  disabled={!isVideoComplete(currentVideoIndex) || saving || isVideoSaved(currentVideoIndex)}
+                  disabled={!isVideoComplete(currentVideoIndex) || saving || isVideoSaved(currentVideoIndex) || readOnlyView}
                   variant="outline"
                   className="border-green-200 text-green-700 hover:bg-green-50"
                 >
@@ -1910,7 +1946,7 @@ export default function MyInspirationAssessment() {
         <div className="flex justify-center mt-8">
           <Button
             onClick={submitAssessment}
-            disabled={!canSubmit() || submitting}
+            disabled={!canSubmit() || submitting || readOnlyView}
             size="lg"
             className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-3 text-lg"
           >

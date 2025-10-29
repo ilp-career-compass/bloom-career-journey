@@ -20,7 +20,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AssessmentService, AssessmentTemplate } from '@/services/assessmentService';
 
@@ -40,6 +40,8 @@ interface RoleModelsAssessmentResponse {
 export default function MyRoleModelsAssessmentDB() {
   const { userProfile } = useAuth();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  const readOnlyView = ['1','true'].includes((searchParams.get('readonly')||searchParams.get('view')||'').toLowerCase());
   const [assessmentTemplate, setAssessmentTemplate] = useState<AssessmentTemplate | null>(null);
   const [responses, setResponses] = useState<RoleModelsAssessmentResponse>({
     roleModels: []
@@ -163,6 +165,7 @@ export default function MyRoleModelsAssessmentDB() {
   }, [responses, loading, isCompleted, userProfile]);
 
   const handleRoleModelChange = (index: number, field: keyof RoleModel, value: string) => {
+    if (readOnlyView) return;
     setResponses(prev => ({
       ...prev,
       roleModels: prev.roleModels.map((rm, i) => 
@@ -172,6 +175,7 @@ export default function MyRoleModelsAssessmentDB() {
   };
 
   const addRoleModel = () => {
+    if (readOnlyView) return;
     setResponses(prev => ({
       ...prev,
       roleModels: [...prev.roleModels, {
@@ -186,6 +190,7 @@ export default function MyRoleModelsAssessmentDB() {
   };
 
   const removeRoleModel = (index: number) => {
+    if (readOnlyView) return;
     if (responses.roleModels.length > 1) {
       setResponses(prev => ({
         ...prev,
@@ -195,6 +200,7 @@ export default function MyRoleModelsAssessmentDB() {
   };
 
   const handleSubmit = async () => {
+    if (readOnlyView) return;
     if (!userProfile) return;
 
     setSubmitting(true);
@@ -342,6 +348,7 @@ export default function MyRoleModelsAssessmentDB() {
                     </label>
                     <Input
                       value={roleModel.name}
+                      readOnly={readOnlyView as any}
                       onChange={(e) => handleRoleModelChange(index, 'name', e.target.value)}
                       placeholder="Enter the person's name"
                     />
@@ -352,6 +359,7 @@ export default function MyRoleModelsAssessmentDB() {
                     </label>
                     <Input
                       value={roleModel.relationship}
+                      readOnly={readOnlyView as any}
                       onChange={(e) => handleRoleModelChange(index, 'relationship', e.target.value)}
                       placeholder="e.g., Teacher, Parent, Friend"
                     />
@@ -364,6 +372,7 @@ export default function MyRoleModelsAssessmentDB() {
                   </label>
                   <Textarea
                     value={roleModel.qualities}
+                    readOnly={readOnlyView as any}
                     onChange={(e) => handleRoleModelChange(index, 'qualities', e.target.value)}
                     placeholder="Describe the qualities you admire..."
                     className="min-h-[100px]"
@@ -376,6 +385,7 @@ export default function MyRoleModelsAssessmentDB() {
                   </label>
                   <Textarea
                     value={roleModel.influence}
+                    readOnly={readOnlyView as any}
                     onChange={(e) => handleRoleModelChange(index, 'influence', e.target.value)}
                     placeholder="Describe their influence on you..."
                     className="min-h-[100px]"
@@ -388,6 +398,7 @@ export default function MyRoleModelsAssessmentDB() {
                   </label>
                   <Textarea
                     value={roleModel.incorporatePlan}
+                    readOnly={readOnlyView as any}
                     onChange={(e) => handleRoleModelChange(index, 'incorporatePlan', e.target.value)}
                     placeholder="Describe your plan to incorporate their qualities..."
                     className="min-h-[100px]"
@@ -402,6 +413,7 @@ export default function MyRoleModelsAssessmentDB() {
             <Button
               variant="outline"
               onClick={addRoleModel}
+              disabled={readOnlyView}
               className="flex items-center gap-2"
             >
               <Plus className="h-4 w-4" />

@@ -42,6 +42,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import ProfileDialog from '@/components/ProfileDialog';
+import NotificationBell from '@/components/NotificationBell';
 import ChatBubble from '@/components/chat/ChatBubble';
 import {
   Dialog,
@@ -157,6 +158,7 @@ export default function StudentDashboard() {
   const [summaryDialogOpen, setSummaryDialogOpen] = useState(false);
   const [inspirationSummary, setInspirationSummary] = useState<AssessmentSummary | null>(null);
   const [assessmentResponseId, setAssessmentResponseId] = useState<string | null>(null);
+  const [summaryNotified, setSummaryNotified] = useState(false);
 
   // Assessment progress states
   const [assessmentProgress, setAssessmentProgress] = useState<Record<string, any> | null>(null);
@@ -267,6 +269,8 @@ export default function StudentDashboard() {
     }
   };
 
+  // We surface approvals via the notification bell only; suppress toast popups
+
   const checkAssessmentProgress = async () => {
     const studentId = await getStudentId();
     if (!studentId) return;
@@ -278,6 +282,8 @@ export default function StudentDashboard() {
         .eq('student_id', studentId)
         .eq('assessment_type', 'inspiration')
         .eq('assessment_title', 'My Inspiration')
+        // Prefer completed records, then fall back to most recently updated
+        .order('completed_at', { ascending: false, nullsFirst: false })
         .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -567,18 +573,24 @@ export default function StudentDashboard() {
     }
 
     if (assessmentType === 'inspiration') {
-      navigate('/assessment/inspiration');
+      const completed = getCompletionStatus('inspiration');
+      navigate(completed ? '/assessment/inspiration?readonly=1' : '/assessment/inspiration');
     } else if (assessmentType === 'about_me') {
-      navigate('/assessment/about-me');
+      const completed = getCompletionStatus('about_me');
+      navigate(completed ? '/assessment/about-me?readonly=1' : '/assessment/about-me');
     } else if (assessmentType === 'dreams') {
-      navigate('/assessment/dreams');
+      const completed = getCompletionStatus('dreams');
+      navigate(completed ? '/assessment/dreams?readonly=1' : '/assessment/dreams');
     } else if (assessmentType === 'school_learning') {
       // Correct route for School & Learning assessment
-      navigate('/assessment/school-learning');
+      const completed = getCompletionStatus('school_learning');
+      navigate(completed ? '/assessment/school-learning?readonly=1' : '/assessment/school-learning');
     } else if (assessmentType === 'role_models') {
-      navigate('/assessment/role-models');
+      const completed = getCompletionStatus('role_models');
+      navigate(completed ? '/assessment/role-models?readonly=1' : '/assessment/role-models');
     } else if (assessmentType === 'hobbies') {
-      navigate('/assessment/hobbies');
+      const completed = getCompletionStatus('hobbies');
+      navigate(completed ? '/assessment/hobbies?readonly=1' : '/assessment/hobbies');
     }
   };
 
@@ -604,7 +616,9 @@ export default function StudentDashboard() {
               <h1 className="text-xl font-bold text-gray-800">CareerCompass</h1>
       </div>
 
-            {/* Profile Dropdown */}
+            {/* Notifications + Profile */}
+            <div className="flex items-center gap-2">
+              {userProfile?.id && <NotificationBell userId={userProfile.id} />}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center space-x-2 hover:bg-gray-100">
@@ -646,6 +660,7 @@ export default function StudentDashboard() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            </div>
         </div>
           </div>
         </div>

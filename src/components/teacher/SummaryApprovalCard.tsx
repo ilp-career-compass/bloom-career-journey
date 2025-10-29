@@ -46,6 +46,7 @@ import {
   getSummaryStatusLabel
 } from '@/types/assessmentSummary';
 import { summaryDatabaseService } from '@/services/summaryDatabaseService';
+import { notificationService } from '@/services/notificationService';
 import { aiSummaryService } from '@/services/aiSummaryService';
 
 interface SummaryApprovalCardProps {
@@ -110,6 +111,16 @@ export default function SummaryApprovalCard({
           title: "Summary Approved! ✅",
           description: `${studentName}'s reflection summary is now visible to them.`
         });
+        // Notify student (best-effort)
+        try {
+          await notificationService.create({
+            userId: summary.student_user_id,
+            type: 'summary_approved',
+            title: 'Inspiration summary approved',
+            message: 'Your mentor approved your AI summary. Tap to view.',
+            link: '/student'
+          });
+        } catch {}
         setIsEditing(false);
         onSummaryUpdated?.();
       } else {

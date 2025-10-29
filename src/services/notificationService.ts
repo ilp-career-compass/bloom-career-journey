@@ -1,0 +1,64 @@
+import { supabase } from '@/integrations/supabase/client';
+
+export type NotificationType = 'summary_approved' | 'teacher_message' | 'assessment_submitted' | 'system';
+
+export interface AppNotification {
+  id: string;
+  user_id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  link?: string | null;
+  created_at: string;
+  read_at?: string | null;
+}
+
+class NotificationService {
+  async getUnreadCount(userId: string): Promise<number> {
+    const { count } = await supabase
+      .from('notifications')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .is('read_at', null);
+    return count || 0;
+  }
+
+  async list(userId: string, limit = 15): Promise<AppNotification[]> {
+    const { data } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    return (data as AppNotification[]) || [];
+  }
+
+  async markRead(ids: string[]): Promise<void> {
+    if (!ids.length) return;
+    await supabase
+      .from('notifications')
+      .update({ read_at: new Date().toISOString() })
+      .in('id', ids);
+  }
+
+  async create(params: {
+    userId: string;
+    type: NotificationType;
+    title: string;
+    message: string;
+    link?: string;
+  }): Promise<void> {
+    await supabase.from('notifications').insert({
+      user_id: params.userId,
+      type: params.type,
+      title: params.title,
+      message: params.message,
+      link: params.link || null,
+      created_at: new Date().toISOString(),
+    } as any);
+  }
+}
+
+export const notificationService = new NotificationService();
+
+

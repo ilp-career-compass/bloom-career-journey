@@ -23,7 +23,7 @@ import {
   Save
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AssessmentService, AssessmentTemplate } from '@/services/assessmentService';
 
@@ -36,6 +36,8 @@ interface DreamAssessmentResponse {
 export default function MyDreamsAssessmentDB() {
   const { userProfile } = useAuth();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  const readOnlyView = ['1','true'].includes((searchParams.get('readonly')||searchParams.get('view')||'').toLowerCase());
   const [assessmentTemplate, setAssessmentTemplate] = useState<AssessmentTemplate | null>(null);
   const [responses, setResponses] = useState<DreamAssessmentResponse>({});
   const [loading, setLoading] = useState(true);
@@ -158,6 +160,7 @@ export default function MyDreamsAssessmentDB() {
   }, [responses, loading, isCompleted, userProfile]);
 
   const handleResponseChange = (sectionKey: string, questionKey: string, value: string) => {
+    if (readOnlyView) return;
     setResponses(prev => ({
       ...prev,
       [sectionKey]: {
@@ -168,6 +171,7 @@ export default function MyDreamsAssessmentDB() {
   };
 
   const handleSubmit = async () => {
+    if (readOnlyView) return;
     if (!userProfile) return;
 
     setSubmitting(true);
@@ -370,6 +374,7 @@ export default function MyDreamsAssessmentDB() {
                     <Textarea
                       value={currentResponse}
                       onChange={(e) => handleResponseChange(sectionKey, questionKey, e.target.value)}
+                      readOnly={readOnlyView}
                       placeholder="Share your thoughts..."
                       className="min-h-[100px]"
                     />
@@ -399,7 +404,7 @@ export default function MyDreamsAssessmentDB() {
                   {currentSection === assessmentTemplate.sections.length - 1 ? (
                     <Button
                       onClick={handleSubmit}
-                      disabled={submitting || !isCurrentSectionComplete()}
+                      disabled={submitting || !isCurrentSectionComplete() || readOnlyView}
                     >
                       {submitting ? 'Submitting...' : 'Complete Assessment'}
                     </Button>

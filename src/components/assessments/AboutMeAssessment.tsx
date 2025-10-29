@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { User, ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -87,6 +87,8 @@ const HELP = {
 
 export default function AboutMeAssessment() {
   const { userProfile } = useAuth();
+  const [searchParams] = useSearchParams();
+  const readOnlyView = ['1','true'].includes((searchParams.get('readonly')||searchParams.get('view')||'').toLowerCase());
   const { toast } = useToast();
   const navigate = useNavigate();
   const [responses, setResponses] = useState<AboutMeResponses>(defaultResponses);
@@ -195,6 +197,7 @@ export default function AboutMeAssessment() {
   }, [userProfile, studentIdPromise]);
 
   const save = async (complete: boolean) => {
+    if (readOnlyView) return;
     if (!userProfile) return;
     const studentId = await studentIdPromise;
     if (!studentId) return;
@@ -218,7 +221,7 @@ export default function AboutMeAssessment() {
     }
   };
 
-  if (isCompleted) {
+  if (isCompleted && !readOnlyView) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-8">
         <div className="container mx-auto px-4">
@@ -236,13 +239,7 @@ export default function AboutMeAssessment() {
                   Thank you for completing the About Me assessment! Your reflections have been saved and your teacher can now review them to help guide your career journey.
                 </p>
                 <div className="flex justify-center gap-4">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setIsCompleted(false)}
-                    className="border-blue-200 text-blue-700 hover:bg-blue-50"
-                  >
-                    Review My Responses
-                  </Button>
+                  
                   <Button 
                     onClick={() => navigate('/student')}
                     className="bg-blue-600 hover:bg-blue-700"
@@ -396,7 +393,7 @@ export default function AboutMeAssessment() {
 
             <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
               <Button variant="outline" onClick={() => save(false)} disabled={submitting} className="border-blue-200 text-blue-700 hover:bg-blue-50">Save Progress</Button>
-              <Button onClick={() => save(true)} disabled={submitting} className="bg-blue-600 hover:bg-blue-700">Submit About Me</Button>
+              <Button onClick={() => save(true)} disabled={submitting || readOnlyView} className="bg-blue-600 hover:bg-blue-700">Submit About Me</Button>
             </div>
           </CardContent>
         </Card>
@@ -432,6 +429,7 @@ function Question({ label, help, value, onChange, area, helpKey, open, onToggle 
       {area ? (
         <Textarea 
           value={value} 
+          readOnly={readOnlyView as any}
           onChange={(e) => {
             const v = e.target.value;
             onChange(v);
@@ -443,6 +441,7 @@ function Question({ label, help, value, onChange, area, helpKey, open, onToggle 
       ) : (
         <Input 
           value={value} 
+          readOnly={readOnlyView as any}
           onChange={(e) => {
             const v = e.target.value;
             onChange(v);

@@ -18,7 +18,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AssessmentService, AssessmentTemplate } from '@/services/assessmentService';
 
@@ -31,6 +31,8 @@ interface SchoolLearningAssessmentResponse {
 export default function MySchoolLearningAssessmentDB() {
   const { userProfile } = useAuth();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  const readOnlyView = ['1','true'].includes((searchParams.get('readonly')||searchParams.get('view')||'').toLowerCase());
   const [assessmentTemplate, setAssessmentTemplate] = useState<AssessmentTemplate | null>(null);
   const [responses, setResponses] = useState<SchoolLearningAssessmentResponse>({});
   const [loading, setLoading] = useState(true);
@@ -168,6 +170,7 @@ export default function MySchoolLearningAssessmentDB() {
   }, [responses, loading, isCompleted, userProfile]);
 
   const handleResponseChange = (sectionKey: string, questionKey: string, value: string) => {
+    if (readOnlyView) return;
     setResponses(prev => ({
       ...prev,
       [sectionKey]: {
@@ -178,6 +181,7 @@ export default function MySchoolLearningAssessmentDB() {
   };
 
   const handleCheckboxChange = (sectionKey: string, questionKey: string, optionKey: string, checked: boolean) => {
+    if (readOnlyView) return;
     setResponses(prev => ({
       ...prev,
       [sectionKey]: {
@@ -424,6 +428,7 @@ export default function MySchoolLearningAssessmentDB() {
                         <Textarea
                           value={(currentResponse as { [key: string]: any })?.others || ''}
                           onChange={(e) => handleCheckboxChange(sectionKey, questionKey, 'others', e.target.value)}
+                          readOnly={readOnlyView}
                           placeholder="If others, please specify..."
                           className="min-h-[60px]"
                         />
@@ -432,6 +437,7 @@ export default function MySchoolLearningAssessmentDB() {
                       <Textarea
                         value={currentResponse.toString()}
                         onChange={(e) => handleResponseChange(sectionKey, questionKey, e.target.value)}
+                        readOnly={readOnlyView}
                         placeholder="Share your thoughts..."
                         className="min-h-[100px]"
                       />
@@ -462,7 +468,7 @@ export default function MySchoolLearningAssessmentDB() {
                   {currentSection === assessmentTemplate.sections.length - 1 ? (
                     <Button
                       onClick={handleSubmit}
-                      disabled={submitting || !isCurrentSectionComplete()}
+                      disabled={submitting || !isCurrentSectionComplete() || readOnlyView}
                     >
                       {submitting ? 'Submitting...' : 'Complete Assessment'}
                     </Button>
