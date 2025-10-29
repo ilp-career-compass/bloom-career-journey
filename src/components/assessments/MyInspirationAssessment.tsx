@@ -27,6 +27,8 @@ import { useNavigate } from 'react-router-dom';
 import { safeObjectEntries, handleDatabaseError, validateApiResponse } from '@/utils/errorHandler';
 import { AudioRecorder } from '@/components/ui/AudioRecorder';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { aiSummaryService } from '@/services/aiSummaryService';
+import { summaryDatabaseService } from '@/services/summaryDatabaseService';
 
 interface InspirationVideo {
   id: number;
@@ -1000,22 +1002,79 @@ export default function MyInspirationAssessment() {
 
     setSubmitting(true);
     try {
-      const { error } = await supabase
+      // Save assessment responses and get the response ID
+      const { data: assessmentData, error: assessmentError } = await supabase
         .from('assessment_responses')
         .upsert({
           student_id: studentId,
           assessment_type: 'inspiration',
           assessment_title: 'My Inspiration',
           responses: responses,
-          completed_at: new Date().toISOString()
-        });
+          completed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (assessmentError) throw assessmentError;
 
+      // Show success message for assessment submission
       toast({
-        title: "Inspiration Assessment Completed! ✨",
-        description: "Your reflections on inspirational videos have been captured successfully!",
+        title: "Assessment Completed! ✨",
+        description: "Generating your reflection summary...",
       });
+
+      // Generate AI summary in the background
+      try {
+        if (aiSummaryService.isConfigured()) {
+          console.log('🤖 Generating AI summary for assessment:', assessmentData.id);
+          const summaryResult = await aiSummaryService.generateInspirationSummary(responses);
+
+          if (summaryResult.success && summaryResult.summary) {
+            // Save summary to database
+            const saveResult = await summaryDatabaseService.createAISummary(
+              assessmentData.id,
+              summaryResult.summary,
+              userProfile.id
+            );
+
+            if (saveResult.success) {
+              console.log('✅ AI summary saved successfully:', saveResult.summaryId);
+              toast({
+                title: "Summary Generated! 📝",
+                description: "Your teacher will review your reflection summary.",
+              });
+            } else {
+              console.error('Failed to save summary:', saveResult.error);
+              toast({
+                title: "Summary Generation Issue",
+                description: "Your assessment is saved, but summary generation needs attention.",
+                variant: "destructive",
+              });
+            }
+          } else {
+            console.error('Failed to generate summary:', summaryResult.error);
+            toast({
+              title: "Summary Generation Issue",
+              description: "Your assessment is saved. Summary will be generated later.",
+              variant: "destructive",
+            });
+          }
+        } else {
+          console.warn('⚠️ Gemini API not configured, skipping summary generation');
+          toast({
+            title: "Assessment Saved! ✨",
+            description: "Your reflections have been captured successfully!",
+          });
+        }
+      } catch (summaryError) {
+        console.error('Error in summary generation:', summaryError);
+        // Don't fail the entire submission if summary generation fails
+        toast({
+          title: "Assessment Saved! ✨",
+          description: "Your reflections have been captured successfully!",
+        });
+      }
 
       setIsCompleted(true);
     } catch (error) {

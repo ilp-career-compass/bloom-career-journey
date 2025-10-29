@@ -29,7 +29,8 @@ import {
   ChevronDown,
   Crown,
   Briefcase,
-  GraduationCap
+  GraduationCap,
+  FileText
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -54,6 +55,9 @@ import CareerSpotlight from '@/components/CareerSpotlight';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import SummaryViewDialog from '@/components/assessments/SummaryViewDialog';
+import { AssessmentSummary } from '@/types/assessmentSummary';
+import { summaryDatabaseService } from '@/services/summaryDatabaseService';
 
 export default function StudentDashboard() {
   const { userProfile, signOut } = useAuth();
@@ -149,6 +153,11 @@ export default function StudentDashboard() {
     }
   };
 
+  // Summary dialog state
+  const [summaryDialogOpen, setSummaryDialogOpen] = useState(false);
+  const [inspirationSummary, setInspirationSummary] = useState<AssessmentSummary | null>(null);
+  const [assessmentResponseId, setAssessmentResponseId] = useState<string | null>(null);
+
   // Assessment progress states
   const [assessmentProgress, setAssessmentProgress] = useState<Record<string, any> | null>(null);
   const [aboutMeProgress, setAboutMeProgress] = useState<Record<string, any> | null>(null);
@@ -228,6 +237,36 @@ export default function StudentDashboard() {
     return data?.id || null;
   };
 
+  // Fetch inspiration summary
+  const fetchInspirationSummary = async (assessmentResponseId: string) => {
+    if (!userProfile?.id) return;
+
+    try {
+      const result = await summaryDatabaseService.getSummaryByAssessment(
+        assessmentResponseId,
+        userProfile.id
+      );
+
+      if (result.success && result.summary) {
+        setInspirationSummary(result.summary);
+      }
+    } catch (error) {
+      console.error('Error fetching summary:', error);
+    }
+  };
+
+  // Handle summary view
+  const handleViewSummary = () => {
+    setSummaryDialogOpen(true);
+  };
+
+  const handleSummaryUpdated = () => {
+    // Refresh summary after student edits
+    if (assessmentResponseId) {
+      fetchInspirationSummary(assessmentResponseId);
+    }
+  };
+
   const checkAssessmentProgress = async () => {
     const studentId = await getStudentId();
     if (!studentId) return;
@@ -245,6 +284,9 @@ export default function StudentDashboard() {
 
       if (data && !error) {
         setAssessmentProgress(data);
+        setAssessmentResponseId(data.id);
+        // Fetch summary for this assessment
+        fetchInspirationSummary(data.id);
       }
     } catch (error) {
       // No existing response found, which is fine
@@ -810,7 +852,29 @@ export default function StudentDashboard() {
           <CardContent>
             <div className="space-y-3">
               <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                <span className="font-medium text-green-800">1. My Inspiration</span>
+                <div className="flex items-center gap-3">
+                  <span className="font-medium text-green-800">1. My Inspiration</span>
+                  {inspirationSummary && inspirationSummary.approval_status === 'approved' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewSummary();
+                      }}
+                      className="h-7 text-xs"
+                    >
+                      <FileText className="h-3 w-3 mr-1" />
+                      View Summary
+                    </Button>
+                  )}
+                  {inspirationSummary && inspirationSummary.approval_status === 'pending_approval' && (
+                    <Badge variant="secondary" className="text-xs">
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      Summary Pending Review
+                    </Badge>
+                  )}
+                </div>
                 <Badge variant={inspirationCompleted ? "default" : (assessmentProgress ? "outline" : "secondary")}>
                   {inspirationCompleted ? "Completed ✓" : (assessmentProgress ? "In Progress" : "Not Started")}
                 </Badge>
@@ -935,6 +999,15 @@ export default function StudentDashboard() {
 
       {/* Profile Editing Modal */}
       <ProfileDialog open={isProfileOpen} onOpenChange={setIsProfileOpen} />
+
+      {/* Summary View Dialog */}
+      <SummaryViewDialog
+        open={summaryDialogOpen}
+        onOpenChange={setSummaryDialogOpen}
+        summary={inspirationSummary}
+        studentUserId={userProfile?.id || ''}
+        onSummaryUpdated={handleSummaryUpdated}
+      />
     </div>
   );
 }

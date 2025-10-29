@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { StateInfo, SchoolClass } from '@/integrations/supabase/types';
+import AssessmentResponsesView from '@/components/teacher/AssessmentResponsesView';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -515,17 +516,110 @@ export default function TeacherDashboard() {
       .maybeSingle()
       .then(({ data }) => setTeacherRow((data as any) || null));
     // Load review overview and per-student review progress
-    (async () => {
-      try {
-        const { data: ov } = await supabase.rpc('get_review_overview', { teacher_user_id: userProfile.id });
-        if (ov && ov[0]) setReviewOverview(ov[0] as any);
-        const { data: sp } = await supabase.rpc('get_student_review_progress', { teacher_user_id: userProfile.id });
-        const map: Record<string, {reviewed:number; total:number}> = {};
-        (sp||[]).forEach((row:any) => { map[row.student_id] = { reviewed: Number(row.reviewed_count||0), total: Number(row.total_count||0) }; });
-        setStudentReviewMap(map);
-      } catch {}
-    })();
-  }, [userProfile?.id]);
+    refreshReviewOverview();
+  }, [userProfile]);
+
+  const refreshReviewOverview = async () => {
+    try {
+      if (!userProfile?.id) return;
+      
+      // Get teacher's student IDs
+      // First get the teacher record
+      const { data: teacherRecord } = await supabase
+        .from('teachers')
+        .select('id')
+        .eq('user_id', userProfile.id)
+        .single();
+
+      if (!teacherRecord) {
+        console.warn('⚠️ No teacher record found for user:', userProfile.id);
+        setReviewOverview({
+          unreviewed_count: 0,
+          reviewed_count: 0,
+          needs_revision_count: 0,
+          flagged_count: 0,
+          followups_due_this_week: 0
+        });
+        return;
+      }
+
+      console.log('👨‍🏫 Teacher ID:', teacherRecord.id);
+
+      const { data: students } = await supabase
+        .from('students')
+        .select('id')
+        .eq('teacher_id', teacherRecord.id);
+      
+      console.log('👥 Found students:', students?.length || 0);
+      
+      if (!students || students.length === 0) {
+        setReviewOverview({
+          unreviewed_count: 0,
+          reviewed_count: 0,
+          needs_revision_count: 0,
+          flagged_count: 0,
+          followups_due_this_week: 0
+        });
+        return;
+      }
+
+      const studentIds = students.map(s => s.id);
+
+      // Get all assessments for these students
+      const { data: assessments } = await supabase
+        .from('assessment_responses')
+        .select('id, student_id, assessment_type, review_status, completed_at')
+        .in('student_id', studentIds)
+        .order('completed_at', { ascending: false });
+
+      if (!assessments) {
+        setReviewOverview({
+          unreviewed_count: 0,
+          reviewed_count: 0,
+          needs_revision_count: 0,
+          flagged_count: 0,
+          followups_due_this_week: 0
+        });
+        return;
+      }
+
+      // Filter to keep only the latest unique assessment per student per type
+      const uniqueAssessments = new Map<string, typeof assessments[0]>();
+      
+      assessments.forEach(assessment => {
+        const key = `${assessment.student_id}_${assessment.assessment_type}`;
+        // Only keep the first one (latest due to ordering)
+        if (!uniqueAssessments.has(key)) {
+          uniqueAssessments.set(key, assessment);
+        }
+      });
+
+      console.log(`📊 Total assessments: ${assessments.length}, Unique assessments: ${uniqueAssessments.size}`);
+
+      // Count by status (only counting unique assessments)
+      const counts = {
+        unreviewed_count: 0,
+        reviewed_count: 0,
+        needs_revision_count: 0,
+        flagged_count: 0,
+        followups_due_this_week: 0
+      };
+
+      uniqueAssessments.forEach(assessment => {
+        const status = assessment.review_status || 'unreviewed';
+        if (status === 'reviewed') counts.reviewed_count++;
+        else if (status === 'needs_revision') counts.needs_revision_count++;
+        else if (status === 'flagged') counts.flagged_count++;
+        else counts.unreviewed_count++;
+      });
+
+      console.log('📊 Refreshed review overview:', counts);
+      setReviewOverview(counts);
+
+    } catch (err) {
+      console.error('Error refreshing review overview:', err);
+    }
+  };
 
   // Load assessments for selected student in Reviews tab
   useEffect(() => {
@@ -1146,9 +1240,13 @@ export default function TeacherDashboard() {
 
           {/* Reviews Tab */}
           <TabsContent value="reviews" className="space-y-6">
+            <AssessmentResponsesView onReviewUpdate={refreshReviewOverview} />
+          </TabsContent>
+          
+          <TabsContent value="reviews_old" className="space-y-6">
             <Card className="border-0 shadow-lg">
               <CardHeader>
-                <CardTitle className="text-xl text-gray-800">Reviews</CardTitle>
+                <CardTitle className="text-xl text-gray-800">Reviews (Old)</CardTitle>
                 <CardDescription>Read answers and set review status for your students</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">

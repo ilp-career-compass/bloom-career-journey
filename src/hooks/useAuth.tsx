@@ -46,6 +46,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   
   // Use a ref to track if we have a valid authenticated state
   const hasAuthStateRef = useRef(false);
+  
+  // Use a ref to store the subscription so we can unsubscribe when we have auth
+  const authSubscriptionRef = useRef<any>(null);
 
   console.log('AuthProvider initialized');
 
@@ -96,8 +99,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     // Update the ref to track if we have valid auth state
     const hasValidAuth = user !== null && userProfile !== null;
+    const wasAuthenticated = hasAuthStateRef.current;
     hasAuthStateRef.current = hasValidAuth;
     console.log('🔄 hasAuthStateRef updated to:', hasValidAuth);
+    
+    // CRITICAL: Unsubscribe from auth listener once we have valid auth
+    // This prevents Supabase from interfering with our authenticated state
+    if (hasValidAuth && !wasAuthenticated && authSubscriptionRef.current) {
+      console.log('🔒 UNSUBSCRIBING from Supabase auth listener - we have valid auth');
+      authSubscriptionRef.current.unsubscribe();
+      authSubscriptionRef.current = null;
+    }
   }, [userProfile, user, loading, isCustomAuth]);
 
   // Test database connection and migration
@@ -257,10 +269,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let lastEventTime = 0;
     let lastEventType = '';
 
-    // Set up auth state listener
+    // Set up auth state listener and store it in ref
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         const now = Date.now();
+        
+        console.log('🔔 Auth event:', event, '| hasAuthStateRef:', hasAuthStateRef.current);
+        
+        // CRITICAL: If we already have valid auth, ignore ALL events except explicit SIGNED_OUT
+        if (hasAuthStateRef.current && event !== 'SIGNED_OUT') {
+          console.log(`🛑 Already authenticated - ignoring ${event} event completely`);
+          return;
+        }
         
         // Ignore duplicate events within 100ms
         if (event === lastEventType && (now - lastEventTime) < 100) {
@@ -358,8 +378,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       setLoading(false);
     });
+    
+    // Store subscription in ref so we can unsubscribe it later
+    authSubscriptionRef.current = subscription;
+    console.log('📡 Auth subscription created and stored in ref');
 
-    return () => subscription.unsubscribe();
+    return () => {
+      console.log('🧹 Cleaning up auth subscription');
+      subscription.unsubscribe();
+    };
   }, []); // Remove isCustomAuth dependency to prevent recreation
 
   const fetchUserProfile = async (userId: string, userOverride?: AuthUser) => {
@@ -939,6 +966,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             });
           } else {
             console.log('Auto sign-in successful');
+            
+            // CRITICAL: Manually fetch user profile since our auth listener might be blocked
+            // Get the current session to fetch the user
+            const { data: sessionData } = await supabase.auth.getSession();
+            if (sessionData.session?.user) {
+              console.log('📥 Manually fetching user profile after registration');
+              await fetchUserProfile(sessionData.session.user.id, sessionData.session.user as AuthUser);
+            }
+            
             // Auto sign-in successful
             toast({
               title: "Registration successful",
