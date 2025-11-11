@@ -38,8 +38,39 @@ class SpeechToTextService {
   private config: SpeechToTextConfig;
   private isOnline: boolean = navigator.onLine;
 
-  constructor(config: SpeechToTextConfig) {
-    this.config = config;
+  constructor(config?: SpeechToTextConfig) {
+    // If no config provided, load from environment variables (same pattern as Gemini)
+    if (!config) {
+      // Read environment variables directly (same as Gemini does)
+      const googleApiKey = (import.meta.env as any).VITE_GOOGLE_SPEECH_API_KEY;
+      const azureKey = (import.meta.env as any).VITE_AZURE_SPEECH_KEY;
+      
+      // Log immediately when constructor runs
+      console.log('🔑 [SpeechToText] Constructor called - Loading API keys from environment');
+      console.log('🔑 [SpeechToText] Environment check:', {
+        googleApiKey: googleApiKey ? `${String(googleApiKey).substring(0, 15)}...` : '❌ NOT SET',
+        googleApiKeyLength: googleApiKey?.length || 0,
+        azureKey: azureKey ? 'SET' : 'NOT SET',
+        allEnvKeys: Object.keys(import.meta.env).filter(k => k.includes('GOOGLE') || k.includes('SPEECH')),
+      });
+      
+      this.config = {
+        googleApiKey: googleApiKey ? String(googleApiKey).trim() : undefined,
+        googleProjectId: (import.meta.env as any).VITE_GOOGLE_PROJECT_ID,
+        googleServiceAccountEmail: (import.meta.env as any).VITE_GOOGLE_SERVICE_ACCOUNT_EMAIL,
+        azureKey: azureKey ? String(azureKey).trim() : undefined,
+        azureRegion: (import.meta.env as any).VITE_AZURE_SPEECH_REGION,
+        fallbackEnabled: true,
+      };
+      
+      console.log('🔑 [SpeechToText] Config initialized:', {
+        hasGoogleKey: !!this.config.googleApiKey,
+        googleKeyLength: this.config.googleApiKey?.length || 0,
+        hasAzureKey: !!this.config.azureKey,
+      });
+    } else {
+      this.config = config;
+    }
     
     // Listen for online/offline status
     window.addEventListener('online', () => {
@@ -50,6 +81,20 @@ class SpeechToTextService {
       this.isOnline = false;
     });
   }
+  
+  /**
+   * Check if Google API is configured (same pattern as Gemini)
+   */
+  isGoogleConfigured(): boolean {
+    return !!this.config.googleApiKey && this.config.googleApiKey.trim().length > 0;
+  }
+  
+  /**
+   * Check if Azure API is configured
+   */
+  isAzureConfigured(): boolean {
+    return !!this.config.azureKey && !!this.config.azureRegion;
+  }
 
   /**
    * Transcribe audio using Google Cloud Speech-to-Text
@@ -59,8 +104,20 @@ class SpeechToTextService {
     audioBlob: Blob,
     options: TranscriptionOptions
   ): Promise<TranscriptionResult> {
-    if (!this.config.googleApiKey) {
+    if (!this.isGoogleConfigured()) {
+      console.error('❌ [transcribeWithGoogle] Google API key not configured');
+      console.error('📝 Current config:', {
+        hasKey: !!this.config.googleApiKey,
+        keyLength: this.config.googleApiKey?.length || 0,
+        envVar: import.meta.env.VITE_GOOGLE_SPEECH_API_KEY ? 'SET' : 'NOT SET',
+        envVarValue: import.meta.env.VITE_GOOGLE_SPEECH_API_KEY ? `${import.meta.env.VITE_GOOGLE_SPEECH_API_KEY.substring(0, 15)}...` : 'undefined',
+      });
       throw new Error('Google API key not configured');
+    }
+    
+    // Additional validation - check if key looks valid
+    if (this.config.googleApiKey && this.config.googleApiKey.length < 20) {
+      console.warn('⚠️ [transcribeWithGoogle] API key seems too short. Expected ~39 characters for Google API key.');
     }
 
     if (!this.isOnline) {
@@ -93,7 +150,25 @@ class SpeechToTextService {
         'how will this change the way you think feel or behave',
         'which qualities of the characters do you identify in yourself',
         // Common confusions (bias the correct words)
-        'this', 'that', 'they', 'them', 'with', 'the', 'you', 'your', 'identify', 'qualities', 'characters'
+        'this', 'that', 'they', 'them', 'with', 'the', 'you', 'your', 'identify', 'qualities', 'characters',
+        // Indian English common words and phrases
+        'well', 'actually', 'really', 'very', 'much', 'many', 'some', 'any', 'all', 'also', 'too', 'also',
+        'because', 'so', 'then', 'when', 'where', 'what', 'who', 'why', 'how',
+        'friend', 'friends', 'family', 'mother', 'father', 'sister', 'brother', 'teacher', 'school',
+        'birthday', 'today', 'yesterday', 'tomorrow', 'called', 'told', 'said', 'forgot', 'remember',
+        'sorry', 'thank you', 'please', 'kind of', 'sort of', 'like', 'such as',
+        // Indian English pronunciation patterns
+        'her', 'she', 'he', 'his', 'him', 'her', 'they', 'their', 'there',
+        'will', 'would', 'could', 'should', 'might', 'may', 'can',
+        'have', 'has', 'had', 'was', 'were', 'been', 'being',
+        'that', 'this', 'these', 'those', 'the', 'a', 'an',
+        // Common Indian English phrases
+        'I have', 'I will', 'I can', 'I should', 'I would', 'I might',
+        'she will', 'he will', 'they will', 'we will',
+        'kind of', 'sort of', 'a lot', 'a bit', 'a little',
+        'multiple times', 'many times', 'few times', 'some times',
+        'real life', 'real life experiences', 'from my life', 'in my life',
+        'inspiring', 'inspired', 'inspiration', 'motivated', 'motivation'
       ];
 
       const config: any = {
@@ -106,12 +181,15 @@ class SpeechToTextService {
         speechContexts: [
           {
             phrases: PHRASE_HINTS,
-            boost: 15.0,
+            boost: 20.0, // Increased boost for better recognition of Indian English
           },
         ],
+        // Use enhanced model for Indian English for better accuracy
+        model: options.language === 'en-IN' ? 'latest_long' : undefined,
+        useEnhanced: options.language === 'en-IN' ? true : false,
+        // Help with code-switching (Hindi-English mix common in India)
+        alternativeLanguageCodes: options.language === 'en-IN' ? ['hi-IN'] : undefined,
       };
-
-      // Do not set model/useEnhanced; many languages (e.g., en-IN) aren't supported by enhanced models
 
       // Google v1 expects sampleRateHertz to either be omitted or match the file header.
       // Our recorder uses WEBM OPUS @ 48000 Hz; when using WEBM_OPUS, omit sampleRateHertz.
@@ -186,12 +264,14 @@ class SpeechToTextService {
   }
 
   /**
-   * Light post-processing for common Indian-English phonetic spellings.
-   * Only replaces whole-word matches to avoid overcorrection.
+   * Enhanced post-processing for common Indian-English phonetic spellings.
+   * Handles common mispronunciations and transcription errors in Indian English.
    */
   private postProcessTranscript(text: string, confidence: number, language: string): string {
     if (!text || language !== 'en-IN') return text;
+    
     const MAP: Record<string, string> = {
+      // Common phonetic errors
       'dis': 'this',
       'dat': 'that',
       'dey': 'they',
@@ -207,22 +287,126 @@ class SpeechToTextService {
       'abt': 'about',
       'rite': 'write',
       'ryt': 'write',
+      'ryte': 'write',
       'med': 'made',
+      
+      // Indian English specific corrections (from your example)
+      'fal': 'well',
+      'har': 'her',
+      'chhah': 'she',
+      'van': 'when',
+      'mai': 'my',
+      'tel': 'tell',
+      'dait': 'that',
+      'den': 'then',
+      'shi': 'she',
+      'vil': 'will',
+      'bi': 'be',
+      'vel': 'well',
+      'off': 'of',
+      'ho gaya': 'happened',
+      'ho gaya': 'happened',
+      
+      // Common v/w confusion in Indian English
+      'vith': 'with',
+      'vhen': 'when',
+      'vhat': 'what',
+      'vhere': 'where',
+      'vhy': 'why',
+      'vould': 'would',
+      'vant': 'want',
+      'vay': 'way',
+      'vork': 'work',
+      'vorld': 'world',
+      
+      // Common th/d confusion
+      'dere': 'there',
+      'dese': 'these',
+      'dat': 'that',
+      'de': 'the',
+      'dough': 'though',
+      'dink': 'think',
+      'dought': 'thought',
+      'drough': 'through',
+      
+      // Common r/l confusion
+      'fliend': 'friend',
+      'fliends': 'friends',
+      'ploblem': 'problem',
+      'ploblems': 'problems',
+      
+      // Common vowel sounds
+      'tody': 'today',
+      'yestody': 'yesterday',
+      'tomorow': 'tomorrow',
+      'caled': 'called',
+      'told': 'told',
+      'forgot': 'forgot',
+      'forget': 'forget',
+      'remembr': 'remember',
+      'sory': 'sorry',
+      'thnk': 'think',
+      'thnks': 'thanks',
+      'thnku': 'thank you',
+      
+      // Common word endings
+      'kind off': 'kind of',
+      'sort off': 'sort of',
+      'a lot off': 'a lot of',
+      'a bit off': 'a bit of',
+      
+      // Common phrases
+      'i have': 'I have',
+      'i will': 'I will',
+      'i can': 'I can',
+      'i should': 'I should',
+      'i would': 'I would',
+      'i told': 'I told',
+      'i called': 'I called',
+      'i forgot': 'I forgot',
+      'i remember': 'I remember',
     };
 
-    const parts = text.split(/(\b)/);
-    const fixed = parts.map(part => {
-      const low = part.toLowerCase();
+    // First, handle multi-word phrases (longer matches first)
+    let fixed = text;
+    const phraseMap: Record<string, string> = {
+      'ho gaya': 'happened',
+      'kind off': 'kind of',
+      'sort off': 'sort of',
+      'a lot off': 'a lot of',
+      'a bit off': 'a bit of',
+    };
+    
+    // Replace phrases (case-insensitive)
+    Object.keys(phraseMap).forEach(phrase => {
+      const regex = new RegExp(`\\b${phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+      fixed = fixed.replace(regex, phraseMap[phrase]);
+    });
+    
+    // Then handle single words
+    const parts = fixed.split(/(\b)/);
+    let result = parts.map(part => {
+      const low = part.toLowerCase().trim();
       if (!/^[A-Za-z]+$/.test(part)) return part;
       const rep = MAP[low];
       if (!rep) return part;
+      
+      // Preserve capitalization
       if (part[0] === part[0].toUpperCase() && part.slice(1) === part.slice(1).toLowerCase()) {
         return rep.charAt(0).toUpperCase() + rep.slice(1);
       }
       return rep;
     }).join('');
 
-    return fixed;
+    // Clean up extra spaces
+    result = result.replace(/\s+/g, ' ').trim();
+    
+    // Basic sentence capitalization
+    if (result.length > 0) {
+      result = result.charAt(0).toUpperCase() + result.slice(1);
+    }
+    
+    return result;
   }
 
   /**
@@ -638,15 +822,8 @@ class SpeechToTextService {
   }
 }
 
-// Create singleton instance
-export const speechToTextService = new SpeechToTextService({
-  googleApiKey: import.meta.env.VITE_GOOGLE_SPEECH_API_KEY,
-  googleProjectId: import.meta.env.VITE_GOOGLE_PROJECT_ID,
-  googleServiceAccountEmail: import.meta.env.VITE_GOOGLE_SERVICE_ACCOUNT_EMAIL,
-  azureKey: import.meta.env.VITE_AZURE_SPEECH_KEY,
-  azureRegion: import.meta.env.VITE_AZURE_SPEECH_REGION,
-  fallbackEnabled: true,
-});
+// Create singleton instance - same pattern as Gemini (loads API key in constructor)
+export const speechToTextService = new SpeechToTextService();
 
 export default speechToTextService;
 

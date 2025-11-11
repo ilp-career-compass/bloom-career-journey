@@ -148,6 +148,22 @@ class AudioResponseManager {
           onProgress?.(80);
         } catch (error) {
           console.warn('Transcription failed, continuing without it:', error);
+          
+          // Log helpful error message for missing API keys
+          if (error instanceof Error) {
+            if (error.message.includes('Google API key not configured')) {
+              console.error('❌ Transcription Error: Google Speech-to-Text API key is not configured.');
+              console.error('📝 To enable transcription, set VITE_GOOGLE_SPEECH_API_KEY in your .env file.');
+              console.error('🔗 Get your API key from: https://console.cloud.google.com/apis/credentials');
+            } else if (error.message.includes('Azure Speech Services not configured')) {
+              console.error('❌ Transcription Error: Azure Speech Services is not configured.');
+              console.error('📝 To enable transcription fallback, set VITE_AZURE_SPEECH_KEY and VITE_AZURE_SPEECH_REGION in your .env file.');
+            } else if (error.message.includes('Transcription failed on all services')) {
+              console.error('❌ Transcription Error: Both Google and Azure transcription services failed.');
+              console.error('📝 Please configure at least one transcription service (Google or Azure) in your .env file.');
+            }
+          }
+          
           // Continue without transcription
         }
       }

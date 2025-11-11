@@ -74,8 +74,14 @@ function App() {
     console.log('Environment check:', {
       NODE_ENV: import.meta.env.NODE_ENV,
       VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
-      VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY
+      VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY,
+      VITE_GOOGLE_SPEECH_API_KEY: import.meta.env.VITE_GOOGLE_SPEECH_API_KEY ? `${import.meta.env.VITE_GOOGLE_SPEECH_API_KEY.substring(0, 15)}...` : '❌ NOT SET',
+      VITE_AZURE_SPEECH_KEY: import.meta.env.VITE_AZURE_SPEECH_KEY ? 'SET' : 'NOT SET',
     });
+    
+    // Check all VITE_ env vars
+    const viteEnvVars = Object.keys(import.meta.env).filter(k => k.startsWith('VITE_'));
+    console.log('🔍 All VITE_ environment variables:', viteEnvVars);
     
     // Test if basic React rendering works
     console.log('Basic React test - if you see this, React is working');
