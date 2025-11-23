@@ -704,7 +704,7 @@ export default function TeacherDashboard() {
       // Get all assessments for these students
       const { data: assessments } = await supabase
         .from('assessment_responses')
-        .select('id, student_id, assessment_type, review_status, completed_at')
+        .select('id, student_id, assessment_type, assessment_title, review_status, completed_at')
         .in('student_id', studentIds)
         .order('completed_at', { ascending: false });
 
@@ -719,11 +719,11 @@ export default function TeacherDashboard() {
         return;
       }
 
-      // Filter to keep only the latest unique assessment per student per type
+      // Filter to keep only the latest unique assessment per student per type+title
       const uniqueAssessments = new Map<string, typeof assessments[0]>();
       
       assessments.forEach(assessment => {
-        const key = `${assessment.student_id}_${assessment.assessment_type}`;
+        const key = `${assessment.student_id}_${assessment.assessment_type}_${assessment.assessment_title}`;
         // Only keep the first one (latest due to ordering)
         if (!uniqueAssessments.has(key)) {
           uniqueAssessments.set(key, assessment);

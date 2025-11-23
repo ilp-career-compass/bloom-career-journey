@@ -45,6 +45,7 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
   const [schoolLearningQuestions, setSchoolLearningQuestions] = useState<any[]>([]);
   const [hobbiesQuestions, setHobbiesQuestions] = useState<any[]>([]);
   const [roleModelsQuestions, setRoleModelsQuestions] = useState<any[]>([]);
+  const [hollandQuestions, setHollandQuestions] = useState<any[]>([]);
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
 
   useEffect(() => {
@@ -55,6 +56,7 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
     fetchSchoolLearningQuestions();
     fetchHobbiesQuestions();
     fetchRoleModelsQuestions();
+    fetchHollandQuestions();
   }, []);
 
   const fetchInspirationQuestions = async () => {
@@ -138,6 +140,28 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
       setRoleModelsQuestions(data || []);
     } catch (error) {
       console.error('Error loading role models questions:', error);
+    }
+  };
+
+  const fetchHollandQuestions = async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_holland_code_questions');
+      if (error) {
+        console.error('Error fetching Holland Code questions:', error);
+        return;
+      }
+      if (data && Array.isArray(data)) {
+        const sorted = [...data].sort(
+          (a: any, b: any) => (a.sequence_number || 0) - (b.sequence_number || 0)
+        );
+        console.log('✅ Loaded Holland Code questions:', sorted.length);
+        setHollandQuestions(sorted);
+      } else {
+        setHollandQuestions([]);
+      }
+    } catch (error) {
+      console.error('Error loading Holland Code questions:', error);
+      setHollandQuestions([]);
     }
   };
 
@@ -265,31 +289,42 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
 
       console.log('✅ Fetched all assessments:', data);
 
-      // Get only the LATEST submission for each assessment type
-      // Use completed_at if available, otherwise use updated_at for comparison
-      const uniqueAssessments: Assessment[] = [];
-      const latestByType: Record<string, any> = {};
+      // Get only the LATEST submission for each unique assessment (type + title).
+      // Prefer completed submissions over drafts, and then use timestamp comparison.
+      const latestByKey: Record<string, any> = {};
 
       (data || []).forEach((assessment: any) => {
-        const type = assessment.assessment_type;
-        const existing = latestByType[type];
-        
+        const key = `${assessment.assessment_type}::${assessment.assessment_title}`;
+        const existing = latestByKey[key];
+
         if (!existing) {
-          latestByType[type] = assessment;
+          latestByKey[key] = assessment;
           return;
         }
-        
-        // Compare dates - prefer completed_at, fallback to updated_at
+
+        const existingCompleted = !!existing.completed_at;
+        const currentCompleted = !!assessment.completed_at;
+
+        // Always prefer a completed submission over a draft
+        if (currentCompleted && !existingCompleted) {
+          latestByKey[key] = assessment;
+          return;
+        }
+        if (!currentCompleted && existingCompleted) {
+          return;
+        }
+
+        // If both are completed or both are drafts, compare timestamps
         const existingDate = new Date(existing.completed_at || existing.updated_at || 0).getTime();
         const currentDate = new Date(assessment.completed_at || assessment.updated_at || 0).getTime();
-        
+
         if (currentDate > existingDate) {
-          latestByType[type] = assessment;
+          latestByKey[key] = assessment;
         }
       });
-      
+
       // Convert to array
-      const sortedAssessments = Object.values(latestByType);
+      const sortedAssessments = Object.values(latestByKey);
 
       console.log('✅ Unique assessments (latest only):', sortedAssessments);
       console.log('📅 Assessment dates:', sortedAssessments.map((a: any) => ({
@@ -617,8 +652,9 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
                         const responseText = partResponses[questionKey];
                         const displayText = typeof responseText === 'string' ? responseText : String(responseText || '');
                         
-                        // Use sequence_number for display (this is what the student saw)
-                        const displayQuestionNum = question.sequence_number || (questionIndex + 1);
+                        // Display questions in simple sequential order within this section (Q1, Q2, Q3...)
+                        // regardless of underlying global sequence_number to keep things easy to read.
+                        const displayQuestionNum = questionIndex + 1;
                         
                         console.log(`  Part ${partKey}, Seq ${question.sequence_number}, Q${questionIndex + 1}: questionKey="${questionKey}", hasResponse=${!!responseText}, responseLength=${displayText.length}`);
                         
@@ -700,27 +736,38 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
         );
       } else {
         // Old structure: { questionId1: "answer", questionId2: "answer", ... }
-        // Map question IDs to question text
+        // Map question IDs to question text and ensure ordering matches what student saw
         const questionMap = new Map(dreamsQuestions.map(q => [q.id, q]));
-        
+
+        // Build an array of {question, answer} and sort by sequence_number
+        const qaList = Object.entries(responses as any)
+          .map(([questionId, answer]) => {
+            const question = questionMap.get(questionId);
+            if (!question) return null;
+            return { question, answer };
+          })
+          .filter(Boolean) as { question: any; answer: any }[];
+
+        qaList.sort((a, b) => (a.question.sequence_number || 0) - (b.question.sequence_number || 0));
+
         return (
           <div className="space-y-4">
-            {Object.entries(responses).map(([questionId, answer], index) => {
-              const question = questionMap.get(questionId);
-              const questionText = question?.question_text || questionId;
+            {qaList.map(({ question, answer }, index) => {
+              const questionText = question.question_text || `Question ${index + 1}`;
               const responseText = typeof answer === 'string' ? answer : String(answer || '');
-              
+
               return (
-                <div key={questionId} className="border-l-4 border-blue-500 pl-4">
+                <div key={question.id || index} className="border-l-4 border-blue-500 pl-4">
                   <div className="flex items-start gap-2 mb-2">
                     <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                      Q{question?.sequence_number || index + 1}
+                      {/* Display contiguous numbering (Q1, Q2, Q3...) like the student view */}
+                      Q{index + 1}
                     </span>
                     <p className="text-sm font-medium text-gray-700 flex-1">
                       {questionText}
                     </p>
                   </div>
-                  
+
                   <div className="ml-8">
                     {responseText && responseText.trim() ? (
                       <div className="bg-white p-3 rounded border border-gray-200">
@@ -745,7 +792,13 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
     }
 
     // Check if it's About Me assessment
-    if (assessment.assessment_type === 'personality' && assessment.assessment_title === 'About Me' && responses) {
+    // NOTE: Historically this used assessment_type = 'personality', but it is now stored as 'about_me'.
+    // We support BOTH to ensure all legacy and new records render correctly.
+    if (
+      (assessment.assessment_type === 'about_me' || assessment.assessment_type === 'personality') &&
+      assessment.assessment_title === 'About Me' &&
+      responses
+    ) {
       console.log('👤 Rendering About Me assessment responses');
       console.log('📊 About Me responses:', responses);
       console.log('📊 About Me responses keys:', Object.keys(responses || {}));
@@ -861,110 +914,125 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
 
     // Check if it's School Learning assessment
     if (assessment.assessment_type === 'school_learning' && responses) {
-      console.log('📚 Rendering School Learning assessment responses');
-      console.log('📊 School Learning responses:', responses);
+      console.log('📚 Rendering School Learning assessment responses (normalized)');
+      console.log('📊 Raw School Learning responses:', responses);
       console.log('📋 School Learning questions:', schoolLearningQuestions);
 
-      // School Learning responses have structure: { part1: { question1: "...", ... }, part2: {...}, ... }
-      const hasPartStructure = Object.keys(responses).some(key => key.startsWith('part'));
-      
-      if (hasPartStructure) {
-        const parts = Object.keys(responses).filter(key => key.startsWith('part')).sort();
-        
-        if (parts.length === 0) {
-        return (
-            <div className="text-sm text-gray-500">No responses recorded</div>
-          );
+      // Normalize responses into the same structure used by MySchoolLearningAssessment
+      const raw = responses as any;
+      const norm = {
+        section1: {
+          question1: raw.section1?.question1 ?? raw.part1?.question1 ?? '',
+          question2: raw.section1?.question2 ?? raw.part1?.question2 ?? '',
+          question3: raw.section1?.question3 ?? raw.part1?.question3 ?? '',
+          question4: raw.section1?.question4 ?? raw.part1?.question4 ?? '',
+        },
+        section2: {
+          question5: raw.section2?.question5 ?? raw.part2?.question5 ?? '',
+          question6: raw.section2?.question6 ?? raw.part2?.question6 ?? '',
+          question7: raw.section2?.question7 ?? raw.part2?.question7 ?? '',
+          question8: raw.section2?.question8 ?? raw.part2?.question8 ?? '',
+        },
+        section3: {
+          question9: raw.section3?.question9 ?? raw.part2?.question9 ?? '',
+          question10: raw.section3?.question10 ?? raw.part2?.question10 ?? '',
+          question11: raw.section3?.question11 ?? raw.part2?.question11 ?? {},
+          question12: raw.section3?.question12 ?? raw.part2?.question12 ?? '',
+        },
+        section4: {
+          question13: raw.section4?.question13 ?? raw.part3?.question13 ?? '',
+          question14: raw.section4?.question14 ?? raw.part3?.question14 ?? '',
+          question15: raw.section4?.question15 ?? raw.part3?.question15 ?? '',
+          question16: raw.section4?.question16 ?? raw.part3?.question16 ?? '',
+        },
+        section5: {
+          question17: raw.section5?.question17 ?? raw.part3?.question17 ?? '',
+          question18: raw.section5?.question18 ?? raw.part3?.question18 ?? '',
+          question19: raw.section5?.question19 ?? raw.part3?.question19 ?? '',
+          question20: raw.section5?.question20 ?? raw.part3?.question20 ?? '',
+          question21: raw.section5?.question21 ?? raw.part3?.question21 ?? '',
+        },
+      } as any;
+
+      // Helper to get answer by global question number
+      const getAnswer = (qNum: number): any => {
+        if (qNum >= 1 && qNum <= 4) return norm.section1[`question${qNum}`];
+        if (qNum >= 5 && qNum <= 8) return norm.section2[`question${qNum}`];
+        if (qNum >= 9 && qNum <= 12) return norm.section3[`question${qNum}`];
+        if (qNum >= 13 && qNum <= 16) return norm.section4[`question${qNum}`];
+        if (qNum >= 17 && qNum <= 21) return norm.section5[`question${qNum}`];
+        return '';
+      };
+
+      // Index questions by sequence_number for easy lookup
+      const questionsByNumber = new Map<number, any>();
+      (schoolLearningQuestions || []).forEach((q: any) => {
+        if (q.sequence_number != null) {
+          questionsByNumber.set(q.sequence_number, q);
         }
+      });
 
-        // Group questions by section
-        const questionsBySection: Record<string, any[]> = {};
-        schoolLearningQuestions.forEach(q => {
-          const section = q.section || 'part1';
-          if (!questionsBySection[section]) {
-            questionsBySection[section] = [];
-          }
-          questionsBySection[section].push(q);
-        });
+      const sections = [
+        { id: 'section1', title: 'Section 1: Subjects & Learning Preferences', questions: [1, 2, 3, 4] },
+        { id: 'section2', title: 'Section 2: Subjects & Learning Preferences', questions: [5, 6, 7, 8] },
+        { id: 'section3', title: 'Section 3: Academic Performance & Learning Methods', questions: [9, 10, 11, 12] },
+        { id: 'section4', title: 'Section 4: School Relationships & Experiences', questions: [13, 14, 15, 16] },
+        { id: 'section5', title: 'Section 5: Additional Information & Future Plans', questions: [17, 18, 19, 20, 21] },
+      ];
 
-        return (
-          <div className="space-y-6">
-            {parts.map((partKey) => {
-              const partResponses = responses[partKey] || {};
-              const sectionQuestions = questionsBySection[partKey] || [];
-              
-              // Sort questions by sequence_number
-              const sortedQuestions = [...sectionQuestions].sort((a, b) => 
-                (a.sequence_number || 0) - (b.sequence_number || 0)
-              );
+      return (
+        <div className="space-y-6">
+          {sections.map((section) => (
+            <div key={section.id} className="border rounded-lg p-4 bg-gray-50">
+              <h4 className="font-semibold text-gray-800 mb-4">{section.title}</h4>
 
-              const sectionTitles: Record<string, string> = {
-                'part1': 'Section 1: Subjects & Learning Preferences',
-                'part2': 'Section 2: Academic Performance & Learning Methods',
-                'part3': 'Section 3: School Relationships & Experiences',
-                'part4': 'Section 4: Additional Information',
-                'part5': 'Section 5: Future Plans'
-              };
+              <div className="space-y-4">
+                {section.questions.map((qNum, idx) => {
+                  const question = questionsByNumber.get(qNum);
+                  const rawAnswer = getAnswer(qNum);
 
-              return (
-                <div key={partKey} className="border rounded-lg p-4 bg-gray-50">
-                  <h4 className="font-semibold text-gray-800 mb-4">
-                    {sectionTitles[partKey] || partKey}
-                  </h4>
-                  
-                  <div className="space-y-4">
-                    {sortedQuestions.map((question, questionIndex) => {
-                      const questionKey = `question${questionIndex + 1}`;
-                      const responseValue = partResponses[questionKey];
-                      
-                      // Handle checkbox responses (object with boolean values)
-                      let responseText = '';
-                      if (typeof responseValue === 'string') {
-                        responseText = responseValue;
-                      } else if (typeof responseValue === 'object' && responseValue !== null) {
-                        // For checkbox questions, show selected options
-                        const selectedOptions = Object.entries(responseValue)
-                          .filter(([_, value]) => value === true)
-                          .map(([key, _]) => key);
-                        responseText = selectedOptions.length > 0 ? selectedOptions.join(', ') : '';
-                      }
+                  // Convert answer to display text (handle checkbox object for Q11)
+                  let responseText = '';
+                  if (typeof rawAnswer === 'string') {
+                    responseText = rawAnswer;
+                  } else if (rawAnswer && typeof rawAnswer === 'object') {
+                    // For checkbox question (11), show selected options
+                    const selectedOptions = Object.entries(rawAnswer)
+                      .filter(([_, v]) => v === true || (typeof v === 'string' && v.trim()))
+                      .map(([k]) => k);
+                    responseText = selectedOptions.join(', ');
+                  }
 
-                      return (
-                        <div key={question.id || questionIndex} className="border-l-4 border-blue-500 pl-4">
-                          <div className="flex items-start gap-2 mb-2">
-                            <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                              Q{questionIndex + 1}
-                            </span>
-                            <p className="text-sm font-medium text-gray-700 flex-1">
-                              {question.question_text}
-                            </p>
-              </div>
-                          
-                          <div className="ml-8">
-                            {responseText && responseText.trim() ? (
-                              <div className="bg-white p-3 rounded border border-gray-200">
-                                <p className="text-sm text-gray-600 whitespace-pre-wrap">
-                                  {responseText}
-                                </p>
-                              </div>
-                            ) : (
-                              <div className="bg-gray-50 p-3 rounded border border-gray-200 border-dashed">
-                                <p className="text-sm text-gray-400 italic">
-                                  No response provided
-                                </p>
-                              </div>
-                            )}
+                  return (
+                    <div key={qNum} className="border-l-4 border-blue-500 pl-4">
+                      <div className="flex items-start gap-2 mb-2">
+                        <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                          Q{idx + 1}
+                        </span>
+                        <p className="text-sm font-medium text-gray-700 flex-1">
+                          {question?.question_text || `Question ${qNum}`}
+                        </p>
+                      </div>
+
+                      <div className="ml-8">
+                        {responseText && responseText.trim() ? (
+                          <div className="bg-white p-3 rounded border border-gray-200">
+                            <p className="text-sm text-gray-600 whitespace-pre-wrap">{responseText}</p>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        );
-      }
+                        ) : (
+                          <div className="bg-gray-50 p-3 rounded border border-gray-200 border-dashed">
+                            <p className="text-sm text-gray-400 italic">No response provided</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      );
     }
 
     // Check if it's Hobbies assessment
@@ -973,24 +1041,24 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
       console.log('📊 Hobbies responses:', responses);
       console.log('📋 Hobbies questions:', hobbiesQuestions);
 
-      // Hobbies responses can have structure: { question1: "...", question2: "...", ... }
-      // or section-based structure
-      const sortedQuestions = [...hobbiesQuestions].sort((a, b) => 
-        (a.sequence_number || 0) - (b.sequence_number || 0)
+      // In the new Hobbies assessment, responses are stored by question ID (UUID),
+      // e.g. { "<questionId1>": "answer", "<questionId2>": "answer", ... }.
+      // We render questions in sequence_number order and look up by question.id.
+
+      const sortedQuestions = [...hobbiesQuestions].sort(
+        (a, b) => (a.sequence_number || 0) - (b.sequence_number || 0)
       );
 
       if (sortedQuestions.length === 0) {
-        return (
-          <div className="text-sm text-gray-500">No questions found</div>
-        );
+        return <div className="text-sm text-gray-500">No questions found</div>;
       }
 
       return (
         <div className="space-y-4">
           {sortedQuestions.map((question, index) => {
-            const questionKey = `question${index + 1}`;
-            const responseText = responses[questionKey] || '';
-            const displayText = typeof responseText === 'string' ? responseText : String(responseText || '');
+            const raw = (responses as any)[question.id] ?? '';
+            const displayText =
+              typeof raw === 'string' ? raw : Array.isArray(raw) ? raw.join(', ') : String(raw || '');
 
             return (
               <div key={question.id || index} className="border-l-4 border-blue-500 pl-4">
@@ -998,32 +1066,26 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
                   <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">
                     Q{index + 1}
                   </span>
-                  <p className="text-sm font-medium text-gray-700 flex-1">
-                    {question.question_text}
-                  </p>
-              </div>
-                
+                  <p className="text-sm font-medium text-gray-700 flex-1">{question.question_text}</p>
+                </div>
+
                 <div className="ml-8">
                   {displayText && displayText.trim() ? (
                     <div className="bg-white p-3 rounded border border-gray-200">
-                      <p className="text-sm text-gray-600 whitespace-pre-wrap">
-                        {displayText}
-                      </p>
+                      <p className="text-sm text-gray-600 whitespace-pre-wrap">{displayText}</p>
                     </div>
                   ) : (
                     <div className="bg-gray-50 p-3 rounded border border-gray-200 border-dashed">
-                      <p className="text-sm text-gray-400 italic">
-                        No response provided
-                      </p>
+                      <p className="text-sm text-gray-400 italic">No response provided</p>
                     </div>
                   )}
                 </div>
               </div>
             );
           })}
-          </div>
-        );
-      }
+        </div>
+      );
+    }
 
     // Check if it's Role Models assessment
     if (assessment.assessment_type === 'role_models' && responses) {
@@ -1031,8 +1093,27 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
       console.log('📊 Role Models responses:', responses);
       console.log('📋 Role Models questions:', roleModelsQuestions);
 
-      // Role Models responses have structure: { roleModels: [{ name: "...", ... }, ...] }
-      const roleModels = responses.roleModels || (Array.isArray(responses) ? responses : []);
+      // Role Models responses in the new assessment are stored as:
+      // {
+      //   roleModel1: { name, relationship, admirationReasons, ... },
+      //   roleModel2: { ... },
+      //   roleModel3: { ... },
+      //   question12: "...",
+      //   question13: "..."
+      // }
+      // We adapt that into an array for display.
+
+      const roleModelsSource: any[] = [];
+      if ((responses as any).roleModel1 || (responses as any).roleModel2 || (responses as any).roleModel3) {
+        if ((responses as any).roleModel1) roleModelsSource.push((responses as any).roleModel1);
+        if ((responses as any).roleModel2) roleModelsSource.push((responses as any).roleModel2);
+        if ((responses as any).roleModel3) roleModelsSource.push((responses as any).roleModel3);
+      } else if ((responses as any).roleModels && Array.isArray((responses as any).roleModels)) {
+        // Backwards compatibility with any older array-based structure
+        roleModelsSource.push(...(responses as any).roleModels);
+      }
+
+      const roleModels = roleModelsSource;
       
       if (!Array.isArray(roleModels) || roleModels.length === 0) {
         return (
@@ -1040,8 +1121,8 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
         );
       }
 
-      const sortedQuestions = [...roleModelsQuestions].sort((a, b) => 
-        (a.sequence_number || 0) - (b.sequence_number || 0)
+      const sortedQuestions = [...roleModelsQuestions].sort(
+        (a, b) => (a.sequence_number || 0) - (b.sequence_number || 0)
       );
 
       return (
@@ -1054,17 +1135,47 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
               
               <div className="space-y-4">
                 {sortedQuestions.map((question, questionIndex) => {
-                  // Map question keys to role model fields
-                  const questionKeyMap: Record<number, string> = {
-                    0: 'name',
-                    1: 'whyAdmire',
-                    2: 'qualities',
-                    3: 'incorporatePlan'
+                  // Map question IDs/sequence to fields on RoleModel
+                  // We support the current field names from MyRoleModelsAssessment.
+                  const fieldMapping: Record<string, string> = {
+                    // approximate mapping by semantic keys used in i18n and component
+                    name: 'name',
+                    relationship: 'relationship',
+                    admirationReasons: 'admirationReasons',
+                    profession: 'profession',
+                    desiredQualities: 'desiredQualities',
+                    careerDiscussed: 'careerDiscussed',
+                    opinion: 'opinion',
+                    willingToHelp: 'willingToHelp',
+                    helpLookingFor: 'helpLookingFor',
+                    similarities: 'similarities',
+                    incorporatePlan: 'incorporatePlan'
                   };
-                  
-                  const fieldKey = questionKeyMap[questionIndex] || `field${questionIndex}`;
-                  const responseText = roleModel[fieldKey] || '';
-                  const displayText = typeof responseText === 'string' ? responseText : String(responseText || '');
+
+                  // First try by explicit field key if present on question
+                  let fieldKey = (question as any).field_key as string | undefined;
+                  if (!fieldKey) {
+                    // Fallback: map by known order if field_key isn't available
+                    const orderFallback: string[] = [
+                      'name',
+                      'relationship',
+                      'admirationReasons',
+                      'profession',
+                      'desiredQualities',
+                      'careerDiscussed',
+                      'opinion',
+                      'willingToHelp',
+                      'helpLookingFor',
+                      'similarities',
+                      'incorporatePlan'
+                    ];
+                    fieldKey = orderFallback[questionIndex] || '';
+                  }
+
+                  const roleField = fieldMapping[fieldKey] || fieldKey;
+                  const responseText = roleModel[roleField] || '';
+                  const displayText =
+                    typeof responseText === 'string' ? responseText : String(responseText || '');
 
                   return (
                     <div key={question.id || questionIndex} className="border-l-4 border-blue-500 pl-4">
@@ -1098,6 +1209,104 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
               </div>
             </div>
           ))}
+        </div>
+      );
+    }
+
+    // Check if it's Holland Code (RIASEC) Test
+    if (
+      assessment.assessment_type === 'personality' &&
+      assessment.assessment_title === 'Holland Code (RIASEC) Test' &&
+      responses
+    ) {
+      console.log('🧭 Rendering Holland Code assessment responses');
+      console.log('📊 Holland responses:', responses);
+      console.log('📋 Holland questions:', hollandQuestions);
+
+      const sortedQuestions = [...hollandQuestions].sort(
+        (a: any, b: any) => (a.sequence_number || 0) - (b.sequence_number || 0)
+      );
+
+      return (
+        <div className="space-y-6">
+          {/* Q&A for each Holland question */}
+          <div className="space-y-4">
+            {sortedQuestions.map((question, index) => {
+              const questionNum = index + 1;
+              const questionKey = `question${questionNum}`;
+              const rawValue = (responses as any)[questionKey];
+
+              let answerText = '';
+              if (typeof rawValue === 'boolean') {
+                answerText = rawValue ? 'Yes' : 'No';
+              } else if (typeof rawValue === 'string') {
+                answerText = rawValue;
+              } else if (rawValue != null) {
+                answerText = String(rawValue);
+              }
+
+              return (
+                <div key={question.id || questionNum} className="border-l-4 border-blue-500 pl-4">
+                  <div className="flex items-start gap-2 mb-2">
+                    <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                      Q{question.sequence_number || questionNum}
+                    </span>
+                    <p className="text-sm font-medium text-gray-700 flex-1">
+                      {question.question_text}
+                    </p>
+                  </div>
+
+                  <div className="ml-8">
+                    {answerText && answerText.trim() ? (
+                      <div className="bg-white p-3 rounded border border-gray-200">
+                        <p className="text-sm text-gray-600 whitespace-pre-wrap">
+                          {answerText}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="bg-gray-50 p-3 rounded border border-gray-200 border-dashed">
+                        <p className="text-sm text-gray-400 italic">No response provided</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Summary section: top types, scores, reflection */}
+          {(responses.topTwoTypes || responses.scores || responses.reflection) && (
+            <div className="border rounded-lg p-4 bg-white">
+              <h4 className="font-semibold text-gray-800 mb-3">Summary</h4>
+
+              {responses.topTwoTypes && (
+                <div className="mb-3">
+                  <p className="text-sm font-medium text-gray-700">Top Two Personality Types</p>
+                  <p className="text-sm text-gray-600 mt-1">{responses.topTwoTypes}</p>
+                </div>
+              )}
+
+              {responses.scores && typeof responses.scores === 'object' && (
+                <div className="mb-3">
+                  <p className="text-sm font-medium text-gray-700">Scores</p>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {Object.entries(responses.scores as any)
+                      .map(([key, value]) => `${key}: ${value}`)
+                      .join(' • ')}
+                  </p>
+                </div>
+              )}
+
+              {responses.reflection && typeof responses.reflection === 'string' && responses.reflection.trim() && (
+                <div>
+                  <p className="text-sm font-medium text-gray-700">Student Reflection</p>
+                  <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">
+                    {responses.reflection}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       );
     }
