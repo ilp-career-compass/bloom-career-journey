@@ -825,7 +825,7 @@ export default function MyHobbiesAssessment() {
                             placeholder={helpText || `Write your answer here...`}
                             value={questionValue}
                             onChange={(e) => handleResponseChange(question.id, e.target.value)}
-                            disabled={isReadOnly || isCompleted}
+                            readOnly={isReadOnly || isCompleted}
                             rows={4}
                             className="text-base border-orange-200 focus:border-orange-400"
                           />

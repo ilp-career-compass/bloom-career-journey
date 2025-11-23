@@ -219,41 +219,84 @@ export default function AboutMeAssessment() {
       if (!userProfile || aboutMeFields.length === 0) return setLoading(false);
       const studentId = await studentIdPromise;
       if (!studentId) return setLoading(false);
+
       const { data } = await supabase
         .from('assessment_responses')
         .select('responses, completed_at')
         .eq('student_id', studentId)
-        .eq('assessment_type', 'about_me')
+        // Support both new and legacy records
+        .in('assessment_type', ['about_me', 'personality'] as any)
         .eq('assessment_title', 'About Me')
         .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle();
+
       if (data?.responses) {
-        const savedResponses = data.responses as Partial<AboutMeResponses>;
-        // Merge saved responses with initialized responses
+        const saved = data.responses as any;
         const initialResponses = initializeResponses(aboutMeFields);
-        // Merge saved responses, ensuring proper types for triple/double fields
-        aboutMeFields.forEach(field => {
-          const savedValue = savedResponses[field.field_key];
-          if (savedValue !== undefined) {
-            if (field.field_type === 'triple' && Array.isArray(savedValue)) {
-              initialResponses[field.field_key] = [...savedValue] as Triple;
-            } else if (field.field_type === 'double' && Array.isArray(savedValue)) {
-              initialResponses[field.field_key] = [...savedValue] as Double;
-            } else if (field.field_type !== 'triple' && field.field_type !== 'double') {
-              initialResponses[field.field_key] = savedValue as string;
+
+        // Merge saved responses, handling both new (field_key) and old (questionN) formats
+        aboutMeFields.forEach((field) => {
+          const byKey = saved[field.field_key];
+          const bySeq =
+            field.sequence_number != null
+              ? saved[`question${field.sequence_number}`]
+              : undefined;
+
+          let value: any =
+            byKey !== undefined && byKey !== null && byKey !== ''
+              ? byKey
+              : bySeq;
+
+          if (value === undefined || value === null || value === '') {
+            return;
+          }
+
+          if (field.field_type === 'triple') {
+            if (Array.isArray(value)) {
+              initialResponses[field.field_key] = [...value] as Triple;
+            } else if (typeof value === 'string') {
+              // Map legacy single-string answer into first slot
+              initialResponses[field.field_key] = [value, '', ''] as Triple;
             }
+          } else if (field.field_type === 'double') {
+            if (Array.isArray(value)) {
+              initialResponses[field.field_key] = [...value] as Double;
+            } else if (typeof value === 'string') {
+              initialResponses[field.field_key] = [value, ''] as Double;
+            }
+          } else {
+            initialResponses[field.field_key] = String(value);
           }
         });
+
         setResponses(initialResponses);
         if (data.completed_at) {
           setIsCompleted(true);
         }
       }
+
       setLoading(false);
     };
     load();
   }, [userProfile, studentIdPromise, aboutMeFields]);
+
+  // Expose debug information for browser console inspection
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        (window as any).__aboutMeDebug = {
+          responses,
+          aboutMeFields,
+          readOnlyView,
+          isCompleted,
+          currentSection,
+        };
+      }
+    } catch {
+      // Ignore if window is not available
+    }
+  }, [responses, aboutMeFields, readOnlyView, isCompleted, currentSection]);
 
   const save = async (complete: boolean) => {
     if (readOnlyView) return;
@@ -516,7 +559,7 @@ export default function AboutMeAssessment() {
                                 onToggle={() => toggleHelp(helpKey)}
                                 values={tripleValue}
                                 onChange={(vals) => setField(field.field_key, vals)}
-                                disabled={readOnlyView}
+                                readOnly={readOnlyView}
                               />
                             );
                           } else if (field.field_type === 'double') {
@@ -533,7 +576,7 @@ export default function AboutMeAssessment() {
                                 onToggle={() => toggleHelp(helpKey)}
                                 values={doubleValue}
                                 onChange={(vals) => setField(field.field_key, vals)}
-                                disabled={readOnlyView}
+                                readOnly={readOnlyView}
                               />
                             );
                           } else {
@@ -551,7 +594,7 @@ export default function AboutMeAssessment() {
                                 value={stringValue}
                                 onChange={(v) => setField(field.field_key, v)}
                                 area={isTextarea}
-                                disabled={readOnlyView}
+                                readOnly={readOnlyView}
                               />
                             );
                           }
@@ -584,7 +627,7 @@ function SectionTitle({ title, subtitle }: { title: string; subtitle?: string })
   );
 }
 
-function Question({ label, help, value, onChange, area, helpKey, open, onToggle, disabled }: { label: string; help: string; value: string; onChange: (v: string) => void; area?: boolean; helpKey: string; open: boolean; onToggle: () => void; disabled?: boolean }) {
+function Question({ label, help, value, onChange, area, helpKey, open, onToggle, readOnly }: { label: string; help: string; value: string; onChange: (v: string) => void; area?: boolean; helpKey: string; open: boolean; onToggle: () => void; readOnly?: boolean }) {
   return (
     <div>
       <label className="block text-base font-medium text-gray-800 mb-2 flex items-center gap-2">
@@ -602,7 +645,7 @@ function Question({ label, help, value, onChange, area, helpKey, open, onToggle,
       {area ? (
         <Textarea 
           value={value} 
-          disabled={disabled}
+          readOnly={readOnly}
           onChange={(e) => {
             const v = e.target.value;
             onChange(v);
@@ -614,7 +657,7 @@ function Question({ label, help, value, onChange, area, helpKey, open, onToggle,
       ) : (
         <Input 
           value={value} 
-          disabled={disabled}
+          readOnly={readOnly}
           onChange={(e) => {
             const v = e.target.value;
             onChange(v);
@@ -627,7 +670,7 @@ function Question({ label, help, value, onChange, area, helpKey, open, onToggle,
   );
 }
 
-function TripleInput({ label, help, values, onChange, helpKey, open, onToggle, disabled }: { label: string; help: string; values: Triple; onChange: (v: Triple) => void; helpKey: string; open: boolean; onToggle: () => void; disabled?: boolean }) {
+function TripleInput({ label, help, values, onChange, helpKey, open, onToggle, readOnly }: { label: string; help: string; values: Triple; onChange: (v: Triple) => void; helpKey: string; open: boolean; onToggle: () => void; readOnly?: boolean }) {
   const [a, b, c] = values;
   return (
     <div>
@@ -644,15 +687,15 @@ function TripleInput({ label, help, values, onChange, helpKey, open, onToggle, d
         <div className="mb-2 p-3 rounded border bg-blue-50 border-blue-200 text-sm text-blue-800">{help}</div>
       )}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <Input disabled={disabled} value={a} onChange={(e) => { const v = e.target.value; onChange([v, b, c]); if (open && v.trim().length > 0) onToggle(); }} placeholder="Answer 1" />
-        <Input disabled={disabled} value={b} onChange={(e) => { const v = e.target.value; onChange([a, v, c]); if (open && v.trim().length > 0) onToggle(); }} placeholder="Answer 2" />
-        <Input disabled={disabled} value={c} onChange={(e) => { const v = e.target.value; onChange([a, b, v]); if (open && v.trim().length > 0) onToggle(); }} placeholder="Answer 3" />
+        <Input readOnly={readOnly} value={a} onChange={(e) => { const v = e.target.value; onChange([v, b, c]); if (open && v.trim().length > 0) onToggle(); }} placeholder="Answer 1" />
+        <Input readOnly={readOnly} value={b} onChange={(e) => { const v = e.target.value; onChange([a, v, c]); if (open && v.trim().length > 0) onToggle(); }} placeholder="Answer 2" />
+        <Input readOnly={readOnly} value={c} onChange={(e) => { const v = e.target.value; onChange([a, b, v]); if (open && v.trim().length > 0) onToggle(); }} placeholder="Answer 3" />
       </div>
     </div>
   );
 }
 
-function DoubleInput({ label, help, values, onChange, helpKey, open, onToggle, disabled }: { label: string; help: string; values: Double; onChange: (v: Double) => void; helpKey: string; open: boolean; onToggle: () => void; disabled?: boolean }) {
+function DoubleInput({ label, help, values, onChange, helpKey, open, onToggle, readOnly }: { label: string; help: string; values: Double; onChange: (v: Double) => void; helpKey: string; open: boolean; onToggle: () => void; readOnly?: boolean }) {
   const [a, b] = values;
   return (
     <div>
@@ -669,8 +712,8 @@ function DoubleInput({ label, help, values, onChange, helpKey, open, onToggle, d
         <div className="mb-2 p-3 rounded border bg-blue-50 border-blue-200 text-sm text-blue-800">{help}</div>
       )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <Input disabled={disabled} value={a} onChange={(e) => { const v = e.target.value; onChange([v, b]); if (open && v.trim().length > 0) onToggle(); }} placeholder="Answer 1" />
-        <Input disabled={disabled} value={b} onChange={(e) => { const v = e.target.value; onChange([a, v]); if (open && v.trim().length > 0) onToggle(); }} placeholder="Answer 2" />
+        <Input readOnly={readOnly} value={a} onChange={(e) => { const v = e.target.value; onChange([v, b]); if (open && v.trim().length > 0) onToggle(); }} placeholder="Answer 1" />
+        <Input readOnly={readOnly} value={b} onChange={(e) => { const v = e.target.value; onChange([a, v]); if (open && v.trim().length > 0) onToggle(); }} placeholder="Answer 2" />
       </div>
     </div>
   );

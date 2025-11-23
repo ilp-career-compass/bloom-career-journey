@@ -121,16 +121,34 @@ class AudioResponseManager {
           // If over 60s, use long-running recognize with the uploaded URL
           if (audioData.duration > 60000) {
             // Use the public URL we just uploaded
+            console.log('🎤 Starting long-running transcription for audio > 60s:', {
+              url: uploadResult.url,
+              duration: audioData.duration,
+              language: transcriptionLanguage
+            });
             transcriptionResult = await speechToTextService.transcribeLongRunningByUri(
               uploadResult.url!,
               { language: transcriptionLanguage }
             );
           } else {
+            console.log('🎤 Starting standard transcription:', {
+              blobSize: audioData.audioBlob.size,
+              blobType: audioData.audioBlob.type,
+              duration: audioData.duration,
+              language: transcriptionLanguage
+            });
             transcriptionResult = await speechToTextService.transcribe(
               audioData.audioBlob,
               { language: transcriptionLanguage }
             );
           }
+          
+          console.log('✅ Transcription completed:', {
+            transcriptLength: transcriptionResult.transcript?.length || 0,
+            confidence: transcriptionResult.confidence,
+            languageCode: transcriptionResult.languageCode,
+            preview: transcriptionResult.transcript?.substring(0, 100) || 'empty'
+          });
 
           transcription = transcriptionResult.transcript;
           confidence = transcriptionResult.confidence;
@@ -147,7 +165,7 @@ class AudioResponseManager {
 
           onProgress?.(80);
         } catch (error) {
-          console.warn('Transcription failed, continuing without it:', error);
+          console.error('❌ Transcription failed:', error);
           
           // Log helpful error message for missing API keys
           if (error instanceof Error) {
@@ -161,10 +179,20 @@ class AudioResponseManager {
             } else if (error.message.includes('Transcription failed on all services')) {
               console.error('❌ Transcription Error: Both Google and Azure transcription services failed.');
               console.error('📝 Please configure at least one transcription service (Google or Azure) in your .env file.');
+            } else {
+              // Log other transcription errors with full details
+              console.error('❌ Transcription Error Details:', {
+                message: error.message,
+                stack: error.stack,
+                name: error.name
+              });
             }
+          } else {
+            console.error('❌ Unknown transcription error:', error);
           }
           
-          // Continue without transcription
+          // Continue without transcription - don't fail the entire audio save process
+          // The audio will still be saved, just without transcription
         }
       }
 
@@ -194,7 +222,7 @@ class AudioResponseManager {
       return {
         success: true,
         audioUrl: uploadResult.url,
-        transcription,
+        transcription: cleanedTranscription || transcription, // Use cleaned transcription if available
         confidence,
         languageDetected,
         metadata: {

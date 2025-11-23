@@ -73,7 +73,9 @@ export default function SummaryApprovalCard({
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [showStudentResponses, setShowStudentResponses] = useState(false);
+  const [expandedVideo, setExpandedVideo] = useState<string | null>(null);
   const [regenerating, setRegenerating] = useState(false);
+  const [aboutMeFields, setAboutMeFields] = useState<Array<{field_key: string; question_text: string}>>([]);
   const [questionTitles, setQuestionTitles] = useState<{q1: string; q2: string; q3: string; q4?: string; q5?: string; q6?: string; q7?: string; q8?: string; q9?: string; q10?: string}>({
     q1: '1. What Inspired You?',
     q2: '2. Behaviors to Avoid',
@@ -252,6 +254,27 @@ export default function SummaryApprovalCard({
     fetchQuestionTitles();
   }, [summary, assessmentType]);
 
+  // Load About Me fields for better labels in Student's Original Responses
+  useEffect(() => {
+    if (assessmentType === 'about_me') {
+      const loadAboutMeFields = async () => {
+        try {
+          const { data, error } = await supabase.rpc('get_about_me_fields');
+          if (!error && data && Array.isArray(data)) {
+            setAboutMeFields(data.map((f: any) => ({
+              field_key: f.field_key,
+              question_text: f.question_text
+            })));
+            console.log('✅ Loaded About Me fields for labels:', data.length);
+          }
+        } catch (err) {
+          console.warn('Could not load About Me fields:', err);
+        }
+      };
+      loadAboutMeFields();
+    }
+  }, [assessmentType]);
+
   const handleApprove = async () => {
     setSaving(true);
     try {
@@ -374,7 +397,9 @@ export default function SummaryApprovalCard({
       return;
     }
 
-    if (!rejectionReason.trim()) {
+    // Validate rejection reason
+    const trimmedReason = rejectionReason.trim();
+    if (!trimmedReason) {
       toast({
         title: "Rejection Reason Required",
         description: "Please provide a reason for rejection.",
@@ -383,32 +408,53 @@ export default function SummaryApprovalCard({
       return;
     }
 
+    // Minimum length validation
+    if (trimmedReason.length < 5) {
+      toast({
+        title: "Reason Too Short",
+        description: "Please provide a more detailed reason (at least 5 characters).",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setSaving(true);
     try {
+      console.log('🔄 Rejecting summary:', {
+        summaryId: summary.id,
+        teacherUserId,
+        reasonLength: trimmedReason.length
+      });
+
       const result = await summaryDatabaseService.rejectSummary(
         summary.id,
         teacherUserId,
-        rejectionReason
+        trimmedReason
       );
 
-      if (result.success) {
-        toast({
-          title: "Summary Rejected",
-          description: "The summary will be regenerated automatically."
-        });
-        setShowRejectDialog(false);
-        setRejectionReason('');
-        
-        // Trigger regeneration
-        await handleRegenerate();
-      } else {
+      if (!result.success) {
         throw new Error(result.error || 'Failed to reject summary');
       }
+
+      console.log('✅ Summary rejected successfully, triggering regeneration...');
+
+      toast({
+        title: "Summary Rejected",
+        description: "The summary will be regenerated automatically."
+      });
+      setShowRejectDialog(false);
+      setRejectionReason('');
+      
+      // Trigger regeneration - pass the summary's student_user_id if available
+      await handleRegenerate();
+      
+      // Refresh the summary after regeneration
+      onSummaryUpdated?.();
     } catch (error) {
-      console.error('Error rejecting summary:', error);
+      console.error('❌ Error rejecting summary:', error);
       toast({
         title: "Error",
-        description: "Failed to reject summary. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to reject summary. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -427,6 +473,26 @@ export default function SummaryApprovalCard({
       return;
     }
 
+    // Check if AI service is configured
+    if (!aiSummaryService.isConfigured()) {
+      toast({
+        title: "API Not Configured",
+        description: "Gemini API key is not configured. Please add VITE_GEMINI_API_KEY to your .env file.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate student responses are available
+    if (!studentResponses || (typeof studentResponses === 'object' && Object.keys(studentResponses).length === 0)) {
+      toast({
+        title: "No Student Responses",
+        description: "Student responses are not available. Cannot regenerate summary.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setRegenerating(true);
     try {
       // Get assessment type if not provided
@@ -435,13 +501,24 @@ export default function SummaryApprovalCard({
         // Fetch assessment type from database
         const { data: assessmentResponse, error } = await supabase
           .from('assessment_responses')
-          .select('assessment_type, student_id')
+          .select('assessment_type')
           .eq('id', summary.assessment_response_id)
           .maybeSingle();
         
-        if (error) throw error;
-        assessmentTypeToUse = assessmentResponse?.assessment_type || 'inspiration';
+        if (error) {
+          console.error('Error fetching assessment type:', error);
+          throw new Error(`Failed to fetch assessment type: ${error.message}`);
+        }
+        
+        if (!assessmentResponse) {
+          throw new Error('Assessment response not found');
+        }
+        
+        assessmentTypeToUse = assessmentResponse.assessment_type || 'inspiration';
       }
+
+      console.log('🔄 Regenerating summary for assessment type:', assessmentTypeToUse);
+      console.log('📊 Student responses:', studentResponses);
 
       // Determine which summary generator to use based on assessment type
       let summaryResult;
@@ -460,38 +537,112 @@ export default function SummaryApprovalCard({
         summaryResult = await aiSummaryService.generateInspirationSummary(studentResponses);
       }
 
-      if (summaryResult.success && summaryResult.summary) {
-        // Save the regenerated summary
-        const { data: assessmentResponse } = await supabase
-          .from('assessment_responses')
-          .select('student_id, students!inner(user_id)')
-          .eq('id', summary.assessment_response_id)
-          .maybeSingle();
-
-        if (assessmentResponse) {
-          const saveResult = await summaryDatabaseService.createAISummary(
-            summary.assessment_response_id,
-            summaryResult.summary,
-            (assessmentResponse.students as any).user_id
-          );
-
-          if (saveResult.success) {
-            toast({
-              title: "Summary Regenerated! 🔄",
-              description: "A new AI summary has been generated for review."
-            });
-            onSummaryUpdated?.();
-          } else {
-            throw new Error(saveResult.error || 'Failed to save regenerated summary');
-          }
-        } else {
-          throw new Error('Assessment response not found');
-        }
-      } else {
+      if (!summaryResult.success || !summaryResult.summary) {
         throw new Error(summaryResult.error || 'Failed to regenerate summary');
       }
+
+      console.log('✅ AI summary generated successfully');
+
+      // Get student_user_id - use from summary if available, otherwise fetch it
+      let studentUserId = summary.student_user_id;
+      
+      console.log('🔍 Looking for student_user_id:', {
+        fromSummary: studentUserId,
+        assessmentResponseId: summary.assessment_response_id
+      });
+      
+      if (!studentUserId) {
+        // Try multiple approaches to get student_user_id
+        
+        // Approach 1: Direct query to assessment_responses with students join
+        try {
+          const { data: assessmentResponse, error: fetchError } = await supabase
+            .from('assessment_responses')
+            .select(`
+              student_id,
+              students!inner(user_id)
+            `)
+            .eq('id', summary.assessment_response_id)
+            .maybeSingle();
+
+          if (!fetchError && assessmentResponse) {
+            const studentsData = assessmentResponse.students as any;
+            if (Array.isArray(studentsData) && studentsData.length > 0) {
+              studentUserId = studentsData[0]?.user_id || null;
+            } else if (studentsData && typeof studentsData === 'object') {
+              studentUserId = studentsData.user_id || null;
+            }
+            
+            if (studentUserId) {
+              console.log('✅ Found student_user_id via assessment_responses join');
+            }
+          }
+        } catch (err) {
+          console.warn('⚠️ Approach 1 failed, trying alternative:', err);
+        }
+
+        // Approach 2: If still not found, get student_id first, then query students table
+        if (!studentUserId) {
+          try {
+            const { data: arData, error: arError } = await supabase
+              .from('assessment_responses')
+              .select('student_id')
+              .eq('id', summary.assessment_response_id)
+              .maybeSingle();
+
+            if (!arError && arData?.student_id) {
+              const { data: studentData, error: studentError } = await supabase
+                .from('students')
+                .select('user_id')
+                .eq('id', arData.student_id)
+                .maybeSingle();
+
+              if (!studentError && studentData) {
+                studentUserId = studentData.user_id || null;
+                if (studentUserId) {
+                  console.log('✅ Found student_user_id via students table');
+                }
+              }
+            }
+          } catch (err) {
+            console.warn('⚠️ Approach 2 failed:', err);
+          }
+        }
+
+        if (!studentUserId) {
+          console.error('❌ Could not find student_user_id after all attempts', {
+            assessmentResponseId: summary.assessment_response_id,
+            summaryId: summary.id
+          });
+          throw new Error('Assessment response not found. The assessment may have been deleted or the summary data is corrupted. Please contact support.');
+        }
+      } else {
+        console.log('✅ Using student_user_id from summary object');
+      }
+
+      console.log('💾 Saving regenerated summary with student_user_id:', studentUserId);
+
+      // Save the regenerated summary
+      const saveResult = await summaryDatabaseService.createAISummary(
+        summary.assessment_response_id,
+        summaryResult.summary,
+        studentUserId
+      );
+
+      if (!saveResult.success) {
+        throw new Error(saveResult.error || 'Failed to save regenerated summary');
+      }
+
+      console.log('✅ Summary saved successfully');
+
+      toast({
+        title: "Summary Regenerated! 🔄",
+        description: "A new AI summary has been generated for review."
+      });
+      
+      onSummaryUpdated?.();
     } catch (error) {
-      console.error('Error regenerating summary:', error);
+      console.error('❌ Error regenerating summary:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to regenerate summary. Please try again.",
@@ -689,26 +840,272 @@ export default function SummaryApprovalCard({
           </CardHeader>
           <CollapsibleContent>
             <CardContent>
-              <div className="max-h-64 overflow-y-auto space-y-2 text-sm">
-                {Object.keys(studentResponses).map((videoKey) => {
-                  const videoData = studentResponses[videoKey];
-                  if (!videoData || typeof videoData !== 'object') return null;
+              <div className="max-h-96 overflow-y-auto space-y-2 text-sm">
+                {(() => {
+                  // Handle inspiration assessment structure: { video1: { question1: "...", ... }, video2: {...} }
+                  if (assessmentType === 'inspiration' && studentResponses) {
+                    const videoKeys = Object.keys(studentResponses).filter(key => key.startsWith('video'));
+                    
+                    if (videoKeys.length === 0) {
+                      return <div className="text-gray-500">No video responses found</div>;
+                    }
+                    
+                    return videoKeys.map((videoKey) => {
+                      const videoData = studentResponses[videoKey];
+                      if (!videoData || typeof videoData !== 'object') return null;
+                      
+                      const isExpanded = expandedVideo === videoKey;
+                      const questionKeys = Object.keys(videoData).filter(key => key.startsWith('question'));
+                      
+                      return (
+                        <div key={videoKey} className="border rounded-lg overflow-hidden">
+                          <div
+                            className="p-3 bg-gray-50 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
+                            onClick={() => setExpandedVideo(isExpanded ? null : videoKey)}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-gray-700 capitalize">
+                                {videoKey.replace('video', 'Video ')}
+                              </span>
+                              <Badge variant="outline" className="text-xs">
+                                {questionKeys.length} {questionKeys.length === 1 ? 'response' : 'responses'}
+                              </Badge>
+                            </div>
+                            <Button variant="ghost" size="sm" className="h-auto p-1">
+                              {isExpanded ? '▼' : '▶'}
+                            </Button>
+                          </div>
+                          
+                          {isExpanded && (
+                            <div className="p-3 bg-white border-t space-y-3">
+                              {questionKeys.length === 0 ? (
+                                <div className="text-gray-400 italic text-sm">No responses for this video</div>
+                              ) : (
+                                questionKeys.sort().map((qKey) => {
+                                  const answer = videoData[qKey];
+                                  const questionNum = qKey.replace('question', '');
+                                  
+                                  return (
+                                    <div key={qKey} className="border-l-2 border-blue-300 pl-3">
+                                      <div className="font-medium text-gray-700 mb-1">
+                                        Question {questionNum}
+                                      </div>
+                                      <div className="text-gray-600 whitespace-pre-wrap">
+                                        {answer && String(answer).trim() ? (
+                                          <p>{String(answer)}</p>
+                                        ) : (
+                                          <span className="text-gray-400 italic">No response provided</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    });
+                  }
                   
-                  return (
-                    <div key={videoKey} className="border-l-2 border-blue-300 pl-3 py-1">
-                      <p className="font-medium text-gray-700">
-                        {videoData.videoTitle || videoKey}
-                      </p>
-                      <div className="text-gray-600 space-y-1 mt-1">
-                        {Object.entries(videoData.responses || {}).map(([qKey, answer]) => (
-                          <p key={qKey}>
-                            <span className="font-medium">{qKey}:</span> {String(answer)}
-                          </p>
-                        ))}
+                  // Handle school_learning and hobbies (section-based structure)
+                  if ((assessmentType === 'school_learning' || assessmentType === 'hobbies') && studentResponses) {
+                    const sectionKeys = Object.keys(studentResponses).filter(key => key.startsWith('section'));
+                    
+                    if (sectionKeys.length === 0) {
+                      return <div className="text-gray-500">No section responses found</div>;
+                    }
+                    
+                    return sectionKeys.map((sectionKey) => {
+                      const sectionData = studentResponses[sectionKey];
+                      if (!sectionData || typeof sectionData !== 'object') return null;
+                      
+                      const isExpanded = expandedVideo === sectionKey;
+                      const questionKeys = Object.keys(sectionData);
+                      
+                      return (
+                        <div key={sectionKey} className="border rounded-lg overflow-hidden mb-3">
+                          <div
+                            className="p-3 bg-gray-50 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
+                            onClick={() => setExpandedVideo(isExpanded ? null : sectionKey)}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-gray-700 capitalize">
+                                {sectionKey.replace('section', 'Section ')}
+                              </span>
+                              <Badge variant="outline" className="text-xs">
+                                {questionKeys.length} {questionKeys.length === 1 ? 'question' : 'questions'}
+                              </Badge>
+                            </div>
+                            <Button variant="ghost" size="sm" className="h-auto p-1">
+                              {isExpanded ? '▼' : '▶'}
+                            </Button>
+                          </div>
+                          
+                          {isExpanded && (
+                            <div className="p-3 bg-white border-t space-y-3">
+                              {questionKeys.length === 0 ? (
+                                <div className="text-gray-400 italic text-sm">No responses for this section</div>
+                              ) : (
+                                questionKeys.sort().map((qKey) => {
+                                  const answer = sectionData[qKey];
+                                  
+                                  // Handle nested objects (like question11 in school_learning)
+                                  if (answer && typeof answer === 'object' && !Array.isArray(answer)) {
+                                    return (
+                                      <div key={qKey} className="border-l-2 border-green-300 pl-3">
+                                        <div className="font-medium text-gray-700 mb-1 capitalize">
+                                          {qKey.replace(/_/g, ' ')}
+                                        </div>
+                                        <div className="text-gray-600 space-y-1 ml-2">
+                                          {Object.entries(answer).map(([subKey, subValue]) => (
+                                            <div key={subKey} className="text-sm">
+                                              <span className="font-medium capitalize">{subKey.replace(/_/g, ' ')}:</span>{' '}
+                                              {typeof subValue === 'boolean' ? (subValue ? 'Yes' : 'No') : String(subValue)}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+                                  
+                                  return (
+                                    <div key={qKey} className="border-l-2 border-blue-300 pl-3">
+                                      <div className="font-medium text-gray-700 mb-1 capitalize">
+                                        {qKey.replace(/_/g, ' ')}
+                                      </div>
+                                      <div className="text-gray-600 whitespace-pre-wrap">
+                                        {answer && String(answer).trim() ? (
+                                          <p>{String(answer)}</p>
+                                        ) : (
+                                          <span className="text-gray-400 italic">No response provided</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    });
+                  }
+                  
+                  // Handle about_me (field_key based with triple/double arrays)
+                  if (assessmentType === 'about_me' && studentResponses) {
+                    const fieldKeys = Object.keys(studentResponses).filter(key => {
+                      const value = studentResponses[key];
+                      // Only show fields that have non-empty values
+                      if (value === null || value === undefined) return false;
+                      if (Array.isArray(value)) {
+                        return value.some(item => item && String(item).trim());
+                      }
+                      return String(value).trim() !== '';
+                    });
+                    
+                    if (fieldKeys.length === 0) {
+                      return <div className="text-gray-500">No field responses found</div>;
+                    }
+                    
+                    return fieldKeys.map((fieldKey) => {
+                      const value = studentResponses[fieldKey];
+                      if (value === null || value === undefined) return null;
+                      
+                      // Get question text from loaded fields, fallback to formatted field_key
+                      const fieldInfo = aboutMeFields.find(f => f.field_key === fieldKey);
+                      const displayLabel = fieldInfo?.question_text || fieldKey.replace(/_/g, ' ');
+                      
+                      const isExpanded = expandedVideo === fieldKey;
+                      const hasValue = Array.isArray(value) 
+                        ? value.some(item => item && String(item).trim())
+                        : String(value).trim() !== '';
+                      
+                      return (
+                        <div key={fieldKey} className="border rounded-lg overflow-hidden mb-2">
+                          <div
+                            className="p-3 bg-gray-50 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
+                            onClick={() => setExpandedVideo(isExpanded ? null : fieldKey)}
+                          >
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <span className="font-medium text-gray-700 text-sm line-clamp-2" title={displayLabel}>
+                                {displayLabel}
+                              </span>
+                              {hasValue && (
+                                <Badge variant="outline" className="text-xs flex-shrink-0">
+                                  {Array.isArray(value) ? `${value.filter(v => v && String(v).trim()).length} items` : 'answered'}
+                                </Badge>
+                              )}
+                            </div>
+                            <Button variant="ghost" size="sm" className="h-auto p-1 flex-shrink-0">
+                              {isExpanded ? '▼' : '▶'}
+                            </Button>
+                          </div>
+                          
+                          {isExpanded && (
+                            <div className="p-3 bg-white border-t">
+                              {!hasValue ? (
+                                <div className="text-gray-400 italic text-sm">No response provided</div>
+                              ) : Array.isArray(value) ? (
+                                <ul className="list-disc list-inside space-y-2">
+                                  {value.map((item: any, idx: number) => (
+                                    item && String(item).trim() ? (
+                                      <li key={idx} className="text-gray-600 whitespace-pre-wrap">{String(item)}</li>
+                                    ) : null
+                                  ))}
+                                </ul>
+                              ) : (
+                                <div className="text-gray-600 whitespace-pre-wrap">
+                                  {String(value)}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    });
+                  }
+                  
+                  // Handle dreams, role_models, and other simple key-value assessments
+                  if (!studentResponses || typeof studentResponses !== 'object') {
+                    return <div className="text-gray-500">No responses available</div>;
+                  }
+                  
+                  return Object.entries(studentResponses).map(([key, value]) => {
+                    if (value === null || value === undefined) return null;
+                    
+                    // Skip video keys if they somehow appear (should be handled by inspiration check)
+                    if (key.startsWith('video')) return null;
+                    
+                    return (
+                      <div key={key} className="border-l-2 border-blue-300 pl-3 py-2 mb-2">
+                        <div className="font-medium text-gray-700 mb-1 capitalize">
+                          {key.replace(/_/g, ' ')}
+                        </div>
+                        <div className="text-gray-600 whitespace-pre-wrap">
+                          {Array.isArray(value) ? (
+                            <ul className="list-disc list-inside space-y-1">
+                              {value.map((item: any, idx: number) => (
+                                item && String(item).trim() ? <li key={idx}>{String(item)}</li> : null
+                              ))}
+                            </ul>
+                          ) : typeof value === 'object' ? (
+                            <div className="ml-2 space-y-1 text-sm">
+                              {Object.entries(value).map(([subKey, subValue]) => (
+                                <div key={subKey}>
+                                  <span className="font-medium capitalize">{subKey.replace(/_/g, ' ')}:</span>{' '}
+                                  {typeof subValue === 'boolean' ? (subValue ? 'Yes' : 'No') : String(subValue)}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p>{String(value)}</p>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  });
+                })()}
               </div>
             </CardContent>
           </CollapsibleContent>
@@ -1063,15 +1460,20 @@ export default function SummaryApprovalCard({
               id="rejection-reason"
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
-              placeholder="e.g., Summary doesn't capture the student's voice, needs more specific examples..."
+              placeholder="e.g., Summary doesn't capture the student's voice, needs more specific examples... (minimum 5 characters)"
               className="mt-2 min-h-[100px]"
             />
+            {rejectionReason.trim() && rejectionReason.trim().length < 5 && (
+              <p className="text-sm text-red-600 mt-1">Reason must be at least 5 characters long</p>
+            )}
           </div>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => { setShowRejectDialog(false); setRejectionReason(''); }}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleReject}
-              disabled={!rejectionReason.trim() || saving}
+              disabled={!rejectionReason.trim() || rejectionReason.trim().length < 5 || saving}
               className="bg-red-600 hover:bg-red-700"
             >
               {saving ? 'Rejecting...' : 'Reject & Regenerate'}

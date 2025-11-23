@@ -48,7 +48,7 @@ export default function AuthPage() {
     role: 'student' as 'teacher' | 'student',
     stateId: '',
     classId: '',
-    preferredLanguage: 'en' as 'en' | 'kn'
+    preferredLanguage: 'en' as 'en' | 'kn' | 'ta'
   });
   const [loading, setLoading] = useState(false);
   const [states, setStates] = useState<StateInfo[]>([]);
@@ -407,7 +407,7 @@ export default function AuthPage() {
                     <Label htmlFor="preferred-language">{t('preferredLanguage')}</Label>
                     <Select 
                       value={signUpForm.preferredLanguage}
-                      onValueChange={(value: 'en' | 'kn') => setSignUpForm({ ...signUpForm, preferredLanguage: value })}
+                      onValueChange={(value: 'en' | 'kn' | 'ta') => setSignUpForm({ ...signUpForm, preferredLanguage: value })}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -415,6 +415,7 @@ export default function AuthPage() {
                       <SelectContent>
                         <SelectItem value="en">English</SelectItem>
                         <SelectItem value="kn">Kannada</SelectItem>
+                        <SelectItem value="ta">Tamil</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

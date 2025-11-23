@@ -18,25 +18,27 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AssessmentService, AssessmentTemplate } from '@/services/assessmentService';
 import { handleDatabaseError, validateApiResponse } from '@/utils/errorHandler';
 
 interface AboutMeResponse {
-  [key: string]: string;
+  [key: string]: string | string[];
 }
 
 export default function AboutMeAssessmentDB() {
   const { userProfile } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const readOnlyView = ['1','true'].includes((searchParams.get('readonly')||searchParams.get('view')||'').toLowerCase());
   const [assessmentTemplate, setAssessmentTemplate] = useState<AssessmentTemplate | null>(null);
   const [responses, setResponses] = useState<AboutMeResponse>({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [helpOpen, setHelpOpen] = useState<Record<string, boolean>>({});
-  const navigate = useNavigate();
 
   const helpKey = (questionIndex: number) => `question${questionIndex}`;
   const toggleHelp = (k: string) => setHelpOpen(prev => ({ ...prev, [k]: !prev[k] }));
@@ -48,7 +50,8 @@ export default function AboutMeAssessmentDB() {
         setLoading(true);
         console.log('🔄 Loading About Me questions from database...');
         
-        const { data, error } = await supabase.rpc('get_about_me_questions');
+        // Use get_about_me_fields to get section information
+        const { data, error } = await supabase.rpc('get_about_me_fields');
         
         if (error) {
           handleDatabaseError(error, 'AboutMeAssessment');
@@ -56,38 +59,75 @@ export default function AboutMeAssessmentDB() {
         }
         
         if (validateApiResponse(data, 'AboutMeAssessment')) {
-          console.log('✅ Database questions loaded:', data.length, 'questions');
+          console.log('✅ Database fields loaded:', data.length, 'fields');
           
-          // Create a simple template structure for compatibility
+          // Group fields by section
+          const fieldsBySection: Record<string, any[]> = {};
+          data.forEach((field: any) => {
+            const section = field.section || 'Other';
+            if (!fieldsBySection[section]) {
+              fieldsBySection[section] = [];
+            }
+            fieldsBySection[section].push(field);
+          });
+          
+          // Sort all fields by sequence_number to maintain global order
+          const allFields = data.sort((a: any, b: any) => a.sequence_number - b.sequence_number);
+          
+          // Create sections from grouped data
+          const sections = Object.keys(fieldsBySection)
+            .sort((a, b) => {
+              // Sort sections: A, B, C, D
+              const sectionA = a.match(/^([A-D])\./)?.[1] || '';
+              const sectionB = b.match(/^([A-D])\./)?.[1] || '';
+              return sectionA.localeCompare(sectionB);
+            })
+            .map((sectionTitle, sectionIndex) => {
+              const sectionFields = fieldsBySection[sectionTitle].sort((a, b) => 
+                a.sequence_number - b.sequence_number
+              );
+              
+              return {
+                id: `section_${sectionIndex + 1}`,
+                title: sectionTitle,
+                description: '',
+                sequence_number: sectionIndex + 1,
+                questions: sectionFields.map((field: any) => {
+                  // Find global index for this field (1-based)
+                  const globalIndex = allFields.findIndex((f: any) => f.field_key === field.field_key) + 1;
+                  return {
+                    id: `question${globalIndex}`, // Use sequential numbering for compatibility
+                    question_text: field.question_text,
+                    question_type: (field.field_type === 'triple' || field.field_type === 'double') 
+                      ? 'textarea' as const 
+                      : (field.field_type as 'textarea' | 'text'),
+                    help_text: field.help_text,
+                    is_required: true,
+                    sequence_number: field.sequence_number,
+                    options: []
+                  };
+                })
+              };
+            });
+          
+          // Create template structure
           const template: AssessmentTemplate = {
             template_id: 'about_me',
             title: 'About Me Assessment',
             description: 'Think about yourself — what are things you do well and need help with?',
             instructions: 'Complete all questions to finish your assessment',
-            sections: [{
-              id: 'about_me_section',
-              title: 'About Me Questions',
-              description: 'Answer these questions about yourself',
-              sequence_number: 1,
-              questions: data.map((q: any, index: number) => ({
-                id: `question${index + 1}`,
-                question_text: q.question_text,
-                question_type: 'textarea' as const,
-                help_text: q.help_text,
-                is_required: true,
-                sequence_number: q.sequence_number,
-                options: []
-              }))
-            }]
+            sections
           };
           
           setAssessmentTemplate(template);
           
-          // Initialize responses structure
+          // Initialize responses structure with sequential question numbers
           const initialResponses: AboutMeResponse = {};
-          template.sections[0].questions.forEach((question, questionIndex) => {
-            const questionKey = `question${questionIndex + 1}`;
-            initialResponses[questionKey] = '';
+          template.sections.forEach((section) => {
+            section.questions.forEach((question) => {
+              // Use sequential question numbers (question1, question2, etc.)
+              initialResponses[question.id] = '';
+            });
           });
           setResponses(initialResponses);
         } else {
@@ -111,7 +151,7 @@ export default function AboutMeAssessmentDB() {
   // Check for existing responses on load
   useEffect(() => {
     const checkExistingResponse = async () => {
-      if (!userProfile || loading) return;
+      if (!userProfile || loading || !assessmentTemplate) return;
       
       try {
         let studentId = userProfile.studentProfile?.id as string | undefined;
@@ -135,10 +175,11 @@ export default function AboutMeAssessmentDB() {
           .limit(1)
           .maybeSingle();
 
-        if (existing) {
-          if (existing.responses) {
-            setResponses(existing.responses);
-          }
+        if (existing && existing.responses) {
+          const loadedResponses = existing.responses as any;
+          // Responses are already in question1, question2 format, so just use them directly
+          setResponses(loadedResponses);
+          
           if (existing.completed_at) {
             setIsCompleted(true);
           }
@@ -149,7 +190,7 @@ export default function AboutMeAssessmentDB() {
     };
 
     checkExistingResponse();
-  }, [userProfile, loading]);
+  }, [userProfile, loading, assessmentTemplate]);
 
   // Auto-save draft on changes (debounced)
   useEffect(() => {
@@ -181,6 +222,7 @@ export default function AboutMeAssessmentDB() {
   }, [responses, loading, isCompleted, userProfile]);
 
   const handleResponseChange = (questionKey: string, value: string) => {
+    if (readOnlyView || isCompleted) return;
     setResponses(prev => ({
       ...prev,
       [questionKey]: value
@@ -232,11 +274,23 @@ export default function AboutMeAssessmentDB() {
   const isComplete = () => {
     if (!assessmentTemplate) return false;
     
+    // Check ALL sections (A, B, C, D) are complete
+    // This ensures the submit button is only enabled when all sections are filled
     return assessmentTemplate.sections.every(section => 
-      section.questions.every((_, questionIndex) => {
-        const questionKey = `question${questionIndex + 1}`;
-        const response = responses[questionKey];
-        return response && response.trim() !== '';
+      section.questions.every((question) => {
+        const response = responses[question.id];
+        
+        if (!response) return false;
+        
+        // Handle string responses
+        if (typeof response === 'string') {
+          return response.trim() !== '';
+        }
+        // Handle array responses (triple, double)
+        if (Array.isArray(response)) {
+          return (response as string[]).every(item => typeof item === 'string' && item.trim() !== '');
+        }
+        return false;
       })
     );
   };
@@ -252,7 +306,7 @@ export default function AboutMeAssessmentDB() {
     );
   }
 
-  if (isCompleted) {
+  if (isCompleted && !readOnlyView) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <Card className="w-full max-w-2xl mx-4">
@@ -262,9 +316,22 @@ export default function AboutMeAssessmentDB() {
             <p className="text-gray-600 mb-6">
               Thank you for completing the About Me Assessment. Your responses have been saved.
             </p>
-            <Button onClick={() => navigate('/student-dashboard')} className="w-full">
-              Return to Dashboard
-            </Button>
+            <div className="flex justify-center gap-4">
+              <Button
+                variant="outline"
+                className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                onClick={() => {
+                  const params = new URLSearchParams(searchParams.toString());
+                  params.set('readonly', '1');
+                  navigate(`/student/assessment/about-me?${params.toString()}`);
+                }}
+              >
+                View My Answers
+              </Button>
+              <Button onClick={() => navigate('/student-dashboard')} className="bg-blue-600 hover:bg-blue-700">
+                Back to Dashboard
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -335,10 +402,16 @@ export default function AboutMeAssessmentDB() {
                   </div>
                   
                   {section.questions.map((question, questionIndex) => {
-                    const questionKey = `question${questionIndex + 1}`;
+                    // Use question.id (field_key) as the key
+                    const questionKey = question.id;
                     const currentResponse = responses[questionKey] || '';
                     const helpKeyValue = helpKey(questionIndex);
                     const isHelpOpen = helpOpen[helpKeyValue];
+                    
+                    // Handle array responses (for triple/double fields) - convert to string for display
+                    const displayValue = Array.isArray(currentResponse) 
+                      ? currentResponse.join(', ') 
+                      : (typeof currentResponse === 'string' ? currentResponse : '');
 
                     return (
                       <div key={question.id} className="space-y-3">
@@ -374,10 +447,12 @@ export default function AboutMeAssessmentDB() {
                         )}
 
                         <Textarea
-                          value={currentResponse}
+                          value={displayValue}
                           onChange={(e) => handleResponseChange(questionKey, e.target.value)}
+                          readOnly={readOnlyView}
                           placeholder="Share your thoughts..."
                           className="min-h-[100px]"
+                          disabled={readOnlyView}
                         />
                       </div>
                     );
@@ -398,7 +473,24 @@ export default function AboutMeAssessmentDB() {
                   
                   <Button
                     onClick={handleSubmit}
-                    disabled={submitting || !isComplete()}
+                    disabled={submitting || !isComplete() || readOnlyView}
+                    size="lg"
+                  >
+                    {submitting ? 'Submitting...' : 'Complete Assessment'}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
+                  
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={submitting || !isComplete() || readOnlyView}
                     size="lg"
                   >
                     {submitting ? 'Submitting...' : 'Complete Assessment'}

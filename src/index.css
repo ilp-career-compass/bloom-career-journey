@@ -123,3 +123,66 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+/* Print styles for Assessment Answers */
+@media print {
+  /* Hide dialog overlay and backdrop */
+  [data-radix-dialog-overlay],
+  [data-radix-portal] > [data-radix-dialog-overlay] {
+    display: none !important;
+    background: transparent !important;
+  }
+
+  /* Ensure dialog content is visible and properly positioned */
+  [data-radix-dialog-content],
+  [role="dialog"] {
+    position: static !important;
+    transform: none !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 1rem !important;
+    box-shadow: none !important;
+    border: 1px solid #e5e7eb !important;
+    background: white !important;
+    overflow: visible !important;
+  }
+
+  /* Hide buttons when printing */
+  button,
+  .print\\:hidden {
+    display: none !important;
+  }
+
+  /* Prevent page breaks inside assessment cards */
+  [data-assessment-card] {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    margin-bottom: 1rem;
+  }
+
+  /* Ensure proper spacing between cards */
+  [data-assessment-card] + [data-assessment-card] {
+    margin-top: 1rem;
+  }
+
+  /* Hide close button */
+  [data-radix-dialog-close] {
+    display: none !important;
+  }
+
+  /* Ensure content is visible */
+  body {
+    background: white !important;
+  }
+
+  /* Hide scrollbars */
+  * {
+    overflow: visible !important;
+  }
+
+  /* Ensure cards don't break awkwardly */
+  .space-y-4 > * {
+    page-break-inside: avoid;
+  }
+}

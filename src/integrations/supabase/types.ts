@@ -318,7 +318,7 @@ export type Database = {
           email: string
           state_id: string | null
           school: string | null
-          preferred_language: 'en' | 'kn'
+          preferred_language: 'en' | 'kn' | 'ta'
           bio: string | null
           interests: string | null
           career_goals: string | null

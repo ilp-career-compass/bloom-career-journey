@@ -174,7 +174,8 @@ export default function MySchoolLearningAssessment() {
         .select('*')
         .eq('student_id', studentId)
         .eq('assessment_type', 'school_learning')
-        .eq('assessment_title', 'My School, My Learning and I')
+        // Support both new and legacy titles
+        .in('assessment_title', ['My School, My Learning and I', 'My School Learning'] as any)
         .order('updated_at', { ascending: false })
         .limit(1);
       
@@ -703,7 +704,7 @@ export default function MySchoolLearningAssessment() {
                     value={responses.section1.question1}
                     onChange={(e) => handleResponseChange('section1', 'question1', e.target.value)}
                     rows={3}
-                    disabled={isReadOnly}
+                    readOnly={isReadOnly}
                     className="border-green-200 focus:border-green-400"
                   />
                 </div>
@@ -723,7 +724,7 @@ export default function MySchoolLearningAssessment() {
                     value={responses.section1.question2}
                     onChange={(e) => handleResponseChange('section1', 'question2', e.target.value)}
                     rows={3}
-                    disabled={isReadOnly}
+                    readOnly={isReadOnly}
                     className="border-green-200 focus:border-green-400"
                   />
                 </div>
@@ -743,7 +744,7 @@ export default function MySchoolLearningAssessment() {
                     value={responses.section1.question3}
                     onChange={(e) => handleResponseChange('section1', 'question3', e.target.value)}
                     rows={3}
-                    disabled={isReadOnly}
+                    readOnly={isReadOnly}
                     className="border-green-200 focus:border-green-400"
                   />
                 </div>
@@ -763,7 +764,7 @@ export default function MySchoolLearningAssessment() {
                     value={responses.section1.question4}
                     onChange={(e) => handleResponseChange('section1', 'question4', e.target.value)}
                     rows={3}
-                    disabled={isReadOnly}
+                    readOnly={isReadOnly}
                     className="border-green-200 focus:border-green-400"
                   />
                 </div>
@@ -807,7 +808,7 @@ export default function MySchoolLearningAssessment() {
                     value={responses.section2.question5}
                     onChange={(e) => handleResponseChange('section2', 'question5', e.target.value)}
                     rows={3}
-                    disabled={isReadOnly}
+                    readOnly={isReadOnly}
                     className="border-blue-200 focus:border-blue-400"
                   />
                 </div>
@@ -827,7 +828,7 @@ export default function MySchoolLearningAssessment() {
                     value={responses.section2.question6}
                     onChange={(e) => handleResponseChange('section2', 'question6', e.target.value)}
                     rows={3}
-                    disabled={isReadOnly}
+                    readOnly={isReadOnly}
                     className="border-blue-200 focus:border-blue-400"
                   />
                 </div>
@@ -847,7 +848,7 @@ export default function MySchoolLearningAssessment() {
                     value={responses.section2.question7}
                     onChange={(e) => handleResponseChange('section2', 'question7', e.target.value)}
                     rows={3}
-                    disabled={isReadOnly}
+                    readOnly={isReadOnly}
                     className="border-blue-200 focus:border-blue-400"
                   />
                 </div>
@@ -867,7 +868,7 @@ export default function MySchoolLearningAssessment() {
                     value={responses.section2.question8}
                     onChange={(e) => handleResponseChange('section2', 'question8', e.target.value)}
                     rows={3}
-                    disabled={isReadOnly}
+                    readOnly={isReadOnly}
                     className="border-blue-200 focus:border-blue-400"
                   />
                 </div>
@@ -911,7 +912,7 @@ export default function MySchoolLearningAssessment() {
                     value={responses.section3.question9}
                     onChange={(e) => handleResponseChange('section3', 'question9', e.target.value)}
                     rows={3}
-                    disabled={isReadOnly}
+                    readOnly={isReadOnly}
                     className="border-purple-200 focus:border-purple-400"
                   />
                 </div>
@@ -931,7 +932,7 @@ export default function MySchoolLearningAssessment() {
                     value={responses.section3.question10}
                     onChange={(e) => handleResponseChange('section3', 'question10', e.target.value)}
                     rows={3}
-                    disabled={isReadOnly}
+                    readOnly={isReadOnly}
                     className="border-purple-200 focus:border-purple-400"
                   />
                 </div>
@@ -985,7 +986,7 @@ export default function MySchoolLearningAssessment() {
                         value={responses.section3.question11.other}
                         onChange={(e) => handleLearningMethodChange('other', e.target.value)}
                         rows={2}
-                        disabled={isReadOnly}
+                        readOnly={isReadOnly}
                         className="border-purple-200 focus:border-purple-400 ml-6"
                       />
                     )}
@@ -1007,7 +1008,7 @@ export default function MySchoolLearningAssessment() {
                     value={responses.section3.question12}
                     onChange={(e) => handleResponseChange('section3', 'question12', e.target.value)}
                     rows={3}
-                    disabled={isReadOnly}
+                    readOnly={isReadOnly}
                     className="border-purple-200 focus:border-purple-400"
                   />
                 </div>
@@ -1051,7 +1052,7 @@ export default function MySchoolLearningAssessment() {
                     value={responses.section4.question13}
                     onChange={(e) => handleResponseChange('section4', 'question13', e.target.value)}
                     rows={3}
-                    disabled={isReadOnly}
+                    readOnly={isReadOnly}
                     className="border-orange-200 focus:border-orange-400"
                   />
                 </div>
@@ -1071,7 +1072,7 @@ export default function MySchoolLearningAssessment() {
                     value={responses.section4.question14}
                     onChange={(e) => handleResponseChange('section4', 'question14', e.target.value)}
                     rows={3}
-                    disabled={isReadOnly}
+                    readOnly={isReadOnly}
                     className="border-orange-200 focus:border-orange-400"
                   />
                 </div>
@@ -1091,7 +1092,7 @@ export default function MySchoolLearningAssessment() {
                     value={responses.section4.question15}
                     onChange={(e) => handleResponseChange('section4', 'question15', e.target.value)}
                     rows={3}
-                    disabled={isReadOnly}
+                    readOnly={isReadOnly}
                     className="border-orange-200 focus:border-orange-400"
                   />
                 </div>
@@ -1111,7 +1112,7 @@ export default function MySchoolLearningAssessment() {
                     value={responses.section4.question16}
                     onChange={(e) => handleResponseChange('section4', 'question16', e.target.value)}
                     rows={3}
-                    disabled={isReadOnly}
+                    readOnly={isReadOnly}
                     className="border-orange-200 focus:border-orange-400"
                   />
                 </div>
@@ -1155,7 +1156,7 @@ export default function MySchoolLearningAssessment() {
                     value={responses.section5.question17}
                     onChange={(e) => handleResponseChange('section5', 'question17', e.target.value)}
                     rows={3}
-                    disabled={isReadOnly}
+                    readOnly={isReadOnly}
                     className="border-teal-200 focus:border-teal-400"
                   />
                 </div>
@@ -1175,7 +1176,7 @@ export default function MySchoolLearningAssessment() {
                     value={responses.section5.question18}
                     onChange={(e) => handleResponseChange('section5', 'question18', e.target.value)}
                     rows={3}
-                    disabled={isReadOnly}
+                    readOnly={isReadOnly}
                     className="border-teal-200 focus:border-teal-400"
                   />
                 </div>
@@ -1195,7 +1196,7 @@ export default function MySchoolLearningAssessment() {
                     value={responses.section5.question19}
                     onChange={(e) => handleResponseChange('section5', 'question19', e.target.value)}
                     rows={3}
-                    disabled={isReadOnly}
+                    readOnly={isReadOnly}
                     className="border-teal-200 focus:border-teal-400"
                   />
                 </div>
@@ -1215,7 +1216,7 @@ export default function MySchoolLearningAssessment() {
                     value={responses.section5.question20}
                     onChange={(e) => handleResponseChange('section5', 'question20', e.target.value)}
                     rows={3}
-                    disabled={isReadOnly}
+                    readOnly={isReadOnly}
                     className="border-teal-200 focus:border-teal-400"
                   />
                 </div>
@@ -1235,7 +1236,7 @@ export default function MySchoolLearningAssessment() {
                     value={responses.section5.question21}
                     onChange={(e) => handleResponseChange('section5', 'question21', e.target.value)}
                     rows={3}
-                    disabled={isReadOnly}
+                    readOnly={isReadOnly}
                     className="border-teal-200 focus:border-teal-400"
                   />
                 </div>

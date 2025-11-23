@@ -25,7 +25,7 @@ interface AuthContextType {
     role: 'teacher' | 'student',
     stateId: string,
     classId?: string,
-    preferredLanguage?: 'en' | 'kn'
+    preferredLanguage?: 'en' | 'kn' | 'ta'
   ) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   userProfile: any;
@@ -764,7 +764,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     role: 'teacher' | 'student',
     stateId: string,
     classId?: string,
-    preferredLanguage: 'en' | 'kn' = 'en'
+    preferredLanguage: 'en' | 'kn' | 'ta' = 'en'
   ) => {
     try {
       console.log('Starting signUp process:', { mobile, email, fullName, role, stateId, classId, preferredLanguage });

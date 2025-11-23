@@ -59,6 +59,24 @@ export default function MyDreamsAssessment() {
   const [helpOpen, setHelpOpen] = useState<Record<string, boolean>>({});
   const toggleHelp = (k: string) => setHelpOpen(prev => ({ ...prev, [k]: !prev[k] }));
 
+  // Debug helper: expose state in the browser console for troubleshooting
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        (window as any).__dreamsDebug = {
+          responses,
+          dreamsQuestions,
+          readOnlyView,
+          isCompleted,
+          isReadOnly,
+          currentSection,
+        };
+      }
+    } catch {
+      // ignore if window is not available
+    }
+  }, [responses, dreamsQuestions, readOnlyView, isCompleted, isReadOnly, currentSection]);
+
   // Helper function to get student ID
   const getStudentId = async () => {
     if (!userProfile) return null;
@@ -189,10 +207,10 @@ export default function MyDreamsAssessment() {
   }, [lang]);
 
   useEffect(() => {
-    if (dreamsQuestions.length > 0) {
-      checkExistingResponse();
-    }
-  }, [dreamsQuestions]);
+    // Wait until both userProfile and questions are ready before loading saved responses
+    if (!userProfile || dreamsQuestions.length === 0) return;
+    checkExistingResponse();
+  }, [userProfile, dreamsQuestions]);
 
   // Keep URL ?lang in sync without re-rendering
   useEffect(() => {
@@ -235,11 +253,6 @@ export default function MyDreamsAssessment() {
   }, [responses, loading, isReadOnly, userProfile]);
 
   const checkExistingResponse = async () => {
-    if (!userProfile || dreamsQuestions.length === 0) {
-      setLoading(false);
-      return;
-    }
-
     // Resolve student_id from students table; do not fallback to users.id
     let studentId = userProfile.studentProfile?.id as string | undefined;
     if (!studentId) {
@@ -263,17 +276,81 @@ export default function MyDreamsAssessment() {
         .eq('student_id', studentId)
         .eq('assessment_type', 'dreams')
         .eq('assessment_title', 'My Dreams')
-        .maybeSingle();
+        // Prefer the most recently updated/completed record
+        .order('updated_at', { ascending: false })
+        .limit(1);
 
-      if (data && !error && data.responses) {
-        // Merge saved responses with initialized responses
-        const savedResponses = data.responses as Partial<DreamAssessmentResponse>;
+      const row = Array.isArray(data) && data.length > 0 ? data[0] : null;
+
+      if (row && !error && row.responses) {
+        let saved = row.responses as any;
+
+        // Supabase may return jsonb as already-parsed object or as a JSON string
+        if (typeof saved === 'string') {
+          try {
+            saved = JSON.parse(saved);
+          } catch {
+            console.warn('⚠️ Failed to parse dreams responses JSON string, using raw value');
+          }
+        }
         const initialResponses: DreamAssessmentResponse = {};
-        dreamsQuestions.forEach(q => {
-          initialResponses[q.id] = savedResponses[q.id] || '';
-        });
-        setResponses(initialResponses);
-        
+
+        // Detect old DB structure: { part1: { question1: "...", ... }, part2: {...} }
+        const hasPartStructure = Object.keys(saved || {}).some((key) =>
+          key.startsWith('part')
+        );
+
+        if (hasPartStructure) {
+          // Group questions by section so we can map partN.questionM -> question.id
+          const questionsBySection: Record<string, DreamQuestion[]> = {};
+          dreamsQuestions.forEach((q) => {
+            const section = q.section || 'section1';
+            if (!questionsBySection[section]) {
+              questionsBySection[section] = [];
+            }
+            questionsBySection[section].push(q);
+          });
+
+          (['section1', 'section2', 'section3'] as const).forEach((sectionKey) => {
+            const partKey = sectionKey.replace('section', 'part'); // section1 -> part1
+            const partResponses = saved[partKey] || {};
+            const sectionQuestions = questionsBySection[sectionKey] || [];
+
+            // Sort questions in the order they were shown to the student
+            const sortedQuestions = [...sectionQuestions].sort(
+              (a, b) => (a.sequence_number || 0) - (b.sequence_number || 0)
+            );
+
+            sortedQuestions.forEach((question, index) => {
+              const questionKey = `question${index + 1}`;
+              const raw = partResponses[questionKey];
+              if (typeof raw === 'string' && raw.trim()) {
+                initialResponses[question.id] = raw;
+              }
+            });
+          });
+        } else {
+          // New flat structure: { [questionId]: "answer", ... }
+          dreamsQuestions.forEach((q) => {
+            const byId = saved[q.id];
+            const bySeq =
+              q.sequence_number != null
+                ? saved[`question${q.sequence_number}`]
+                : undefined;
+            const value = typeof byId === 'string' && byId.trim()
+              ? byId
+              : typeof bySeq === 'string'
+              ? bySeq
+              : '';
+            initialResponses[q.id] = value;
+          });
+        }
+
+        setResponses((prev) => ({
+          ...prev,
+          ...initialResponses,
+        }));
+
         if (data.completed_at) {
           setIsCompleted(true);
         }
@@ -676,7 +753,7 @@ export default function MyDreamsAssessment() {
                             placeholder={helpText}
                             value={questionValue}
                             onChange={(e) => handleResponseChange(question.id, e.target.value)}
-                            disabled={isReadOnly}
+                            readOnly={isReadOnly}
                             rows={4}
                             className="text-base border-blue-200 focus:border-blue-400"
                           />

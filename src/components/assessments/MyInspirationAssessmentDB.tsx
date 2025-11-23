@@ -23,7 +23,7 @@ import {
   BookOpen
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AudioRecorder } from '@/components/ui/AudioRecorder';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AssessmentService, MediaSource, AssessmentQuestion } from '@/services/assessmentService';
@@ -67,6 +67,8 @@ export default function MyInspirationAssessmentDB() {
   const [videoProgress, setVideoProgress] = useState<VideoProgress[]>([]);
   const [helpOpen, setHelpOpen] = useState<Record<string, boolean>>({});
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const readOnlyView = ['1','true'].includes((searchParams.get('readonly')||searchParams.get('view')||'').toLowerCase());
   const [assessmentRecordId, setAssessmentRecordId] = useState<string | null>(null);
   const [resolvedStudentId, setResolvedStudentId] = useState<string | null>(null);
   const [audioResponsesMap, setAudioResponsesMap] = useState<Record<string, any>>({});
@@ -470,7 +472,7 @@ export default function MyInspirationAssessmentDB() {
     );
   }
 
-  if (isCompleted) {
+  if (isCompleted && !readOnlyView) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <Card className="w-full max-w-2xl mx-4 max-w-4xl">
@@ -480,9 +482,22 @@ export default function MyInspirationAssessmentDB() {
             <p className="text-gray-600 mb-6">
               Thank you for completing the Inspiration Assessment. Your responses have been saved.
             </p>
-            <Button onClick={() => navigate('/student-dashboard')} className="w-full">
-              Return to Dashboard
-            </Button>
+            <div className="flex justify-center gap-4">
+              <Button
+                variant="outline"
+                className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                onClick={() => {
+                  const params = new URLSearchParams(searchParams.toString());
+                  params.set('readonly', '1');
+                  navigate(`/student/assessment/inspiration?${params.toString()}`);
+                }}
+              >
+                View My Answers
+              </Button>
+              <Button onClick={() => navigate('/student-dashboard')} className="bg-blue-600 hover:bg-blue-700">
+                Back to Dashboard
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -674,6 +689,51 @@ export default function MyInspirationAssessmentDB() {
                   ) : (
                     <Button
                       onClick={nextVideo}
+                      disabled={!isCurrentVideoComplete()}
+                    >
+                      Next Video
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+                      disabled={!isCurrentVideoComplete()}
+                    >
+                      Next Video
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+                      disabled={!isCurrentVideoComplete()}
+                    >
+                      Next Video
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
+
                       disabled={!isCurrentVideoComplete()}
                     >
                       Next Video

@@ -263,7 +263,7 @@ export default function MyRoleModelsAssessmentDB() {
     );
   }
 
-  if (isCompleted) {
+  if (isCompleted && !readOnlyView) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <Card className="w-full max-w-2xl mx-4">
@@ -273,9 +273,22 @@ export default function MyRoleModelsAssessmentDB() {
             <p className="text-gray-600 mb-6">
               Thank you for completing the Role Models Assessment. Your responses have been saved.
             </p>
-            <Button onClick={() => navigate('/student-dashboard')} className="w-full">
-              Return to Dashboard
-            </Button>
+            <div className="flex justify-center gap-4">
+              <Button
+                variant="outline"
+                className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                onClick={() => {
+                  const params = new URLSearchParams(searchParams.toString());
+                  params.set('readonly', '1');
+                  navigate(`/student/assessment/role-models?${params.toString()}`);
+                }}
+              >
+                View My Answers
+              </Button>
+              <Button onClick={() => navigate('/student-dashboard')} className="bg-blue-600 hover:bg-blue-700">
+                Back to Dashboard
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -445,6 +458,18 @@ export default function MyRoleModelsAssessmentDB() {
               
               <Button
                 onClick={handleSubmit}
+                disabled={submitting || !isComplete()}
+                size="lg"
+              >
+                {submitting ? 'Submitting...' : 'Complete Assessment'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
                 disabled={submitting || !isComplete()}
                 size="lg"
               >

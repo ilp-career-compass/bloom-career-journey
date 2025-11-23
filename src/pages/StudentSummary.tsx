@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 
-type AssessmentType = 'inspiration' | 'dreams' | 'school_learning' | 'role_models' | 'hobbies';
+type AssessmentType = 'inspiration' | 'about_me' | 'dreams' | 'school_learning' | 'hobbies' | 'role_models';
 
 type AssessmentRecord = {
   assessment_type: AssessmentType;
@@ -109,7 +109,7 @@ export default function StudentSummary() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {(['inspiration','dreams','school_learning','role_models','hobbies'] as AssessmentType[]).map(t => {
+              {(['inspiration','about_me','dreams','school_learning','hobbies','role_models'] as AssessmentType[]).map(t => {
                 const rec = latestByType[t];
                 const label = t.replace('_',' ');
                 return (
@@ -133,7 +133,7 @@ export default function StudentSummary() {
             <CardDescription>Most recent submission per assessment</CardDescription>
           </CardHeader>
           <CardContent>
-            {(['inspiration','dreams','school_learning','role_models','hobbies'] as AssessmentType[]).map(t => {
+            {(['inspiration','about_me','dreams','school_learning','hobbies','role_models'] as AssessmentType[]).map(t => {
               const rec = latestByType[t];
               if (!rec) return (
                 <div key={t} className="mb-4">

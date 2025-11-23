@@ -182,6 +182,13 @@ export function AudioRecorder({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialAudioUrl, initialSavedAt]);
 
+  // Update audio element source when initialAudioUrl changes
+  useEffect(() => {
+    if (audioRef.current && initialAudioUrl && !state.audioUrl) {
+      audioRef.current.src = initialAudioUrl;
+    }
+  }, [initialAudioUrl, state.audioUrl]);
+
   // Reflect initial transcription props
   useEffect(() => {
     if (initialTranscription || initialConfidence !== null) {
@@ -931,16 +938,29 @@ export function AudioRecorder({
 
   // Play audio
   const playAudio = useCallback(() => {
-    if (audioRef.current && state.audioUrl) {
+    const audioUrlToUse = state.audioUrl || initialAudioUrl;
+    if (audioRef.current && audioUrlToUse) {
+      // Ensure audio element has the correct source
+      if (audioRef.current.src !== audioUrlToUse) {
+        audioRef.current.src = audioUrlToUse;
+      }
+      
       if (state.isPlaying) {
         audioRef.current.pause();
         setState(prev => ({ ...prev, isPlaying: false }));
       } else {
-    audioRef.current.play();
-    setState(prev => ({ ...prev, isPlaying: true }));
+        audioRef.current.play().catch(error => {
+          console.error('Error playing audio:', error);
+          toast({
+            title: lang === 'kn' ? 'ದೋಷ' : 'Error',
+            description: lang === 'kn' ? 'ಆಡಿಯೊ ಪ್ಲೇ ಮಾಡಲು ವಿಫಲವಾಗಿದೆ' : 'Failed to play audio',
+            variant: 'destructive'
+          });
+        });
+        setState(prev => ({ ...prev, isPlaying: true }));
       }
     }
-  }, [state.audioUrl, state.isPlaying]);
+  }, [state.audioUrl, state.isPlaying, initialAudioUrl, toast, lang]);
 
   // Reset recording
   const resetRecording = useCallback(() => {
@@ -1170,6 +1190,29 @@ export function AudioRecorder({
                 </div>
               )}
 
+              {/* Playback button - show whenever audio is available */}
+              {(state.audioUrl || initialAudioUrl) && state.buttonState !== 'recording' && state.buttonState !== 'processing' && (
+                <Button
+                  onClick={playAudio}
+                  size="sm"
+                  variant="outline"
+                  className="w-full border-blue-200 text-blue-700 hover:bg-blue-50"
+                  disabled={!state.audioUrl && !initialAudioUrl}
+                >
+                  {state.isPlaying ? (
+                    <>
+                      <Pause className="w-3 h-3 mr-2" />
+                      {lang === 'kn' ? 'ವಿರಾಮ' : 'Pause'}
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-3 h-3 mr-2" />
+                      {lang === 'kn' ? 'ಆಡಿಯೊ ಪ್ಲೇ ಮಾಡಿ' : 'Play Audio'}
+                    </>
+                  )}
+                </Button>
+              )}
+
               {/* Extra UI based on state */}
               {buttonConfig.extraUI && (
                 <div className="text-xs text-gray-600 text-center">
@@ -1208,6 +1251,16 @@ export function AudioRecorder({
                 </div>
               )}
             </div>
+            
+            {/* Audio element for playback in compact mode */}
+            {(state.audioUrl || initialAudioUrl) && (
+              <audio
+                ref={audioRef}
+                src={state.audioUrl || initialAudioUrl || undefined}
+                onEnded={() => setState(prev => ({ ...prev, isPlaying: false }))}
+                className="hidden"
+              />
+            )}
           </CardContent>
         </Card>
         </div>
@@ -1353,22 +1406,40 @@ export function AudioRecorder({
               </Button>
           )}
 
-          {state.buttonState === 'saved' && (
+          {/* Show playback button whenever audio is available (not just when saved) */}
+          {(state.audioUrl || initialAudioUrl) && state.buttonState !== 'recording' && state.buttonState !== 'processing' && (
             <div className="flex items-center gap-3">
               <Button
                 onClick={playAudio}
                 size="lg"
                 variant="outline"
-                className="border-green-200 text-green-700 hover:bg-green-50"
+                className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                disabled={!state.audioUrl && !initialAudioUrl}
               >
                 {state.isPlaying ? (
                     <Pause className="w-5 h-5 mr-2" />
                 ) : (
                     <Play className="w-5 h-5 mr-2" />
                 )}
-                {state.isPlaying ? 'Pause' : 'Play'} Audio
+                {state.isPlaying ? (lang === 'kn' ? 'ವಿರಾಮ' : 'Pause') : (lang === 'kn' ? 'ಆಡಿಯೊ ಪ್ಲೇ ಮಾಡಿ' : 'Play Audio')}
               </Button>
               
+              {allowRetry && state.buttonState !== 'saved' && !initialAudioUrl && !initialSavedAt && (
+              <Button
+                  onClick={resetRecording}
+                size="lg"
+                  variant="outline"
+                  className="border-gray-200 text-gray-700 hover:bg-gray-50"
+              >
+                <RotateCcw className="w-5 h-5 mr-2" />
+                  {lang === 'kn' ? 'ಮತ್ತೆ ರೆಕಾರ್ಡ್ ಮಾಡಿ' : 'Record Again'}
+              </Button>
+              )}
+          </div>
+        )}
+        
+        {state.buttonState === 'saved' && (
+            <div className="flex items-center gap-3">
               {allowRetry && (
               <Button
                   onClick={resetRecording}
@@ -1377,7 +1448,7 @@ export function AudioRecorder({
                   className="border-gray-200 text-gray-700 hover:bg-gray-50"
               >
                 <RotateCcw className="w-5 h-5 mr-2" />
-                  Record Again
+                  {lang === 'kn' ? 'ಮತ್ತೆ ರೆಕಾರ್ಡ್ ಮಾಡಿ' : 'Record Again'}
               </Button>
               )}
           </div>
@@ -1385,10 +1456,10 @@ export function AudioRecorder({
         </div>
 
         {/* Audio element for playback */}
-        {state.audioUrl && (
+        {(state.audioUrl || initialAudioUrl) && (
           <audio
             ref={audioRef}
-            src={state.audioUrl}
+            src={state.audioUrl || initialAudioUrl || undefined}
             onEnded={() => setState(prev => ({ ...prev, isPlaying: false }))}
             className="hidden"
           />

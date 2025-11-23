@@ -90,19 +90,59 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
       let avatarUrl = (userProfile as any).profile_picture_url || null;
       if (avatarFile) {
         try {
-          const path = `${userProfile.id}/${Date.now()}_${avatarFile.name}`;
+          // Verify user is authenticated and get auth.uid()
+          const { data: { user: authUser } } = await supabase.auth.getUser();
+          if (!authUser) {
+            throw new Error('User not authenticated. Please log in again.');
+          }
+          
+          // Use auth.uid() for the path to ensure it matches the RLS policy
+          const userId = authUser.id;
+          const path = `${userId}/${Date.now()}_${avatarFile.name}`;
+          
+          console.log('📤 Uploading profile picture:', {
+            path,
+            userId,
+            userProfileId: userProfile.id,
+            fileSize: avatarFile.size,
+            fileName: avatarFile.name,
+            fileType: avatarFile.type
+          });
+          
+          // First check if bucket exists
+          const { data: buckets, error: bucketCheckError } = await supabase.storage.listBuckets();
+          const avatarsBucketExists = buckets?.some(b => b.id === 'avatars');
+          
+          if (!avatarsBucketExists) {
+            console.error('❌ Avatars bucket does not exist');
+            throw new Error('Storage bucket "avatars" not found. Please run the database migration to create it, or contact your administrator.');
+          }
+          
           const { error: upErr } = await supabase.storage.from('avatars').upload(path, avatarFile, { upsert: true });
           if (upErr) {
-            console.error('Avatar upload error:', upErr);
-            if (upErr.message?.includes('Bucket not found')) {
-              throw new Error('Storage bucket not configured. Please contact support to set up file storage.');
+            console.error('❌ Avatar upload error:', upErr);
+            if (upErr.message?.includes('Bucket not found') || upErr.message?.includes('does not exist')) {
+              throw new Error('Storage bucket "avatars" not found. Please run the database migration (20251112000002_ensure_avatars_bucket_exists.sql) or contact your administrator to set up file storage.');
+            }
+            if (upErr.message?.includes('row-level security policy') || upErr.message?.includes('RLS') || upErr.message?.includes('new row violates')) {
+              console.error('🔒 RLS Policy Error Details:', {
+                userId,
+                userProfileId: userProfile.id,
+                path,
+                authUid: authUser.id,
+                match: userId === authUser.id,
+                errorMessage: upErr.message
+              });
+              throw new Error('Permission denied. The storage bucket exists but you don\'t have permission to upload. Please ensure you are logged in and try again, or contact support.');
             }
             throw upErr;
           }
+          
+          console.log('✅ Avatar uploaded successfully');
           const { data } = supabase.storage.from('avatars').getPublicUrl(path);
           avatarUrl = data.publicUrl;
         } catch (uploadError) {
-          console.error('Avatar upload failed:', uploadError);
+          console.error('❌ Avatar upload failed:', uploadError);
           throw new Error(`Failed to upload profile picture: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`);
         }
       }
@@ -150,8 +190,8 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
           
           console.log('Student password updated successfully');
           toast({
-            title: lang === 'kn' ? "ಪಾಸ್ವರ್ಡ್ ನವೀಕರಿಸಲಾಗಿದೆ! 🔐" : "Password Updated! 🔐",
-            description: lang === 'kn' ? "ನಿಮ್ಮ ಪಾಸ್ವರ್ಡ್ ಯಶಸ್ವಿಯಾಗಿ ಬದಲಾಯಿಸಲಾಗಿದೆ. ಈಗ ನೀವು ನಿಮ್ಮ ಹೊಸ ಪಾಸ್ವರ್ಡ್‌ನೊಂದಿಗೆ ಲಾಗಿನ್ ಮಾಡಬಹುದು." : "Your password has been changed successfully. You can now login with your new password.",
+            title: lang === 'kn' ? "ಪಾಸ್ವರ್ಡ್ ನವೀಕರಿಸಲಾಗಿದೆ! 🔐" : lang === 'ta' ? "கடவுச்சொல் மாற்றப்பட்டது! 🔐" : "Password Updated! 🔐",
+            description: lang === 'kn' ? "ನಿಮ್ಮ ಪಾಸ್ವರ್ಡ್ ಯಶಸ್ವಿಯಾಗಿ ಬದಲಾಯಿಸಲಾಗಿದೆ. ಈಗ ನೀವು ನಿಮ್ಮ ಹೊಸ ಪಾಸ್ವರ್ಡ್‌ನೊಂದಿಗೆ ಲಾಗಿನ್ ಮಾಡಬಹುದು." : lang === 'ta' ? "உங்கள் கடவுச்சொல் மாற்றப்பட்டது. இப்போது புதிய கடவுச்சொல்லுடன் நுழையலாம்." : "Your password has been changed successfully. You can now login with your new password.",
           });
         } else {
           // Supabase-auth users (teachers/admins)
@@ -161,16 +201,16 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
             throw new Error(`Failed to update password: ${pwErr.message}`);
           }
           toast({
-            title: lang === 'kn' ? "ಪಾಸ್ವರ್ಡ್ ನವೀಕರಿಸಲಾಗಿದೆ! 🔐" : "Password Updated! 🔐",
-            description: lang === 'kn' ? "ನಿಮ್ಮ ಪಾಸ್ವರ್ಡ್ ಯಶಸ್ವಿಯಾಗಿ ಬದಲಾಯಿಸಲಾಗಿದೆ." : "Your password has been changed successfully.",
+            title: lang === 'kn' ? "ಪಾಸ್ವರ್ಡ್ ನವೀಕರಿಸಲಾಗಿದೆ! 🔐" : lang === 'ta' ? "கடவுச்சொல் மாற்றப்பட்டது! 🔐" : "Password Updated! 🔐",
+            description: lang === 'kn' ? "ನಿಮ್ಮ ಪಾಸ್ವರ್ಡ್ ಯಶಸ್ವಿಯಾಗಿ ಬದಲಾಯಿಸಲಾಗಿದೆ." : lang === 'ta' ? "உங்கள் கடவுச்சொல் மாற்றப்பட்டது." : "Your password has been changed successfully.",
           });
         }
       }
       
       // Show success message
       toast({
-        title: lang === 'kn' ? "ಪ್ರೊಫೈಲ್ ನವೀಕರಿಸಲಾಗಿದೆ! ✨" : "Profile Updated! ✨",
-        description: lang === 'kn' ? "ನಿಮ್ಮ ಪ್ರೊಫೈಲ್ ಯಶಸ್ವಿಯಾಗಿ ನವೀಕರಿಸಲಾಗಿದೆ." : "Your profile has been updated successfully.",
+        title: lang === 'kn' ? "ಪ್ರೊಫೈಲ್ ನವೀಕರಿಸಲಾಗಿದೆ! ✨" : lang === 'ta' ? "சுயவிவரம் மாற்றப்பட்டது! ✨" : "Profile Updated! ✨",
+        description: lang === 'kn' ? "ನಿಮ್ಮ ಪ್ರೊಫೈಲ್ ಯಶಸ್ವಿಯಾಗಿ ನವೀಕರಿಸಲಾಗಿದೆ." : lang === 'ta' ? "உங்கள் சுயவிவரம் மாற்றப்பட்டது." : "Your profile has been updated successfully.",
       });
       
       // Small delay to ensure database update is complete
@@ -187,8 +227,8 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
     } catch (err: any) {
       console.error('Profile save error:', err);
       toast({
-        title: lang === 'kn' ? "ನವೀಕರಣ ವಿಫಲವಾಗಿದೆ" : "Update Failed",
-        description: err.message || (lang === 'kn' ? "ಪ್ರೊಫೈಲ್ ಅನ್ನು ನವೀಕರಿಸಲು ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ." : "Failed to update profile. Please try again."),
+        title: lang === 'kn' ? "ನವೀಕರಣ ವಿಫಲವಾಗಿದೆ" : lang === 'ta' ? "மாற்ற முடியவில்லை" : "Update Failed",
+        description: err.message || (lang === 'kn' ? "ಪ್ರೊಫೈಲ್ ಅನ್ನು ನವೀಕರಿಸಲು ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ." : lang === 'ta' ? "சுயவிவரத்தை மாற்ற முடியவில்லை. மீண்டும் முயற்சிக்கவும்." : "Failed to update profile. Please try again."),
         variant: "destructive",
       });
     } finally {
@@ -200,12 +240,12 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl" lang={lang} dir="auto">
         <DialogHeader>
-          <DialogTitle>{lang === 'kn' ? 'ನನ್ನ ಪ್ರೊಫೈಲ್' : 'My Profile'}</DialogTitle>
-          <DialogDescription>{lang === 'kn' ? 'ನಿಮ್ಮ ಪ್ರೊಫೈಲ್ ಮಾಹಿತಿಯನ್ನು ನವೀಕರಿಸಿ' : 'Update your profile information'}</DialogDescription>
+          <DialogTitle>{lang === 'kn' ? 'ನನ್ನ ಪ್ರೊಫೈಲ್' : lang === 'ta' ? 'என் விவரம்' : 'My Profile'}</DialogTitle>
+          <DialogDescription>{lang === 'kn' ? 'ನಿಮ್ಮ ಪ್ರೊಫೈಲ್ ಮಾಹಿತಿಯನ್ನು ನವೀಕರಿಸಿ' : lang === 'ta' ? 'உங்கள் விவரத்தை மாற்றவும்' : 'Update your profile information'}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div>
-            <Label>{lang === 'kn' ? 'ಪೂರ್ಣ ಹೆಸರು' : 'Full Name'}</Label>
+            <Label>{lang === 'kn' ? 'ಪೂರ್ಣ ಹೆಸರು' : lang === 'ta' ? 'முழு பெயர்' : 'Full Name'}</Label>
             <Input 
               lang={lang}
               value={fullName} 
@@ -213,78 +253,78 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
             />
           </div>
           <div>
-            <Label>{lang === 'kn' ? 'ಫೋನ್ / ಇಮೇಲ್' : 'Phone / Email'}</Label>
+            <Label>{lang === 'kn' ? 'ಫೋನ್ / ಇಮೇಲ್' : lang === 'ta' ? 'தொலைபேசி / மின்னஞ்சல்' : 'Phone / Email'}</Label>
             <Input value={contactLabel} disabled />
           </div>
           <div>
-            <Label>{lang === 'kn' ? 'ಲಿಂಗ' : 'Gender'}</Label>
+            <Label>{lang === 'kn' ? 'ಲಿಂಗ' : lang === 'ta' ? 'பாலினம்' : 'Gender'}</Label>
             <Select value={gender} onValueChange={(v: any)=> setGender(v)}>
-              <SelectTrigger><SelectValue placeholder={lang === 'kn' ? 'ಲಿಂಗವನ್ನು ಆಯ್ಕೆಮಾಡಿ' : 'Select gender'} /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder={lang === 'kn' ? 'ಲಿಂಗವನ್ನು ಆಯ್ಕೆಮಾಡಿ' : lang === 'ta' ? 'பாலினத்தைத் தேர்ந்தெடுக்கவும்' : 'Select gender'} /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="male">{lang === 'kn' ? 'ಪುರುಷ' : 'Male'}</SelectItem>
-                <SelectItem value="female">{lang === 'kn' ? 'ಸ್ತ್ರೀ' : 'Female'}</SelectItem>
+                <SelectItem value="male">{lang === 'kn' ? 'ಪುರುಷ' : lang === 'ta' ? 'ஆண்' : 'Male'}</SelectItem>
+                <SelectItem value="female">{lang === 'kn' ? 'ಸ್ತ್ರೀ' : lang === 'ta' ? 'பெண்' : 'Female'}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           {/* State and School - Side by side */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <Label>{lang === 'kn' ? 'ರಾಜ್ಯ' : 'State'}</Label>
+              <Label>{lang === 'kn' ? 'ರಾಜ್ಯ' : lang === 'ta' ? 'மாநிலம்' : 'State'}</Label>
               <Input value={meta?.state || ''} disabled />
             </div>
             <div>
-              <Label>{lang === 'kn' ? 'ಶಾಲೆ' : 'School'}</Label>
+              <Label>{lang === 'kn' ? 'ಶಾಲೆ' : lang === 'ta' ? 'பள்ளி' : 'School'}</Label>
               <Input 
                 lang={lang}
                 value={school} 
                 onChange={(e) => setSchool(e.target.value)} 
-                placeholder={lang === 'kn' ? 'ನಿಮ್ಮ ಶಾಲೆಯ ಹೆಸರನ್ನು ನಮೂದಿಸಿ' : 'Enter your school name'}
+                placeholder={lang === 'kn' ? 'ನಿಮ್ಮ ಶಾಲೆಯ ಹೆಸರನ್ನು ನಮೂದಿಸಿ' : lang === 'ta' ? 'உங்கள் பள்ளியின் பெயரை உள்ளிடவும்' : 'Enter your school name'}
               />
             </div>
           </div>
           {!isTeacher && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <Label>{lang === 'kn' ? 'ಶಿಕ್ಷಕ' : 'Teacher'}</Label>
+                <Label>{lang === 'kn' ? 'ಶಿಕ್ಷಕ' : lang === 'ta' ? 'ஆசிரியர்' : 'Teacher'}</Label>
                 <Input value={meta?.teacherName || ''} disabled />
               </div>
               <div>
-                <Label>{lang === 'kn' ? 'ತರಗತಿ' : 'Class'}</Label>
+                <Label>{lang === 'kn' ? 'ತರಗತಿ' : lang === 'ta' ? 'வகுப்பு' : 'Class'}</Label>
                 <Input value={meta?.className || ''} disabled />
               </div>
             </div>
           )}
           {!isTeacher && (
             <div>
-              <Label>{lang === 'kn' ? 'ಆಸೆ / ವೃತ್ತಿ ಗುರಿ' : 'Aspiration / Career Goal'}</Label>
+              <Label>{lang === 'kn' ? 'ಆಸೆ / ವೃತ್ತಿ ಗುರಿ' : lang === 'ta' ? 'ஆசை / வாழ்க்கை இலக்கு' : 'Aspiration / Career Goal'}</Label>
               <Input 
                 lang={lang}
                 value={goal} 
                 onChange={(e)=> setGoal(e.target.value)} 
-                placeholder={lang === 'kn' ? 'ನಿಮ್ಮ ವೃತ್ತಿ ಗುರಿ' : 'Your career goal'} 
+                placeholder={lang === 'kn' ? 'ನಿಮ್ಮ ವೃತ್ತಿ ಗುರಿ' : lang === 'ta' ? 'உங்கள் வாழ்க்கை இலக்கு' : 'Your career goal'} 
               />
             </div>
           )}
           <div>
-            <Label>{lang === 'kn' ? 'ಪ್ರೊಫೈಲ್ ಚಿತ್ರ' : 'Profile Picture'}</Label>
+            <Label>{lang === 'kn' ? 'ಪ್ರೊಫೈಲ್ ಚಿತ್ರ' : lang === 'ta' ? 'படம்' : 'Profile Picture'}</Label>
             <Input type="file" accept="image/*" onChange={(e)=> setAvatarFile(e.target.files?.[0] || null)} />
           </div>
           <div>
-            <Label>{lang === 'kn' ? 'ಪಾಸ್ವರ್ಡ್ ಬದಲಾಯಿಸಿ' : 'Change Password'}</Label>
+            <Label>{lang === 'kn' ? 'ಪಾಸ್ವರ್ಡ್ ಬದಲಾಯಿಸಿ' : lang === 'ta' ? 'கடவுச்சொல் மாற்ற' : 'Change Password'}</Label>
             <Input 
               type="password" 
               value={password} 
               onChange={(e)=> setPassword(e.target.value)} 
-              placeholder={lang === 'kn' ? 'ಹೊಸ ಪಾಸ್ವರ್ಡ್' : 'New password'} 
+              placeholder={lang === 'kn' ? 'ಹೊಸ ಪಾಸ್ವರ್ಡ್' : lang === 'ta' ? 'புதிய கடவுச்சொல்' : 'New password'} 
             />
           </div>
           
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={()=> onOpenChange(false)}>
-              {lang === 'kn' ? 'ಮುಚ್ಚಿ' : 'Close'}
+              {lang === 'kn' ? 'ಮುಚ್ಚಿ' : lang === 'ta' ? 'மூடு' : 'Close'}
             </Button>
             <Button className="bg-green-600 hover:bg-green-700" onClick={saveProfile} disabled={saving}>
-              {saving ? (lang === 'kn' ? 'ಉಳಿಸಲಾಗುತ್ತಿದೆ…' : 'Saving…') : (lang === 'kn' ? 'ಉಳಿಸಿ' : 'Save')}
+              {saving ? (lang === 'kn' ? 'ಉಳಿಸಲಾಗುತ್ತಿದೆ…' : lang === 'ta' ? 'சேமிக்கிறது…' : 'Saving…') : (lang === 'kn' ? 'ಉಳಿಸಿ' : lang === 'ta' ? 'சேமி' : 'Save')}
             </Button>
           </div>
         </div>

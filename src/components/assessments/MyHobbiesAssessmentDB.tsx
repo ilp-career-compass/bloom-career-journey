@@ -23,7 +23,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AssessmentService, AssessmentTemplate } from '@/services/assessmentService';
 
@@ -43,6 +43,9 @@ interface HobbiesAssessmentResponse {
 export default function MyHobbiesAssessmentDB() {
   const { userProfile } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const readOnlyView = ['1','true'].includes((searchParams.get('readonly')||searchParams.get('view')||'').toLowerCase());
   const [assessmentTemplate, setAssessmentTemplate] = useState<AssessmentTemplate | null>(null);
   const [responses, setResponses] = useState<HobbiesAssessmentResponse>({
     hobbies: []
@@ -51,7 +54,6 @@ export default function MyHobbiesAssessmentDB() {
   const [submitting, setSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [helpOpen, setHelpOpen] = useState<Record<string, boolean>>({});
-  const navigate = useNavigate();
 
   const helpKey = (questionIndex: number) => `question${questionIndex}`;
   const toggleHelp = (k: string) => setHelpOpen(prev => ({ ...prev, [k]: !prev[k] }));
@@ -271,7 +273,7 @@ export default function MyHobbiesAssessmentDB() {
     );
   }
 
-  if (isCompleted) {
+  if (isCompleted && !readOnlyView) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <Card className="w-full max-w-2xl mx-4">
@@ -281,9 +283,22 @@ export default function MyHobbiesAssessmentDB() {
             <p className="text-gray-600 mb-6">
               Thank you for completing the Hobbies Assessment. Your responses have been saved.
             </p>
-            <Button onClick={() => navigate('/student-dashboard')} className="w-full">
-              Return to Dashboard
-            </Button>
+            <div className="flex justify-center gap-4">
+              <Button
+                variant="outline"
+                className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                onClick={() => {
+                  const params = new URLSearchParams(searchParams.toString());
+                  params.set('readonly', '1');
+                  navigate(`/student/assessment/hobbies?${params.toString()}`);
+                }}
+              >
+                View My Answers
+              </Button>
+              <Button onClick={() => navigate('/student-dashboard')} className="bg-blue-600 hover:bg-blue-700">
+                Back to Dashboard
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -470,6 +485,20 @@ export default function MyHobbiesAssessmentDB() {
                 Save Draft
               </Button>
               
+              <Button
+                onClick={handleSubmit}
+                disabled={submitting || !isComplete()}
+                size="lg"
+              >
+                {submitting ? 'Submitting...' : 'Complete Assessment'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
               <Button
                 onClick={handleSubmit}
                 disabled={submitting || !isComplete()}

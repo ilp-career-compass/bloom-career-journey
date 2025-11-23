@@ -270,6 +270,31 @@ export default function MySchoolLearningAssessmentDB() {
     });
   };
 
+  const areAllSectionsComplete = () => {
+    if (!assessmentTemplate) return false;
+    
+    // Check all sections are complete
+    return assessmentTemplate.sections.every((section, sectionIndex) => {
+      const sectionKey = `part${sectionIndex + 1}`;
+      const sectionResponses = responses[sectionKey] || {};
+      
+      return section.questions.every((question, questionIndex) => {
+        const questionKey = `question${questionIndex + 1}`;
+        const response = sectionResponses[questionKey];
+        
+        if (question.question_type === 'checkbox') {
+          // For checkbox questions, check if at least one option is selected
+          if (typeof response === 'object' && response !== null) {
+            return Object.values(response).some(value => value === true);
+          }
+          return false;
+        } else {
+          return response && response.toString().trim() !== '';
+        }
+      });
+    });
+  };
+
   const totalProgress = assessmentTemplate ? 
     ((currentSection + 1) / assessmentTemplate.sections.length) * 100 : 0;
 
@@ -284,7 +309,7 @@ export default function MySchoolLearningAssessmentDB() {
     );
   }
 
-  if (isCompleted) {
+  if (isCompleted && !readOnlyView) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <Card className="w-full max-w-2xl mx-4">
@@ -294,9 +319,22 @@ export default function MySchoolLearningAssessmentDB() {
             <p className="text-gray-600 mb-6">
               Thank you for completing the School Learning Assessment. Your responses have been saved.
             </p>
-            <Button onClick={() => navigate('/student-dashboard')} className="w-full">
-              Return to Dashboard
-            </Button>
+            <div className="flex justify-center gap-4">
+              <Button
+                variant="outline"
+                className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                onClick={() => {
+                  const params = new URLSearchParams(searchParams.toString());
+                  params.set('readonly', '1');
+                  navigate(`/student/assessment/school-learning?${params.toString()}`);
+                }}
+              >
+                View My Answers
+              </Button>
+              <Button onClick={() => navigate('/student-dashboard')} className="bg-blue-600 hover:bg-blue-700">
+                Back to Dashboard
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -474,7 +512,7 @@ export default function MySchoolLearningAssessmentDB() {
                   {currentSection === assessmentTemplate.sections.length - 1 ? (
                     <Button
                       onClick={handleSubmit}
-                      disabled={submitting || !isCurrentSectionComplete() || readOnlyView}
+                      disabled={submitting || !areAllSectionsComplete() || readOnlyView}
                     >
                       {submitting ? 'Submitting...' : 'Complete Assessment'}
                     </Button>
@@ -483,6 +521,18 @@ export default function MySchoolLearningAssessmentDB() {
                       onClick={nextSection}
                       disabled={!isCurrentSectionComplete()}
                     >
+                      Next Section
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
                       Next Section
                     </Button>
                   )}

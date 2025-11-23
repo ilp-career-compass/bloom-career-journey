@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { CheckCircle, ArrowLeft, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLang } from '@/hooks/useLang';
 import { checkAssessmentUnlock } from '@/utils/assessmentUnlock';
 
@@ -46,6 +46,8 @@ export default function HollandCodeAssessment() {
   const { t, lang } = useLang();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const readOnlyView = ['1','true'].includes((searchParams.get('readonly')||searchParams.get('view')||'').toLowerCase());
   const [questions, setQuestions] = useState<HollandQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<number, boolean>>({});
   const [loading, setLoading] = useState(true);
@@ -127,10 +129,25 @@ export default function HollandCodeAssessment() {
           .eq('student_id', studentId)
           .eq('assessment_type', 'personality')
           .eq('assessment_title', 'Holland Code (RIASEC) Test')
-          .maybeSingle();
+          // Prefer completed records first, then latest draft
+          .order('completed_at', { ascending: false, nullsFirst: false })
+          .order('updated_at', { ascending: false })
+          .limit(1);
 
-        if (data && !error && data.responses) {
-          const responses = data.responses as any;
+        const row = Array.isArray(data) && data.length > 0 ? data[0] : null;
+
+        if (row && !error && row.responses) {
+          let responses = row.responses as any;
+
+          // Supabase jsonb may come back as a JSON string; parse if needed
+          if (typeof responses === 'string') {
+            try {
+              responses = JSON.parse(responses);
+            } catch {
+              console.warn('⚠️ Failed to parse Holland responses JSON string, using raw value');
+            }
+          }
+
           // Load answers
           const loadedAnswers: Record<number, boolean> = {};
           questions.forEach((q, index) => {
@@ -145,7 +162,7 @@ export default function HollandCodeAssessment() {
           if (responses.topTwoTypes) setTopTwoTypes(responses.topTwoTypes);
           if (responses.reflection) setReflection(responses.reflection);
           
-          if (data.completed_at) {
+          if (row.completed_at) {
             setIsCompleted(true);
           }
         }
@@ -263,6 +280,14 @@ export default function HollandCodeAssessment() {
       });
 
       setIsCompleted(true);
+
+      // After successful completion, navigate to the next assessment module
+      try {
+        const qp = lang ? `?lang=${lang}` : '';
+        navigate(`/student/assessment/career-guidance-tools${qp}`);
+      } catch {
+        // If navigation fails for any reason, stay on the completion screen
+      }
     } catch (error) {
       console.error('Error submitting assessment:', error);
       toast({
@@ -321,7 +346,7 @@ export default function HollandCodeAssessment() {
     );
   }
 
-  if (isCompleted) {
+  if (isCompleted && !readOnlyView) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-8">
         <div className="container mx-auto px-4">
@@ -340,11 +365,19 @@ export default function HollandCodeAssessment() {
                   <p className="text-2xl font-bold text-blue-900">{topTwoTypes}</p>
                 </div>
                 <div className="flex justify-center gap-4">
+                  <Button
+                    variant="outline"
+                    className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                    onClick={() => {
+                      const params = new URLSearchParams(searchParams.toString());
+                      params.set('readonly', '1');
+                      navigate(`/student/assessment/holland-code?${params.toString()}`);
+                    }}
+                  >
+                    {lang === 'kn' ? 'ನನ್ನ ಉತ್ತರಗಳನ್ನು ವೀಕ್ಷಿಸಿ' : 'View My Answers'}
+                  </Button>
                   <Button onClick={() => navigate('/student')} className="bg-blue-600 hover:bg-blue-700">
                     Back to Dashboard
-                  </Button>
-                  <Button variant="outline" onClick={() => setIsCompleted(false)}>
-                    View Assessment
                   </Button>
                 </div>
               </div>

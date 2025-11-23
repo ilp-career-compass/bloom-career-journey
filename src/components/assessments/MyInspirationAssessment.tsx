@@ -1051,9 +1051,12 @@ export default function MyInspirationAssessment() {
           : v
       ));
 
+      const currentVideo = inspirationVideos[videoIndex];
+      const videoLabel = currentVideo?.title || `Video ${videoIndex + 1}`;
+      
       toast({
         title: t('videoProgressSaved'),
-        description: t('videoProgressSavedDesc', undefined, videoIndex + 1),
+        description: `Your responses for ${videoLabel} have been saved.`,
       });
     } catch (error) {
       console.error('Error saving video progress:', error);
@@ -1616,12 +1619,24 @@ export default function MyInspirationAssessment() {
                   {isVideoSaved(currentVideoIndex) ? (
                     <div className="flex items-center gap-2 text-green-600">
                       <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span>{t('savedVideoN', '') || `Video ${currentVideoIndex + 1} saved`}</span>
+                      <span>
+                        {(() => {
+                          const currentVideo = inspirationVideos[currentVideoIndex];
+                          const videoLabel = currentVideo?.title || `Video ${currentVideoIndex + 1}`;
+                          return `${videoLabel} saved`;
+                        })()}
+                      </span>
                     </div>
                   ) : isVideoComplete(currentVideoIndex) ? (
                     <div className="flex items-center gap-2 text-yellow-600">
                       <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                      <span>{t('videoNReadyToSave', '') || `Video ${currentVideoIndex + 1} complete - Ready to save`}</span>
+                      <span>
+                        {(() => {
+                          const currentVideo = inspirationVideos[currentVideoIndex];
+                          const videoLabel = currentVideo?.title || `Video ${currentVideoIndex + 1}`;
+                          return `${videoLabel} complete - Ready to save`;
+                        })()}
+                      </span>
                     </div>
                   ) : (
                     <div className="flex items-center gap-2 text-gray-500">

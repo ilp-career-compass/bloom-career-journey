@@ -21,7 +21,8 @@ interface Assessment {
   assessment_type: string;
   assessment_title: string;
   responses: any;
-  completed_at: string;
+  completed_at: string | null;
+  updated_at?: string | null;
   review_status: string;
 }
 
@@ -39,11 +40,21 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
   const [loadingAssessments, setLoadingAssessments] = useState(false);
   const [expandedAssessment, setExpandedAssessment] = useState<string | null>(null);
   const [inspirationQuestions, setInspirationQuestions] = useState<any[]>([]);
+  const [dreamsQuestions, setDreamsQuestions] = useState<any[]>([]);
+  const [aboutMeFields, setAboutMeFields] = useState<any[]>([]);
+  const [schoolLearningQuestions, setSchoolLearningQuestions] = useState<any[]>([]);
+  const [hobbiesQuestions, setHobbiesQuestions] = useState<any[]>([]);
+  const [roleModelsQuestions, setRoleModelsQuestions] = useState<any[]>([]);
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
 
   useEffect(() => {
     fetchStudents();
     fetchInspirationQuestions();
+    fetchDreamsQuestions();
+    fetchAboutMeFields();
+    fetchSchoolLearningQuestions();
+    fetchHobbiesQuestions();
+    fetchRoleModelsQuestions();
   }, []);
 
   const fetchInspirationQuestions = async () => {
@@ -57,6 +68,76 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
       setInspirationQuestions(data || []);
     } catch (error) {
       console.error('Error loading inspiration questions:', error);
+    }
+  };
+
+  const fetchDreamsQuestions = async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_dreams_questions');
+      if (error) {
+        console.error('Error fetching dreams questions:', error);
+        return;
+      }
+      console.log('✅ Loaded dreams questions:', data);
+      setDreamsQuestions(data || []);
+    } catch (error) {
+      console.error('Error loading dreams questions:', error);
+    }
+  };
+
+  const fetchAboutMeFields = async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_about_me_fields');
+      if (error) {
+        console.error('Error fetching about me fields:', error);
+        return;
+      }
+      console.log('✅ Loaded about me fields:', data);
+      setAboutMeFields(data || []);
+    } catch (error) {
+      console.error('Error loading about me fields:', error);
+    }
+  };
+
+  const fetchSchoolLearningQuestions = async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_school_learning_questions');
+      if (error) {
+        console.error('Error fetching school learning questions:', error);
+        return;
+      }
+      console.log('✅ Loaded school learning questions:', data);
+      setSchoolLearningQuestions(data || []);
+    } catch (error) {
+      console.error('Error loading school learning questions:', error);
+    }
+  };
+
+  const fetchHobbiesQuestions = async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_hobbies_questions');
+      if (error) {
+        console.error('Error fetching hobbies questions:', error);
+        return;
+      }
+      console.log('✅ Loaded hobbies questions:', data);
+      setHobbiesQuestions(data || []);
+    } catch (error) {
+      console.error('Error loading hobbies questions:', error);
+    }
+  };
+
+  const fetchRoleModelsQuestions = async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_role_models_questions');
+      if (error) {
+        console.error('Error fetching role models questions:', error);
+        return;
+      }
+      console.log('✅ Loaded role models questions:', data);
+      setRoleModelsQuestions(data || []);
+    } catch (error) {
+      console.error('Error loading role models questions:', error);
     }
   };
 
@@ -176,27 +257,48 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
 
       const { data, error } = await supabase
         .from('assessment_responses')
-        .select('id, assessment_type, assessment_title, responses, completed_at, review_status')
+        .select('id, assessment_type, assessment_title, responses, completed_at, updated_at, review_status')
         .eq('student_id', studentId)
-        .order('completed_at', { ascending: false });
+        .order('completed_at', { ascending: false, nullsFirst: false });
 
       if (error) throw error;
 
       console.log('✅ Fetched all assessments:', data);
 
       // Get only the LATEST submission for each assessment type
+      // Use completed_at if available, otherwise use updated_at for comparison
       const uniqueAssessments: Assessment[] = [];
-      const seenTypes = new Set<string>();
+      const latestByType: Record<string, any> = {};
 
       (data || []).forEach((assessment: any) => {
-        if (!seenTypes.has(assessment.assessment_type)) {
-          uniqueAssessments.push(assessment);
-          seenTypes.add(assessment.assessment_type);
+        const type = assessment.assessment_type;
+        const existing = latestByType[type];
+        
+        if (!existing) {
+          latestByType[type] = assessment;
+          return;
+        }
+        
+        // Compare dates - prefer completed_at, fallback to updated_at
+        const existingDate = new Date(existing.completed_at || existing.updated_at || 0).getTime();
+        const currentDate = new Date(assessment.completed_at || assessment.updated_at || 0).getTime();
+        
+        if (currentDate > existingDate) {
+          latestByType[type] = assessment;
         }
       });
+      
+      // Convert to array
+      const sortedAssessments = Object.values(latestByType);
 
-      console.log('✅ Unique assessments (latest only):', uniqueAssessments);
-      setAssessments(uniqueAssessments);
+      console.log('✅ Unique assessments (latest only):', sortedAssessments);
+      console.log('📅 Assessment dates:', sortedAssessments.map((a: any) => ({
+        type: a.assessment_type,
+        completed_at: a.completed_at,
+        updated_at: a.updated_at,
+        hasDate: !!(a.completed_at || a.updated_at)
+      })));
+      setAssessments(sortedAssessments);
     } catch (error: any) {
       console.error('❌ Error fetching assessments:', error);
       toast({
@@ -374,76 +476,692 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
       );
     }
 
-    // For other assessments, render all responses dynamically
+    // Check if it's the Dreams assessment (has part structure)
+    if (assessment.assessment_type === 'dreams' && responses) {
+      console.log('💭 Rendering Dreams assessment responses');
+      console.log('📊 Dreams responses structure:', responses);
+      console.log('📊 Dreams responses keys:', Object.keys(responses || {}));
+      console.log('📋 Dreams questions:', dreamsQuestions);
+      console.log('📋 Dreams questions count:', dreamsQuestions.length);
+
+      // Dreams responses can have two structures:
+      // 1. Old structure: { questionId1: "answer", questionId2: "answer", ... }
+      // 2. New structure: { part1: { question1: "answer", ... }, part2: { ... }, ... }
+      
+      // Check if it's the new structure (has "part" keys)
+      const hasPartStructure = Object.keys(responses).some(key => key.startsWith('part'));
+      
+      if (hasPartStructure) {
+        // New structure: { part1: { question1: "...", question2: "..." }, part2: {...} }
+        const parts = Object.keys(responses).filter(key => key.startsWith('part')).sort();
+        
+        if (parts.length === 0) {
+      return (
+        <div className="text-sm text-gray-500">No responses recorded</div>
+      );
+    }
+
+        // Group questions by section
+        const questionsBySection: Record<string, any[]> = {};
+        dreamsQuestions.forEach(q => {
+          const section = q.section || 'section1';
+          if (!questionsBySection[section]) {
+            questionsBySection[section] = [];
+          }
+          questionsBySection[section].push(q);
+        });
+
+        // If questions are not loaded, render from response structure
+        if (dreamsQuestions.length === 0) {
+          console.log('⚠️ Dreams questions not loaded, rendering from response structure');
+          return (
+            <div className="space-y-6">
+              {parts.map((partKey) => {
+                const partResponses = responses[partKey] || {};
+                const questionKeys = Object.keys(partResponses).filter(key => 
+                  key.startsWith('question')
+                ).sort((a, b) => {
+                  const numA = parseInt(a.replace('question', ''), 10) || 0;
+                  const numB = parseInt(b.replace('question', ''), 10) || 0;
+                  return numA - numB;
+                });
+
+                const sectionTitles: Record<string, string> = {
+                  'part1': 'Section 1: Your Dreams & Future Goals',
+                  'part2': 'Section 2: Career & Life Aspirations',
+                  'part3': 'Section 3: Making Dreams Reality'
+                };
+
+                return (
+                  <div key={partKey} className="border rounded-lg p-4 bg-gray-50">
+                    <h4 className="font-semibold text-gray-800 mb-4">
+                      {sectionTitles[partKey] || partKey}
+                    </h4>
+                    
+                    <div className="space-y-4">
+                      {questionKeys.map((questionKey, questionIndex) => {
+                        const responseText = partResponses[questionKey];
+                        const displayText = typeof responseText === 'string' ? responseText : String(responseText || '');
+                        const questionNum = parseInt(questionKey.replace('question', ''), 10) || (questionIndex + 1);
+
+                        return (
+                          <div key={questionKey} className="border-l-4 border-blue-500 pl-4">
+                            <div className="flex items-start gap-2 mb-2">
+                              <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                                Q{questionNum}
+                              </span>
+                              <p className="text-sm font-medium text-gray-700 flex-1">
+                                {questionKey.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim()}
+                              </p>
+                            </div>
+                            
+                            <div className="ml-8">
+                              {displayText && displayText.trim() ? (
+                                <div className="bg-white p-3 rounded border border-gray-200">
+                                  <p className="text-sm text-gray-600 whitespace-pre-wrap">
+                                    {displayText}
+                                  </p>
+                                </div>
+                              ) : (
+                                <div className="bg-gray-50 p-3 rounded border border-gray-200 border-dashed">
+                                  <p className="text-sm text-gray-400 italic">
+                                    No response provided
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        }
+
+        return (
+          <div className="space-y-6">
+            {parts.map((partKey) => {
+              const partResponses = responses[partKey] || {};
+              // Map part1 -> section1, part2 -> section2, part3 -> section3
+              const partNumber = parseInt(partKey.replace('part', ''), 10);
+              const sectionKey = `section${partNumber}`;
+              const sectionQuestions = questionsBySection[sectionKey] || [];
+              
+              // Sort questions by sequence_number (this is the order they were shown to the student)
+              const sortedQuestions = [...sectionQuestions].sort((a, b) => 
+                (a.sequence_number || 0) - (b.sequence_number || 0)
+              );
+
+              const sectionTitles: Record<string, string> = {
+                'section1': 'Section 1: Your Dreams & Future Goals',
+                'section2': 'Section 2: Career & Life Aspirations',
+                'section3': 'Section 3: Making Dreams Reality'
+              };
+
+              return (
+                <div key={partKey} className="border rounded-lg p-4 bg-gray-50">
+                  <h4 className="font-semibold text-gray-800 mb-4">
+                    {sectionTitles[sectionKey] || partKey}
+                  </h4>
+                  
+                  <div className="space-y-4">
+                    {sortedQuestions.length > 0 ? (
+                      sortedQuestions.map((question) => {
+                        // The response key is question1, question2, etc. based on position within the part
+                        // We need to find the position of this question in the sorted list
+                        const questionIndex = sortedQuestions.findIndex(q => q.id === question.id);
+                        const questionKey = `question${questionIndex + 1}`;
+                        const responseText = partResponses[questionKey];
+                        const displayText = typeof responseText === 'string' ? responseText : String(responseText || '');
+                        
+                        // Use sequence_number for display (this is what the student saw)
+                        const displayQuestionNum = question.sequence_number || (questionIndex + 1);
+                        
+                        console.log(`  Part ${partKey}, Seq ${question.sequence_number}, Q${questionIndex + 1}: questionKey="${questionKey}", hasResponse=${!!responseText}, responseLength=${displayText.length}`);
+                        
+                        return (
+                          <div key={question.id || questionIndex} className="border-l-4 border-blue-500 pl-4">
+                            <div className="flex items-start gap-2 mb-2">
+                              <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                                Q{displayQuestionNum}
+                              </span>
+                              <p className="text-sm font-medium text-gray-700 flex-1">
+                                {question.question_text}
+                              </p>
+                            </div>
+                            
+                            <div className="ml-8">
+                              {displayText && displayText.trim() ? (
+                                <div className="bg-white p-3 rounded border border-gray-200">
+                                  <p className="text-sm text-gray-600 whitespace-pre-wrap">
+                                    {displayText}
+                                  </p>
+                                </div>
+                              ) : (
+                                <div className="bg-gray-50 p-3 rounded border border-gray-200 border-dashed">
+                                  <p className="text-sm text-gray-400 italic">
+                                    No response provided
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      // Fallback: render from response keys if questions not found
+                      Object.keys(partResponses).filter(key => key.startsWith('question')).sort((a, b) => {
+                        const numA = parseInt(a.replace('question', ''), 10) || 0;
+                        const numB = parseInt(b.replace('question', ''), 10) || 0;
+                        return numA - numB;
+                      }).map((questionKey) => {
+                        const responseText = partResponses[questionKey];
+                        const displayText = typeof responseText === 'string' ? responseText : String(responseText || '');
+                        const questionNum = parseInt(questionKey.replace('question', ''), 10);
+
+                        return (
+                          <div key={questionKey} className="border-l-4 border-blue-500 pl-4">
+                            <div className="flex items-start gap-2 mb-2">
+                              <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                                Q{questionNum}
+                              </span>
+                              <p className="text-sm font-medium text-gray-700 flex-1">
+                                {questionKey.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim()}
+                              </p>
+                            </div>
+                            
+                            <div className="ml-8">
+                              {displayText && displayText.trim() ? (
+                                <div className="bg-white p-3 rounded border border-gray-200">
+                                  <p className="text-sm text-gray-600 whitespace-pre-wrap">
+                                    {displayText}
+                                  </p>
+                                </div>
+                              ) : (
+                                <div className="bg-gray-50 p-3 rounded border border-gray-200 border-dashed">
+                                  <p className="text-sm text-gray-400 italic">
+                                    No response provided
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      } else {
+        // Old structure: { questionId1: "answer", questionId2: "answer", ... }
+        // Map question IDs to question text
+        const questionMap = new Map(dreamsQuestions.map(q => [q.id, q]));
+        
+        return (
+          <div className="space-y-4">
+            {Object.entries(responses).map(([questionId, answer], index) => {
+              const question = questionMap.get(questionId);
+              const questionText = question?.question_text || questionId;
+              const responseText = typeof answer === 'string' ? answer : String(answer || '');
+              
+              return (
+                <div key={questionId} className="border-l-4 border-blue-500 pl-4">
+                  <div className="flex items-start gap-2 mb-2">
+                    <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                      Q{question?.sequence_number || index + 1}
+                    </span>
+                    <p className="text-sm font-medium text-gray-700 flex-1">
+                      {questionText}
+                    </p>
+                  </div>
+                  
+                  <div className="ml-8">
+                    {responseText && responseText.trim() ? (
+                      <div className="bg-white p-3 rounded border border-gray-200">
+                        <p className="text-sm text-gray-600 whitespace-pre-wrap">
+                          {responseText}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="bg-gray-50 p-3 rounded border border-gray-200 border-dashed">
+                        <p className="text-sm text-gray-400 italic">
+                          No response provided
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      }
+    }
+
+    // Check if it's About Me assessment
+    if (assessment.assessment_type === 'personality' && assessment.assessment_title === 'About Me' && responses) {
+      console.log('👤 Rendering About Me assessment responses');
+      console.log('📊 About Me responses:', responses);
+      console.log('📊 About Me responses keys:', Object.keys(responses || {}));
+      console.log('📋 About Me fields:', aboutMeFields);
+      console.log('📋 About Me fields count:', aboutMeFields.length);
+
+      // About Me responses are stored as { question1: "...", question2: "...", ... }
+      // Sort fields by sequence_number
+      const sortedFields = [...aboutMeFields].sort((a, b) => 
+        (a.sequence_number || 0) - (b.sequence_number || 0)
+      );
+
+      // If fields are not loaded yet, try to render from response keys directly
+      if (sortedFields.length === 0) {
+        console.log('⚠️ About Me fields not loaded, rendering from response keys');
+        const responseKeys = Object.keys(responses).filter(key => 
+          key.startsWith('question') || /^question\d+$/.test(key)
+        ).sort((a, b) => {
+          const numA = parseInt(a.replace('question', ''), 10) || 0;
+          const numB = parseInt(b.replace('question', ''), 10) || 0;
+          return numA - numB;
+        });
+
+        return (
+          <div className="space-y-4">
+            {responseKeys.map((key, index) => {
+              const responseText = responses[key];
+              const displayText = typeof responseText === 'string' ? responseText : 
+                                 Array.isArray(responseText) ? responseText.join(', ') : 
+                                 String(responseText || '');
+
+              return (
+                <div key={key} className="border-l-4 border-blue-500 pl-4">
+                  <div className="flex items-start gap-2 mb-2">
+                    <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                      Q{index + 1}
+                    </span>
+                    <p className="text-sm font-medium text-gray-700 flex-1">
+                      {key.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim()}
+                    </p>
+                  </div>
+                  
+                  <div className="ml-8">
+                    {displayText && displayText.trim() ? (
+                      <div className="bg-white p-3 rounded border border-gray-200">
+                        <p className="text-sm text-gray-600 whitespace-pre-wrap">
+                          {displayText}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="bg-gray-50 p-3 rounded border border-gray-200 border-dashed">
+                        <p className="text-sm text-gray-400 italic">
+                          No response provided
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      }
+
+      return (
+        <div className="space-y-4">
+          {sortedFields.map((field) => {
+            // About Me responses are stored as question1, question2, etc. based on global sequence_number
+            // The sequence_number from the database is the global order (1-20)
+            const questionNum = field.sequence_number;
+            const questionKey = `question${questionNum}`;
+            
+            // Try questionN format first (most common), then field_key
+            const responseText = responses[questionKey] || responses[field.field_key] || '';
+            const displayText = typeof responseText === 'string' ? responseText : 
+                               Array.isArray(responseText) ? responseText.join(', ') : 
+                               String(responseText || '');
+
+            console.log(`  Seq ${questionNum}, Q${questionNum}: questionKey="${questionKey}", fieldKey="${field.field_key}", hasResponse=${!!responseText}, responseLength=${displayText.length}, questionText="${field.question_text?.substring(0, 50)}..."`);
+
+            return (
+              <div key={field.field_key || questionNum} className="border-l-4 border-blue-500 pl-4">
+                <div className="flex items-start gap-2 mb-2">
+                  <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                    Q{questionNum}
+                  </span>
+                  <p className="text-sm font-medium text-gray-700 flex-1">
+                    {field.question_text}
+                  </p>
+                </div>
+                
+                <div className="ml-8">
+                  {displayText && displayText.trim() ? (
+                    <div className="bg-white p-3 rounded border border-gray-200">
+                      <p className="text-sm text-gray-600 whitespace-pre-wrap">
+                        {displayText}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="bg-gray-50 p-3 rounded border border-gray-200 border-dashed">
+                      <p className="text-sm text-gray-400 italic">
+                        No response provided
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+
+    // Check if it's School Learning assessment
+    if (assessment.assessment_type === 'school_learning' && responses) {
+      console.log('📚 Rendering School Learning assessment responses');
+      console.log('📊 School Learning responses:', responses);
+      console.log('📋 School Learning questions:', schoolLearningQuestions);
+
+      // School Learning responses have structure: { part1: { question1: "...", ... }, part2: {...}, ... }
+      const hasPartStructure = Object.keys(responses).some(key => key.startsWith('part'));
+      
+      if (hasPartStructure) {
+        const parts = Object.keys(responses).filter(key => key.startsWith('part')).sort();
+        
+        if (parts.length === 0) {
+        return (
+            <div className="text-sm text-gray-500">No responses recorded</div>
+          );
+        }
+
+        // Group questions by section
+        const questionsBySection: Record<string, any[]> = {};
+        schoolLearningQuestions.forEach(q => {
+          const section = q.section || 'part1';
+          if (!questionsBySection[section]) {
+            questionsBySection[section] = [];
+          }
+          questionsBySection[section].push(q);
+        });
+
+        return (
+          <div className="space-y-6">
+            {parts.map((partKey) => {
+              const partResponses = responses[partKey] || {};
+              const sectionQuestions = questionsBySection[partKey] || [];
+              
+              // Sort questions by sequence_number
+              const sortedQuestions = [...sectionQuestions].sort((a, b) => 
+                (a.sequence_number || 0) - (b.sequence_number || 0)
+              );
+
+              const sectionTitles: Record<string, string> = {
+                'part1': 'Section 1: Subjects & Learning Preferences',
+                'part2': 'Section 2: Academic Performance & Learning Methods',
+                'part3': 'Section 3: School Relationships & Experiences',
+                'part4': 'Section 4: Additional Information',
+                'part5': 'Section 5: Future Plans'
+              };
+
+              return (
+                <div key={partKey} className="border rounded-lg p-4 bg-gray-50">
+                  <h4 className="font-semibold text-gray-800 mb-4">
+                    {sectionTitles[partKey] || partKey}
+                  </h4>
+                  
+                  <div className="space-y-4">
+                    {sortedQuestions.map((question, questionIndex) => {
+                      const questionKey = `question${questionIndex + 1}`;
+                      const responseValue = partResponses[questionKey];
+                      
+                      // Handle checkbox responses (object with boolean values)
+                      let responseText = '';
+                      if (typeof responseValue === 'string') {
+                        responseText = responseValue;
+                      } else if (typeof responseValue === 'object' && responseValue !== null) {
+                        // For checkbox questions, show selected options
+                        const selectedOptions = Object.entries(responseValue)
+                          .filter(([_, value]) => value === true)
+                          .map(([key, _]) => key);
+                        responseText = selectedOptions.length > 0 ? selectedOptions.join(', ') : '';
+                      }
+
+                      return (
+                        <div key={question.id || questionIndex} className="border-l-4 border-blue-500 pl-4">
+                          <div className="flex items-start gap-2 mb-2">
+                            <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                              Q{questionIndex + 1}
+                            </span>
+                            <p className="text-sm font-medium text-gray-700 flex-1">
+                              {question.question_text}
+                            </p>
+              </div>
+                          
+                          <div className="ml-8">
+                            {responseText && responseText.trim() ? (
+                              <div className="bg-white p-3 rounded border border-gray-200">
+                                <p className="text-sm text-gray-600 whitespace-pre-wrap">
+                                  {responseText}
+                                </p>
+                              </div>
+                            ) : (
+                              <div className="bg-gray-50 p-3 rounded border border-gray-200 border-dashed">
+                                <p className="text-sm text-gray-400 italic">
+                                  No response provided
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      }
+    }
+
+    // Check if it's Hobbies assessment
+    if (assessment.assessment_type === 'hobbies' && responses) {
+      console.log('🎨 Rendering Hobbies assessment responses');
+      console.log('📊 Hobbies responses:', responses);
+      console.log('📋 Hobbies questions:', hobbiesQuestions);
+
+      // Hobbies responses can have structure: { question1: "...", question2: "...", ... }
+      // or section-based structure
+      const sortedQuestions = [...hobbiesQuestions].sort((a, b) => 
+        (a.sequence_number || 0) - (b.sequence_number || 0)
+      );
+
+      if (sortedQuestions.length === 0) {
+        return (
+          <div className="text-sm text-gray-500">No questions found</div>
+        );
+      }
+
+      return (
+        <div className="space-y-4">
+          {sortedQuestions.map((question, index) => {
+            const questionKey = `question${index + 1}`;
+            const responseText = responses[questionKey] || '';
+            const displayText = typeof responseText === 'string' ? responseText : String(responseText || '');
+
+            return (
+              <div key={question.id || index} className="border-l-4 border-blue-500 pl-4">
+                <div className="flex items-start gap-2 mb-2">
+                  <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                    Q{index + 1}
+                  </span>
+                  <p className="text-sm font-medium text-gray-700 flex-1">
+                    {question.question_text}
+                  </p>
+              </div>
+                
+                <div className="ml-8">
+                  {displayText && displayText.trim() ? (
+                    <div className="bg-white p-3 rounded border border-gray-200">
+                      <p className="text-sm text-gray-600 whitespace-pre-wrap">
+                        {displayText}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="bg-gray-50 p-3 rounded border border-gray-200 border-dashed">
+                      <p className="text-sm text-gray-400 italic">
+                        No response provided
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+          </div>
+        );
+      }
+
+    // Check if it's Role Models assessment
+    if (assessment.assessment_type === 'role_models' && responses) {
+      console.log('👥 Rendering Role Models assessment responses');
+      console.log('📊 Role Models responses:', responses);
+      console.log('📋 Role Models questions:', roleModelsQuestions);
+
+      // Role Models responses have structure: { roleModels: [{ name: "...", ... }, ...] }
+      const roleModels = responses.roleModels || (Array.isArray(responses) ? responses : []);
+      
+      if (!Array.isArray(roleModels) || roleModels.length === 0) {
+        return (
+          <div className="text-sm text-gray-500">No role models recorded</div>
+        );
+      }
+
+      const sortedQuestions = [...roleModelsQuestions].sort((a, b) => 
+        (a.sequence_number || 0) - (b.sequence_number || 0)
+      );
+
+      return (
+        <div className="space-y-6">
+          {roleModels.map((roleModel: any, roleIndex: number) => (
+            <div key={roleIndex} className="border rounded-lg p-4 bg-gray-50">
+              <h4 className="font-semibold text-gray-800 mb-4">
+                Role Model {roleIndex + 1}: {roleModel.name || 'Unnamed'}
+              </h4>
+              
+              <div className="space-y-4">
+                {sortedQuestions.map((question, questionIndex) => {
+                  // Map question keys to role model fields
+                  const questionKeyMap: Record<number, string> = {
+                    0: 'name',
+                    1: 'whyAdmire',
+                    2: 'qualities',
+                    3: 'incorporatePlan'
+                  };
+                  
+                  const fieldKey = questionKeyMap[questionIndex] || `field${questionIndex}`;
+                  const responseText = roleModel[fieldKey] || '';
+                  const displayText = typeof responseText === 'string' ? responseText : String(responseText || '');
+
+                  return (
+                    <div key={question.id || questionIndex} className="border-l-4 border-blue-500 pl-4">
+                      <div className="flex items-start gap-2 mb-2">
+                        <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                          Q{questionIndex + 1}
+                        </span>
+                        <p className="text-sm font-medium text-gray-700 flex-1">
+                          {question.question_text}
+                        </p>
+                      </div>
+                      
+                      <div className="ml-8">
+                        {displayText && displayText.trim() ? (
+                          <div className="bg-white p-3 rounded border border-gray-200">
+                            <p className="text-sm text-gray-600 whitespace-pre-wrap">
+                              {displayText}
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="bg-gray-50 p-3 rounded border border-gray-200 border-dashed">
+                            <p className="text-sm text-gray-400 italic">
+                              No response provided
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // For other assessments, render all responses dynamically in Q&A format
     if (!responses || typeof responses !== 'object') {
       return (
         <div className="text-sm text-gray-500">No responses recorded</div>
       );
     }
 
-    // Helper function to render nested responses
-    const renderResponseValue = (key: string, value: any, depth = 0): ReactNode => {
-      if (value === null || value === undefined) {
-        return <span className="text-gray-400 italic">(empty)</span>;
-      }
-
-      if (typeof value === 'string') {
-        if (value.trim() === '') {
-          return <span className="text-gray-400 italic">(empty)</span>;
-        }
-        return <span className="text-gray-700 whitespace-pre-wrap">{value}</span>;
-      }
-
-      if (typeof value === 'boolean') {
-        return <span className="text-gray-700">{value ? 'Yes' : 'No'}</span>;
-      }
-
-      if (typeof value === 'number') {
-        return <span className="text-gray-700">{value}</span>;
-      }
-
-      if (Array.isArray(value)) {
-        return (
-          <div className="ml-4 space-y-2">
-            {value.map((item, index) => (
-              <div key={index} className="border-l-2 border-gray-300 pl-3">
-                {renderResponseValue(`${key}[${index}]`, item, depth + 1)}
-              </div>
-            ))}
-          </div>
-        );
-      }
-
-      if (typeof value === 'object') {
-        return (
-          <div className="ml-4 space-y-2">
-            {Object.entries(value).map(([subKey, subValue]) => (
-              <div key={subKey} className="border-l-2 border-gray-300 pl-3">
-                <div className="font-medium text-gray-700 mb-1">{subKey}:</div>
-                {renderResponseValue(subKey, subValue, depth + 1)}
-              </div>
-            ))}
-          </div>
-        );
-      }
-
-      return <span className="text-gray-700">{String(value)}</span>;
-    };
+    // Generic Q&A format for any other assessment type
+    const responseEntries = Object.entries(responses);
 
     return (
       <div className="space-y-4">
-        {Object.entries(responses).map(([key, value]) => (
+        {responseEntries.map(([key, value], index) => {
+          // Format response value
+          let responseText = '';
+          if (typeof value === 'string') {
+            responseText = value;
+          } else if (typeof value === 'object' && value !== null) {
+            if (Array.isArray(value)) {
+              responseText = value.join(', ');
+            } else {
+              // For objects, show key-value pairs
+              responseText = Object.entries(value)
+                .filter(([_, v]) => v === true || (typeof v === 'string' && v.trim()))
+                .map(([k, v]) => typeof v === 'string' ? `${k}: ${v}` : k)
+                .join(', ');
+            }
+          } else {
+            responseText = String(value || '');
+          }
+
+          return (
           <div key={key} className="border-l-4 border-blue-500 pl-4">
             <div className="flex items-start gap-2 mb-2">
               <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                {key}
+                  Q{index + 1}
               </span>
+                <p className="text-sm font-medium text-gray-700 flex-1">
+                  {key.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim()}
+                </p>
             </div>
+              
             <div className="ml-8">
-              {renderResponseValue(key, value)}
+                {responseText && responseText.trim() ? (
+                  <div className="bg-white p-3 rounded border border-gray-200">
+                    <p className="text-sm text-gray-600 whitespace-pre-wrap">
+                      {responseText}
+                    </p>
             </div>
+                ) : (
+                  <div className="bg-gray-50 p-3 rounded border border-gray-200 border-dashed">
+                    <p className="text-sm text-gray-400 italic">
+                      No response provided
+                    </p>
           </div>
-        ))}
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
     );
   };
@@ -538,13 +1256,31 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
                           <div className="flex items-center gap-3 mt-1">
                             <div className="text-xs text-gray-500 flex items-center gap-1">
                               <Calendar className="w-3 h-3" />
-                              {assessment.completed_at && assessment.completed_at !== '1970-01-01T00:00:00.000Z'
-                                ? new Date(assessment.completed_at).toLocaleDateString('en-US', {
+                              {(() => {
+                                // Use completed_at if available and valid, otherwise try updated_at
+                                const dateToUse = assessment.completed_at || assessment.updated_at;
+                                
+                                if (!dateToUse) {
+                                  return 'Not completed';
+                                }
+                                
+                                // Check if it's a valid date (not epoch, not null, not empty string)
+                                const dateObj = new Date(dateToUse);
+                                const isValidDate = !isNaN(dateObj.getTime()) && 
+                                                   dateObj.getFullYear() > 1970 &&
+                                                   dateToUse !== '1970-01-01T00:00:00.000Z' &&
+                                                   dateToUse !== '1970-01-01T00:00:00Z';
+                                
+                                if (isValidDate) {
+                                  return dateObj.toLocaleDateString('en-US', {
                                     year: 'numeric',
                                     month: 'short',
                                     day: 'numeric'
-                                  })
-                                : 'Not completed'}
+                                  });
+                                }
+                                
+                                return 'Not completed';
+                              })()}
                             </div>
                             <Badge className={getReviewStatusColor(assessment.review_status || 'unreviewed')}>
                               {(assessment.review_status || 'unreviewed').replace('_', ' ')}
@@ -604,4 +1340,3 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
     </div>
   );
 }
-

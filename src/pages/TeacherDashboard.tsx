@@ -15,12 +15,10 @@ import {
   UserPlus,
   Search,
   Filter,
-  Edit,
   Eye,
   Plus,
   BookOpen, 
   Target,
-  TrendingUp,
   Calendar,
   Clock,
   Star,
@@ -121,17 +119,16 @@ interface StudentStats {
   totalStudents: number;
   activeStudents: number;
   recentAdditions: number;
-  averageProgress: number;
 }
 
 export default function TeacherDashboard() {
   const { user, userProfile, signOut } = useAuth();
   const location = useLocation();
-  const urlLang = useMemo(() => new URLSearchParams(location.search).get('lang') as ('en'|'kn'|null), [location.search]);
-  const lang = (urlLang || userProfile?.preferred_language || (localStorage.getItem('lang') as 'en'|'kn'|null) || 'en') as 'en'|'kn';
+  const urlLang = useMemo(() => new URLSearchParams(location.search).get('lang') as ('en'|'kn'|'ta'|null), [location.search]);
+  const lang = (urlLang || userProfile?.preferred_language || (localStorage.getItem('lang') as 'en'|'kn'|'ta'|null) || 'en') as 'en'|'kn'|'ta';
   useEffect(()=>{ try{ localStorage.setItem('lang', lang); }catch{} }, [lang]);
 
-  const strings: Record<'en'|'kn', Record<string,string>> = {
+  const strings: Record<'en'|'kn'|'ta', Record<string,string>> = {
     en: {
       brand: 'Vidya Saathi',
       welcome: (name: string) => `Welcome, ${name}!`,
@@ -139,7 +136,6 @@ export default function TeacherDashboard() {
       totalStudents: 'Total Students',
       activeStudents: 'Active Students',
       recentAdditions: 'Recent Additions',
-      avgProgress: 'Avg Progress',
       studentsTab: 'Students',
       reviewsTab: 'Reviews',
       resourcesTab: 'Resources',
@@ -165,7 +161,6 @@ export default function TeacherDashboard() {
       totalStudents: 'ಒಟ್ಟು ವಿದ್ಯಾರ್ಥಿಗಳು',
       activeStudents: 'ಸಕ್ರಿಯ ವಿದ್ಯಾರ್ಥಿಗಳು',
       recentAdditions: 'ಇತ್ತೀಚಿನ ಸೇರಿಕೆಗಳು',
-      avgProgress: 'ಸರಾಸರಿ ಪ್ರಗತಿ',
       studentsTab: 'ವಿದ್ಯಾರ್ಥಿಗಳು',
       reviewsTab: 'ಪರಿಶೀಲನೆಗಳು',
       resourcesTab: 'ಸಂಪನ್ಮೂಲಗಳು',
@@ -184,6 +179,31 @@ export default function TeacherDashboard() {
       myProfile: 'ನನ್ನ ಪ್ರೊಫೈಲ್',
       contactIlp: 'ILP ಸಂಪರ್ಕಿಸಿ',
     },
+    ta: {
+      brand: 'வித்யா சாதி',
+      welcome: (name: string) => `வணக்கம், ${name}!`,
+      manageStudents: 'உங்கள் மாணவர்களை பார்த்து அவர்களுக்கு உதவுங்கள்',
+      totalStudents: 'மொத்த மாணவர்கள்',
+      activeStudents: 'படிக்கும் மாணவர்கள்',
+      recentAdditions: 'புதிதாக சேர்க்கப்பட்டவர்கள்',
+      studentsTab: 'மாணவர்கள்',
+      reviewsTab: 'பார்வைகள்',
+      resourcesTab: 'பயனுள்ள விஷயங்கள்',
+      analyticsTab: 'விவரங்கள்',
+      addStudent: 'மாணவரை சேர்',
+      addExisting: 'இருக்கும் மாணவரை சேர்',
+      importCsv: 'CSV பட்டியலை சேர்',
+      studentManagement: 'மாணவர்களை பார்த்தல்',
+      studentListEmpty: 'மாணவர்கள் இல்லை',
+      tryAdjustFilters: 'தேடலை மாற்றி முயற்சிக்கவும்',
+      getStartedAdding: 'முதல் மாணவரை சேர்த்து தொடங்குங்கள்',
+      startFirstStudent: 'முதல் மாணவரை சேர்',
+      temporaryPassword: 'புதிய மாணவர் கடவுச்சொல்:',
+      reviewedLabel: 'பார்த்துவிட்டது',
+      logout: 'வெளியேறு',
+      myProfile: 'என் விவரம்',
+      contactIlp: 'ILP தொடர்பு',
+    },
   };
   const t = (k: string) => (strings[lang] as any)[k] || (strings.en as any)[k] || k;
   const navigate = useNavigate();
@@ -195,8 +215,7 @@ export default function TeacherDashboard() {
   const [studentStats, setStudentStats] = useState<StudentStats>({
     totalStudents: 0,
     activeStudents: 0,
-    recentAdditions: 0,
-    averageProgress: 0
+    recentAdditions: 0
   });
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -254,6 +273,13 @@ export default function TeacherDashboard() {
   
 
 
+
+  // Update stats when students array changes (backup in case loadStudents doesn't trigger it)
+  useEffect(() => {
+    if (students.length > 0) {
+      loadStudentStats(students);
+    }
+  }, [students.length]); // Only trigger when count changes to avoid infinite loops
 
   // Filter students based on search and filters
   useEffect(() => {
@@ -314,6 +340,9 @@ export default function TeacherDashboard() {
         const studentIds = rows.map((r:any)=> r.id);
         // removed chat unread fetch per request
       } catch {}
+      
+      // Load stats after students are loaded
+      await loadStudentStats(rows);
     } catch (error) {
       console.error('Error loading students:', error);
       toast({
@@ -326,23 +355,37 @@ export default function TeacherDashboard() {
     }
   };
 
-  const loadStudentStats = async () => {
+  const loadStudentStats = async (studentsData?: any[]) => {
     try {
-      const totalStudents = students.length;
-      const activeStudents = students.filter(s => s.enrollment_status === 'active').length;
-      const recentAdditions = students.filter(s => {
-        const daysDiff = (Date.now() - new Date(s.created_at).getTime()) / (1000 * 60 * 60 * 24);
+      // Use provided data or fall back to students state
+      const studentsToCount = studentsData || students;
+      
+      const totalStudents = studentsToCount.length;
+      const activeStudents = studentsToCount.filter(s => 
+        (s.enrollment_status === 'active' || !s.enrollment_status)
+      ).length;
+      
+      // Recent additions: students added in the last 7 days
+      // Use enrollment_date if available, otherwise use created_at
+      const recentAdditions = studentsToCount.filter(s => {
+        const dateToUse = s.enrollment_date || s.created_at;
+        if (!dateToUse) return false;
+        const daysDiff = (Date.now() - new Date(dateToUse).getTime()) / (1000 * 60 * 60 * 24);
         return daysDiff <= 7;
       }).length;
 
-      // Calculate average progress (placeholder for now)
-      const averageProgress = 75; // This will be calculated from assessment data later
+      console.log('📊 Student stats calculated:', {
+        totalStudents,
+        activeStudents,
+        recentAdditions,
+        studentsCount: studentsToCount.length,
+        enrollmentStatuses: studentsToCount.map(s => s.enrollment_status)
+      });
 
       setStudentStats({
         totalStudents,
         activeStudents,
-        recentAdditions,
-        averageProgress
+        recentAdditions
       });
     } catch (error) {
       console.error('Error loading stats:', error);
@@ -594,8 +637,7 @@ export default function TeacherDashboard() {
   // Load students data after functions are defined
   useEffect(() => {
     if (!userProfile?.id) return;
-    loadStudents();
-    loadStudentStats();
+    loadStudents(); // loadStudentStats is called inside loadStudents after data is loaded
     loadStates(); // Load states for add student modal
     // Preload activities for Activities tab
     supabase
@@ -810,14 +852,22 @@ export default function TeacherDashboard() {
       const student = students.find(s => s.id === activityStudentId);
       if (student) setSelectedStudent(student);
       const type = getAssessmentTypeForActivity(a);
-      const { data: answers, error } = await supabase
+      const { data: allAnswers, error } = await supabase
         .from('assessment_responses')
-        .select('assessment_type, assessment_title, responses, completed_at')
+        .select('assessment_type, assessment_title, responses, completed_at, updated_at')
         .eq('student_id', activityStudentId)
         .eq('assessment_type', type)
-        .order('completed_at', { ascending: false });
+        .order('completed_at', { ascending: false, nullsFirst: false })
+        .order('updated_at', { ascending: false });
       if (error) throw error;
-      setAssessmentAnswers(answers || []);
+      
+      // Get only the latest submission for this assessment type
+      if (allAnswers && allAnswers.length > 0) {
+        // Already filtered by type, so just get the first (latest) one
+        setAssessmentAnswers([allAnswers[0]]);
+      } else {
+        setAssessmentAnswers([]);
+      }
       setIsAnswersOpen(true);
     } catch (err) {
       console.error('Load activity answers error:', err);
@@ -867,9 +917,54 @@ export default function TeacherDashboard() {
     );
   }
 
-  const renderReadableAnswers = (assessmentType: string, responses: any) => (
-    <pre className="text-xs whitespace-pre-wrap break-words bg-gray-50 p-3 rounded-md">{JSON.stringify(responses, null, 2)}</pre>
-  );
+  const renderReadableAnswers = (assessmentType: string, responses: any) => {
+    if (!responses || typeof responses !== 'object') {
+      return <div className="text-sm text-gray-500">No responses available.</div>;
+    }
+
+    // For About Me, display in a more readable format
+    if (assessmentType === 'about_me') {
+      return (
+        <div className="space-y-4">
+          {Object.entries(responses).map(([fieldKey, value]: [string, any]) => {
+            // Skip empty values
+            if (!value || (Array.isArray(value) && value.every(v => !v || v.trim() === '')) || (typeof value === 'string' && value.trim() === '')) {
+              return null;
+            }
+            
+            return (
+              <div key={fieldKey} className="border-b border-gray-200 pb-3 last:border-b-0">
+                <div className="font-medium text-sm text-gray-700 mb-1 capitalize">
+                  {fieldKey.replace(/_/g, ' ')}
+                </div>
+                <div className="text-sm text-gray-900 whitespace-pre-wrap break-words pl-2">
+                  {Array.isArray(value) ? (
+                    <ul className="list-disc list-inside space-y-1">
+                      {value.map((item: string, idx: number) => (
+                        item && item.trim() ? <li key={idx}>{item}</li> : null
+                      ))}
+                    </ul>
+                  ) : (
+                    <div>{String(value)}</div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+          {Object.keys(responses).length === 0 && (
+            <div className="text-sm text-gray-500">No responses submitted yet.</div>
+          )}
+        </div>
+      );
+    }
+
+    // For other assessments, display as formatted JSON
+    return (
+      <pre className="text-xs whitespace-pre-wrap break-words bg-gray-50 p-3 rounded-md border">
+        {JSON.stringify(responses, null, 2)}
+      </pre>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50">
@@ -979,17 +1074,6 @@ export default function TeacherDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-lg bg-gradient-to-br from-orange-50 to-orange-100">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-orange-600 text-sm font-medium">{t('avgProgress')}</p>
-                  <p className="text-3xl font-bold text-orange-800">{studentStats.averageProgress}%</p>
-                </div>
-                <TrendingUp className="w-8 h-8 text-orange-600" />
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Review Overview Counters */}
@@ -1192,12 +1276,14 @@ export default function TeacherDashboard() {
                                   setSelectedStudent(student); 
                                   try {
                                     // Build assessment-based timeline according to unlock rules
+                                    // Must match StudentDashboard.tsx unlock logic exactly
                                     const order = [
                                       { key: 'inspiration', title: 'MY INSPIRATION', seq: 1 },
-                                      { key: 'dreams', title: 'MY DREAMS', seq: 2 },
-                                      { key: 'school_learning', title: 'MY SCHOOL', seq: 3 },
-                                      { key: 'role_models', title: 'MY ROLE MODELS', seq: 4 },
+                                      { key: 'about_me', title: 'ABOUT ME', seq: 2 },
+                                      { key: 'dreams', title: 'MY DREAMS', seq: 3 },
+                                      { key: 'school_learning', title: 'MY SCHOOL', seq: 4 },
                                       { key: 'hobbies', title: 'MY HOBBIES', seq: 5 },
+                                      { key: 'role_models', title: 'MY ROLE MODELS', seq: 6 },
                                     ] as const;
                                     const { data: ar } = await supabase
                                       .from('assessment_responses')
@@ -1205,20 +1291,55 @@ export default function TeacherDashboard() {
                                       .eq('student_id', student.id);
                                     const latest: Record<string, string | undefined> = {};
                                     (ar||[]).forEach((r:any)=>{
-                                      const prev = latest[r.assessment_type];
-                                      if (!prev || new Date(r.completed_at) > new Date(prev)) latest[r.assessment_type] = r.completed_at;
+                                      // Only consider responses with completed_at for completion status
+                                      if (r.completed_at) {
+                                        const prev = latest[r.assessment_type];
+                                        if (!prev || new Date(r.completed_at) > new Date(prev)) {
+                                          latest[r.assessment_type] = r.completed_at;
+                                        }
+                                      }
                                     });
+                                    // Check completion status - must match StudentDashboard logic
                                     const insp = !!latest['inspiration'];
+                                    const aboutMe = !!latest['about_me'];
                                     const dreams = !!latest['dreams'];
                                     const school = !!latest['school_learning'];
+                                    const hobbies = !!latest['hobbies'];
                                     const roles = !!latest['role_models'];
+                                    
                                     const timeline = order.map(item => {
                                       let status = 'locked';
-                                      if (item.key === 'inspiration') status = insp ? 'completed' : 'unlocked';
-                                      if (item.key === 'dreams') status = insp ? (dreams ? 'completed' : 'unlocked') : 'locked';
-                                      if (item.key === 'school_learning') status = (insp && dreams) ? (school ? 'completed' : 'unlocked') : 'locked';
-                                      if (item.key === 'role_models') status = (insp && dreams && school) ? (roles ? 'completed' : 'unlocked') : 'locked';
-                                      if (item.key === 'hobbies') status = (insp && dreams && school && roles) ? (latest['hobbies'] ? 'completed' : 'unlocked') : 'locked';
+                                      let isCompleted = false;
+                                      
+                                      // Determine completion status first
+                                      if (item.key === 'inspiration') isCompleted = insp;
+                                      else if (item.key === 'about_me') isCompleted = aboutMe;
+                                      else if (item.key === 'dreams') isCompleted = dreams;
+                                      else if (item.key === 'school_learning') isCompleted = school;
+                                      else if (item.key === 'hobbies') isCompleted = hobbies;
+                                      else if (item.key === 'role_models') isCompleted = roles;
+                                      
+                                      // Determine unlock status based on prerequisites (matching StudentDashboard.tsx)
+                                      if (item.key === 'inspiration') {
+                                        // Always unlocked
+                                        status = isCompleted ? 'completed' : 'unlocked';
+                                      } else if (item.key === 'about_me') {
+                                        // Requires: inspiration completed
+                                        status = insp ? (isCompleted ? 'completed' : 'unlocked') : 'locked';
+                                      } else if (item.key === 'dreams') {
+                                        // Requires: inspiration AND about_me completed
+                                        status = (insp && aboutMe) ? (isCompleted ? 'completed' : 'unlocked') : 'locked';
+                                      } else if (item.key === 'school_learning') {
+                                        // Requires: inspiration AND about_me AND dreams completed
+                                        status = (insp && aboutMe && dreams) ? (isCompleted ? 'completed' : 'unlocked') : 'locked';
+                                      } else if (item.key === 'hobbies') {
+                                        // Requires: inspiration AND about_me AND dreams AND school_learning completed
+                                        status = (insp && aboutMe && dreams && school) ? (isCompleted ? 'completed' : 'unlocked') : 'locked';
+                                      } else if (item.key === 'role_models') {
+                                        // Requires: inspiration AND about_me AND dreams AND school_learning AND hobbies completed
+                                        status = (insp && aboutMe && dreams && school && hobbies) ? (isCompleted ? 'completed' : 'unlocked') : 'locked';
+                                      }
+                                      
                                       return { id: item.key, title: item.title, seq: item.seq, status, completed_at: latest[item.key] } as any;
                                     });
                                     setActivityTimeline(timeline);
@@ -1231,9 +1352,6 @@ export default function TeacherDashboard() {
                                   <Eye className="w-4 h-4" />
                                 </Button>
                                 {/* Chat button removed as per request */}
-                                <Button variant="ghost" size="sm">
-                                  <Edit className="w-4 h-4" />
-                                </Button>
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
                                     <Button variant="ghost" size="sm">
@@ -1275,13 +1393,68 @@ export default function TeacherDashboard() {
                                     <DropdownMenuItem onClick={async ()=>{
                                       setSelectedStudent(student);
                                       try {
-                                        const { data: answers, error: aerr } = await supabase
+                                        // Fetch all assessment responses
+                                        const { data: allAnswers, error: aerr } = await supabase
                                           .from('assessment_responses')
-                                          .select('assessment_type, assessment_title, responses, completed_at')
+                                          .select('assessment_type, assessment_title, responses, completed_at, updated_at')
                                           .eq('student_id', student.id)
-                                          .order('completed_at', { ascending: false });
+                                          .order('completed_at', { ascending: false, nullsFirst: false })
+                                          .order('updated_at', { ascending: false });
                                         if (aerr) throw aerr;
-                                        setAssessmentAnswers(answers || []);
+                                        
+                                        // Get only the LATEST submission for each assessment type
+                                        const latestByType: Record<string, any> = {};
+                                        (allAnswers || []).forEach((answer: any) => {
+                                          const existing = latestByType[answer.assessment_type];
+                                          const answerTimestamp = new Date(answer.completed_at || answer.updated_at || 0).getTime();
+                                          
+                                          if (!existing) {
+                                            latestByType[answer.assessment_type] = answer;
+                                            return;
+                                          }
+                                          
+                                          const existingTimestamp = new Date(existing.completed_at || existing.updated_at || 0).getTime();
+                                          if (answerTimestamp > existingTimestamp) {
+                                            latestByType[answer.assessment_type] = answer;
+                                          }
+                                        });
+                                        
+                                        // Convert to array and order by assessment sequence
+                                        const assessmentOrder = ['inspiration', 'about_me', 'dreams', 'school_learning', 'hobbies', 'role_models'];
+                                        const orderedAnswers = assessmentOrder
+                                          .map(type => latestByType[type])
+                                          .filter(Boolean)
+                                          .filter((answer, index, self) => {
+                                            // Remove duplicates by assessment_type
+                                            return index === self.findIndex(a => a.assessment_type === answer.assessment_type);
+                                          });
+                                        
+                                        console.log('📋 Latest assessment answers:', {
+                                          total: orderedAnswers.length,
+                                          types: orderedAnswers.map(a => a.assessment_type),
+                                          details: orderedAnswers.map(a => ({
+                                            type: a.assessment_type,
+                                            title: a.assessment_title,
+                                            hasResponses: !!a.responses,
+                                            responseKeys: a.responses ? Object.keys(a.responses) : [],
+                                            completedAt: a.completed_at,
+                                            updatedAt: a.updated_at
+                                          }))
+                                        });
+                                        
+                                        // Verify no duplicates
+                                        const typeSet = new Set(orderedAnswers.map(a => a.assessment_type));
+                                        if (typeSet.size !== orderedAnswers.length) {
+                                          console.warn('⚠️ Duplicate assessment types detected!', {
+                                            unique: typeSet.size,
+                                            total: orderedAnswers.length,
+                                            duplicates: orderedAnswers.filter((a, i, arr) => 
+                                              arr.findIndex(x => x.assessment_type === a.assessment_type) !== i
+                                            ).map(a => a.assessment_type)
+                                          });
+                                        }
+                                        
+                                        setAssessmentAnswers(orderedAnswers);
                                         setIsAnswersOpen(true);
                                       } catch (err) {
                                         console.error('Load answers error:', err);
@@ -1309,15 +1482,6 @@ export default function TeacherDashboard() {
                                       }}
                                     >
                                       Remove / Unenroll
-                                    </DropdownMenuItem>
-                                    
-                                    <DropdownMenuItem>
-                                      <FileText className="w-4 h-4 mr-2" />
-                                      Add Note
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem>
-                                      <Target className="w-4 h-4 mr-2" />
-                                      Assign Activity
                                     </DropdownMenuItem>
                                   </DropdownMenuContent>
                                 </DropdownMenu>
@@ -1707,7 +1871,7 @@ export default function TeacherDashboard() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {['inspiration','dreams','school_learning','role_models','hobbies'].map((t)=> (
+              {['inspiration','about_me','dreams','school_learning','hobbies','role_models'].map((t)=> (
                 <Card key={t} className="border shadow-sm">
                 <CardHeader>
                     <CardTitle className="text-base capitalize">{t.replace('_',' ')}</CardTitle>
@@ -1729,7 +1893,7 @@ export default function TeacherDashboard() {
 
       {/* Assessment Answers Modal */}
       <Dialog open={isAnswersOpen} onOpenChange={setIsAnswersOpen}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto" data-print-content>
           <DialogHeader>
             <DialogTitle className="text-xl">{selectedStudent?.user?.full_name || 'Student'} – Assessment Answers</DialogTitle>
             <DialogDescription>Latest submissions across all assessments</DialogDescription>
@@ -1738,12 +1902,14 @@ export default function TeacherDashboard() {
             {assessmentAnswers.length === 0 ? (
               <div className="text-sm text-gray-500">No assessment submissions yet.</div>
             ) : (
-              assessmentAnswers.map((r:any, idx:number)=> (
-                <Card key={idx} className="border shadow-sm">
+              assessmentAnswers.map((r:any) => (
+                <Card key={`${r.assessment_type}-${r.completed_at || r.updated_at}`} className="border shadow-sm" data-assessment-card>
               <CardHeader>
                     <CardTitle className="text-base">
                       <span className="capitalize">{r.assessment_type.replace('_',' ')}</span> – {r.assessment_title}
-                      <span className="ml-2 text-sm text-gray-500">{new Date(r.completed_at).toLocaleString()}</span>
+                      {r.completed_at && (
+                        <span className="ml-2 text-sm text-gray-500">{new Date(r.completed_at).toLocaleString()}</span>
+                      )}
                     </CardTitle>
               </CardHeader>
                   <CardContent>
@@ -1753,7 +1919,7 @@ export default function TeacherDashboard() {
               ))
             )}
                       </div>
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-2 print:hidden">
             <Button variant="outline" onClick={()=> window.print()}>Print</Button>
             <Button onClick={()=> setIsAnswersOpen(false)}>Close</Button>
           </div>

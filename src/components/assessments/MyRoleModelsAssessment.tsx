@@ -22,7 +22,7 @@ import {
   Save
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLang } from '@/hooks/useLang';
 import { ArrowLeft } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -56,6 +56,8 @@ export default function MyRoleModelsAssessment() {
   const { t, lang } = useLang();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const readOnlyView = ['1','true'].includes((searchParams.get('readonly')||searchParams.get('view')||'').toLowerCase());
   const [responses, setResponses] = useState<RoleModelsAssessmentResponse>({
     roleModel1: {
       name: '',
@@ -491,7 +493,7 @@ export default function MyRoleModelsAssessment() {
     );
   }
 
-  if (isCompleted) {
+  if (isCompleted && !readOnlyView) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 py-8">
         <div className="container mx-auto px-4">
@@ -511,10 +513,14 @@ export default function MyRoleModelsAssessment() {
                 <div className="flex justify-center gap-4">
                   <Button 
                     variant="outline" 
-                    onClick={() => setIsCompleted(false)}
+                    onClick={() => {
+                      const params = new URLSearchParams(searchParams.toString());
+                      params.set('readonly', '1');
+                      navigate(`/student/assessment/role-models?${params.toString()}`);
+                    }}
                     className="border-purple-200 text-purple-700 hover:bg-purple-50"
                   >
-                    Review My Responses
+                    {lang === 'kn' ? 'ನನ್ನ ಉತ್ತರಗಳನ್ನು ವೀಕ್ಷಿಸಿ' : 'View My Answers'}
                   </Button>
                   <Button 
                     onClick={() => navigate('/student')}
@@ -793,32 +799,8 @@ export default function MyRoleModelsAssessment() {
               : '← Previous: Role Model -2 (Known Person)'}
           </Button>
 
-            <div className="flex gap-3 items-center">
-              {/* Save Progress status */}
-              <div className="flex items-center gap-2 text-sm">
-                {isRoleModelSaved(currentTab) ? (
-                  <div className="flex items-center gap-2 text-green-600">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span>
-                      {currentTab === 'roleModel1' 
-                        ? 'Role Model -1 (Preferably Closely Known Person)' 
-                        : currentTab === 'roleModel2' 
-                        ? 'Role Model -2 (Known Person)' 
-                        : 'Role Model -3 (Known/Famous Person)'} {t('saved')}
-                    </span>
-                  </div>
-                ) : isRoleModelComplete(currentTab) ? (
-                  <div className="flex items-center gap-2 text-yellow-600">
-                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                    <span>{t('videoNReadyToSave') || 'Complete - Ready to save'}</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 text-gray-500">
-                    <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-                    <span>{t('completeAllToSave')}</span>
-                  </div>
-                )}
-              </div>
+            {/* Save Role Model progress button only (no status pill) */}
+            <div className="flex items-center">
               <Button
                 onClick={saveCurrentRoleModel}
                 disabled={!isRoleModelComplete(currentTab) || saving || isRoleModelSaved(currentTab)}
@@ -838,7 +820,7 @@ export default function MyRoleModelsAssessment() {
                 ) : (
                   <>
                     <Save className="w-4 h-4 mr-2" />
-                    {t('saveVideoProgress')}
+                    {t('saveProgress') || 'Save Progress'}
                   </>
                 )}
               </Button>

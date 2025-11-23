@@ -48,6 +48,17 @@ export default function AISummaryReview({ selectedStudentId }: AISummaryReviewPr
   const [generating, setGenerating] = useState(false);
   const [assessmentsWithoutSummaries, setAssessmentsWithoutSummaries] = useState<any[]>([]);
 
+  // Only these assessment types should ever have AI summaries.
+  // NOTE: Holland Code (personality) and Career Guidance Tools are intentionally excluded.
+  const SUMMARY_SUPPORTED_TYPES = [
+    'inspiration',
+    'about_me',
+    'dreams',
+    'school_learning',
+    'hobbies',
+    'role_models'
+  ];
+
   useEffect(() => {
     fetchStudents();
     if (selectedStudentId) {
@@ -105,6 +116,11 @@ export default function AISummaryReview({ selectedStudentId }: AISummaryReviewPr
           // Get only the latest assessment per type (prefer most recent completed_at, then updated_at)
           const latestAssessments = new Map<string, any>();
           (assessments || []).forEach((assessment: any) => {
+            // Skip assessments that should not have AI summaries (e.g. Holland Code, Career Guidance Tools)
+            if (!SUMMARY_SUPPORTED_TYPES.includes(assessment.assessment_type)) {
+              return;
+            }
+
             const existing = latestAssessments.get(assessment.assessment_type);
             const assessmentTimestamp = new Date(assessment.completed_at || assessment.updated_at || 0).getTime();
             if (!existing) {
@@ -168,6 +184,11 @@ export default function AISummaryReview({ selectedStudentId }: AISummaryReviewPr
       // Get only the LATEST submission for each assessment type
       const uniqueAssessments: Record<string, any> = {};
       (assessmentResponses || []).forEach((assessment: any) => {
+        // Skip assessments that should not have AI summaries (e.g. Holland Code, Career Guidance Tools)
+        if (!SUMMARY_SUPPORTED_TYPES.includes(assessment.assessment_type)) {
+          return;
+        }
+
         const existing = uniqueAssessments[assessment.assessment_type];
         const assessmentTimestamp = new Date(assessment.completed_at || assessment.updated_at || 0).getTime();
 
@@ -183,6 +204,13 @@ export default function AISummaryReview({ selectedStudentId }: AISummaryReviewPr
       });
 
       const latestAssessmentIds = Object.values(uniqueAssessments).map((a: any) => a.id);
+
+      // If there are no supported assessments, clear state and exit early
+      if (latestAssessmentIds.length === 0) {
+        setSummaries([]);
+        setAssessmentsWithoutSummaries([]);
+        return;
+      }
 
       // Get summaries for these latest assessment responses
       const { data: summariesData, error: summariesError } = await supabase
@@ -204,21 +232,27 @@ export default function AISummaryReview({ selectedStudentId }: AISummaryReviewPr
         .maybeSingle();
 
       // Combine data
-      const enrichedSummaries = (summariesData || []).map((summary: any) => {
-        const assessmentResponse = uniqueAssessments[Object.keys(uniqueAssessments).find(
-          type => uniqueAssessments[type].id === summary.assessment_response_id
-        ) || ''];
+      const enrichedSummaries = (summariesData || [])
+        .map((summary: any) => {
+          const assessmentResponse = Object.values(uniqueAssessments).find(
+            (ar: any) => ar.id === summary.assessment_response_id
+          );
 
-        return {
-          ...summary,
-          student_name: studentData?.users?.full_name || 'Unknown',
-          student_id: studentId,
-          assessment_type: assessmentResponse?.assessment_type || 'unknown',
-          assessment_title: assessmentResponse?.assessment_title || 'Unknown Assessment',
-          responses: assessmentResponse?.responses || {},
-          student_user_id: studentData?.user_id || null
-        };
-      });
+          // If we can't find a matching supported assessment (e.g. legacy Holland summary), drop it
+          if (!assessmentResponse) return null;
+
+          return {
+            ...summary,
+            student_name: studentData?.users?.full_name || 'Unknown',
+            student_id: studentId,
+            assessment_type: assessmentResponse.assessment_type || 'unknown',
+            assessment_title: assessmentResponse.assessment_title || 'Unknown Assessment',
+            responses: assessmentResponse.responses || {},
+            student_user_id: studentData?.user_id || null
+          };
+        })
+        // Filter out any nulls and any non-supported assessment types just in case
+        .filter((s: any) => s && SUMMARY_SUPPORTED_TYPES.includes(s.assessment_type));
 
       console.log('✅ Fetched AI summaries:', enrichedSummaries);
       setSummaries(enrichedSummaries);

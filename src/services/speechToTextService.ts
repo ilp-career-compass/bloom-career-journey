@@ -104,6 +104,14 @@ class SpeechToTextService {
     audioBlob: Blob,
     options: TranscriptionOptions
   ): Promise<TranscriptionResult> {
+    console.log('🎤 [transcribeWithGoogle] Starting transcription:', {
+      blobSize: audioBlob.size,
+      blobType: audioBlob.type,
+      language: options.language,
+      encoding: options.encoding,
+      sampleRate: options.sampleRateHertz
+    });
+    
     if (!this.isGoogleConfigured()) {
       console.error('❌ [transcribeWithGoogle] Google API key not configured');
       console.error('📝 Current config:', {
@@ -121,12 +129,20 @@ class SpeechToTextService {
     }
 
     if (!this.isOnline) {
+      console.warn('⚠️ [transcribeWithGoogle] Offline mode - transcription not available');
       throw new Error('Offline mode - transcription not available');
+    }
+
+    // Validate audio blob
+    if (!audioBlob || audioBlob.size === 0) {
+      throw new Error('Invalid audio blob: empty or null');
     }
 
     try {
       // Convert blob to base64
+      console.log('🔄 [transcribeWithGoogle] Converting blob to base64...');
       const base64Audio = await this.blobToBase64(audioBlob);
+      console.log('✅ [transcribeWithGoogle] Blob converted, base64 length:', base64Audio.length);
       
       // Prepare request for Google Speech-to-Text API (v1 compatible payload)
       // Add domain phrase hints to improve recognition for assessment context
@@ -204,6 +220,7 @@ class SpeechToTextService {
         },
       };
 
+      console.log('📤 [transcribeWithGoogle] Sending request to Google Speech API...');
       const response = await fetch(
         `https://speech.googleapis.com/v1/speech:recognize?key=${this.config.googleApiKey}`,
         {
@@ -215,12 +232,29 @@ class SpeechToTextService {
         }
       );
 
+      console.log('📥 [transcribeWithGoogle] Received response:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      });
+
       if (!response.ok) {
-        const errorData = await response.json();
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          const errorText = await response.text();
+          errorData = { error: { message: errorText } };
+        }
+        console.error('❌ [transcribeWithGoogle] API error response:', errorData);
         throw new Error(`Google Speech API error: ${errorData.error?.message || 'Unknown error'}`);
       }
 
       const data = await response.json();
+      console.log('✅ [transcribeWithGoogle] API response received:', {
+        hasResults: !!data.results,
+        resultsCount: data.results?.length || 0
+      });
       
       if (!data.results || data.results.length === 0) {
         throw new Error('No transcription results received');
@@ -303,9 +337,8 @@ class SpeechToTextService {
       'vil': 'will',
       'bi': 'be',
       'vel': 'well',
-      'off': 'of',
-      'ho gaya': 'happened',
-      'ho gaya': 'happened',
+        'off': 'of',
+        'ho gaya': 'happened',
       
       // Common v/w confusion in Indian English
       'vith': 'with',
@@ -322,7 +355,6 @@ class SpeechToTextService {
       // Common th/d confusion
       'dere': 'there',
       'dese': 'these',
-      'dat': 'that',
       'de': 'the',
       'dough': 'though',
       'dink': 'think',
@@ -581,7 +613,19 @@ class SpeechToTextService {
     while (true) {
       await new Promise(r => setTimeout(r, delay));
       const pollResp = await fetch(pollUrl);
+      
+      if (!pollResp.ok) {
+        const errorText = await pollResp.text();
+        throw new Error(`Failed to poll transcription operation: ${pollResp.status} ${pollResp.statusText} - ${errorText}`);
+      }
+      
       const op = await pollResp.json();
+      
+      // Check if operation has an error
+      if (op?.error) {
+        throw new Error(`Transcription operation failed: ${JSON.stringify(op.error)}`);
+      }
+      
       if (op?.done) {
         const data = op.response;
         if (!data?.results || data.results.length === 0) {

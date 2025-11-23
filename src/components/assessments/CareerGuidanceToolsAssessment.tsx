@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { CheckCircle, ArrowLeft, Globe, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLang } from '@/hooks/useLang';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { KannadaKeyboard } from '@/components/ui/KannadaKeyboard';
@@ -38,6 +38,8 @@ export default function CareerGuidanceToolsAssessment() {
   const { t, lang } = useLang();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const readOnlyView = ['1','true'].includes((searchParams.get('readonly')||searchParams.get('view')||'').toLowerCase());
   const [questions, setQuestions] = useState<CareerGuidanceQuestion[]>([]);
   const [responses, setResponses] = useState<CareerGuidanceResponse>({
     question1: '',
@@ -290,7 +292,7 @@ export default function CareerGuidanceToolsAssessment() {
     );
   }
 
-  if (isCompleted) {
+  if (isCompleted && !readOnlyView) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 py-8">
         <div className="container mx-auto px-4">
@@ -308,11 +310,19 @@ export default function CareerGuidanceToolsAssessment() {
                   Thank you for completing the Career Guidance Tools assessment! Your responses have been saved and your teacher can review them.
                 </p>
                 <div className="flex justify-center gap-4">
+                  <Button
+                    variant="outline"
+                    className="border-purple-200 text-purple-700 hover:bg-purple-50"
+                    onClick={() => {
+                      const params = new URLSearchParams(searchParams.toString());
+                      params.set('readonly', '1');
+                      navigate(`/student/assessment/career-guidance-tools?${params.toString()}`);
+                    }}
+                  >
+                    {lang === 'kn' ? 'ನನ್ನ ಉತ್ತರಗಳನ್ನು ವೀಕ್ಷಿಸಿ' : 'View My Answers'}
+                  </Button>
                   <Button onClick={() => navigate('/student')} className="bg-purple-600 hover:bg-purple-700">
                     Back to Dashboard
-                  </Button>
-                  <Button variant="outline" onClick={() => setIsCompleted(false)}>
-                    View Assessment
                   </Button>
                 </div>
               </div>
@@ -483,4 +493,3 @@ export default function CareerGuidanceToolsAssessment() {
     </div>
   );
 }
-
