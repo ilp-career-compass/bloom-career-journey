@@ -384,6 +384,8 @@ export default function MyInspirationAssessment() {
 
   // Ensure an assessment_responses row exists and capture its id for audio uploads
   useEffect(() => {
+    let mounted = true;
+
     const ensureAssessmentRecord = async () => {
       if (!userProfile || loading) return;
 
@@ -397,7 +399,12 @@ export default function MyInspirationAssessment() {
           .maybeSingle();
         studentId = studentRow?.id;
       }
-      if (!studentId) return;
+      
+      if (!mounted) return;
+      if (!studentId) {
+        console.warn('⚠️ Could not resolve student ID for audio setup');
+        return;
+      }
 
       setResolvedStudentId(studentId);
 
@@ -413,11 +420,15 @@ export default function MyInspirationAssessment() {
           .limit(1)
           .maybeSingle();
 
+        if (!mounted) return;
+
         if (existing && !selectError) {
+          console.log('✅ Found existing assessment record:', existing.id);
           setAssessmentRecordId(existing.id);
           return;
         }
 
+        console.log('📝 Creating new assessment record for audio...');
         // Create a new placeholder record to attach audio responses
         const { data: inserted, error: insertError } = await supabase
           .from('assessment_responses')
@@ -425,22 +436,33 @@ export default function MyInspirationAssessment() {
             student_id: studentId,
             assessment_type: 'inspiration',
             assessment_title: 'My Inspiration',
-            responses,
+            responses: responses || {}, // Use current responses or empty object
             completed_at: null,
             updated_at: new Date().toISOString(),
           })
           .select('id')
           .single();
 
+        if (!mounted) return;
         if (insertError) throw insertError;
+        
+        console.log('✅ Created new assessment record:', inserted.id);
         setAssessmentRecordId(inserted.id);
       } catch (e) {
-        console.error('Failed to ensure assessment record for audio responses:', e);
+        console.error('❌ Failed to ensure assessment record for audio responses:', e);
+        toast({
+          title: t('error'),
+          description: lang === 'kn' ? "ಆಡಿಯೊ ರೆಕಾರ್ಡಿಂಗ್‌ಗಾಗಿ ಸಿದ್ಧಪಡಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ." : "Could not initialize audio recording system.",
+          variant: "destructive"
+        });
       }
     };
 
     ensureAssessmentRecord();
-  }, [userProfile, loading, responses]);
+    
+    return () => { mounted = false; };
+    // crucial: remove 'responses' from dependency to avoid infinite loops or unnecessary writes
+  }, [userProfile, loading]);
 
   // Auto-save draft on changes (debounced)
   useEffect(() => {

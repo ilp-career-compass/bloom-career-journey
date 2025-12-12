@@ -3,14 +3,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Mic, 
-  Square, 
-  Play, 
-  Pause, 
-  RotateCcw, 
-  Upload, 
-  CheckCircle, 
+import {
+  Mic,
+  Square,
+  Play,
+  Pause,
+  RotateCcw,
+  Upload,
+  CheckCircle,
   AlertCircle,
   MicOff,
   Volume2,
@@ -27,6 +27,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { audioResponseManager } from '@/services/audioResponseManager';
 import { useLang } from '@/hooks/useLang';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // Audio configuration
 const AUDIO_CONFIG = {
@@ -125,14 +126,14 @@ export function AudioRecorder({
 }: AudioRecorderProps) {
   const { toast } = useToast();
   const { t, lang } = useLang();
-  
+
   // Refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  
+
   // State
   const [state, setState] = useState<RecordingState>({
     isRecording: false,
@@ -179,7 +180,7 @@ export function AudioRecorder({
         savedAt: initialSavedAt ?? prev.savedAt,
       }));
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialAudioUrl, initialSavedAt]);
 
   // Update audio element source when initialAudioUrl changes
@@ -198,7 +199,7 @@ export function AudioRecorder({
         transcriptionConfidence: initialConfidence ?? prev.transcriptionConfidence,
       }));
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialTranscription, initialConfidence]);
 
   // Error handling functions (moved before useEffect to avoid hoisting issues)
@@ -230,7 +231,7 @@ export function AudioRecorder({
     console.log('- MediaRecorder available:', !!window.MediaRecorder);
     console.log('- MediaDevices available:', !!navigator.mediaDevices);
     console.log('- getUserMedia available:', !!navigator.mediaDevices?.getUserMedia);
-    
+
     const mimeTypes = [
       'audio/webm;codecs=opus',
       'audio/webm',
@@ -238,7 +239,7 @@ export function AudioRecorder({
       'audio/ogg;codecs=opus',
       'audio/wav'
     ];
-    
+
     console.log('📋 Supported MIME Types:');
     mimeTypes.forEach(type => {
       const supported = MediaRecorder.isTypeSupported(type);
@@ -269,15 +270,15 @@ export function AudioRecorder({
       'audio/ogg;codecs=opus',
       'audio/wav'
     ].filter(type => MediaRecorder.isTypeSupported(type));
-    
+
     if (supportedMimeTypes.length === 0) {
       console.error('❌ No supported audio formats found');
       setErrorState('error', 'Your browser does not support any audio recording formats. Please use a modern browser.');
       return;
     }
-    
+
     console.log('✅ Supported audio formats:', supportedMimeTypes);
-    
+
     // Run debug info
     debugMediaRecorderCapabilities();
 
@@ -291,7 +292,7 @@ export function AudioRecorder({
         enableOfflineMode,
         language, // Pass language for transcription
       });
-      
+
       // Load offline queue
       audioResponseManager.loadOfflineQueue();
     }
@@ -308,13 +309,13 @@ export function AudioRecorder({
             autoGainControl: true,
           }
         });
-        
+
         setState(prev => ({ ...prev, hasPermission: true }));
         streamRef.current = stream;
-        
+
         // Clean up the test stream
         stream.getTracks().forEach(track => track.stop());
-        
+
         console.log('✅ Microphone permission granted automatically');
       } catch (error) {
         console.log('❌ Microphone permission not granted:', error);
@@ -331,17 +332,17 @@ export function AudioRecorder({
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
     }
-    
+
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
     }
-    
+
     if (recordingIntervalRef.current) {
       clearInterval(recordingIntervalRef.current);
       recordingIntervalRef.current = null;
     }
-    
+
     setState(prev => ({
       ...prev,
       isRecording: false,
@@ -378,7 +379,7 @@ export function AudioRecorder({
   useEffect(() => {
     const currentAudioUrl = state.audioUrl;
     const currentPreviewUrl = state.previewUrl;
-    
+
     return () => {
       // Stop any active recording
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
@@ -388,17 +389,17 @@ export function AudioRecorder({
           console.log('Error stopping MediaRecorder on cleanup:', e);
         }
       }
-      
+
       // Stop all media tracks
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
-      
+
       // Clear intervals
       if (recordingIntervalRef.current) {
         clearInterval(recordingIntervalRef.current);
       }
-      
+
       // Revoke object URLs to free memory
       if (currentAudioUrl) {
         URL.revokeObjectURL(currentAudioUrl);
@@ -412,26 +413,26 @@ export function AudioRecorder({
 
   // Countdown functionality
   const startCountdown = useCallback(() => {
-    setState(prev => ({ 
-      ...prev, 
-      countdownActive: true, 
+    setState(prev => ({
+      ...prev,
+      countdownActive: true,
       countdownValue: 3,
       buttonState: 'recording' as RecordingButtonState
     }));
-    
+
     const countdownInterval = setInterval(() => {
       setState(prev => {
         if (prev.countdownValue <= 1) {
           clearInterval(countdownInterval);
-          return { 
-            ...prev, 
-            countdownActive: false, 
+          return {
+            ...prev,
+            countdownActive: false,
             countdownValue: 3
           };
         }
-        return { 
-          ...prev, 
-          countdownValue: prev.countdownValue - 1 
+        return {
+          ...prev,
+          countdownValue: prev.countdownValue - 1
         };
       });
     }, 1000);
@@ -441,8 +442,8 @@ export function AudioRecorder({
   const pauseRecording = useCallback(() => {
     if (mediaRecorderRef.current && state.isRecording) {
       mediaRecorderRef.current.pause();
-      setState(prev => ({ 
-        ...prev, 
+      setState(prev => ({
+        ...prev,
         isPaused: true,
         buttonState: 'idle' as RecordingButtonState
       }));
@@ -452,8 +453,8 @@ export function AudioRecorder({
   const resumeRecording = useCallback(() => {
     if (mediaRecorderRef.current && state.isPaused) {
       mediaRecorderRef.current.resume();
-      setState(prev => ({ 
-        ...prev, 
+      setState(prev => ({
+        ...prev,
         isPaused: false,
         buttonState: 'recording' as RecordingButtonState
       }));
@@ -463,9 +464,9 @@ export function AudioRecorder({
   // Audio preview functionality
   const showAudioPreview = useCallback((audioBlob: Blob) => {
     const url = URL.createObjectURL(audioBlob);
-    setState(prev => ({ 
-      ...prev, 
-      showPreview: true, 
+    setState(prev => ({
+      ...prev,
+      showPreview: true,
       previewUrl: url,
       buttonState: 'saved' as RecordingButtonState
     }));
@@ -474,41 +475,41 @@ export function AudioRecorder({
   // Waveform visualization component
   const WaveformVisualizer = ({ data, isRecording }: { data: number[]; isRecording: boolean }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    
+
     useEffect(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
-      
+
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
-      
+
       const width = canvas.width;
       const height = canvas.height;
-      
+
       ctx.clearRect(0, 0, width, height);
-      
+
       if (data.length === 0) return;
-      
+
       ctx.strokeStyle = isRecording ? '#ef4444' : '#3b82f6';
       ctx.lineWidth = 2;
       ctx.beginPath();
-      
+
       const barWidth = width / data.length;
       data.forEach((value, index) => {
         const barHeight = (value / 255) * height;
         const x = index * barWidth;
         const y = (height - barHeight) / 2;
-        
+
         if (index === 0) {
           ctx.moveTo(x, y);
         } else {
           ctx.lineTo(x, y);
         }
       });
-      
+
       ctx.stroke();
     }, [data, isRecording]);
-    
+
     return (
       <canvas
         ref={canvasRef}
@@ -523,7 +524,7 @@ export function AudioRecorder({
   const requestMicrophonePermission = useCallback(async () => {
     try {
       console.log('🎤 Requesting microphone permission...');
-      
+
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           sampleRate: AUDIO_CONFIG.sampleRate,
@@ -533,24 +534,24 @@ export function AudioRecorder({
           autoGainControl: true,
         }
       });
-      
+
       setState(prev => ({ ...prev, hasPermission: true }));
       streamRef.current = stream;
-      
+
       // Clean up the test stream
       stream.getTracks().forEach(track => track.stop());
-      
+
       toast({
         title: "Microphone Access Granted",
         description: "You can now record audio responses.",
       });
-      
+
       console.log('✅ Microphone permission granted');
       return true;
     } catch (error) {
       console.error('❌ Microphone permission denied:', error);
       setState(prev => ({ ...prev, hasPermission: false }));
-      
+
       let errorMessage = 'Microphone access is required to record audio responses.';
       if (error instanceof Error) {
         if (error.name === 'NotAllowedError') {
@@ -561,15 +562,15 @@ export function AudioRecorder({
           errorMessage = 'Microphone is being used by another application. Please close other applications and try again.';
         }
       }
-      
+
       setErrorState('error', errorMessage);
-      
+
       toast({
         title: "Microphone Access Denied",
         description: errorMessage,
         variant: "destructive",
       });
-      
+
       return false;
     }
   }, [toast, setErrorState]);
@@ -583,8 +584,8 @@ export function AudioRecorder({
     }
 
     try {
-      setState(prev => ({ 
-        ...prev, 
+      setState(prev => ({
+        ...prev,
         isUploading: true,
         buttonState: 'processing' as RecordingButtonState,
         isSaving: true
@@ -607,8 +608,8 @@ export function AudioRecorder({
       });
 
       if (result.success) {
-        setState(prev => ({ 
-          ...prev, 
+        setState(prev => ({
+          ...prev,
           isUploading: false,
           buttonState: 'saved' as RecordingButtonState,
           savedAt: new Date().toISOString(),
@@ -617,10 +618,10 @@ export function AudioRecorder({
           transcriptionConfidence: typeof result.confidence === 'number' ? result.confidence : prev.transcriptionConfidence,
         }));
 
-        const toastMessage = result.transcription 
+        const toastMessage = result.transcription
           ? (lang === 'kn' ? "ಆಡಿಯೊ ಸೇವ್ ಮಾಡಲಾಗಿದೆ ಮತ್ತು ಬರಹ ಮಾಡಲಾಗಿದೆ" : "Audio saved and transcribed")
           : (lang === 'kn' ? "ಆಡಿಯೊ ಸೇವ್ ಮಾಡಲಾಗಿದೆ" : "Audio Saved");
-        
+
         const toastDescription = result.transcription
           ? (lang === 'kn' ? "ನಿಮ್ಮ ಆಡಿಯೊ ಉತ್ತರವನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಸೇವ್ ಮಾಡಲಾಗಿದೆ ಮತ್ತು ಪಠ್ಯಕ್ಕೆ ಪರಿವರ್ತಿಸಲಾಗಿದೆ." : "Your audio response has been saved and transcribed successfully.")
           : (lang === 'kn' ? "ನಿಮ್ಮ ಆಡಿಯೊ ಉತ್ತರವನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಸೇವ್ ಮಾಡಲಾಗಿದೆ." : "Your audio response has been saved successfully.");
@@ -634,29 +635,29 @@ export function AudioRecorder({
           hasTranscription: !!result.transcription,
           transcriptionLength: result.transcription?.length || 0
         });
-        
+
         onRecordingComplete(audioBlob, result.transcription);
       } else {
         throw new Error(result.error || 'Processing failed');
       }
-      
+
     } catch (error) {
       console.error('Audio processing error:', error);
-      setState(prev => ({ 
-        ...prev, 
+      setState(prev => ({
+        ...prev,
         isUploading: false,
         buttonState: 'idle' as RecordingButtonState,
         isSaving: false
       }));
-      
+
       setErrorState('error', 'Failed to save audio response. Your recording is saved locally.');
-      
+
       toast({
         title: lang === 'kn' ? "ಸಂಸ್ಕರಣೆ ವಿಫಲವಾಗಿದೆ" : "Processing Failed",
         description: error instanceof Error ? error.message : (lang === 'kn' ? "ಆಡಿಯೊ ಉತ್ತರವನ್ನು ಸಂಸ್ಕರಿಸಲು ವಿಫಲವಾಗಿದೆ." : "Failed to process audio response."),
         variant: "destructive",
       });
-      
+
       onRecordingComplete(audioBlob);
     }
   }, [studentId, assessmentId, assessmentType, assessmentTitle, questionId, language, onRecordingComplete, toast, setErrorState]);
@@ -664,11 +665,22 @@ export function AudioRecorder({
   // Start recording
   const startRecording = useCallback(async () => {
     console.log('🎯 startRecording called!');
-    
+
+    // Safety check: Ensure assessment ID is present if we are in assessment mode
+    if ((studentId || assessmentType) && !assessmentId) {
+      console.warn('⚠️ AudioRecorder: assessmentId is missing, cannot start recording');
+      toast({
+        title: lang === 'kn' ? "ಇನ್ನೂ ಸಿದ್ಧವಾಗಿಲ್ಲ" : "Not Ready",
+        description: lang === 'kn' ? "ದಯವಿಟ್ಟು ಒಂದು ಕ್ಷಣ ನಿರೀಕ್ಷಿಸಿ, ಸಿಸ್ಟಮ್ ಇನ್ನೂ ಲೋಡ್ ಆಗುತ್ತಿದೆ..." : "Please wait a moment, the system is initializing...",
+        variant: "default",
+      });
+      return;
+    }
+
     // Mark interaction and clear any previous errors
     markInteraction();
     clearError();
-    
+
     if (!state.hasPermission) {
       console.log('❌ No permission, requesting...');
       const hasPermission = await requestMicrophonePermission();
@@ -688,38 +700,38 @@ export function AudioRecorder({
       setState(prev => ({ ...prev, showMicCheckModal: true }));
       return;
     }
-    
+
     console.log('🔍 Proceeding to recording logic...');
 
     // Start countdown instead of immediately recording
     startCountdown();
     return;
-  }, [state.hasPermission, state.isOnline, maxDuration, processAudioResponse, toast, markInteraction, clearError, setErrorState, startCountdown, showMicCheck, state.micChecked, requestMicrophonePermission]);
+  }, [state.hasPermission, state.isOnline, maxDuration, processAudioResponse, toast, markInteraction, clearError, setErrorState, startCountdown, showMicCheck, state.micChecked, requestMicrophonePermission, studentId, assessmentType, assessmentId, lang]);
 
   // Actual recording start function (called after countdown)
   const startActualRecording = useCallback(async () => {
     try {
       console.log('🔍 Starting actual recording process...');
-      
+
       // Guard: Don't start if already recording
       if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
         console.log('⚠️ Already recording, skipping...');
         return;
       }
-      
+
       // Check if we have a valid stream with active tracks
-      const hasActiveStream = streamRef.current && 
+      const hasActiveStream = streamRef.current &&
         streamRef.current.getTracks().length > 0 &&
         streamRef.current.getTracks().some(track => track.readyState === 'live');
-      
+
       if (!hasActiveStream) {
         console.log('📡 No active stream found, requesting new stream...');
-        
+
         // Stop any existing tracks first
         if (streamRef.current) {
           streamRef.current.getTracks().forEach(track => track.stop());
         }
-        
+
         // Request a fresh stream
         const stream = await navigator.mediaDevices.getUserMedia({
           audio: {
@@ -746,7 +758,7 @@ export function AudioRecorder({
 
       // Create MediaRecorder with simplified approach
       let mediaRecorder: MediaRecorder;
-      
+
       try {
         // Try the simplest approach first - no mimeType specification
         console.log('🔄 Creating MediaRecorder with default settings...');
@@ -754,11 +766,11 @@ export function AudioRecorder({
         console.log('✅ MediaRecorder created with default settings');
       } catch (error) {
         console.error('❌ Failed to create MediaRecorder with default settings:', error);
-        
+
         // Try with specific mimeType
         const mimeTypes = ['audio/webm', 'audio/mp4', 'audio/ogg'];
         let success = false;
-        
+
         for (const mimeType of mimeTypes) {
           if (MediaRecorder.isTypeSupported(mimeType)) {
             try {
@@ -772,42 +784,42 @@ export function AudioRecorder({
             }
           }
         }
-        
+
         if (!success) {
           throw new Error('Failed to create MediaRecorder with any supported format');
         }
       }
       mediaRecorderRef.current = mediaRecorder;
-      
+
       // Set up event handlers
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
         }
       };
-      
+
       mediaRecorder.onstop = () => {
         console.log('🛑 MediaRecorder stopped');
-        const audioBlob = new Blob(audioChunksRef.current, { 
-          type: AUDIO_CONFIG.mimeType 
+        const audioBlob = new Blob(audioChunksRef.current, {
+          type: AUDIO_CONFIG.mimeType
         });
         setState(prev => ({
           ...prev,
           audioBlob,
-          audioUrl: URL.createObjectURL(audioBlob) 
+          audioUrl: URL.createObjectURL(audioBlob)
         }));
         processAudioResponse(audioBlob);
       };
-      
+
       // Start recording with simplified approach
       console.log('🎬 Starting MediaRecorder...');
       try {
         // Add a small delay to ensure everything is ready
         await new Promise(resolve => setTimeout(resolve, 200));
-        
+
         // Check MediaRecorder state
         console.log('📊 MediaRecorder state:', mediaRecorder.state);
-        
+
         if (mediaRecorder.state === 'inactive') {
           mediaRecorder.start(1000); // Collect data every second
           console.log('✅ MediaRecorder started successfully');
@@ -819,12 +831,12 @@ export function AudioRecorder({
         console.error('❌ Failed to start MediaRecorder:', startError);
         throw new Error(`Failed to start recording: ${startError.message}`);
       }
-      
+
       console.log('📊 Updating state to recording...');
       setState(prev => {
-        const newState = { 
-          ...prev, 
-          isRecording: true, 
+        const newState = {
+          ...prev,
+          isRecording: true,
           duration: 0,
           buttonState: 'recording' as RecordingButtonState,
           waveformData: []
@@ -832,7 +844,7 @@ export function AudioRecorder({
         return newState;
       });
       console.log('✅ State updated to recording');
-      
+
       // Start duration timer and waveform data collection
       recordingIntervalRef.current = setInterval(() => {
         setState(prev => {
@@ -851,11 +863,11 @@ export function AudioRecorder({
         const analyser = audioContext.createAnalyser();
         const source = audioContext.createMediaStreamSource(streamRef.current);
         source.connect(analyser);
-        
+
         analyser.fftSize = 256;
         const bufferLength = analyser.frequencyBinCount;
         const dataArray = new Uint8Array(bufferLength);
-        
+
         const collectWaveformData = () => {
           if (state.isRecording) {
             analyser.getByteFrequencyData(dataArray);
@@ -869,20 +881,20 @@ export function AudioRecorder({
         };
         collectWaveformData();
       }
-      
+
       // Use setTimeout to avoid setState during render warning
       setTimeout(() => {
-      toast({
-        title: lang === 'kn' ? "ರೆಕಾರ್ಡಿಂಗ್ ಆರಂಭವಾಗಿದೆ" : "Recording Started",
-        description: lang === 'kn' ? "ನಿಮ್ಮ ಮೈಕ್ರೋಫೋನ್‌ಗೆ ಸ್ಪಷ್ಟವಾಗಿ ಮಾತನಾಡಿ. ಮುಗಿದ ನಂತರ ನಿಲ್ಲಿಸಿ ಒತ್ತಿ." : "Speak clearly into your microphone. Tap stop when finished.",
-      });
+        toast({
+          title: lang === 'kn' ? "ರೆಕಾರ್ಡಿಂಗ್ ಆರಂಭವಾಗಿದೆ" : "Recording Started",
+          description: lang === 'kn' ? "ನಿಮ್ಮ ಮೈಕ್ರೋಫೋನ್‌ಗೆ ಸ್ಪಷ್ಟವಾಗಿ ಮಾತನಾಡಿ. ಮುಗಿದ ನಂತರ ನಿಲ್ಲಿಸಿ ಒತ್ತಿ." : "Speak clearly into your microphone. Tap stop when finished.",
+        });
       }, 0);
-      
+
     } catch (error) {
       console.error('❌ Error starting recording:', error);
-      
+
       setErrorState('error', 'Failed to start recording. Please check your microphone and try again.');
-      
+
       // Use setTimeout to avoid setState during render warning
       setTimeout(() => {
         toast({
@@ -896,14 +908,14 @@ export function AudioRecorder({
 
   // Handle countdown completion
   const hasStartedRecordingRef = useRef(false);
-  
+
   useEffect(() => {
     if (!state.countdownActive && state.countdownValue === 3 && state.buttonState === 'recording' && !hasStartedRecordingRef.current) {
       // Countdown just finished, start actual recording
       hasStartedRecordingRef.current = true;
       startActualRecording();
     }
-    
+
     // Reset the flag when not in recording state
     if (state.buttonState !== 'recording') {
       hasStartedRecordingRef.current = false;
@@ -914,22 +926,22 @@ export function AudioRecorder({
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && state.isRecording) {
       mediaRecorderRef.current.stop();
-      
+
       if (recordingIntervalRef.current) {
         clearInterval(recordingIntervalRef.current);
         recordingIntervalRef.current = null;
       }
-      
+
       setState(prev => ({
         ...prev,
         isRecording: false,
         buttonState: 'processing' as RecordingButtonState,
         isAnalyzing: true
       }));
-      
+
       toast({
         title: lang === 'kn' ? "ರೆಕಾರ್ಡಿಂಗ್ ಪೂರ್ಣಗೊಂಡಿದೆ" : "Recording Complete",
-        description: allowRetry 
+        description: allowRetry
           ? (lang === 'kn' ? "ನಿಮ್ಮ ಆಡಿಯೊ ರೆಕಾರ್ಡ್ ಮಾಡಲಾಗಿದೆ. ನೀವು ಅದನ್ನು ಪ್ಲೇ ಮಾಡಬಹುದು ಅಥವಾ ಮತ್ತೆ ರೆಕಾರ್ಡ್ ಮಾಡಬಹುದು." : "Your audio has been recorded. You can play it back or record again.")
           : (lang === 'kn' ? "ನಿಮ್ಮ ಆಡಿಯೊ ರೆಕಾರ್ಡ್ ಮಾಡಲಾಗಿದೆ. ನೀವು ಪರಿಶೀಲಿಸಲು ಅದನ್ನು ಪ್ಲೇ ಮಾಡಬಹುದು." : "Your audio has been recorded. You can play it back to review."),
       });
@@ -944,7 +956,7 @@ export function AudioRecorder({
       if (audioRef.current.src !== audioUrlToUse) {
         audioRef.current.src = audioUrlToUse;
       }
-      
+
       if (state.isPlaying) {
         audioRef.current.pause();
         setState(prev => ({ ...prev, isPlaying: false }));
@@ -957,7 +969,7 @@ export function AudioRecorder({
             variant: 'destructive'
           });
         });
-    setState(prev => ({ ...prev, isPlaying: true }));
+        setState(prev => ({ ...prev, isPlaying: true }));
       }
     }
   }, [state.audioUrl, state.isPlaying, initialAudioUrl, toast, lang]);
@@ -968,7 +980,7 @@ export function AudioRecorder({
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     }
-    
+
     setState(prev => ({
       ...prev,
       isRecording: false,
@@ -988,7 +1000,7 @@ export function AudioRecorder({
       showPreview: false,
       previewUrl: null,
     }));
-    
+
     audioChunksRef.current = [];
   }, []);
 
@@ -1011,7 +1023,7 @@ export function AudioRecorder({
           variant: 'secondary' as const,
           className: 'bg-orange-500 text-white animate-pulse',
           disabled: true,
-          onClick: () => {},
+          onClick: () => { },
           extraUI: 'Get ready to speak...'
         };
       }
@@ -1043,13 +1055,13 @@ export function AudioRecorder({
             };
           }
           return {
-              label: lang === 'kn' ? '🎤 ರೆಕಾರ್ಡ್' : '🎤 Record',
+            label: lang === 'kn' ? '🎤 ರೆಕಾರ್ಡ್' : '🎤 Record',
             icon: <Mic className="w-4 h-4" />,
             variant: 'default' as const,
             className: 'bg-blue-500 hover:bg-blue-600 text-white',
             disabled: disabled || (lockAfterSave && (state.buttonState === 'saved' || !!initialAudioUrl || !!initialSavedAt || !!initialTranscription)),
             onClick: startRecording,
-              extraUI: lockAfterSave && (state.buttonState === 'saved' || !!initialAudioUrl || !!initialSavedAt || !!initialTranscription) ? (lang === 'kn' ? 'ಸೇವ್ ನಂತರ ರೆಕಾರ್ಡಿಂಗ್ ಲಾಕ್ ಮಾಡಲಾಗಿದೆ' : 'Recording locked after save') : (lang === 'kn' ? 'ರೆಕಾರ್ಡ್ ಮಾಡಲು ಸಿದ್ಧ' : 'Ready to record')
+            extraUI: lockAfterSave && (state.buttonState === 'saved' || !!initialAudioUrl || !!initialSavedAt || !!initialTranscription) ? (lang === 'kn' ? 'ಸೇವ್ ನಂತರ ರೆಕಾರ್ಡಿಂಗ್ ಲಾಕ್ ಮಾಡಲಾಗಿದೆ' : 'Recording locked after save') : (lang === 'kn' ? 'ರೆಕಾರ್ಡ್ ಮಾಡಲು ಸಿದ್ಧ' : 'Ready to record')
           };
         case 'recording':
           return {
@@ -1068,13 +1080,13 @@ export function AudioRecorder({
           };
         case 'processing':
           return {
-              label: lang === 'kn' ? '⏳ ಸೇವ್ ಮಾಡಲಾಗುತ್ತಿದೆ...' : '⏳ Saving...',
+            label: lang === 'kn' ? '⏳ ಸೇವ್ ಮಾಡಲಾಗುತ್ತಿದೆ...' : '⏳ Saving...',
             icon: <Loader2 className="w-4 h-4 animate-spin" />,
             variant: 'secondary' as const,
             className: 'bg-gray-500 text-white',
             disabled: true,
-            onClick: () => {},
-              extraUI: lang === 'kn' ? 'ಆಡಿಯೊವನ್ನು ಬರೆಯಲಾಗುತ್ತಿದೆ...' : 'Transcribing audio...'
+            onClick: () => { },
+            extraUI: lang === 'kn' ? 'ಆಡಿಯೊವನ್ನು ಬರೆಯಲಾಗುತ್ತಿದೆ...' : 'Transcribing audio...'
           };
         case 'saved':
           return {
@@ -1083,54 +1095,52 @@ export function AudioRecorder({
             variant: 'outline' as const,
             className: 'bg-green-50 border-green-200 text-green-700',
             disabled: false,
-            onClick: () => {},
+            onClick: () => { },
             extraUI: (state.savedAt || initialSavedAt) ? (lang === 'kn' ? `ಸೇವ್ ಮಾಡಲಾಗಿದೆ: ${new Date(state.savedAt || initialSavedAt as string).toLocaleTimeString()}` : `Saved at ${new Date(state.savedAt || initialSavedAt as string).toLocaleTimeString()}`) : (lang === 'kn' ? 'ಆಡಿಯೊ ಯಶಸ್ವಿಯಾಗಿ ಸೇವ್ ಮಾಡಲಾಗಿದೆ' : 'Audio saved successfully')
           };
         default:
           return {
-              label: lang === 'kn' ? '🎤 ರೆಕಾರ್ಡ್' : '🎤 Record',
+            label: lang === 'kn' ? '🎤 ರೆಕಾರ್ಡ್' : '🎤 Record',
             icon: <Mic className="w-4 h-4" />,
             variant: 'default' as const,
             className: 'bg-blue-500 hover:bg-blue-600 text-white',
             disabled: disabled || !state.hasPermission || (lockAfterSave && (state.buttonState === 'saved' || !!initialAudioUrl || !!initialSavedAt || !!initialTranscription)),
             onClick: startRecording,
-              extraUI: lockAfterSave && (state.buttonState === 'saved' || !!initialAudioUrl || !!initialSavedAt || !!initialTranscription) ? (lang === 'kn' ? 'ಸೇವ್ ನಂತರ ರೆಕಾರ್ಡಿಂಗ್ ಲಾಕ್ ಮಾಡಲಾಗಿದೆ' : 'Recording locked after save') : (lang === 'kn' ? 'ರೆಕಾರ್ಡ್ ಮಾಡಲು ಸಿದ್ಧ' : 'Ready to record')
+            extraUI: lockAfterSave && (state.buttonState === 'saved' || !!initialAudioUrl || !!initialSavedAt || !!initialTranscription) ? (lang === 'kn' ? 'ಸೇವ್ ನಂತರ ರೆಕಾರ್ಡಿಂಗ್ ಲಾಕ್ ಮಾಡಲಾಗಿದೆ' : 'Recording locked after save') : (lang === 'kn' ? 'ರೆಕಾರ್ಡ್ ಮಾಡಲು ಸಿದ್ಧ' : 'Ready to record')
           };
       }
     };
 
     const buttonConfig = getButtonConfig();
-    
+
     return (
       <div className={`${className}`} style={{ position: 'relative', zIndex: 1 }}>
         {/* Phase 2: Card-like container with better visual hierarchy */}
-        <Card className={`border-0 shadow-sm transition-all duration-200 ${
-          state.errorState === 'error' ? 'border-red-200 bg-red-50' :
+        <Card className={`border-0 shadow-sm transition-all duration-200 ${state.errorState === 'error' ? 'border-red-200 bg-red-50' :
           state.errorState === 'warning' ? 'border-yellow-200 bg-yellow-50' :
-          state.buttonState === 'recording' ? 'border-red-200 bg-red-50' :
-          state.buttonState === 'saved' ? 'border-green-200 bg-green-50' :
-          'border-gray-200 bg-white'
-        }`}>
+            state.buttonState === 'recording' ? 'border-red-200 bg-red-50' :
+              state.buttonState === 'saved' ? 'border-green-200 bg-green-50' :
+                'border-gray-200 bg-white'
+          }`}>
           <CardContent className="p-3">
             {/* Header with question number and status */}
             <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${
-                  state.buttonState === 'saved' ? 'bg-green-500 text-white' :
+              <div className="flex items-center gap-2">
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${state.buttonState === 'saved' ? 'bg-green-500 text-white' :
                   state.buttonState === 'recording' ? 'bg-red-500 text-white' :
-                  state.buttonState === 'processing' ? 'bg-gray-500 text-white' :
-                  'bg-blue-500 text-white'
-                }`}>
+                    state.buttonState === 'processing' ? 'bg-gray-500 text-white' :
+                      'bg-blue-500 text-white'
+                  }`}>
                   🎤
-              </div>
+                </div>
                 <div>
                   <span className="text-sm font-medium text-gray-700">{lang === 'kn' ? 'ಆಡಿಯೊ ಉತ್ತರ' : 'Audio Response'}</span>
                   {state.savedAt && (
                     <div className="text-xs text-green-600">Saved at {state.savedAt}</div>
                   )}
-            </div>
+                </div>
               </div>
-              
+
               {/* Status indicators */}
               <div className="flex items-center gap-1">
                 {state.buttonState === 'saved' && (
@@ -1163,24 +1173,24 @@ export function AudioRecorder({
             {/* Main content area */}
             <div className="space-y-3">
               {/* Dynamic Button */}
-            <Button
+              <Button
                 onClick={buttonConfig.onClick}
                 disabled={buttonConfig.disabled}
-              size="sm"
+                size="sm"
                 variant={buttonConfig.variant}
                 className={`w-full flex items-center justify-center gap-2 transition-all duration-200 ${buttonConfig.className}`}
-              style={{ 
-                pointerEvents: 'auto', 
-                zIndex: 10,
-                position: 'relative',
+                style={{
+                  pointerEvents: 'auto',
+                  zIndex: 10,
+                  position: 'relative',
                   minHeight: '40px',
                   fontSize: '14px',
                   fontWeight: '500'
-              }}
-            >
+                }}
+              >
                 {buttonConfig.icon}
                 {buttonConfig.label}
-            </Button>
+              </Button>
 
               {/* Waveform Visualization (only during recording) */}
               {state.buttonState === 'recording' && state.waveformData.length > 0 && (
@@ -1221,7 +1231,7 @@ export function AudioRecorder({
                   ) : (
                     buttonConfig.extraUI
                   )}
-          </div>
+                </div>
               )}
 
               {/* Microphone permission help */}
@@ -1239,11 +1249,10 @@ export function AudioRecorder({
 
               {/* Phase 2: Error display */}
               {state.showError && state.errorMessage && (
-                <div className={`p-3 rounded-lg text-sm ${
-                  state.errorState === 'error' ? 'bg-red-50 text-red-700 border border-red-200' :
+                <div className={`p-3 rounded-lg text-sm ${state.errorState === 'error' ? 'bg-red-50 text-red-700 border border-red-200' :
                   state.errorState === 'warning' ? 'bg-yellow-50 text-yellow-700 border border-yellow-200' :
-                  'bg-gray-50 text-gray-700 border border-gray-200'
-                }`}>
+                    'bg-gray-50 text-gray-700 border border-gray-200'
+                  }`}>
                   <div className="flex items-center gap-2">
                     <AlertCircle className="w-4 h-4 flex-shrink-0" />
                     <span className="font-medium">{state.errorMessage}</span>
@@ -1251,7 +1260,7 @@ export function AudioRecorder({
                 </div>
               )}
             </div>
-            
+
             {/* Audio element for playback in compact mode */}
             {(state.audioUrl || initialAudioUrl) && (
               <audio
@@ -1263,38 +1272,36 @@ export function AudioRecorder({
             )}
           </CardContent>
         </Card>
-        </div>
-      );
+      </div>
+    );
   }
 
   return (
-    <Card className={`w-full ${className} transition-all duration-200 ${
-      state.errorState === 'error' ? 'border-red-200 bg-red-50' :
+    <Card className={`w-full ${className} transition-all duration-200 ${state.errorState === 'error' ? 'border-red-200 bg-red-50' :
       state.errorState === 'warning' ? 'border-yellow-200 bg-yellow-50' :
-      state.buttonState === 'recording' ? 'border-red-200 bg-red-50' :
-      state.buttonState === 'saved' ? 'border-green-200 bg-green-50' :
-      'border-gray-200 bg-white'
-    }`}>
+        state.buttonState === 'recording' ? 'border-red-200 bg-red-50' :
+          state.buttonState === 'saved' ? 'border-green-200 bg-green-50' :
+            'border-gray-200 bg-white'
+      }`}>
       <CardContent className="p-6">
         {/* Phase 2: Enhanced header with better visual hierarchy */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
-              state.buttonState === 'saved' ? 'bg-green-500 text-white' :
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${state.buttonState === 'saved' ? 'bg-green-500 text-white' :
               state.buttonState === 'recording' ? 'bg-red-500 text-white' :
-              state.buttonState === 'processing' ? 'bg-gray-500 text-white' :
-              'bg-blue-500 text-white'
-            }`}>
+                state.buttonState === 'processing' ? 'bg-gray-500 text-white' :
+                  'bg-blue-500 text-white'
+              }`}>
               🎤
             </div>
             <div>
-            <h3 className="font-semibold text-gray-800">{lang === 'kn' ? 'ಆಡಿಯೊ ಉತ್ತರ' : 'Audio Response'}</h3>
+              <h3 className="font-semibold text-gray-800">{lang === 'kn' ? 'ಆಡಿಯೊ ಉತ್ತರ' : 'Audio Response'}</h3>
               <p className="text-sm text-gray-600">
                 {state.savedAt ? (lang === 'kn' ? `ಸೇವ್ ಮಾಡಲಾಗಿದೆ: ${state.savedAt}` : `Saved at ${state.savedAt}`) : (lang === 'kn' ? 'ನಿಮ್ಮ ಧ್ವನಿ ಉತ್ತರವನ್ನು ರೆಕಾರ್ಡ್ ಮಾಡಿ' : 'Record your voice answer')}
               </p>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2">
             {state.hasPermission ? (
               <Badge variant="default" className="bg-green-100 text-green-700">
@@ -1319,8 +1326,8 @@ export function AudioRecorder({
             <span>Duration: {formatDuration(state.duration)}</span>
             <span>Max: {formatDuration(maxDuration)}</span>
           </div>
-          <Progress 
-            value={(state.duration / maxDuration) * 100} 
+          <Progress
+            value={(state.duration / maxDuration) * 100}
             className="h-2"
           />
         </div>
@@ -1335,11 +1342,10 @@ export function AudioRecorder({
 
         {/* Phase 2: Error display */}
         {state.showError && state.errorMessage && (
-          <div className={`mb-4 p-4 rounded-lg ${
-            state.errorState === 'error' ? 'bg-red-50 text-red-700 border border-red-200' :
+          <div className={`mb-4 p-4 rounded-lg ${state.errorState === 'error' ? 'bg-red-50 text-red-700 border border-red-200' :
             state.errorState === 'warning' ? 'bg-yellow-50 text-yellow-700 border border-yellow-200' :
-            'bg-gray-50 text-gray-700 border border-gray-200'
-          }`}>
+              'bg-gray-50 text-gray-700 border border-gray-200'
+            }`}>
             <div className="flex items-center gap-3">
               <AlertCircle className="w-5 h-5 flex-shrink-0" />
               <div>
@@ -1383,27 +1389,27 @@ export function AudioRecorder({
           )}
 
           {state.buttonState === 'recording' && (
-              <Button
-                onClick={stopRecording}
-                size="lg"
+            <Button
+              onClick={stopRecording}
+              size="lg"
               variant="destructive"
               className="bg-red-600 hover:bg-red-700 text-white animate-pulse"
-              >
-                <Square className="w-5 h-5 mr-2" />
+            >
+              <Square className="w-5 h-5 mr-2" />
               Stop Recording
-              </Button>
+            </Button>
           )}
-              
+
           {state.buttonState === 'processing' && (
-              <Button
-                size="lg"
+            <Button
+              size="lg"
               variant="secondary"
               disabled
               className="bg-gray-500 text-white cursor-not-allowed"
             >
               <Loader2 className="w-5 h-5 mr-2 animate-spin" />
               Processing...
-              </Button>
+            </Button>
           )}
 
           {/* Show playback button whenever audio is available (not just when saved) */}
@@ -1417,42 +1423,42 @@ export function AudioRecorder({
                 disabled={!state.audioUrl && !initialAudioUrl}
               >
                 {state.isPlaying ? (
-                    <Pause className="w-5 h-5 mr-2" />
+                  <Pause className="w-5 h-5 mr-2" />
                 ) : (
-                    <Play className="w-5 h-5 mr-2" />
+                  <Play className="w-5 h-5 mr-2" />
                 )}
                 {state.isPlaying ? (lang === 'kn' ? 'ವಿರಾಮ' : 'Pause') : (lang === 'kn' ? 'ಆಡಿಯೊ ಪ್ಲೇ ಮಾಡಿ' : 'Play Audio')}
               </Button>
-              
+
               {allowRetry && state.buttonState !== 'saved' && !initialAudioUrl && !initialSavedAt && (
-              <Button
+                <Button
                   onClick={resetRecording}
-                size="lg"
+                  size="lg"
                   variant="outline"
                   className="border-gray-200 text-gray-700 hover:bg-gray-50"
-              >
-                <RotateCcw className="w-5 h-5 mr-2" />
+                >
+                  <RotateCcw className="w-5 h-5 mr-2" />
                   {lang === 'kn' ? 'ಮತ್ತೆ ರೆಕಾರ್ಡ್ ಮಾಡಿ' : 'Record Again'}
-              </Button>
+                </Button>
               )}
-          </div>
-        )}
-        
-        {state.buttonState === 'saved' && (
+            </div>
+          )}
+
+          {state.buttonState === 'saved' && (
             <div className="flex items-center gap-3">
               {allowRetry && (
-              <Button
+                <Button
                   onClick={resetRecording}
-                size="lg"
+                  size="lg"
                   variant="outline"
                   className="border-gray-200 text-gray-700 hover:bg-gray-50"
-              >
-                <RotateCcw className="w-5 h-5 mr-2" />
+                >
+                  <RotateCcw className="w-5 h-5 mr-2" />
                   {lang === 'kn' ? 'ಮತ್ತೆ ರೆಕಾರ್ಡ್ ಮಾಡಿ' : 'Record Again'}
-              </Button>
+                </Button>
               )}
-          </div>
-        )}
+            </div>
+          )}
         </div>
 
         {/* Audio element for playback */}
@@ -1467,20 +1473,20 @@ export function AudioRecorder({
 
         {/* Instructions */}
         {showInstructions && (
-        <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
-          <p className="font-medium mb-1">Recording Tips:</p>
-          <ul className="list-disc list-inside space-y-1">
-            <li>Speak clearly and at a normal pace</li>
-            <li>Hold your device 6-8 inches from your mouth</li>
-            <li>Record in a quiet environment if possible</li>
-            <li>You can speak in Hindi or English</li>
-            {!state.isOnline && (
-              <li className="text-orange-600 font-medium">
-                Recording saved offline - will sync when online
-              </li>
-            )}
-          </ul>
-        </div>
+          <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+            <p className="font-medium mb-1">Recording Tips:</p>
+            <ul className="list-disc list-inside space-y-1">
+              <li>Speak clearly and at a normal pace</li>
+              <li>Hold your device 6-8 inches from your mouth</li>
+              <li>Record in a quiet environment if possible</li>
+              <li>You can speak in Hindi or English</li>
+              {!state.isOnline && (
+                <li className="text-orange-600 font-medium">
+                  Recording saved offline - will sync when online
+                </li>
+              )}
+            </ul>
+          </div>
         )}
       </CardContent>
     </Card>

@@ -37,6 +37,7 @@ export interface SpeechToTextConfig {
 class SpeechToTextService {
   private config: SpeechToTextConfig;
   private isOnline: boolean = navigator.onLine;
+  private geminiKey?: string;
 
   constructor(config?: SpeechToTextConfig) {
     // If no config provided, load from environment variables (same pattern as Gemini)
@@ -44,7 +45,7 @@ class SpeechToTextService {
       // Read environment variables directly (same as Gemini does)
       const googleApiKey = (import.meta.env as any).VITE_GOOGLE_SPEECH_API_KEY;
       const azureKey = (import.meta.env as any).VITE_AZURE_SPEECH_KEY;
-      
+
       // Log immediately when constructor runs
       console.log('🔑 [SpeechToText] Constructor called - Loading API keys from environment');
       console.log('🔑 [SpeechToText] Environment check:', {
@@ -53,7 +54,7 @@ class SpeechToTextService {
         azureKey: azureKey ? 'SET' : 'NOT SET',
         allEnvKeys: Object.keys(import.meta.env).filter(k => k.includes('GOOGLE') || k.includes('SPEECH')),
       });
-      
+
       this.config = {
         googleApiKey: googleApiKey ? String(googleApiKey).trim() : undefined,
         googleProjectId: (import.meta.env as any).VITE_GOOGLE_PROJECT_ID,
@@ -62,7 +63,10 @@ class SpeechToTextService {
         azureRegion: (import.meta.env as any).VITE_AZURE_SPEECH_REGION,
         fallbackEnabled: true,
       };
-      
+
+      // Load Gemini key for fallback
+      this.geminiKey = (import.meta.env as any).VITE_GEMINI_API_KEY;
+
       console.log('🔑 [SpeechToText] Config initialized:', {
         hasGoogleKey: !!this.config.googleApiKey,
         googleKeyLength: this.config.googleApiKey?.length || 0,
@@ -71,24 +75,24 @@ class SpeechToTextService {
     } else {
       this.config = config;
     }
-    
+
     // Listen for online/offline status
     window.addEventListener('online', () => {
       this.isOnline = true;
     });
-    
+
     window.addEventListener('offline', () => {
       this.isOnline = false;
     });
   }
-  
+
   /**
    * Check if Google API is configured (same pattern as Gemini)
    */
   isGoogleConfigured(): boolean {
     return !!this.config.googleApiKey && this.config.googleApiKey.trim().length > 0;
   }
-  
+
   /**
    * Check if Azure API is configured
    */
@@ -111,7 +115,7 @@ class SpeechToTextService {
       encoding: options.encoding,
       sampleRate: options.sampleRateHertz
     });
-    
+
     if (!this.isGoogleConfigured()) {
       console.error('❌ [transcribeWithGoogle] Google API key not configured');
       console.error('📝 Current config:', {
@@ -122,7 +126,7 @@ class SpeechToTextService {
       });
       throw new Error('Google API key not configured');
     }
-    
+
     // Additional validation - check if key looks valid
     if (this.config.googleApiKey && this.config.googleApiKey.length < 20) {
       console.warn('⚠️ [transcribeWithGoogle] API key seems too short. Expected ~39 characters for Google API key.');
@@ -143,7 +147,7 @@ class SpeechToTextService {
       console.log('🔄 [transcribeWithGoogle] Converting blob to base64...');
       const base64Audio = await this.blobToBase64(audioBlob);
       console.log('✅ [transcribeWithGoogle] Blob converted, base64 length:', base64Audio.length);
-      
+
       // Prepare request for Google Speech-to-Text API (v1 compatible payload)
       // Add domain phrase hints to improve recognition for assessment context
       // Use language-appropriate hints
@@ -255,7 +259,7 @@ class SpeechToTextService {
         hasResults: !!data.results,
         resultsCount: data.results?.length || 0
       });
-      
+
       if (!data.results || data.results.length === 0) {
         throw new Error('No transcription results received');
       }
@@ -303,7 +307,7 @@ class SpeechToTextService {
    */
   private postProcessTranscript(text: string, confidence: number, language: string): string {
     if (!text || language !== 'en-IN') return text;
-    
+
     const MAP: Record<string, string> = {
       // Common phonetic errors
       'dis': 'this',
@@ -323,7 +327,7 @@ class SpeechToTextService {
       'ryt': 'write',
       'ryte': 'write',
       'med': 'made',
-      
+
       // Indian English specific corrections (from your example)
       'fal': 'well',
       'har': 'her',
@@ -339,7 +343,7 @@ class SpeechToTextService {
       'vel': 'well',
       'off': 'of',
       'ho gaya': 'happened',
-      
+
       // Common v/w confusion in Indian English
       'vith': 'with',
       'vhen': 'when',
@@ -351,7 +355,7 @@ class SpeechToTextService {
       'vay': 'way',
       'vork': 'work',
       'vorld': 'world',
-      
+
       // Common th/d confusion
       'dere': 'there',
       'dese': 'these',
@@ -360,13 +364,13 @@ class SpeechToTextService {
       'dink': 'think',
       'dought': 'thought',
       'drough': 'through',
-      
+
       // Common r/l confusion
       'fliend': 'friend',
       'fliends': 'friends',
       'ploblem': 'problem',
       'ploblems': 'problems',
-      
+
       // Common vowel sounds
       'tody': 'today',
       'yestody': 'yesterday',
@@ -380,13 +384,13 @@ class SpeechToTextService {
       'thnk': 'think',
       'thnks': 'thanks',
       'thnku': 'thank you',
-      
+
       // Common word endings
       'kind off': 'kind of',
       'sort off': 'sort of',
       'a lot off': 'a lot of',
       'a bit off': 'a bit of',
-      
+
       // Common phrases
       'i have': 'I have',
       'i will': 'I will',
@@ -408,13 +412,13 @@ class SpeechToTextService {
       'a lot off': 'a lot of',
       'a bit off': 'a bit of',
     };
-    
+
     // Replace phrases (case-insensitive)
     Object.keys(phraseMap).forEach(phrase => {
       const regex = new RegExp(`\\b${phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
       fixed = fixed.replace(regex, phraseMap[phrase]);
     });
-    
+
     // Then handle single words
     const parts = fixed.split(/(\b)/);
     let result = parts.map(part => {
@@ -422,7 +426,7 @@ class SpeechToTextService {
       if (!/^[A-Za-z]+$/.test(part)) return part;
       const rep = MAP[low];
       if (!rep) return part;
-      
+
       // Preserve capitalization
       if (part[0] === part[0].toUpperCase() && part.slice(1) === part.slice(1).toLowerCase()) {
         return rep.charAt(0).toUpperCase() + rep.slice(1);
@@ -432,12 +436,12 @@ class SpeechToTextService {
 
     // Clean up extra spaces
     result = result.replace(/\s+/g, ' ').trim();
-    
+
     // Basic sentence capitalization
     if (result.length > 0) {
       result = result.charAt(0).toUpperCase() + result.slice(1);
     }
-    
+
     return result;
   }
 
@@ -460,10 +464,10 @@ class SpeechToTextService {
     try {
       // Get Azure access token
       const token = await this.getAzureToken();
-      
+
       // Convert blob to ArrayBuffer
       const audioArrayBuffer = await audioBlob.arrayBuffer();
-      
+
       // Prepare request for Azure Speech Services
       const response = await fetch(
         `https://${this.config.azureRegion}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=${options.language}&format=detailed`,
@@ -484,7 +488,7 @@ class SpeechToTextService {
       }
 
       const data = await response.json();
-      
+
       if (data.RecognitionStatus !== 'Success') {
         throw new Error(`Azure recognition failed: ${data.RecognitionStatus}`);
       }
@@ -497,6 +501,87 @@ class SpeechToTextService {
 
     } catch (error) {
       console.error('Azure Speech-to-Text error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Transcribe audio using Google Gemini 1.5 Flash
+   * Ultimate fallback that works with just the Gemini API key
+   */
+  async transcribeWithGemini(
+    audioBlob: Blob,
+    options: TranscriptionOptions
+  ): Promise<TranscriptionResult> {
+    if (!this.geminiKey) {
+      throw new Error('Gemini API key not configured');
+    }
+
+    console.log('✨ [transcribeWithGemini] Starting Gemini transcription fallback...');
+
+    // Convert blob to base64
+    const base64Audio = await this.blobToBase64(audioBlob);
+
+    // Prompt optimized for transcription of Indian accents
+    const prompt = `
+      Please transcribe this audio file accurately.
+      
+      Context:
+      - This is a student recovering from rural India speaking in English (or Hindi/Kannada mixed).
+      - The topic is "My Inspiration" - responding to videos about career, values, and life lessons.
+      - Please capture the text exactly as spoken, but correct minor grammar/spelling errors if they don't change meaning.
+      - If the audio is in Kannada or Hindi, please translate it to English.
+      - Output ONLY the transcription/translation, no other text.
+    `;
+
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.geminiKey}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                { text: prompt },
+                {
+                  inline_data: {
+                    mime_type: 'audio/mp3', // Gemini handles wav/mp3/webm indiscriminately mostly
+                    data: base64Audio
+                  }
+                }
+              ]
+            }],
+            generationConfig: {
+              temperature: 0.2, // Low temperature for accuracy
+            }
+          })
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+      if (!text) {
+        throw new Error('Gemini returned empty transcription');
+      }
+
+      console.log('✨ [transcribeWithGemini] Success:', text.substring(0, 50) + '...');
+
+      return {
+        transcript: text.trim(),
+        confidence: 0.9, // Artificial confidence since Gemini doesn't return it per-word easily
+        languageCode: options.language
+      };
+
+    } catch (error) {
+      console.error('Gemini Transcription error:', error);
       throw error;
     }
   }
@@ -520,22 +605,35 @@ class SpeechToTextService {
 
     const finalOptions = { ...defaultOptions, ...options };
 
-    // Try Google first, then Azure if enabled
+    // Try Google first
     try {
       return await this.transcribeWithGoogle(audioBlob, finalOptions);
     } catch (googleError) {
-      console.warn('Google transcription failed, trying Azure:', googleError);
-      
+      console.warn('Google transcription failed, trying Azure/Gemini:', googleError);
+
+      // Try Azure if enabled
       if (this.config.fallbackEnabled && this.config.azureKey && this.config.azureRegion) {
         try {
           return await this.transcribeWithAzure(audioBlob, finalOptions);
         } catch (azureError) {
-          console.error('Both Google and Azure transcription failed:', azureError);
+          console.warn('Azure transcription failed, proceeding to Gemini fallback:', azureError);
+          // Fall through to Gemini
+        }
+      }
+
+      // Final fallback: Use Gemini 1.5 Flash if available
+      if (this.geminiKey) {
+        try {
+          return await this.transcribeWithGemini(audioBlob, finalOptions);
+        } catch (geminiError) {
+          console.error('All transcription services failed (Google, Azure, Gemini):', geminiError);
           throw new Error('Transcription failed on all services');
         }
-      } else {
-        throw googleError;
       }
+
+      // If we reached here, it means Google failed, Azure was skipped or failed, and Gemini was skipped (no key).
+      // Re-throw the original error or a generic one.
+      throw googleError;
     }
   }
 
@@ -579,7 +677,7 @@ class SpeechToTextService {
               'ಪ್ರೇರಣೆ', 'ಪ್ರೇರೇಪಿಸು', 'ಮೌಲ್ಯಗಳು', 'ಗುಣಗಳು', 'ಪಾತ್ರಗಳು', 'ನೀವು', 'ನಿಮ್ಮ',
               'ವೀಡಿಯೊ', 'ಆಡಿಯೊ', 'ಪ್ರಶ್ನೆ', 'ಉತ್ತರ', 'ಕಲಿ', 'ಕಲಿಕೆ'
             ] : [
-              'inspiration','motivated','values','qualities','characters','identify','yourself','video','audio','question','response','answer','learn','learning'
+              'inspiration', 'motivated', 'values', 'qualities', 'characters', 'identify', 'yourself', 'video', 'audio', 'question', 'response', 'answer', 'learn', 'learning'
             ],
             boost: 15.0,
           },
@@ -613,19 +711,19 @@ class SpeechToTextService {
     while (true) {
       await new Promise(r => setTimeout(r, delay));
       const pollResp = await fetch(pollUrl);
-      
+
       if (!pollResp.ok) {
         const errorText = await pollResp.text();
         throw new Error(`Failed to poll transcription operation: ${pollResp.status} ${pollResp.statusText} - ${errorText}`);
       }
-      
+
       const op = await pollResp.json();
-      
+
       // Check if operation has an error
       if (op?.error) {
         throw new Error(`Transcription operation failed: ${JSON.stringify(op.error)}`);
       }
-      
+
       if (op?.done) {
         const data = op.response;
         if (!data?.results || data.results.length === 0) {
@@ -761,7 +859,7 @@ class SpeechToTextService {
     // In production, use a proper JWT library like 'jsonwebtoken'
     const encodedHeader = btoa(JSON.stringify(header));
     const encodedPayload = btoa(JSON.stringify(payload));
-    
+
     // For now, we'll use a mock approach
     // In production, you'd need to sign this with the private key
     return `${encodedHeader}.${encodedPayload}.mock_signature`;
