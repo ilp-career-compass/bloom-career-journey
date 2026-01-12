@@ -15,6 +15,7 @@ export interface AudioResponseData {
   languageDetected?: string;
   duration: number;
   fileSize: number;
+  contextPhrases?: string[];
 }
 
 export interface AudioResponseResult {
@@ -52,7 +53,7 @@ class AudioResponseManager {
       this.isOnline = true;
       this.syncOfflineQueue();
     });
-    
+
     window.addEventListener('offline', () => {
       this.isOnline = false;
     });
@@ -116,20 +117,40 @@ class AudioResponseManager {
               transcriptionLanguage = 'en-IN'; // Default to English
             }
           }
-          
+
           let transcriptionResult;
           // If over 60s, use long-running recognize with the uploaded URL
           if (audioData.duration > 60000) {
-            // Use the public URL we just uploaded
-            console.log('🎤 Starting long-running transcription for audio > 60s:', {
-              url: uploadResult.url,
-              duration: audioData.duration,
-              language: transcriptionLanguage
-            });
-            transcriptionResult = await speechToTextService.transcribeLongRunningByUri(
-              uploadResult.url!,
-              { language: transcriptionLanguage }
-            );
+            try {
+              // Use the public URL we just uploaded
+              console.log('🎤 Starting long-running transcription for audio > 60s:', {
+                url: uploadResult.url,
+                duration: audioData.duration,
+                language: transcriptionLanguage
+              });
+              transcriptionResult = await speechToTextService.transcribeLongRunningByUri(
+                uploadResult.url!,
+                {
+                  language: transcriptionLanguage,
+                  contextPhrases: audioData.contextPhrases
+                }
+              );
+            } catch (longRunError) {
+              console.warn('⚠️ Long-running transcription failed, attempting Gemini fallback:', longRunError);
+              // Fallback to Gemini directly, which handles larger context/files well
+              transcriptionResult = await speechToTextService.transcribeWithGemini(
+                audioData.audioBlob,
+                {
+                  language: transcriptionLanguage,
+                  enableAutomaticPunctuation: true,
+                  enableWordTimeOffsets: true,
+                  model: 'latest_long', // Gemini doesn't use this but satisfying the interface
+                  useEnhanced: true,
+                  sampleRateHertz: 48000,
+                  encoding: 'WEBM_OPUS'
+                }
+              );
+            }
           } else {
             console.log('🎤 Starting standard transcription:', {
               blobSize: audioData.audioBlob.size,
@@ -139,10 +160,13 @@ class AudioResponseManager {
             });
             transcriptionResult = await speechToTextService.transcribe(
               audioData.audioBlob,
-              { language: transcriptionLanguage }
+              {
+                language: transcriptionLanguage,
+                contextPhrases: audioData.contextPhrases
+              }
             );
           }
-          
+
           console.log('✅ Transcription completed:', {
             transcriptLength: transcriptionResult.transcript?.length || 0,
             confidence: transcriptionResult.confidence,
@@ -161,12 +185,12 @@ class AudioResponseManager {
               languageDetected || 'en-IN'
             );
             cleanedTranscription = cleaned.cleanedText?.trim() || transcription || undefined;
-          } catch {}
+          } catch { }
 
           onProgress?.(80);
         } catch (error) {
           console.error('❌ Transcription failed:', error);
-          
+
           // Log helpful error message for missing API keys
           if (error instanceof Error) {
             if (error.message.includes('Google API key not configured')) {
@@ -190,7 +214,7 @@ class AudioResponseManager {
           } else {
             console.error('❌ Unknown transcription error:', error);
           }
-          
+
           // Continue without transcription - don't fail the entire audio save process
           // The audio will still be saved, just without transcription
         }
@@ -234,11 +258,11 @@ class AudioResponseManager {
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      
+
       // If offline mode is enabled, queue for later
       if (this.config.enableOfflineMode && !this.isOnline) {
         this.queueOfflineResponse(audioData);
-        
+
         return {
           success: true,
           error: 'Queued for offline sync',
@@ -265,7 +289,7 @@ class AudioResponseManager {
     onProgress?: (progress: number) => void
   ): Promise<{ success: boolean; url?: string; error?: string }> {
     const filePath = `audio-responses/${this.config!.studentId}/${this.config!.assessmentId}/${audioData.questionId}_${Date.now()}.webm`;
-    
+
     try {
       const result = await supabaseUploadService.uploadFile({
         bucket: 'assessment-audio',
@@ -410,7 +434,7 @@ class AudioResponseManager {
    */
   private queueOfflineResponse(audioData: AudioResponseData): void {
     this.offlineQueue.push(audioData);
-    
+
     // Save to localStorage for persistence
     localStorage.setItem(
       `audio_queue_${this.config!.studentId}`,
@@ -479,7 +503,7 @@ class AudioResponseManager {
     oldestItem?: string;
   } {
     const totalSize = this.offlineQueue.reduce((sum, item) => sum + item.fileSize, 0);
-    const oldestItem = this.offlineQueue.length > 0 
+    const oldestItem = this.offlineQueue.length > 0
       ? new Date(Math.min(...this.offlineQueue.map(item => Date.now()))).toISOString()
       : undefined;
 

@@ -3,7 +3,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-export type AssessmentType = 
+export type AssessmentType =
   | 'inspiration'
   | 'about_me'
   | 'dreams'
@@ -81,10 +81,18 @@ export function getAssessmentTypeFromDB(assessmentType: string): AssessmentType 
 /**
  * Check if an assessment is unlocked for a student
  */
+// Check if an assessment is unlocked for a student
 export async function checkAssessmentUnlock(
   studentId: string,
   assessmentType: AssessmentType
 ): Promise<UnlockCheckResult> {
+  // TESTING: Temporarily unlock all assessments based on user request
+  return {
+    isUnlocked: true,
+    missingPrerequisites: []
+  };
+
+  /* Original Logic:
   // Inspiration is always unlocked
   if (assessmentType === 'inspiration') {
     return {
@@ -144,5 +152,6 @@ export async function checkAssessmentUnlock(
     isUnlocked: missingPrerequisites.length === 0,
     missingPrerequisites
   };
+  */
 }
 

@@ -1,0 +1,60 @@
+[
+  {
+    "id": "98645057-0cc1-4f7a-8ecc-e462ae86ae1b",
+    "assessment_type": "about_me",
+    "title": "Summary: About Me",
+    "summary_questions": {
+      "en": {
+        "header1": "Prepare a personal profile or your own self-portrait. Summarize the points you wrote about yourself above in one or a few words.",
+        "question1": "Who are my friends outside my family?",
+        "question2": "What activities do I do daily?",
+        "question3": "Which activities do I enjoy during school time?",
+        "question4": "Which activities do I enjoy outside school?",
+        "question5": "What activities do I enjoy personally?",
+        "question6": "What activities do I enjoy doing as a team?",
+        "question7": "Which school activity do I find difficult even though I must do it? Which activity do I find difficult to manage after school or outside school?",
+        "question8": "What activities must I do?",
+        "question9": "Which activities can I do easily?",
+        "question10": "Which activities are not easy for me to do?",
+        "question11": "What qualities do I like about myself?",
+        "question12": "What qualities do others like in me?",
+        "question13": "Which qualities or aspects do I need to improve?"
+      },
+      "kn": {
+        "header1": "ವೈಯಕ್ತಿಕ ಪ್ರೊಫೈಲ್ ಅಥವಾ ನಿಮ್ಮದೇ ವ್ಯಕ್ತಿಚಿತ್ರವನ್ನು ಸಿದ್ಧಪಡಿಸಿ. ಮೇಲೆ ನಿಮ್ಮ ಬಗ್ಗೆ ನೀವು ಬರೆದ ಅಂಶಗಳನ್ನು ಒಂದು ಅಥವಾ ಕೆಲವು ಪದಗಳಲ್ಲಿ ಸಂಕ್ಷಿಪ್ತವಾಗಿ ಬರೆಯಿರಿ.",
+        "question1": "ನನ್ನ ಸ್ನೇಹಿತರು ಯಾರು?",
+        "question2": "ನಾನು ದಿನನಿತ್ಯದಲ್ಲಿ ಯಾವ ಕೆಲಸಗಳನ್ನು ಮಾಡುತ್ತೇನೆ?",
+        "question3": "ಶಾಲೆಯ ಸಮಯದಲ್ಲಿ ನಾನು ಆನಂದಿಸುವ ಚಟುವಟಿಕೆಗಳು ಯಾವುವು?",
+        "question4": "ಶಾಲೆ ಹೊರಗೆ ನಾನು ಆನಂದಿಸುವ ಚಟುವಟಿಕೆಗಳು ಯಾವುವು?",
+        "question5": "ವೈಯಕ್ತಿಕವಾಗಿ ನಾನು ಆನಂದಿಸುವ ಕೆಲಸಗಳು / ಚಟುವಟಿಕೆಗಳು ಯಾವುವು?",
+        "question6": "ತಂಡವಾಗಿ ನಾನು ಆನಂದಿಸುವ ಕೆಲಸಗಳು / ಚಟುವಟಿಕೆಗಳು ಯಾವುವು?",
+        "question7": "ಶಾಲೆಯಲ್ಲಿ ಮಾಡಬೇಕಾದರೂ ನನಗೆ ಕಷ್ಟವಾಗುವ ಚಟುವಟಿಕೆ ಯಾವುದು? ಶಾಲೆಯ ನಂತರ ಅಥವಾ ಶಾಲೆ ಹೊರಗೆ ನನಗೆ ನಿರ್ವಹಿಸಲು ಕಷ್ಟವಾಗುವ ಚಟುವಟಿಕೆ ಯಾವುದು?",
+        "question8": "ನಾನು ಮಾಡಲೇಬೇಕಾದ ಚಟುವಟಿಕೆಗಳು ಯಾವುವು?",
+        "question9": "ನಾನು ಸುಲಭವಾಗಿ ಮಾಡಬಹುದಾದ ಚಟುವಟಿಕೆಗಳು ಯಾವುವು?",
+        "question10": "ನನಗೆ ಸುಲಭವಾಗಿ ಮಾಡಲು ಬಾರದ ಚಟುವಟಿಕೆಗಳು ಯಾವುವು?",
+        "question11": "ನನ್ನಲ್ಲಿರುವ ನಾನು ಇಷ್ಟಪಡುವ ಗುಣಗಳು ಯಾವುವು?",
+        "question12": "ಇತರರು ನನ್ನಲ್ಲಿ ಇಷ್ಟ ಪಡುವ ಗುಣಗಳು ಯಾವುವು?",
+        "question13": "ನಾನು ಸುಧಾರಿಸಿಕೊಳ್ಳಬೇಕಾದ ಗುಣಗಳು / ಅಂಶಗಳು ಯಾವುವು?"
+      },
+      "ta": {
+        "header1": "ஒரு தனிப்பட்ட சுயவிவரம் அல்லது உங்கள் சொந்த சுயப்படத்தை தயாரிக்கவும். மேலே உங்களைப் பற்றி நீங்கள் எழுதிய அம்சங்களை ஒரு அல்லது சில சொற்களில் சுருக்கமாக எழுதுங்கள்.",
+        "question1": "என் குடும்பத்தைத் தவிர, என் நண்பர்கள் யார்?",
+        "question2": "நான் தினமும் என்ன வேலைகளை செய்கிறேன்?",
+        "question3": "பள்ளி நேரத்தில் நான் ரசிக்கும் செயல்கள் என்ன?",
+        "question4": "பள்ளிக்கு வெளியே நான் ரசிக்கும் செயல்கள் என்ன?",
+        "question5": "தனிப்பட்ட முறையில் நான் ரசிக்கும் செயல்கள் என்ன?",
+        "question6": "குழுவாகச் செய்யும்போது நான் ரசிக்கும் செயல்கள் என்ன?",
+        "question7": "பள்ளியில் செய்ய வேண்டியிருந்தாலும் எனக்கு கடினமாக இருக்கும் செயல் எது? பள்ளிக்கு பிறகு அல்லது பள்ளிக்கு வெளியே செய்ய கடினமாக இருப்பது எது?",
+        "question8": "நான் கட்டாயமாக செய்ய வேண்டிய செயல்கள் என்ன?",
+        "question9": "நான் எளிதாக செய்யக்கூடிய செயல்கள் என்ன?",
+        "question10": "எனக்கு எளிதாக செய்ய முடியாத செயல்கள் என்ன?",
+        "question11": "என்னிடத்தில் நான் விரும்பும் குணங்கள் என்ன?",
+        "question12": "மற்றவர்கள் என்னிடத்தில் விரும்பும் குணங்கள் என்ன?",
+        "question13": "நான் மேம்படுத்த வேண்டிய குணங்கள் /அம்சங்கள் என்ன?"
+      }
+    },
+    "is_active": true,
+    "created_at": "2025-11-03T00:05:03.056747+00:00",
+    "updated_at": "2026-01-03T21:45:41.024534+00:00"
+  }
+]

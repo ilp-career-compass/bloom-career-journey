@@ -14,15 +14,17 @@ export default function HollandTest() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 py-8" lang={lang} dir="auto">
       <div className="container mx-auto px-4">
         {/* Header with Back Button - matching assessment pages */}
-        <div className="flex items-center justify-between mb-8">
-          <Button
-            variant="ghost"
-            onClick={() => navigate(`/student?lang=${lang}`)}
-            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            {lang === 'kn' ? 'ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ಗೆ ಹಿಂತಿರುಗಿ' : lang === 'ta' ? 'முதல் பக்கத்திற்கு திரும்பு' : 'Back to Dashboard'}
-          </Button>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+          <div className="flex-shrink-0">
+            <Button
+              variant="ghost"
+              onClick={() => navigate(`/student?lang=${lang}`)}
+              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-2 sm:px-4"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              {lang === 'kn' ? 'ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ಗೆ ಹಿಂತಿರುಗಿ' : lang === 'ta' ? 'முதல் பக்கத்திற்கு திரும்பு' : 'Back to Dashboard'}
+            </Button>
+          </div>
           <div className="text-center flex-1">
             <h1 className="text-3xl font-bold text-blue-800 mb-2">
               {lang === 'kn'

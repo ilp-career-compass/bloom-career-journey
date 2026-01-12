@@ -6,22 +6,22 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { 
-  Lightbulb, 
-  AlertCircle, 
-  Users, 
-  Edit3, 
-  Save, 
-  X, 
+import {
+  Lightbulb,
+  AlertCircle,
+  Users,
+  Edit3,
+  Save,
+  X,
   CheckCircle,
   Sparkles
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useLang } from '@/hooks/useLang';
 import { KannadaKeyboard } from '@/components/ui/KannadaKeyboard';
-import { 
-  AssessmentSummary, 
-  SummaryQuestions, 
+import {
+  AssessmentSummary,
+  SummaryQuestions,
   getDisplaySummary,
   canStudentEdit,
   getSummaryStatusColor,
@@ -56,7 +56,7 @@ export default function SummaryViewDialog({
   const isSchoolLearningAssessment = assessmentType === 'school_learning';
   const isHobbiesAssessment = assessmentType === 'hobbies';
   const isRoleModelsAssessment = assessmentType === 'role_models';
-  const [questionTitles, setQuestionTitles] = useState<{ q1: string; q2: string; q3: string; q4?: string; q5?: string; q6?: string; q7?: string; q8?: string; q9?: string; q10?: string }>({
+  const [questionTitles, setQuestionTitles] = useState<{ [key: string]: string }>({
     q1: lang === 'kn' ? '1. ಪ್ರಶ್ನೆ 1' : lang === 'ta' ? '1. கேள்வி 1' : '1. Question 1',
     q2: lang === 'kn' ? '2. ಪ್ರಶ್ನೆ 2' : lang === 'ta' ? '2. கேள்வி 2' : '2. Question 2',
     q3: lang === 'kn' ? '3. ಪ್ರಶ್ನೆ 3' : lang === 'ta' ? '3. கேள்வி 3' : '3. Question 3'
@@ -151,130 +151,43 @@ export default function SummaryViewDialog({
           const preferredKey = lang === 'kn' ? 'kn' : lang === 'ta' ? 'ta' : 'en';
           const hasPreferred = questions[preferredKey];
           const langKey = hasPreferred ? preferredKey : 'en';
-          
-          if (questions[langKey]) {
-            const defaultTitles = {
-              q1: questions[langKey].question1 || (lang === 'kn' ? '1. ಪ್ರಶ್ನೆ 1' : lang === 'ta' ? '1. கேள்வி 1' : '1. Question 1'),
-              q2: questions[langKey].question2 || (lang === 'kn' ? '2. ಪ್ರಶ್ನೆ 2' : lang === 'ta' ? '2. கேள்வி 2' : '2. Question 2'),
-              q3: questions[langKey].question3 || (lang === 'kn' ? '3. ಪ್ರಶ್ನೆ 3' : lang === 'ta' ? '3. கேள்வி 3' : '3. Question 3'),
-              q4: questions[langKey].question4 || (lang === 'kn' ? '4. ಪ್ರಶ್ನೆ 4' : lang === 'ta' ? '4. கேள்வி 4' : '4. Question 4'),
-              q5: questions[langKey].question5 || (lang === 'kn' ? '5. ಪ್ರಶ್ನೆ 5' : lang === 'ta' ? '5. கேள்வி 5' : '5. Question 5'),
-              q6: questions[langKey].question6 || (lang === 'kn' ? '6. ಪ್ರಶ್ನೆ 6' : lang === 'ta' ? '6. கேள்வி 6' : '6. Question 6')
-            };
 
-            if (assessmentType === 'about_me') {
-              setQuestionTitles({
-                q1: lang === 'kn' ? '15 ಅಂಶಗಳಲ್ಲಿ ನನ್ನ ಬಗ್ಗೆ ಚಿತ್ರಣ' : lang === 'ta' ? 'என்னை பற்றி 15 முக்கிய புள்ளிகள்' : '15-Point Personal Snapshot',
-                q2: lang === 'kn' ? 'ಸ್ವ-ಪರಿಶೀಲನೆಯ ಸಾರಾಂಶ' : lang === 'ta' ? 'சுய சிந்தனை சுருக்கம்' : 'Self-Reflection Summary',
-                q3: lang === 'kn' ? 'ಬೆಂಬಲ ಮತ್ತು ಕ್ರಿಯಾತ್ಮಕ ಯೋಜನೆ' : lang === 'ta' ? 'ஆதரவு மற்றும் செயல் திட்டம்' : 'Support & Action Plan'
-              });
-            } else if (assessmentType === 'dreams') {
-              setQuestionTitles({
-                q1: lang === 'kn' ? 'ಕನಸು ಪೋರ್ಟ್‌ಫೋಲಿಯೋ' : lang === 'ta' ? 'கனவு திட்டம்' : 'Dream Portfolio',
-                q2: defaultTitles.q2,
-                q3: defaultTitles.q3
-              });
-            } else if (assessmentType === 'school_learning') {
-              if (lang === 'ta') {
-                setQuestionTitles({
-                  q1: 'எனக்கு பிடித்த பாடங்கள்',
-                  q2: 'எனக்கு பிடித்த பாடங்களில் இருந்து சாத்தியமான தொழில்கள்',
-                  q3: 'எனக்கு பிடிக்காத பாடங்கள்',
-                  q4: 'பிடிக்காத பாடங்களில் நான் மேம்பட்டால் சாத்தியமான தொழில்கள்',
-                  q5: 'பள்ளியில் படிப்பைத் தவிர நான் நன்றாகச் செய்யும் செயல்கள்',
-                  q6: 'இந்த திறன்களை மேம்படுத்துவது என் தொழிலுக்கு எப்படி உதவும்'
-                });
-              } else if (lang === 'kn') {
-                setQuestionTitles({
-                  q1: 'ನನಗೆ ಇಷ್ಟವಾದ ವಿಷಯಗಳು',
-                  q2: 'ನನಗೆ ಇಷ್ಟವಾದ ವಿಷಯಗಳಿಂದ ಸಾಧ್ಯವಾದ ವೃತ್ತಿಗಳು',
-                  q3: 'ನನಗೆ ಇಷ್ಟವಿಲ್ಲದ ವಿಷಯಗಳು',
-                  q4: 'ಇಷ್ಟವಿಲ್ಲದ ವಿಷಯಗಳಲ್ಲಿ ನಾನು ಸುಧಾರಿಸಿದರೆ ಸಾಧ್ಯವಾದ ವೃತ್ತಿಗಳು',
-                  q5: 'ಶಾಲೆಯಲ್ಲಿ ಅಧ್ಯಯನದ ಹೊರತಾಗಿ ನಾನು ಚೆನ್ನಾಗಿ ಮಾಡುವ ಕೆಲಸಗಳು',
-                  q6: 'ಈ ಕೌಶಲ್ಯಗಳನ್ನು ಬೆಳೆಸುವುದು ನನ್ನ ವೃತ್ತಿಗೆ ಹೇಗೆ ಸಹಾಯ ಮಾಡುತ್ತದೆ'
-                });
-              } else {
-                setQuestionTitles(defaultTitles);
-              }
+          if (questions[langKey]) {
+            // Simplify: Just take all keys from the template for the appropriate language
+            // This handles about_me (16 questions), school_learning (6-21), etc. automatically.
+            const newTitles: { [key: string]: string } = {};
+
+            // First populate from DB template
+            Object.keys(questions[langKey]).forEach(key => {
+              // Convert question1 -> q1
+              const shortKey = key.replace('question', 'q');
+              newTitles[shortKey] = questions[langKey][key];
+            });
+
+            // Apply special overrides if needed (e.g. Dreams hardcoded titles if not in DB)
+            if (assessmentType === 'dreams') {
+              newTitles.q1 = lang === 'kn' ? 'ಕನಸು ಪೋರ್ಟ್‌ಫೋಲಿಯೋ' : lang === 'ta' ? 'கனவு திட்டம்' : 'Dream Portfolio';
             } else if (assessmentType === 'hobbies') {
-              if (lang === 'ta') {
-                setQuestionTitles({
-                  q1: 'பொழுதுபோக்கு திட்டம்',
-                  q2: 'பொழுதுபோக்குகள்',
-                  q3: 'இந்தப் பொழுதுபோக்கை ஒரு தொழிலாக மாற்ற விரும்புகிறீர்களா?',
-                  q4: 'இந்தப் பொழுதுபோக்குக்கு பொருத்தமான தொழில்கள்',
-                  q5: 'இந்தப் பொழுதுபோக்கை தொழிலாக மாற்றியவர் யாரை நீங்கள் அறிவீர்கள்?',
-                  q6: 'திறமைகள் திட்டம்',
-                  q7: 'திறமைகள்',
-                  q8: 'இந்த திறமையை ஒரு தொழிலாக மாற்ற விரும்புகிறீர்களா?',
-                  q9: 'இந்த திறமைக்கு பொருத்தமான தொழில்கள்',
-                  q10: 'இந்த திறமையை தொழிலாக மாற்றியவர் யாரை நீங்கள் அறிவீர்கள்?'
-                });
-              } else if (lang === 'kn') {
-                setQuestionTitles({
-                  q1: 'ಹವ್ಯಾಸಗಳ ಪೋರ್ಟ್‌ಫೋಲಿಯೋ',
-                  q2: 'ಹವ್ಯಾಸಗಳು',
-                  q3: 'ಈ ಹವ್ಯಾಸವನ್ನು ವೃತ್ತಿಯಾಗಿಸಲು ನೀವು ಬಯಸುವಿರಾ?',
-                  q4: 'ಈ ಹವ್ಯಾಸಗಳಿಗೆ ಹೊಂದುವ ವೃತ್ತಿಗಳು',
-                  q5: 'ತಮ ಹವ್ಯಾಸವನ್ನು ವೃತ್ತಿಯಾಗಿಸಿಕೊಂಡಿರುವವರಲ್ಲಿ ನೀವು ಯಾರನ್ನು ತಿಳಿದಿದ್ದೀರಿ?',
-                  q6: 'ಪ್ರತಿಭೆಗಳ ಪೋರ್ಟ್‌ಫೋಲಿಯೋ',
-                  q7: 'ಪ್ರತಿಭೆಗಳು',
-                  q8: 'ಈ ಪ್ರತಿಭೆಯನ್ನು ವೃತ್ತಿಯಾಗಿಸಲು ನೀವು ಬಯಸುವಿರಾ?',
-                  q9: 'ನಿಮ್ಮ ಪ್ರತಿಭೆಗೆ ಹೊಂದುವ ವೃತ್ತಿಗಳು',
-                  q10: 'ತಮ್ಮ ಪ್ರತಿಭೆಯನ್ನು ವೃತ್ತಿಯಾಗಿಸಿಕೊಂಡವರಲ್ಲಿ ನೀವು ಯಾರನ್ನು ತಿಳಿದಿದ್ದೀರಿ?'
-                });
-              } else {
-                setQuestionTitles({
-                  q1: defaultTitles.q1 || 'Hobbies Portfolio',
-                  q2: 'Hobbies',
-                  q3: 'I would like to turn this hobby into a career',
-                  q4: 'Careers that are compatible with these hobbies',
-                  q5: 'People you know who have turned their hobbies into careers',
-                  q6: defaultTitles.q6 || 'Talents Portfolio',
-                  q7: 'Talents',
-                  q8: 'Do you want to turn your talent into a career?',
-                  q9: 'Careers that match your talents',
-                  q10: 'People you know who have turned their talents into careers'
-                });
-              }
+              newTitles.q1 = 'Hobbies';
+              newTitles.q6 = 'Talents';
             } else if (assessmentType === 'role_models') {
-              if (lang === 'ta') {
-                setQuestionTitles({
-                  q1: 'தொழில் வழிகாட்டல் குறித்து உங்கள் முன்மாதிரி நபர்களிடம் கேட்க விரும்பும் 5 முதல் 10 கேள்விகளை எழுதுங்கள்.'
-                });
-              } else if (lang === 'kn') {
-                setQuestionTitles({
-                  q1: 'ನಿಮ್ಮ ಪಾತ್ರ ಮಾದರಿಗಳಿಂದ ವೃತ್ತಿ ಮಾರ್ಗದರ್ಶನದ ಕುರಿತಾಗಿ ನೀವು ಕೇಳಲು ಬಯಸುವ 5 ರಿಂದ 10 ಪ್ರಶ್ನೆಗಳನ್ನು ಬರೆಯಿರಿ.'
-                });
-              } else {
-                setQuestionTitles({
-                  q1: defaultTitles.q1
-                });
-              }
-            } else if (assessmentType === 'inspiration') {
-              if (lang === 'ta') {
-                setQuestionTitles({
-                  q1: 'என்னை ஊக்கப்படுத்தியவை',
-                  q2: 'தவிர்க்க வேண்டிய நடத்தைகள்',
-                  q3: 'ஊக்கமூட்டும் நபர்கள் / சம்பவங்களுக்கு இடையிலான ஒற்றுமைகள்'
-                });
-              } else if (lang === 'kn') {
-                setQuestionTitles({
-                  q1: 'ನನಗೆ ಪ್ರೇರಣೆ ನೀಡಿದವು',
-                  q2: 'ತಪ್ಪಿಸಿಕೊಳ್ಳಬೇಕಾದ ವರ್ತನೆಗಳು',
-                  q3: 'ಪ್ರೇರಣಾದಾಯಕ ವ್ಯಕ್ತಿಗಳು / ಘಟನೆಗಳ ನಡುವಿನ ಸಾಮ್ಯತೆಗಳು'
-                });
-              } else {
-                setQuestionTitles(defaultTitles);
-              }
-            } else {
-              setQuestionTitles(defaultTitles);
+              newTitles.q1 = lang === 'kn' ? 'ನಿಮ್ಮ ಪಾತ್ರ ಮಾದರಿಗಳಿಂದ ವೃತ್ತಿ ಮಾರ್ಗದರ್ಶನದ ಕುರಿತಾಗಿ ನೀವು ಕೇಳಲು ಬಯಸುವ 5 ರಿಂದ 10 ಪ್ರಶ್ನೆಗಳನ್ನು ಬರೆಯಿರಿ.' : lang === 'ta' ? 'தொழில் வழிகாட்டல் குறித்து உங்கள் முன்மாதிரி நபர்களிடம் கேட்க விரும்பும் 5 முதல் 10 கேள்விகளை எழுதுங்கள்.' : 'Write 5 to 10 questions you would like to ask your role model for career guidance.';
             }
+
+            // Ensure we have at least q1..q3 for basic assessments if the DB template was empty/partial
+            if (!newTitles.q1) newTitles.q1 = (lang === 'kn' ? '1. ಪ್ರಶ್ನೆ 1' : lang === 'ta' ? '1. கேள்வி 1' : '1. Question 1');
+            if (!newTitles.q2 && !['dreams', 'school_learning', 'hobbies', 'role_models'].includes(assessmentType)) {
+              newTitles.q2 = (lang === 'kn' ? '2. ಪ್ರಶ್ನೆ 2' : lang === 'ta' ? '2. கேள்வி 2' : '2. Question 2');
+            }
+            if (!newTitles.q3 && !['dreams', 'school_learning', 'hobbies', 'role_models'].includes(assessmentType)) {
+              newTitles.q3 = (lang === 'kn' ? '3. ಪ್ರಶ್ನೆ 3' : lang === 'ta' ? '3. கேள்வி 3' : '3. Question 3');
+            }
+
+            setQuestionTitles(newTitles);
           }
         }
       } catch (error) {
         console.error('Error fetching question titles:', error);
-        // Keep default titles on error
       }
     };
 
@@ -285,19 +198,16 @@ export default function SummaryViewDialog({
 
   // Load current summary content when dialog opens or summary changes
   useEffect(() => {
-    if (summary && open) {
+    // Only load the summary if:
+    // 1. The summary exists and dialog is open
+    // 2. AND we are not currently in edit mode (to avoid overwriting student's unsaved changes)
+    if (summary && open && !isEditing) {
       const displaySummary = getDisplaySummary(summary);
-      setEditedSummary({
-        question1: displaySummary.question1,
-        question2: displaySummary.question2,
-        question3: displaySummary.question3,
-        question4: displaySummary.question4 || '',
-        question5: displaySummary.question5 || '',
-        question6: displaySummary.question6 || ''
-      });
-      setIsEditing(false);
+      const newEditedSummary: any = { ...displaySummary };
+      setEditedSummary(newEditedSummary);
+      console.log('📝 SummaryViewDialog: Loaded/Updated summary content because not in edit mode');
     }
-  }, [summary, open]);
+  }, [summary, open, isEditing]);
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -322,24 +232,35 @@ export default function SummaryViewDialog({
     if (!summary) return;
 
     // Validate that all fields have content
-    const requiredQuestions = isSchoolLearningAssessment 
-      ? [editedSummary.question1, editedSummary.question2, editedSummary.question3, editedSummary.question4, editedSummary.question5, editedSummary.question6]
-      : isHobbiesAssessment
-      ? [editedSummary.question1, editedSummary.question6]
-      : [editedSummary.question1, editedSummary.question2, editedSummary.question3];
-    
-    const allFilled = requiredQuestions.every(q => q?.trim());
-    
+    const requiredQuestions: string[] = [];
+
+    if (isSchoolLearningAssessment) {
+      requiredQuestions.push(editedSummary.question1, editedSummary.question2, editedSummary.question3, editedSummary.question4, editedSummary.question5, editedSummary.question6);
+    } else if (isHobbiesAssessment) {
+      requiredQuestions.push(editedSummary.question1, editedSummary.question6);
+    } else if (isAboutMeAssessment) {
+      // Require all 16 questions for About Me
+      for (let i = 1; i <= 16; i++) {
+        requiredQuestions.push(editedSummary[`question${i}`] || '');
+      }
+    } else {
+      // Default (Inspiration, etc) - 3 questions
+      requiredQuestions.push(editedSummary.question1, editedSummary.question2, editedSummary.question3);
+    }
+
+    // Filter out undefined and check if empty
+    const allFilled = requiredQuestions.every(q => q && q.trim().length > 0);
+
     if (!allFilled) {
-      const questionCount = isSchoolLearningAssessment ? 6 : isHobbiesAssessment ? 2 : 3;
+      const questionCount = isSchoolLearningAssessment ? 6 : isHobbiesAssessment ? 2 : isAboutMeAssessment ? 16 : 3;
       toast({
         title: lang === 'kn' ? "ಅಪೂರ್ಣ ಸಾರಾಂಶ" : lang === 'ta' ? 'சுருக்கம் இன்னும் முழுமை அடையவில்லை' : "Incomplete Summary",
         description:
           lang === 'kn'
             ? `ಉಳಿಸುವ ಮೊದಲು ಎಲ್ಲಾ ${questionCount} ಪ್ರಶ್ನೆಗಳನ್ನು ಭರ್ತಿ ಮಾಡಿ.`
             : lang === 'ta'
-            ? `சேமிக்க முன் எல்லா ${questionCount} கேள்விகளுக்கும் பதில் எழுதுங்கள்.`
-            : `Please fill in all ${questionCount} questions before saving.`,
+              ? `சேமிக்க முன் எல்லா ${questionCount} கேள்விகளுக்கும் பதில் எழுதுங்கள்.`
+              : `Please fill in all ${questionCount} questions before saving.`,
         variant: "destructive"
       });
       return;
@@ -360,8 +281,8 @@ export default function SummaryViewDialog({
             lang === 'kn'
               ? "ನಿಮ್ಮ ಪ್ರತಿಬಿಂಬ ಸಾರಾಂಶ ಯಶಸ್ವಿಯಾಗಿ ಉಳಿಸಲಾಗಿದೆ."
               : lang === 'ta'
-              ? 'உங்கள் சுருக்கம் வெற்றிகரமாக சேமிக்கப்பட்டது.'
-              : "Your reflection summary has been saved successfully."
+                ? 'உங்கள் சுருக்கம் வெற்றிகரமாக சேமிக்கப்பட்டது.'
+                : "Your reflection summary has been saved successfully."
         });
         setIsEditing(false);
         onSummaryUpdated?.();
@@ -376,8 +297,8 @@ export default function SummaryViewDialog({
           lang === 'kn'
             ? "ನಿಮ್ಮ ಬದಲಾವಣೆಗಳನ್ನು ಉಳಿಸಲು ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ."
             : lang === 'ta'
-            ? 'உங்கள் மாற்றங்களை சேமிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.'
-            : "Failed to save your changes. Please try again.",
+              ? 'உங்கள் மாற்றங்களை சேமிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.'
+              : "Failed to save your changes. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -388,13 +309,13 @@ export default function SummaryViewDialog({
   if (!summary) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" lang={lang} dir="auto">
-        <DialogHeader>
-          <DialogTitle>{lang === 'kn' ? 'ಪ್ರತಿಬಿಂಬ ಸಾರಾಂಶ' : 'Reflection Summary'}</DialogTitle>
-          <DialogDescription>
-            {lang === 'kn' ? 'ನಿಮ್ಮ ಪ್ರತಿಬಿಂಬ ಸಾರಾಂಶ ಇನ್ನೂ ಲಭ್ಯವಿಲ್ಲ.' : 'Your reflection summary is not yet available.'}
-          </DialogDescription>
-        </DialogHeader>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" lang={lang} dir="auto">
+          <DialogHeader>
+            <DialogTitle>{lang === 'kn' ? 'ಪ್ರತಿಬಿಂಬ ಸಾರಾಂಶ' : 'Reflection Summary'}</DialogTitle>
+            <DialogDescription>
+              {lang === 'kn' ? 'ನಿಮ್ಮ ಪ್ರತಿಬಿಂಬ ಸಾರಾಂಶ ಇನ್ನೂ ಲಭ್ಯವಿಲ್ಲ.' : 'Your reflection summary is not yet available.'}
+            </DialogDescription>
+          </DialogHeader>
           <div className="p-8 text-center">
             <AlertCircle className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
             <p className="text-gray-600">
@@ -415,18 +336,18 @@ export default function SummaryViewDialog({
     quality: lang === 'kn'
       ? 'ಕನಸನ್ನು ಸಾಧಿಸಲು\nಸಹಾಯ ಮಾಡುವ ಗುಣ,\nಮೌಲ್ಯ, ಶಕ್ತಿ'
       : lang === 'ta'
-      ? 'இந்த கனவை அடைய\nஉதவும் குணம்,\nமதிப்பு, பலம்'
-      : 'Which quality,\nvalue, strength will\nhelp you achieve\nyou dream',
+        ? 'இந்த கனவை அடைய\nஉதவும் குணம்,\nமதிப்பு, பலம்'
+        : 'Which quality,\nvalue, strength will\nhelp you achieve\nyou dream',
     prevent: lang === 'kn'
       ? 'ಕನಸು ವಿಫಲವಾಗದಂತೆ\nಮಾಡಲು ನೀನು ಏನು\nಮಾಡಬೇಕು'
       : lang === 'ta'
-      ? 'கனவு தோல்வி\nஆகாமல் இருக்க\nநீ என்ன செய்ய வேண்டும்'
-      : 'What you will have\nto do to ensure that\nthe dream doesn’t\nfail',
+        ? 'கனவு தோல்வி\nஆகாமல் இருக்க\nநீ என்ன செய்ய வேண்டும்'
+        : 'What you will have\nto do to ensure that\nthe dream doesn’t\nfail',
     study: lang === 'kn'
       ? 'ಈ ಕನಸನ್ನು ಸಾಧಿಸಲು\n10ನೇ ನಂತರ ಏನು\nಅಧ್ಯಯನ ಮಾಡಬೇಕು\n(ಬೇಕಿದ್ದರೆ)'
       : lang === 'ta'
-      ? 'இந்த கனவை அடைய\n10ம் பிறகு என்ன\nபடிக்க வேண்டும்\n(தேவையெனில்)'
-      : 'What should you\nstudy after 10th\nto achieve this dream\n(if applicable)'
+        ? 'இந்த கனவை அடைய\n10ம் பிறகு என்ன\nபடிக்க வேண்டும்\n(தேவையெனில்)'
+        : 'What should you\nstudy after 10th\nto achieve this dream\n(if applicable)'
   };
 
   return (
@@ -437,78 +358,78 @@ export default function SummaryViewDialog({
             <div>
               <DialogTitle className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-purple-600" />
-                {assessmentType === 'about_me' 
+                {assessmentType === 'about_me'
                   ? (lang === 'kn'
-                      ? 'ನನ್ನ ಬಗ್ಗೆ ಸಾರಾಂಶ'
-                      : lang === 'ta'
-                        ? 'சுருக்கம்: என்னைப் பற்றி'
-                        : 'Summary: About Me')
+                    ? 'ನನ್ನ ಬಗ್ಗೆ ಸಾರಾಂಶ'
+                    : lang === 'ta'
+                      ? 'சுருக்கம்: என்னைப் பற்றி'
+                      : 'Summary: About Me')
                   : assessmentType === 'dreams'
-                  ? (lang === 'kn'
+                    ? (lang === 'kn'
                       ? 'ನನ್ನ ಕನಸುಗಳು ಸಾರಾಂಶ'
                       : lang === 'ta'
                         ? 'சுருக்கம்: என் கனவுகள்'
                         : 'Summary: My Dreams')
-                  : assessmentType === 'school_learning'
-                  ? (lang === 'kn'
-                      ? 'ನನ್ನ ಶಾಲೆ, ನನ್ನ ಕಲಿಕೆ ಮತ್ತು ನಾನು ಸಾರಾಂಶ'
-                      : lang === 'ta'
-                        ? 'சுருக்கம்: என் பள்ளி, என் படிப்பு மற்றும் நான்'
-                        : 'Summary: My School, My Learning and I')
-                  : assessmentType === 'hobbies'
-                  ? (lang === 'kn'
-                      ? 'ನನ್ನ ಪ್ರತಿಭೆಗಳು ಮತ್ತು ಹವ್ಯಾಸಗಳು ಸಾರಾಂಶ'
-                      : lang === 'ta'
-                        ? 'சுருக்கம்: என் திறமைகள் மற்றும் பொழுதுபோக்குகள்'
-                        : 'Summary: My Talents and Hobbies')
-                  : assessmentType === 'role_models'
-                  ? (lang === 'kn'
-                      ? 'ನನ್ನ ಆದರ್ಶ ವ್ಯಕ್ತಿಗಳು ಸಾರಾಂಶ'
-                      : lang === 'ta'
-                        ? 'சுருக்கம்: என் முன்மாதிரிகள்'
-                        : 'Summary: My Role Models')
-                  : (lang === 'kn'
-                      ? 'ನನ್ನನ್ನು ಪ್ರೇರೇಪಿಸಿದ ವಿಷಯಗಳು'
-                      : lang === 'ta'
-                        ? 'என்னை ஊக்கப்படுத்திய விஷயங்கள்'
-                        : 'Things I Was Inspired By')}
+                    : assessmentType === 'school_learning'
+                      ? (lang === 'kn'
+                        ? 'ನನ್ನ ಶಾಲೆ, ನನ್ನ ಕಲಿಕೆ ಮತ್ತು ನಾನು ಸಾರಾಂಶ'
+                        : lang === 'ta'
+                          ? 'சுருக்கம்: என் பள்ளி, என் படிப்பு மற்றும் நான்'
+                          : 'Summary: My School, My Learning and I')
+                      : assessmentType === 'hobbies'
+                        ? (lang === 'kn'
+                          ? 'ನನ್ನ ಪ್ರತಿಭೆಗಳು ಮತ್ತು ಹವ್ಯಾಸಗಳು ಸಾರಾಂಶ'
+                          : lang === 'ta'
+                            ? 'சுருக்கம்: என் திறமைகள் மற்றும் பொழுதுபோக்குகள்'
+                            : 'Summary: My Talents and Hobbies')
+                        : assessmentType === 'role_models'
+                          ? (lang === 'kn'
+                            ? 'ನನ್ನ ಆದರ್ಶ ವ್ಯಕ್ತಿಗಳು ಸಾರಾಂಶ'
+                            : lang === 'ta'
+                              ? 'சுருக்கம்: என் முன்மாதிரிகள்'
+                              : 'Summary: My Role Models')
+                          : (lang === 'kn'
+                            ? 'ನನ್ನನ್ನು ಪ್ರೇರೇಪಿಸಿದ ವಿಷಯಗಳು'
+                            : lang === 'ta'
+                              ? 'என்னை ஊக்கப்படுத்திய விஷயங்கள்'
+                              : 'Things I Was Inspired By')}
               </DialogTitle>
               <DialogDescription>
                 {assessmentType === 'about_me'
                   ? (lang === 'kn'
-                      ? 'ನಿಮ್ಮ ಆತ್ಮ-ಪ್ರತಿಬಿಂಬ ಮತ್ತು ಬೆಳವಣಿಗೆಯ ಪ್ರದೇಶಗಳ ಬಗ್ಗೆ ಸಾರಾಂಶ'
-                      : lang === 'ta'
-                        ? 'உங்கள் சுய சிந்தனை மற்றும் வளர வேண்டிய பகுதிகளைச் சுருக்கமாகப் பார்க்கும் பகுதி.'
-                        : 'Summary of your self-reflection and areas for growth')
+                    ? 'ನಿಮ್ಮ ಆತ್ಮ-ಪ್ರತಿಬಿಂಬ ಮತ್ತು ಬೆಳವಣಿಗೆಯ ಪ್ರದೇಶಗಳ ಬಗ್ಗೆ ಸಾರಾಂಶ'
+                    : lang === 'ta'
+                      ? 'உங்கள் சுய சிந்தனை மற்றும் வளர வேண்டிய பகுதிகளைச் சுருக்கமாகப் பார்க்கும் பகுதி.'
+                      : 'Summary of your self-reflection and areas for growth')
                   : assessmentType === 'dreams'
-                  ? (lang === 'kn'
+                    ? (lang === 'kn'
                       ? 'ನಿಮ್ಮ ಕನಸುಗಳು ಮತ್ತು ಉದ್ದೇಶಗಳ ಬಗ್ಗೆ ಸಾರಾಂಶ'
                       : lang === 'ta'
                         ? 'உங்கள் கனவுகள் மற்றும் எதிர்கால இலக்குகளைச் சுருக்கமாகப் பதிவு செய்துள்ளது.'
                         : 'Summary of your dreams and aspirations')
-                  : assessmentType === 'school_learning'
-                  ? (lang === 'kn'
-                      ? 'ನಿಮ್ಮ ಶಾಲೆ ಮತ್ತು ಕಲಿಕೆಯ ಬಗ್ಗೆ ಸಾರಾಂಶ'
-                      : lang === 'ta'
-                        ? 'உங்கள் பள்ளி அனுபவங்கள் மற்றும் கற்றல்களைச் சுருக்கமாகக் காட்டுகிறது.'
-                        : 'Summary of your school experience and learning')
-                  : assessmentType === 'hobbies'
-                  ? (lang === 'kn'
-                      ? 'ನಿಮ್ಮ ಪ್ರತಿಭೆಗಳು ಮತ್ತು ಹವ್ಯಾಸಗಳ ಬಗ್ಗೆ ಸಾರಾಂಶ'
-                      : lang === 'ta'
-                        ? 'உங்கள் திறமைகள் மற்றும் பொழுதுபோக்குகள் பற்றிய முக்கிய அம்சங்களின் சுருக்கம்.'
-                        : 'Summary of your talents and hobbies')
-                  : assessmentType === 'role_models'
-                  ? (lang === 'kn'
-                      ? 'ನಿಮ್ಮ ಆದರ್ಶ ವ್ಯಕ್ತಿಗಳ ಬಗ್ಗೆ ಸಾರಾಂಶ'
-                      : lang === 'ta'
-                        ? 'உங்கள் முன்மாதிரி நபர்கள் மற்றும் அவர்களிடம் கேட்க விரும்பும் கேள்விகளின் சுருக்கம்.'
-                        : 'Summary of your role models')
-                  : (lang === 'kn'
-                      ? 'ಪ್ರೇರಣಾದಾಯಕ ವೀಡಿಯೊಗಳು ಮತ್ತು ಅನುಭವಗಳ ಬಗ್ಗೆ ನಿಮ್ಮ ಪ್ರತಿಬಿಂಬ'
-                      : lang === 'ta'
-                        ? 'உங்களை ஊக்கப்படுத்திய வீடியோக்கள் மற்றும் அனுபவங்கள் குறித்து உங்கள் சிந்தனைகளின் சுருக்கம்.'
-                        : 'Your reflection on inspirational videos and experiences')}
+                    : assessmentType === 'school_learning'
+                      ? (lang === 'kn'
+                        ? 'ನಿಮ್ಮ ಶಾಲೆ ಮತ್ತು ಕಲಿಕೆಯ ಬಗ್ಗೆ ಸಾರಾಂಶ'
+                        : lang === 'ta'
+                          ? 'உங்கள் பள்ளி அனுபவங்கள் மற்றும் கற்றல்களைச் சுருக்கமாகக் காட்டுகிறது.'
+                          : 'Summary of your school experience and learning')
+                      : assessmentType === 'hobbies'
+                        ? (lang === 'kn'
+                          ? 'ನಿಮ್ಮ ಪ್ರತಿಭೆಗಳು ಮತ್ತು ಹವ್ಯಾಸಗಳ ಬಗ್ಗೆ ಸಾರಾಂಶ'
+                          : lang === 'ta'
+                            ? 'உங்கள் திறமைகள் மற்றும் பொழுதுபோக்குகள் பற்றிய முக்கிய அம்சங்களின் சுருக்கம்.'
+                            : 'Summary of your talents and hobbies')
+                        : assessmentType === 'role_models'
+                          ? (lang === 'kn'
+                            ? 'ನಿಮ್ಮ ಆದರ್ಶ ವ್ಯಕ್ತಿಗಳ ಬಗ್ಗೆ ಸಾರಾಂಶ'
+                            : lang === 'ta'
+                              ? 'உங்கள் முன்மாதிரி நபர்கள் மற்றும் அவர்களிடம் கேட்க விரும்பும் கேள்விகளின் சுருக்கம்.'
+                              : 'Summary of your role models')
+                          : (lang === 'kn'
+                            ? 'ಪ್ರೇರಣಾದಾಯಕ ವೀಡಿಯೊಗಳು ಮತ್ತು ಅನುಭವಗಳ ಬಗ್ಗೆ ನಿಮ್ಮ ಪ್ರತಿಬಿಂಬ'
+                            : lang === 'ta'
+                              ? 'உங்களை ஊக்கப்படுத்திய வீடியோக்கள் மற்றும் அனுபவங்கள் குறித்து உங்கள் சிந்தனைகளின் சுருக்கம்.'
+                              : 'Your reflection on inspirational videos and experiences')}
               </DialogDescription>
             </div>
             <div className="flex items-center gap-2">
@@ -538,10 +459,10 @@ export default function SummaryViewDialog({
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Lightbulb className="h-5 w-5 text-yellow-600" />
                 {isAboutMeAssessment
-                  ? (lang === 'kn' ? '15 ಅಂಶಗಳಲ್ಲಿ ನನ್ನ ಬಗ್ಗೆ ಚಿತ್ರಣ' : '15-Point Personal Snapshot')
+                  ? (lang === 'kn' ? '1. ಕುಟುಂಬದ ಹೊರಗಿನ ನನ್ನ ಸ್ನೇಹಿತರು ಯಾರು?' : '1. Who are my friends outside my family?')
                   : isDreamsAssessment
-                  ? (lang === 'kn' ? 'ಕನಸು ಪೋರ್ಟ್‌ಫೋಲಿಯೋ' : 'Dream Portfolio')
-                  : questionTitles.q1}
+                    ? (lang === 'kn' ? 'ಕನಸು ಪೋರ್ಟ್‌ಫೋಲಿಯೋ' : 'Dream Portfolio')
+                    : questionTitles.q1}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -555,28 +476,7 @@ export default function SummaryViewDialog({
                 />
               ) : (
                 <div className="prose prose-sm max-w-none">
-                  {isAboutMeAssessment ? (
-                    <table className="w-full text-sm border border-gray-200 rounded-md overflow-hidden">
-                      <thead className="bg-gray-100">
-                        <tr>
-                          <th className="text-left px-3 py-2 text-gray-700 w-1/3">
-                            {lang === 'kn' ? 'ವರ್ಗ' : 'Category'}
-                          </th>
-                          <th className="text-left px-3 py-2 text-gray-700">
-                            {lang === 'kn' ? 'ವಿದ್ಯಾರ್ಥಿಯ ಉತ್ತರ' : 'Student Response'}
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {parseAboutMeSummary(displaySummary.question1).map((row, index) => (
-                          <tr key={`${row.category}-${index}`} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                            <td className="px-3 py-2 font-medium text-gray-700 align-top">{row.category}</td>
-                            <td className="px-3 py-2 text-gray-700 align-top">{row.detail}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  ) : isDreamsAssessment ? (
+                  {isDreamsAssessment ? (
                     <table className="w-full text-sm border border-gray-200 rounded-md overflow-hidden">
                       <thead className="bg-gray-100">
                         <tr>
@@ -626,6 +526,44 @@ export default function SummaryViewDialog({
             </CardContent>
           </Card>
 
+          {/* Dynamic Loop for About Me Questions 2-16 */}
+          {isAboutMeAssessment && Object.keys(questionTitles)
+            .filter(key => key.startsWith('q') && key !== 'q1')
+            .sort((a, b) => {
+              const numA = parseInt(a.replace('q', ''), 10);
+              const numB = parseInt(b.replace('q', ''), 10);
+              return numA - numB;
+            })
+            .map(key => {
+              const qNum = key.replace('q', '');
+              const propParam = `question${qNum}`;
+              return (
+                <Card key={key}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Lightbulb className="h-5 w-5 text-blue-600" />
+                      {questionTitles[key]}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {isEditing ? (
+                      <Textarea
+                        lang={lang}
+                        value={editedSummary[propParam] || ''}
+                        onChange={(e) => setEditedSummary({ ...editedSummary, [propParam]: e.target.value })}
+                        placeholder={lang === 'kn' ? 'ನಿಮ್ಮ ಉತ್ತರವನ್ನು ಬರೆಯಿರಿ...' : 'Write your answer...'}
+                        className="min-h-[120px] text-base"
+                      />
+                    ) : (
+                      <div className="prose prose-sm max-w-none">
+                        <p className="text-gray-700 whitespace-pre-wrap">{displaySummary[propParam] || ''}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+
           {/* Talents Portfolio for Hobbies Assessment */}
           {isHobbiesAssessment && questionTitles.q6 && (
             <Card>
@@ -672,7 +610,7 @@ export default function SummaryViewDialog({
             </Card>
           )}
 
-          {!isDreamsAssessment && !isHobbiesAssessment && !isRoleModelsAssessment && (
+          {!isDreamsAssessment && !isHobbiesAssessment && !isRoleModelsAssessment && !isAboutMeAssessment && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
@@ -698,7 +636,7 @@ export default function SummaryViewDialog({
             </Card>
           )}
 
-          {!isDreamsAssessment && !isHobbiesAssessment && !isRoleModelsAssessment && (
+          {!isDreamsAssessment && !isHobbiesAssessment && !isRoleModelsAssessment && !isAboutMeAssessment && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
@@ -858,8 +796,8 @@ export default function SummaryViewDialog({
           </div>
         </div>
         {(lang === 'kn' || lang === 'ta') && <KannadaKeyboard lang={lang} />}
-      </DialogContent>
-    </Dialog>
+      </DialogContent >
+    </Dialog >
   );
 }
 

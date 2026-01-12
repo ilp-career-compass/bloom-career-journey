@@ -28,7 +28,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLang } from '@/hooks/useLang';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
 import { KannadaKeyboard } from '@/components/ui/KannadaKeyboard';
 import { checkAssessmentUnlock } from '@/utils/assessmentUnlock';
 
@@ -720,465 +720,482 @@ export default function MyHobbiesAssessment() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-pink-50 py-8" lang={lang} dir="auto">
       <div className="container mx-auto px-4">
-        <TooltipProvider>
-          <div className="text-left mb-2">
-            <Button variant="ghost" onClick={() => navigate('/student')} className="text-orange-700 hover:text-orange-800 hover:bg-orange-50">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 mr-2"><path fillRule="evenodd" d="M12.53 3.47a.75.75 0 010 1.06L6.31 10.75H21a.75.75 0 010 1.5H6.31l6.22 6.22a.75.75 0 11-1.06 1.06l-7.5-7.5a.75.75 0 010-1.06l7.5-7.5a.75.75 0 011.06 0z" clipRule="evenodd" /></svg>
-              {t('backToDashboard')}
-            </Button>
-          </div>
-          {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-2xl md:text-3xl font-bold text-orange-800 mb-2">
+
+        <div className="text-left mb-2">
+          <Button variant="ghost" onClick={() => navigate('/student')} className="text-orange-700 hover:text-orange-800 hover:bg-orange-50">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 mr-2"><path fillRule="evenodd" d="M12.53 3.47a.75.75 0 010 1.06L6.31 10.75H21a.75.75 0 010 1.5H6.31l6.22 6.22a.75.75 0 11-1.06 1.06l-7.5-7.5a.75.75 0 010-1.06l7.5-7.5a.75.75 0 011.06 0z" clipRule="evenodd" /></svg>
+            {t('backToDashboard')}
+          </Button>
+        </div>
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold text-orange-800 mb-2">
+            {lang === 'kn'
+              ? '🎨 ನನ್ನ ಪ್ರತಿಭೆಗಳು ಮತ್ತು ಹವ್ಯಾಸಗಳು'
+              : lang === 'ta'
+                ? '🎨 என் திறமைகள் மற்றும் பொழுதுபோக்குகள்'
+                : '🎨 My Talents and Hobbies'}
+          </h1>
+
+          {/* Description Text */}
+          <div className="max-w-3xl mx-auto space-y-4 text-gray-700 mt-4">
+            <p className="text-base leading-relaxed">
               {lang === 'kn'
-                ? '🎨 ನನ್ನ ಪ್ರತಿಭೆಗಳು ಮತ್ತು ಹವ್ಯಾಸಗಳು'
+                ? 'ಈ ಅಭ್ಯಾಸ ಭಾಗದಲ್ಲಿ, ನಿಮ್ಮ ಆಸಕ್ತಿಗಳು, ಹವ್ಯಾಸಗಳು ಮತ್ತು ನಿಮಗೆ ಸಂತೋಷ ನೀಡುವ ಚಟುವಟಿಕೆಗಳನ್ನು ಅನ್ವೇಷಿಸುತ್ತೇವೆ. ನಿಮ್ಮ ಹವ್ಯಾಸಗಳನ್ನು ಆಳವಾಗಿ ನೋಡಿದಾಗ, ಸಂತೋಷದ ಜೊತೆಗೆ ನಿಮ್ಮ ಕಲಿಕೆಯ ಶೈಲಿ ಮತ್ತು ಭವಿಷ್ಯದ ವೃತ್ತಿ ಸಾಧ್ಯತೆಗಳನ್ನು ಸಹ ಗುರುತಿಸಬಹುದು.'
                 : lang === 'ta'
-                  ? '🎨 என் திறமைகள் மற்றும் பொழுதுபோக்குகள்'
-                  : '🎨 My Talents and Hobbies'}
-            </h1>
+                  ? 'இந்த பயிற்சி பகுதியில், உங்களுக்கு மகிழ்ச்சி தரும் உங்கள் ஆர்வங்கள், பொழுதுபோக்குகள் மற்றும் செயல்பாடுகளை ஆராய்கிறோம். உங்கள் பொழுதுபோக்குகள் மற்றும் ஆர்வங்களை ஆழமாக ஆராய்வதன் மூலம், நீங்கள் மகிழ்ச்சியையும், உங்கள் தனிப்பட்ட கற்றல் முறையையும், உங்களுக்கு பொருந்தும் தொழில் வாய்ப்புகளையும் கண்டறிய முடியும்.'
+                  : 'In this practice section, we delve into your interests, hobbies, pastimes, and activities that bring you joy, exploring the depths of your creativity. By delving into your hobbies and interests, you can not only find happiness but also identify your unique learning style and potential professions aligned with your passions.'}
+            </p>
+            <p className="text-base leading-relaxed">
+              {lang === 'kn'
+                ? 'ಈ ಚಟುವಟಿಕೆಯ ಮೂಲಕ, ನಿಮ್ಮ ಪ್ರತಿಭೆಗಳು, ಹವ್ಯಾಸಗಳು ಮತ್ತು ನಿಮಗೆ ಸಂತೋಷ ನೀಡುವ ಕೆಲಸಗಳನ್ನು ಅನ್ವೇಷಿಸುತ್ತೀರಿ. ಇದು ನಿಮ್ಮ ಆಸಕ್ತಿಗಳು ಮತ್ತು ಸಾಮರ್ಥ್ಯಗಳನ್ನು ಅರಿತುಕೊಳ್ಳಲು ಸಹಾಯ ಮಾಡಿ, ನಿಮ್ಮ ವ್ಯಕ್ತಿತ್ವಕ್ಕೆ ತಕ್ಕ ವೃತ್ತಿಗಳನ್ನು ಆಯ್ಕೆಮಾಡಲು ಮಾರ್ಗದರ್ಶಿ ಆಗುತ್ತದೆ.'
+                : lang === 'ta'
+                  ? 'இந்தச் செயற்பாட்டின் மூலம், உங்கள் திறமைகள், பொழுதுபோக்குகள் மற்றும் உங்களுக்கு மகிழ்ச்சி தரும் செயல்களை ஆராய்வீர்கள். இது உங்கள் ஆர்வங்கள் மற்றும் திறமைகளைப் புரிந்துகொள்ள உதவி செய்து, உங்கள் தனிப்பட்ட தன்மை மற்றும் விருப்பங்களுக்கு பொருந்தும் தொழில் பாதைகளை தேர்வு செய்ய வழிகாட்டும்.'
+                  : 'Through this activity, you will explore your talents, hobbies, and the work/activities that bring you joy. This will help you understand your interests, hobbies, and areas of talent, and guide you in identifying careers that suit your personality, interests, and passions.'}
+            </p>
+            <p className="text-base leading-relaxed italic text-orange-700 font-medium">
+              {lang === 'kn'
+                ? '“ಹವ್ಯಾಸಗಳು ನಮ್ಮ ಪ್ರತಿಭೆಯನ್ನು ಹೊರತರುತ್ತವೆ ಮತ್ತು ನಮ್ಮ ಕನಸುಗಳನ್ನು ಹಿಂಬಾಲಿಸಲು ಪ್ರೇರಣೆ ನೀಡುತ್ತವೆ.”'
+                : lang === 'ta'
+                  ? '“பொழுதுபோக்குகள் நம்முடைய திறமைகளை வெளிக்கொண்டு வந்து, எங்கள் கனவுகளை நோக்கி செல்ல ஊக்குவிக்கின்றன.”'
+                  : '"Hobbies bring out our talents and inspire us to pursue our dreams."'}
+            </p>
 
-            {/* Description Text */}
-            <div className="max-w-3xl mx-auto space-y-4 text-gray-700 mt-4">
-              <p className="text-base leading-relaxed">
-                {lang === 'kn'
-                  ? 'ಈ ಅಭ್ಯಾಸ ಭಾಗದಲ್ಲಿ, ನಿಮ್ಮ ಆಸಕ್ತಿಗಳು, ಹವ್ಯಾಸಗಳು ಮತ್ತು ನಿಮಗೆ ಸಂತೋಷ ನೀಡುವ ಚಟುವಟಿಕೆಗಳನ್ನು ಅನ್ವೇಷಿಸುತ್ತೇವೆ. ನಿಮ್ಮ ಹವ್ಯಾಸಗಳನ್ನು ಆಳವಾಗಿ ನೋಡಿದಾಗ, ಸಂತೋಷದ ಜೊತೆಗೆ ನಿಮ್ಮ ಕಲಿಕೆಯ ಶೈಲಿ ಮತ್ತು ಭವಿಷ್ಯದ ವೃತ್ತಿ ಸಾಧ್ಯತೆಗಳನ್ನು ಸಹ ಗುರುತಿಸಬಹುದು.'
-                  : lang === 'ta'
-                    ? 'இந்த பயிற்சி பகுதியில், உங்களுக்கு மகிழ்ச்சி தரும் உங்கள் ஆர்வங்கள், பொழுதுபோக்குகள் மற்றும் செயல்பாடுகளை ஆராய்கிறோம். உங்கள் பொழுதுபோக்குகள் மற்றும் ஆர்வங்களை ஆழமாக ஆராய்வதன் மூலம், நீங்கள் மகிழ்ச்சியையும், உங்கள் தனிப்பட்ட கற்றல் முறையையும், உங்களுக்கு பொருந்தும் தொழில் வாய்ப்புகளையும் கண்டறிய முடியும்.'
-                    : 'In this practice section, we delve into your interests, hobbies, pastimes, and activities that bring you joy, exploring the depths of your creativity. By delving into your hobbies and interests, you can not only find happiness but also identify your unique learning style and potential professions aligned with your passions.'}
-              </p>
-              <p className="text-base leading-relaxed">
-                {lang === 'kn'
-                  ? 'ಈ ಚಟುವಟಿಕೆಯ ಮೂಲಕ, ನಿಮ್ಮ ಪ್ರತಿಭೆಗಳು, ಹವ್ಯಾಸಗಳು ಮತ್ತು ನಿಮಗೆ ಸಂತೋಷ ನೀಡುವ ಕೆಲಸಗಳನ್ನು ಅನ್ವೇಷಿಸುತ್ತೀರಿ. ಇದು ನಿಮ್ಮ ಆಸಕ್ತಿಗಳು ಮತ್ತು ಸಾಮರ್ಥ್ಯಗಳನ್ನು ಅರಿತುಕೊಳ್ಳಲು ಸಹಾಯ ಮಾಡಿ, ನಿಮ್ಮ ವ್ಯಕ್ತಿತ್ವಕ್ಕೆ ತಕ್ಕ ವೃತ್ತಿಗಳನ್ನು ಆಯ್ಕೆಮಾಡಲು ಮಾರ್ಗದರ್ಶಿ ಆಗುತ್ತದೆ.'
-                  : lang === 'ta'
-                    ? 'இந்தச் செயற்பாட்டின் மூலம், உங்கள் திறமைகள், பொழுதுபோக்குகள் மற்றும் உங்களுக்கு மகிழ்ச்சி தரும் செயல்களை ஆராய்வீர்கள். இது உங்கள் ஆர்வங்கள் மற்றும் திறமைகளைப் புரிந்துகொள்ள உதவி செய்து, உங்கள் தனிப்பட்ட தன்மை மற்றும் விருப்பங்களுக்கு பொருந்தும் தொழில் பாதைகளை தேர்வு செய்ய வழிகாட்டும்.'
-                    : 'Through this activity, you will explore your talents, hobbies, and the work/activities that bring you joy. This will help you understand your interests, hobbies, and areas of talent, and guide you in identifying careers that suit your personality, interests, and passions.'}
-              </p>
-              <p className="text-base leading-relaxed italic text-orange-700 font-medium">
-                {lang === 'kn'
-                  ? '“ಹವ್ಯಾಸಗಳು ನಮ್ಮ ಪ್ರತಿಭೆಯನ್ನು ಹೊರತರುತ್ತವೆ ಮತ್ತು ನಮ್ಮ ಕನಸುಗಳನ್ನು ಹಿಂಬಾಲಿಸಲು ಪ್ರೇರಣೆ ನೀಡುತ್ತವೆ.”'
-                  : lang === 'ta'
-                    ? '“பொழுதுபோக்குகள் நம்முடைய திறமைகளை வெளிக்கொண்டு வந்து, எங்கள் கனவுகளை நோக்கி செல்ல ஊக்குவிக்கின்றன.”'
-                    : '"Hobbies bring out our talents and inspire us to pursue our dreams."'}
-              </p>
-
-              {/* Definitions Section */}
-              <div className="mt-6 space-y-4 text-left bg-orange-50 p-6 rounded-lg border border-orange-200">
-                <div>
-                  <h3 className="font-semibold text-orange-800 mb-2">
-                    {lang === 'kn'
-                      ? 'ಭಾಗ I: ಹವ್ಯಾಸ ಎಂದರೆ ಏನು?'
-                      : lang === 'ta'
-                        ? 'பகுதி I: பொழுதுபோக்கு என்றால் என்ன?'
-                        : 'Section I: What is a hobby?'}
-                  </h3>
-                  <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
-                    <li>
-                      {lang === 'kn'
-                        ? 'ನಮ್ಮ ದೈನಂದಿನ ಕೆಲಸಗಳ ನಂತರ, ಮನರಂಜನೆಗಾಗಿ ನಾವು ಮಾಡುವ ಚಟುವಟಿಕೆ ಹವ್ಯಾಸ.'
-                        : lang === 'ta'
-                          ? 'நாம் தினசரி பணிகளை முடித்த பிறகு, மனநிறைவு மற்றும் மகிழ்ச்சிக்காக செய்வது ஒரு பொழுதுபோக்கு.'
-                          : 'It is an activity that we do for fun, after our daily chores.'}
-                    </li>
-                    <li>
-                      {lang === 'kn'
-                        ? 'ಸಮಯ ಕಳೆಯಲು ಅಥವಾ ಮನಸ್ಸಿಗೆ ಸಂತೋಷ ನೀಡಲು ಮಾಡುವ ಕೆಲಸ.'
-                        : lang === 'ta'
-                          ? 'நேரத்தை பயனுள்ளதாகக் கழிக்கவும் அல்லது மனதிற்கு இன்பம் தரவும் செய்வது ஒரு பொழுதுபோக்கு.'
-                          : 'Work done to pass the time or to give pleasure to the mind.'}
-                    </li>
-                    <li>
-                      {lang === 'kn'
-                        ? 'ಹವ್ಯಾಸವನ್ನು ಅಭ್ಯಾಸದ ಮೂಲಕ ಕಲಿತು, ನಿಧಾನವಾಗಿ ಅಭಿವೃದ್ಧಿಪಡಿಸಬಹುದು.'
-                        : lang === 'ta'
-                          ? 'பயிற்சியின் மூலம் காலத்திற்கும் காலம் வளர்த்துக்கொள்ளக்கூடிய ஒன்றுதான் பொழுதுபோக்கு.'
-                          : 'A hobby is something that can be learnt and developed over time.'}
-                    </li>
-                  </ul>
-                  <p className="mt-2 text-gray-600">
-                    <strong>
-                      {lang === 'kn' ? 'ಉದಾಹರಣೆಗಳು:' : lang === 'ta' ? 'உதாரணங்கள்:' : 'Examples:'}
-                    </strong>{' '}
-                    {lang === 'kn'
-                      ? 'ಚಿತ್ರ ಬಿಡಿಸುವುದು, ಹಾಡುವುದು, ಓದು, ನೃತ್ಯ, ಪಕ್ಷಿಗಳನ್ನು ಗಮನಿಸುವುದು, ತೋಟಗಾರಿಕೆ ಇತ್ಯಾದಿ.'
-                      : lang === 'ta'
-                        ? 'வரைதல், பாடுதல், வாசித்தல், நடனம் ஆடுதல், பறவைகளைப் பார்ப்பது, தோட்டப் பணி செய்வது போன்றவை.'
-                        : 'Drawing, singing, reading, dancing, bird watching, gardening, etc.'}
-                  </p>
-                </div>
-
-                <div className="mt-4">
-                  <h3 className="font-semibold text-orange-800 mb-2">
-                    {lang === 'kn'
-                      ? 'ಭಾಗ II: திறமை ಎಂದರೆ ಏನು?'
-                      : lang === 'ta'
-                        ? 'பகுதி II: திறமை என்றால் என்ன?'
-                        : 'Section II: What is talent?'}
-                  </h3>
-                  <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
-                    <li>
-                      {lang === 'kn'
-                        ? 'ನಾವು ಜನ್ಮತಃ ಹೊಂದಿರುವ ಸಹಜ ಸಾಮರ್ಥ್ಯವನ್ನು ಪ್ರತಿಭೆ ಎಂದು ಕರೆಯುತ್ತಾರೆ.'
-                        : lang === 'ta'
-                          ? 'நாம் பிறந்ததிலிருந்து எங்களிடம் இருக்கும் இயல்பான திறனே திறமை.'
-                          : 'A natural ability that we are born with.'}
-                    </li>
-                    <li>
-                      {lang === 'kn'
-                        ? 'ಸ್ವಲ್ಪ ಅಭ್ಯಾಸದಲ್ಲೇ ಸುಲಭವಾಗಿ ಮಾಡಬಹುದಾದ ಕೌಶಲ್ಯ.'
-                        : lang === 'ta'
-                          ? 'குறைந்த பயிற்சியிலேயே எளிதாகச் செய்யக்கூடிய ஒரு திறன்.'
-                          : 'A skill that can be done easily without much practice.'}
-                    </li>
-                    <li>
-                      {lang === 'kn'
-                        ? 'ಹೆಚ್ಚು ಅಭ್ಯಾಸ ಮಾಡಿದರೆ, ಈ ಸಾಮರ್ಥ್ಯದಿಂದ ದೊಡ್ಡ ಸಾಧನೆ ಮಾಡಲು ಸಾಧ್ಯ.'
-                        : lang === 'ta'
-                          ? 'அதே திறனை தொடர்ந்து பயிற்சி செய்தால், மிகப் பெரிய சாதனைகளை அடையலாம்.'
-                          : 'This can lead to immense achievement with more practice.'}
-                    </li>
-                  </ul>
-                  <p className="mt-2 text-gray-600">
-                    <strong>
-                      {lang === 'kn' ? 'ಉದಾಹರಣೆಗಳು:' : lang === 'ta' ? 'உதாரணங்கள்:' : 'Examples:'}
-                    </strong>{' '}
-                    {lang === 'kn'
-                      ? 'ಸ್ವಾಭಾವಿಕವಾಗಿ ಹಾಡುವ ಸಾಮರ್ಥ್ಯ, ಸ್ಪಷ್ಟವಾಗಿ ಮಾತನಾಡುವ ಶಕ್ತಿ, ಗಣಿತ ಪ್ರಶ್ನೆಗಳಿಗೆ ಬೇಗ ಉತ್ತರಿಸುವುದು, ಬೇಗನೆ ಕಲಿಯುವ ಸಾಮರ್ಥ್ಯ ಇತ್ಯಾದಿ.'
-                      : lang === 'ta'
-                        ? 'இயல்பாக இனிமையாகப் பாடும் திறன், தெளிவாகப் பேசும் திறன், கணிதக் கேள்விகளுக்கு விரைவில் சரியான பதில் கூறும் திறன், வேகமாகக் கற்றுக்கொள்ளும் திறன் போன்றவை.'
-                        : 'The ability to sing naturally, communicate clearly, answer questions quickly in math, learn quickly, etc.'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Progress Bar */}
-          <Card className="mb-6 border-0 shadow-lg">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-800">{t('yourProgress')}</h2>
-                <Badge variant="secondary">{Math.round(getProgressPercentage())}% {t('completeSuffix')}</Badge>
-              </div>
-              <Progress value={getProgressPercentage()} className="h-3" />
-              <div className="flex justify-between text-sm text-gray-600 mt-2">
-                <span>
+            {/* Definitions Section */}
+            <div className="mt-6 space-y-4 text-left bg-orange-50 p-6 rounded-lg border border-orange-200">
+              <div>
+                <h3 className="font-semibold text-orange-800 mb-2">
                   {lang === 'kn'
-                    ? `ವಿಭಾಗ ${sections.indexOf(currentSection) + 1} / ${sections.length} • ಒಟ್ಟು ${hobbiesQuestions.length} ಪ್ರಶ್ನೆಗಳು`
+                    ? 'ಭಾಗ I: ಹವ್ಯಾಸ ಎಂದರೆ ಏನು?'
                     : lang === 'ta'
-                      ? `பகுதி ${sections.indexOf(currentSection) + 1} / ${sections.length} • மொத்தம் ${hobbiesQuestions.length} கேள்விகள்`
-                      : `Section ${sections.indexOf(currentSection) + 1} of ${sections.length} • ${hobbiesQuestions.length} Questions Total`}
-                </span>
-                <span>{Math.round(getProgressPercentage())}% {t('completeSuffix')}</span>
+                      ? 'பகுதி I: பொழுதுபோக்கு என்றால் என்ன?'
+                      : 'Section I: What is a hobby?'}
+                </h3>
+                <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
+                  <li>
+                    {lang === 'kn'
+                      ? 'ನಮ್ಮ ದೈನಂದಿನ ಕೆಲಸಗಳ ನಂತರ, ಮನರಂಜನೆಗಾಗಿ ನಾವು ಮಾಡುವ ಚಟುವಟಿಕೆ ಹವ್ಯಾಸ.'
+                      : lang === 'ta'
+                        ? 'நாம் தினசரி பணிகளை முடித்த பிறகு, மனநிறைவு மற்றும் மகிழ்ச்சிக்காக செய்வது ஒரு பொழுதுபோக்கு.'
+                        : 'It is an activity that we do for fun, after our daily chores.'}
+                  </li>
+                  <li>
+                    {lang === 'kn'
+                      ? 'ಸಮಯ ಕಳೆಯಲು ಅಥವಾ ಮನಸ್ಸಿಗೆ ಸಂತೋಷ ನೀಡಲು ಮಾಡುವ ಕೆಲಸ.'
+                      : lang === 'ta'
+                        ? 'நேரத்தை பயனுள்ளதாகக் கழிக்கவும் அல்லது மனதிற்கு இன்பம் தரவும் செய்வது ஒரு பொழுதுபோக்கு.'
+                        : 'Work done to pass the time or to give pleasure to the mind.'}
+                  </li>
+                  <li>
+                    {lang === 'kn'
+                      ? 'ಹವ್ಯಾಸವನ್ನು ಅಭ್ಯಾಸದ ಮೂಲಕ ಕಲಿತು, ನಿಧಾನವಾಗಿ ಅಭಿವೃದ್ಧಿಪಡಿಸಬಹುದು.'
+                      : lang === 'ta'
+                        ? 'பயிற்சியின் மூலம் காலத்திற்கும் காலம் வளர்த்துக்கொள்ளக்கூடிய ஒன்றுதான் பொழுதுபோக்கு.'
+                        : 'A hobby is something that can be learnt and developed over time.'}
+                  </li>
+                </ul>
+                <p className="mt-2 text-gray-600">
+                  <strong>
+                    {lang === 'kn' ? 'ಉದಾಹರಣೆಗಳು:' : lang === 'ta' ? 'உதாரணங்கள்:' : 'Examples:'}
+                  </strong>{' '}
+                  {lang === 'kn'
+                    ? 'ಚಿತ್ರ ಬಿಡಿಸುವುದು, ಹಾಡುವುದು, ಓದು, ನೃತ್ಯ, ಪಕ್ಷಿಗಳನ್ನು ಗಮನಿಸುವುದು, ತೋಟಗಾರಿಕೆ ಇತ್ಯಾದಿ.'
+                    : lang === 'ta'
+                      ? 'வரைதல், பாடுதல், வாசித்தல், நடனம் ஆடுதல், பறவைகளைப் பார்ப்பது, தோட்டப் பணி செய்வது போன்றவை.'
+                      : 'Drawing, singing, reading, dancing, bird watching, gardening, etc.'}
+                </p>
               </div>
-            </CardContent>
-          </Card>
 
-          {/* Section Navigation */}
-          <div className="flex justify-center mb-6">
-            <div className="flex flex-col md:flex-row bg-white rounded-lg p-1 shadow-md w-full md:w-auto">
-              {sections.map((sectionKey, index) => {
-                const sectionQuestions = questionsBySection[sectionKey] || [];
-                const sectionNumber = index + 1;
-                let sectionTitle = '';
-                if (sectionKey === 'section1') {
-                  sectionTitle =
-                    lang === 'kn'
-                      ? 'ಭಾಗ 1: ಹವ್ಯಾಸಗಳು ಮತ್ತು ಆಸಕ್ತಿಗಳು'
+              <div className="mt-4">
+                <h3 className="font-semibold text-orange-800 mb-2">
+                  {lang === 'kn'
+                    ? 'ಭಾಗ II: திறமை ಎಂದರೆ ಏನು?'
+                    : lang === 'ta'
+                      ? 'பகுதி II: திறமை என்றால் என்ன?'
+                      : 'Section II: What is talent?'}
+                </h3>
+                <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
+                  <li>
+                    {lang === 'kn'
+                      ? 'ನಾವು ಜನ್ಮತಃ ಹೊಂದಿರುವ ಸಹಜ ಸಾಮರ್ಥ್ಯವನ್ನು ಪ್ರತಿಭೆ ಎಂದು ಕರೆಯುತ್ತಾರೆ.'
                       : lang === 'ta'
-                        ? 'பகுதி 1: பொழுதுபோக்குகள் மற்றும் ஆர்வங்கள்'
-                        : 'Section 1: Hobbies & Interests';
-                } else if (sectionKey === 'section2') {
-                  sectionTitle =
-                    lang === 'kn'
-                      ? 'ಭಾಗ 2: ಸಾಮರ್ಥ್ಯಗಳು ಮತ್ತು ಅಭ್ಯಾಸ'
+                        ? 'நாம் பிறந்ததிலிருந்து எங்களிடம் இருக்கும் இயல்பான திறனே திறமை.'
+                        : 'A natural ability that we are born with.'}
+                  </li>
+                  <li>
+                    {lang === 'kn'
+                      ? 'ಸ್ವಲ್ಪ ಅಭ್ಯಾಸದಲ್ಲೇ ಸುಲಭವಾಗಿ ಮಾಡಬಹುದಾದ ಕೌಶಲ್ಯ.'
                       : lang === 'ta'
-                        ? 'பகுதி 2: திறமைகள் மற்றும் பயிற்சி'
-                        : 'Section 2: Talents & Practice';
-                } else if (sectionKey === 'section3') {
-                  sectionTitle =
-                    lang === 'kn'
-                      ? 'ಭಾಗ 3: ಬೆಂಬಲ ಮತ್ತು ವೃತ್ತಿ இணைப்பு'
+                        ? 'குறைந்த பயிற்சியிலேயே எளிதாகச் செய்யக்கூடிய ஒரு திறன்.'
+                        : 'A skill that can be done easily without much practice.'}
+                  </li>
+                  <li>
+                    {lang === 'kn'
+                      ? 'ಹೆಚ್ಚು ಅಭ್ಯಾಸ ಮಾಡಿದರೆ, ಈ ಸಾಮರ್ಥ್ಯದಿಂದ ದೊಡ್ಡ ಸಾಧನೆ ಮಾಡಲು ಸಾಧ್ಯ.'
                       : lang === 'ta'
-                        ? 'பகுதி 3: ஆதரவு மற்றும் தொழில் இணைப்பு'
-                        : 'Section 3: Support & Career Connection';
-                } else {
-                  sectionTitle =
-                    lang === 'kn'
-                      ? `ಭಾಗ ${sectionNumber}`
-                      : lang === 'ta'
-                        ? `பகுதி ${sectionNumber}`
-                        : `Section ${sectionNumber}`;
-                }
-
-                return (
-                  <button
-                    key={sectionKey}
-                    onClick={() => setCurrentSection(sectionKey)}
-                    className={`px-6 py-2 rounded-md transition-all ${currentSection === sectionKey
-                        ? 'bg-orange-600 text-white shadow-md'
-                        : 'text-gray-600 hover:text-orange-600'
-                      }`}
-                  >
-                    {sectionTitle}
-                  </button>
-                );
-              })}
+                        ? 'அதே திறனை தொடர்ந்து பயிற்சி செய்தால், மிகப் பெரிய சாதனைகளை அடையலாம்.'
+                        : 'This can lead to immense achievement with more practice.'}
+                  </li>
+                </ul>
+                <p className="mt-2 text-gray-600">
+                  <strong>
+                    {lang === 'kn' ? 'ಉದಾಹರಣೆಗಳು:' : lang === 'ta' ? 'உதாரணங்கள்:' : 'Examples:'}
+                  </strong>{' '}
+                  {lang === 'kn'
+                    ? 'ಸ್ವಾಭಾವಿಕವಾಗಿ ಹಾಡುವ ಸಾಮರ್ಥ್ಯ, ಸ್ಪಷ್ಟವಾಗಿ ಮಾತನಾಡುವ ಶಕ್ತಿ, ಗಣಿತ ಪ್ರಶ್ನೆಗಳಿಗೆ ಬೇಗ ಉತ್ತರಿಸುವುದು, ಬೇಗನೆ ಕಲಿಯುವ ಸಾಮರ್ಥ್ಯ ಇತ್ಯಾದಿ.'
+                    : lang === 'ta'
+                      ? 'இயல்பாக இனிமையாகப் பாடும் திறன், தெளிவாகப் பேசும் திறன், கணிதக் கேள்விகளுக்கு விரைவில் சரியான பதில் கூறும் திறன், வேகமாகக் கற்றுக்கொள்ளும் திறன் போன்றவை.'
+                      : 'The ability to sing naturally, communicate clearly, answer questions quickly in math, learn quickly, etc.'}
+                </p>
+              </div>
             </div>
           </div>
+        </div>
 
-          {/* Dynamically render sections from database */}
-          {sections.map((sectionKey) => {
-            const sectionQuestions = questionsBySection[sectionKey] || [];
-            if (sectionQuestions.length === 0) return null;
+        {/* Progress Bar */}
+        <Card className="mb-6 border-0 shadow-lg">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-800">{t('yourProgress')}</h2>
+              <Badge variant="secondary">{Math.round(getProgressPercentage())}% {t('completeSuffix')}</Badge>
+            </div>
+            <Progress value={getProgressPercentage()} className="h-3" />
+            <div className="flex justify-between text-sm text-gray-600 mt-2">
+              <span>
+                {lang === 'kn'
+                  ? `ವಿಭಾಗ ${sections.indexOf(currentSection) + 1} / ${sections.length} • ಒಟ್ಟು ${hobbiesQuestions.length} ಪ್ರಶ್ನೆಗಳು`
+                  : lang === 'ta'
+                    ? `பகுதி ${sections.indexOf(currentSection) + 1} / ${sections.length} • மொத்தம் ${hobbiesQuestions.length} கேள்விகள்`
+                    : `Section ${sections.indexOf(currentSection) + 1} of ${sections.length} • ${hobbiesQuestions.length} Questions Total`}
+              </span>
+              <span>{Math.round(getProgressPercentage())}% {t('completeSuffix')}</span>
+            </div>
+          </CardContent>
+        </Card>
 
-            const sectionNumber = sections.indexOf(sectionKey) + 1;
-            let sectionTitle = '';
-            let sectionDescription = '';
-            let headerColor = 'from-orange-50 to-pink-50';
-            let titleColor = 'text-orange-800';
-            let descColor = 'text-orange-600';
+        {/* Section Navigation */}
+        <div className="flex justify-center mb-6">
+          <div className="flex flex-col md:flex-row bg-white rounded-lg p-1 shadow-md w-full md:w-auto">
+            {sections.map((sectionKey, index) => {
+              const sectionQuestions = questionsBySection[sectionKey] || [];
+              const sectionNumber = index + 1;
+              let sectionTitle = '';
+              if (sectionKey === 'section1') {
+                sectionTitle =
+                  lang === 'kn'
+                    ? 'ಭಾಗ 1: ಹವ್ಯಾಸಗಳು ಮತ್ತು ಆಸಕ್ತಿಗಳು'
+                    : lang === 'ta'
+                      ? 'பகுதி 1: பொழுதுபோக்குகள் மற்றும் ஆர்வங்கள்'
+                      : 'Section 1: Hobbies & Interests';
+              } else if (sectionKey === 'section2') {
+                sectionTitle =
+                  lang === 'kn'
+                    ? 'ಭಾಗ 2: ಸಾಮರ್ಥ್ಯಗಳು ಮತ್ತು ಅಭ್ಯಾಸ'
+                    : lang === 'ta'
+                      ? 'பகுதி 2: திறமைகள் மற்றும் பயிற்சி'
+                      : 'Section 2: Talents & Practice';
+              } else if (sectionKey === 'section3') {
+                sectionTitle =
+                  lang === 'kn'
+                    ? 'ಭಾಗ 3: ಬೆಂಬಲ ಮತ್ತು ವೃತ್ತಿ இணைப்பு'
+                    : lang === 'ta'
+                      ? 'பகுதி 3: ஆதரவு மற்றும் தொழில் இணைப்பு'
+                      : 'Section 3: Support & Career Connection';
+              } else {
+                sectionTitle =
+                  lang === 'kn'
+                    ? `ಭಾಗ ${sectionNumber}`
+                    : lang === 'ta'
+                      ? `பகுதி ${sectionNumber}`
+                      : `Section ${sectionNumber}`;
+              }
 
-            if (sectionKey === 'section1') {
-              sectionTitle =
-                lang === 'kn'
-                  ? 'ಭಾಗ 1: ಹವ್ಯಾಸಗಳು ಮತ್ತು ಆಸಕ್ತಿಗಳು'
-                  : lang === 'ta'
-                    ? 'பகுதி 1: பொழுதுபோக்குகள் மற்றும் ஆர்வங்கள்'
-                    : 'Section 1: Hobbies & Interests';
-              sectionDescription =
-                lang === 'kn'
-                  ? 'ನಿಮ್ಮ ಹವ್ಯಾಸಗಳು ಮತ್ತು ಅವುಗಳಿಗೆ ಪ್ರೇರಣೆ ನೀಡುವ ವಿಷಯಗಳ ಬಗ್ಗೆ ಬರೆಯಿರಿ.'
-                  : lang === 'ta'
-                    ? 'உங்கள் பொழுதுபோக்குகள் மற்றும் அதற்கு உங்களை ஊக்கப்படுத்தும் விஷயங்களை பற்றி பகிருங்கள்.'
-                    : 'Share your thoughts about your hobbies and what inspires them';
-            } else if (sectionKey === 'section2') {
-              sectionTitle =
-                lang === 'kn'
-                  ? 'ಭಾಗ 2: ಸಾಮರ್ಥ್ಯಗಳು ಮತ್ತು ಅಭ್ಯಾಸ'
-                  : lang === 'ta'
-                    ? 'பகுதி 2: திறமைகள் மற்றும் பயிற்சி'
-                    : 'Section 2: Talents & Practice';
-              sectionDescription =
-                lang === 'kn'
-                  ? 'ನಿಮ್ಮ ಸಹಜ ಸಾಮರ್ಥ್ಯಗಳು ಯಾವುವು ಮತ್ತು ಅವನ್ನು ಹೇಗೆ ಅಭ್ಯಾಸ ಮಾಡುತ್ತೀರಿ ಎಂಬುದನ್ನು ಅನ್ವೇಷಿಸಿ.'
-                  : lang === 'ta'
-                    ? 'உங்களிடம் உள்ள இயல்பான திறமைகள் என்ன, அதை நீங்கள் எப்படி வளர்த்துக் கொள்கிறீர்கள் என்பதை எழுதுங்கள்.'
-                    : 'Explore your natural talents and how you develop them';
-              headerColor = 'from-pink-50 to-purple-50';
-              titleColor = 'text-pink-800';
-              descColor = 'text-pink-600';
-            } else if (sectionKey === 'section3') {
-              sectionTitle =
-                lang === 'kn'
-                  ? 'ಭಾಗ 3: ಬೆಂಬಲ ಮತ್ತು ವೃತ್ತಿ 연결'
-                  : lang === 'ta'
-                    ? 'பகுதி 3: ஆதரவு மற்றும் தொழில் இணைப்பு'
-                    : 'Section 3: Support & Career Connection';
-              sectionDescription =
-                lang === 'kn'
-                  ? 'ನಿಮ್ಮ ಹವ್ಯಾಸಗಳಿಗೆ ಕುಟುಂಬ/ಶಾಲೆಯಿಂದ ಸಿಗುವ ಬೆಂಬಲ ಮತ್ತು ಭವಿಷ್ಯದ ವೃತ್ತಿ ಅವಕಾಶಗಳ ಬಗ್ಗೆ ಚಿಂತಿಸಿ.'
-                  : lang === 'ta'
-                    ? 'உங்கள் பொழுதுபோக்குகளை வளர்க்க வீட்டிலும் பள்ளியிலும் கிடைக்கும் ஆதரவு மற்றும் அதிலிருந்து உருவாகும் தொழில் வாய்ப்புகளை பற்றி சிந்தியுங்கள்.'
-                    : 'Reflect on support systems and career possibilities from your hobbies';
-              headerColor = 'from-purple-50 to-indigo-50';
-              titleColor = 'text-purple-800';
-              descColor = 'text-purple-600';
-            } else {
-              sectionTitle =
-                lang === 'kn'
-                  ? `ಭಾಗ ${sectionNumber}`
-                  : lang === 'ta'
-                    ? `பகுதி ${sectionNumber}`
-                    : `Section ${sectionNumber}`;
-              sectionDescription =
-                lang === 'kn'
-                  ? 'ಈ ಭಾಗದಲ್ಲಿರುವ ಪ್ರಶ್ನೆಗಳಿಗೆ ನಿಮ್ಮ ಆಲೋಚನೆಗಳನ್ನು ಬರೆಯಿರಿ.'
-                  : lang === 'ta'
-                    ? 'இந்த பகுதியில் உள்ள கேள்விகளுக்கு உங்கள் எண்ணங்களை எழுதுங்கள்.'
-                    : 'Answer the questions in this section';
-            }
+              return (
+                <button
+                  key={sectionKey}
+                  onClick={() => setCurrentSection(sectionKey)}
+                  className={`px-6 py-2 rounded-md transition-all ${currentSection === sectionKey
+                    ? 'bg-orange-600 text-white shadow-md'
+                    : 'text-gray-600 hover:text-orange-600'
+                    }`}
+                >
+                  {sectionTitle}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-            return (
-              <div key={sectionKey} style={{ display: currentSection === sectionKey ? 'block' : 'none' }}>
-                <Card className="border-0 shadow-lg">
-                  <CardHeader className={`bg-gradient-to-r ${headerColor}`}>
-                    <CardTitle className={`text-xl ${titleColor}`}>{sectionTitle}</CardTitle>
-                    <CardDescription className={descColor}>
-                      {sectionDescription}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <div className="space-y-6">
-                      {sectionQuestions.map((question, index) => {
-                        const questionNumber = index + 1;
-                        const questionValue = responses[question.id] || '';
-                        const helpKey = question.id;
-                        const isOpen = !!helpOpen[helpKey];
-                        const helpText = question.help_text || '';
+        {/* Dynamically render sections from database */}
+        {sections.map((sectionKey) => {
+          const sectionQuestions = questionsBySection[sectionKey] || [];
+          if (sectionQuestions.length === 0) return null;
 
-                        // Format label with number
-                        const hasNumber = /^\d+\.\s/.test(question.question_text || '');
-                        const label = hasNumber
-                          ? question.question_text
-                          : `${questionNumber}. ${question.question_text}`;
+          const sectionNumber = sections.indexOf(sectionKey) + 1;
+          let sectionTitle = '';
+          let sectionDescription = '';
+          let headerColor = 'from-orange-50 to-pink-50';
+          let titleColor = 'text-orange-800';
+          let descColor = 'text-orange-600';
 
-                        // Get icon based on section
-                        const icons = [
-                          Palette, Heart, Star, TrendingUp, Lightbulb, Target, Award,
-                          Award, TrendingUp, BookOpen, Users, CheckCircle, Target, Award
-                        ];
-                        const IconComponent = icons[index % icons.length] || Palette;
+          if (sectionKey === 'section1') {
+            sectionTitle =
+              lang === 'kn'
+                ? 'ಭಾಗ 1: ಹವ್ಯಾಸಗಳು ಮತ್ತು ಆಸಕ್ತಿಗಳು'
+                : lang === 'ta'
+                  ? 'பகுதி 1: பொழுதுபோக்குகள் மற்றும் ஆர்வங்கள்'
+                  : 'Section 1: Hobbies & Interests';
+            sectionDescription =
+              lang === 'kn'
+                ? 'ನಿಮ್ಮ ಹವ್ಯಾಸಗಳು ಮತ್ತು ಅವುಗಳಿಗೆ ಪ್ರೇರಣೆ ನೀಡುವ ವಿಷಯಗಳ ಬಗ್ಗೆ ಬರೆಯಿರಿ.'
+                : lang === 'ta'
+                  ? 'உங்கள் பொழுதுபோக்குகள் மற்றும் அதற்கு உங்களை ஊக்கப்படுத்தும் விஷயங்களை பற்றி பகிருங்கள்.'
+                  : 'Share your thoughts about your hobbies and what inspires them';
+          } else if (sectionKey === 'section2') {
+            sectionTitle =
+              lang === 'kn'
+                ? 'ಭಾಗ 2: ಸಾಮರ್ಥ್ಯಗಳು ಮತ್ತು ಅಭ್ಯಾಸ'
+                : lang === 'ta'
+                  ? 'பகுதி 2: திறமைகள் மற்றும் பயிற்சி'
+                  : 'Section 2: Talents & Practice';
+            sectionDescription =
+              lang === 'kn'
+                ? 'ನಿಮ್ಮ ಸಹಜ ಸಾಮರ್ಥ್ಯಗಳು ಯಾವುವು ಮತ್ತು ಅವನ್ನು ಹೇಗೆ ಅಭ್ಯಾಸ ಮಾಡುತ್ತೀರಿ ಎಂಬುದನ್ನು ಅನ್ವೇಷಿಸಿ.'
+                : lang === 'ta'
+                  ? 'உங்களிடம் உள்ள இயல்பான திறமைகள் என்ன, அதை நீங்கள் எப்படி வளர்த்துக் கொள்கிறீர்கள் என்பதை எழுதுங்கள்.'
+                  : 'Explore your natural talents and how you develop them';
+            headerColor = 'from-pink-50 to-purple-50';
+            titleColor = 'text-pink-800';
+            descColor = 'text-pink-600';
+          } else if (sectionKey === 'section3') {
+            sectionTitle =
+              lang === 'kn'
+                ? 'ಭಾಗ 3: ಬೆಂಬಲ ಮತ್ತು ವೃತ್ತಿ 연결'
+                : lang === 'ta'
+                  ? 'பகுதி 3: ஆதரவு மற்றும் தொழில் இணைப்பு'
+                  : 'Section 3: Support & Career Connection';
+            sectionDescription =
+              lang === 'kn'
+                ? 'ನಿಮ್ಮ ಹವ್ಯಾಸಗಳಿಗೆ ಕುಟುಂಬ/ಶಾಲೆಯಿಂದ ಸಿಗುವ ಬೆಂಬಲ ಮತ್ತು ಭವಿಷ್ಯದ ವೃತ್ತಿ ಅವಕಾಶಗಳ ಬಗ್ಗೆ ಚಿಂತಿಸಿ.'
+                : lang === 'ta'
+                  ? 'உங்கள் பொழுதுபோக்குகளை வளர்க்க வீட்டிலும் பள்ளியிலும் கிடைக்கும் ஆதரவு மற்றும் அதிலிருந்து உருவாகும் தொழில் வாய்ப்புகளை பற்றி சிந்தியுங்கள்.'
+                  : 'Reflect on support systems and career possibilities from your hobbies';
+            headerColor = 'from-purple-50 to-indigo-50';
+            titleColor = 'text-purple-800';
+            descColor = 'text-purple-600';
+          } else {
+            sectionTitle =
+              lang === 'kn'
+                ? `ಭಾಗ ${sectionNumber}`
+                : lang === 'ta'
+                  ? `பகுதி ${sectionNumber}`
+                  : `Section ${sectionNumber}`;
+            sectionDescription =
+              lang === 'kn'
+                ? 'ಈ ಭಾಗದಲ್ಲಿರುವ ಪ್ರಶ್ನೆಗಳಿಗೆ ನಿಮ್ಮ ಆಲೋಚನೆಗಳನ್ನು ಬರೆಯಿರಿ.'
+                : lang === 'ta'
+                  ? 'இந்த பகுதியில் உள்ள கேள்விகளுக்கு உங்கள் எண்ணங்களை எழுதுங்கள்.'
+                  : 'Answer the questions in this section';
+          }
 
-                        return (
-                          <div key={question.id} className="border-l-4 border-orange-400 pl-6">
-                            <label className="block text-base font-medium text-gray-800 mb-2 flex items-center gap-2">
-                              <IconComponent className="w-5 h-5 text-orange-500" />
-                              {label}
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <button
-                                    type="button"
-                                    aria-label="Help"
-                                    className="text-orange-600 hover:text-orange-700"
-                                    onClick={() => toggleHelp(helpKey)}
-                                  >
-                                    💬
-                                  </button>
-                                </TooltipTrigger>
-                                <TooltipContent className="max-w-xs">{helpText}</TooltipContent>
-                              </Tooltip>
-                            </label>
-                            {isOpen && (
-                              <div className="mb-2 p-3 rounded border bg-orange-50 border-orange-200 text-sm text-orange-800">
-                                {helpText}
-                              </div>
-                            )}
-                            <Textarea
-                              placeholder={helpText || `Write your answer here...`}
-                              value={questionValue}
-                              onChange={(e) => handleResponseChange(question.id, e.target.value)}
-                              readOnly={isReadOnly || isCompleted}
-                              rows={4}
-                              className="text-base border-orange-200 focus:border-orange-400"
-                            />
-                          </div>
-                        );
-                      })}
+          return (
+            <div key={sectionKey} style={{ display: currentSection === sectionKey ? 'block' : 'none' }}>
+              <Card className="border-0 shadow-lg">
+                <CardHeader className={`bg-gradient-to-r ${headerColor}`}>
+                  <CardTitle className={`text-xl ${titleColor}`}>{sectionTitle}</CardTitle>
+                  <CardDescription className={descColor}>
+                    {sectionDescription}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="space-y-6">
+                    {sectionQuestions.map((question, index) => {
+                      const questionNumber = index + 1;
+                      const questionValue = responses[question.id] || '';
+                      const helpKey = question.id;
+                      const isOpen = !!helpOpen[helpKey];
+                      const helpText = question.help_text || '';
 
-                      {/* Save Section Button */}
-                      {!isReadOnly && !isCompleted && (
-                        <div className="flex justify-end mt-6 pt-4 border-t border-orange-200">
-                          <Button
-                            onClick={() => saveSection(sectionKey)}
-                            disabled={savingSection === sectionKey || savingSection !== null}
-                            className="bg-orange-600 hover:bg-orange-700 text-white"
-                          >
-                            {savingSection === sectionKey ? (
-                              <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                {lang === 'kn'
-                                  ? 'ಉಳಿಸುತ್ತಿದೆ...'
-                                  : lang === 'ta'
-                                    ? 'சேமித்து கொண்டிருக்கிறது...'
-                                    : 'Saving...'}
-                              </>
-                            ) : (
-                              <>
-                                <CheckCircle className="w-4 h-4 mr-2" />
-                                {lang === 'kn'
-                                  ? 'இந்த பகுதியನ್ನು ಉಳಿಸಿ'
-                                  : lang === 'ta'
-                                    ? 'இந்த பகுதியை சேமிக்கவும்'
-                                    : 'Save Section'}
-                              </>
-                            )}
-                          </Button>
+                      // Format label with number
+                      const hasNumber = /^\d+\.\s/.test(question.question_text || '');
+                      const label = hasNumber
+                        ? question.question_text
+                        : `${questionNumber}. ${question.question_text}`;
+
+                      // Get icon based on section
+                      const icons = [
+                        Palette, Heart, Star, TrendingUp, Lightbulb, Target, Award,
+                        Award, TrendingUp, BookOpen, Users, CheckCircle, Target, Award
+                      ];
+                      const IconComponent = icons[index % icons.length] || Palette;
+
+                      return (
+                        <div key={question.id} className="border-l-4 border-orange-400 pl-6">
+                          <label className="block text-base font-medium text-gray-800 mb-2 flex items-center gap-2">
+                            <IconComponent className="w-5 h-5 text-orange-500" />
+                            {label}
+                            <button
+                              type="button"
+                              aria-label="Help"
+                              className="text-orange-600 hover:text-orange-700"
+                              onClick={() => toggleHelp(helpKey)}
+                            >
+                              💬
+                            </button>
+                          </label>
+                          {isOpen && (
+                            <div className="mb-2 p-3 rounded border bg-orange-50 border-orange-200 text-sm text-orange-800">
+                              {helpText}
+                            </div>
+                          )}
+                          <Textarea
+                            placeholder={helpText || `Write your answer here...`}
+                            value={questionValue}
+                            onChange={(e) => handleResponseChange(question.id, e.target.value)}
+                            readOnly={isReadOnly || isCompleted}
+                            rows={4}
+                            className="text-base border-orange-200 focus:border-orange-400"
+                          />
                         </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            );
-          })}
+                      );
+                    })}
 
-          {/* Submit Button */}
-          <div className="flex justify-center mt-8">
+
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          );
+        })}
+
+        {/* Footer Navigation */}
+        <div className="flex flex-col-reverse sm:flex-row justify-between items-center mt-8 gap-4 sm:gap-0">
+          <Button
+            variant="outline"
+            onClick={() => {
+              const idx = sections.indexOf(currentSection);
+              if (idx > 0) {
+                setCurrentSection(sections[idx - 1]);
+                window.scrollTo(0, 0);
+              }
+            }}
+            disabled={sections.indexOf(currentSection) === 0}
+            className="w-full sm:w-auto border-orange-200 text-orange-700 hover:bg-orange-50"
+          >
+            {lang === 'kn' ? 'ಹಿಂದಿನ ಭಾಗ' : lang === 'ta' ? 'முந்தைய பகுதி' : 'Previous Section'}
+          </Button>
+
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Button
-              onClick={submitAssessment}
-              disabled={!canSubmit() || submitting || isReadOnly}
-              size="lg"
-              className="bg-gradient-to-r from-orange-600 to-pink-600 hover:from-orange-700 hover:to-pink-700 text-white px-8 py-3 text-lg"
+              variant="outline"
+              onClick={() => saveSection(currentSection)}
+              disabled={savingSection !== null || isReadOnly}
+              className="w-full sm:w-auto border-orange-200 text-orange-700 hover:bg-orange-50"
             >
-              {submitting ? (
+              {savingSection ? (
                 <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
-                  {t('submitting')}
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-600 mr-2"></div>
+                  {lang === 'kn' ? 'ಉಳಿಸುತ್ತಿದೆ...' : lang === 'ta' ? 'சேமித்து கொண்டிருக்கிறது...' : 'Saving...'}
                 </>
               ) : (
                 <>
-                  <Palette className="w-5 h-5 mr-3" />
-                  {t('submitAssessment')}
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  {lang === 'kn' ? 'ಪ್ರಗತಿಯನ್ನು ಉಳಿಸಿ' : lang === 'ta' ? 'முன்னேற்றத்தைச் சேமி' : 'Save Progress'}
                 </>
               )}
             </Button>
-          </div>
 
-          {/* Hobby Icons Inspiration */}
-          <div className="mt-12 text-center">
-            <h3 className="text-lg font-semibold text-gray-700 mb-4">
-              {lang === 'kn'
-                ? 'ಸಾಮಾನ್ಯ ಹವ್ಯಾಸ ವಿಭಾಗಗಳು'
-                : lang === 'ta'
-                  ? 'பொதுவான பொழுதுபோக்கு வகைகள்'
-                  : 'Common Hobby Categories'}
-            </h3>
-            <div className="flex flex-wrap justify-center gap-6 text-gray-500">
-              <div className="flex flex-col items-center gap-2">
-                <Music className="w-8 h-8" />
-                <span className="text-sm">
-                  {lang === 'kn' ? 'ಸಂಗೀತ' : lang === 'ta' ? 'இசை' : 'Music'}
-                </span>
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <Camera className="w-8 h-8" />
-                <span className="text-sm">
-                  {lang === 'kn' ? 'ಛಾಯಾಗ್ರಹಣ' : lang === 'ta' ? 'புகைப்படம்' : 'Photography'}
-                </span>
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <BookOpen className="w-8 h-8" />
-                <span className="text-sm">
-                  {lang === 'kn' ? 'ಓದು' : lang === 'ta' ? 'வாசிப்பு' : 'Reading'}
-                </span>
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <Gamepad2 className="w-8 h-8" />
-                <span className="text-sm">
-                  {lang === 'kn' ? 'ಗೇಮಿಂಗ್' : lang === 'ta' ? 'விளையாட்டு (கேமிங்)' : 'Gaming'}
-                </span>
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <Paintbrush className="w-8 h-8" />
-                <span className="text-sm">
-                  {lang === 'kn' ? 'ಕಲೆ' : lang === 'ta' ? 'கலை' : 'Art'}
-                </span>
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <Dumbbell className="w-8 h-8" />
-                <span className="text-sm">
-                  {lang === 'kn' ? 'ಕ್ರೀಡೆ' : lang === 'ta' ? 'விளையாட்டு' : 'Sports'}
-                </span>
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <Code className="w-8 h-8" />
-                <span className="text-sm">
-                  {lang === 'kn' ? 'ತಂತ್ರಜ್ಞಾನ' : lang === 'ta' ? 'தொழில்நுட்பம்' : 'Technology'}
-                </span>
-              </div>
+            {sections.indexOf(currentSection) < sections.length - 1 ? (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const idx = sections.indexOf(currentSection);
+                  if (idx < sections.length - 1) {
+                    setCurrentSection(sections[idx + 1]);
+                    window.scrollTo(0, 0);
+                  }
+                }}
+                className="w-full sm:w-auto border-orange-200 text-orange-700 hover:bg-orange-50"
+              >
+                {lang === 'kn' ? 'ಮುಂದಿನ ಭಾಗ' : lang === 'ta' ? 'அடுத்த பகுதி' : 'Next Section'}
+              </Button>
+            ) : (
+              <Button
+                onClick={submitAssessment}
+                disabled={!canSubmit() || submitting || isReadOnly}
+                className="w-full sm:w-auto bg-orange-600 hover:bg-orange-700 text-white"
+              >
+                {submitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    {t('submitting')}
+                  </>
+                ) : (
+                  <>
+                    <Palette className="w-4 h-4 mr-2" />
+                    {t('submitAssessment')}
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Hobby Icons Inspiration */}
+        <div className="mt-12 text-center">
+          <h3 className="text-lg font-semibold text-gray-700 mb-4">
+            {lang === 'kn'
+              ? 'ಸಾಮಾನ್ಯ ಹವ್ಯಾಸ ವಿಭಾಗಗಳು'
+              : lang === 'ta'
+                ? 'பொதுவான பொழுதுபோக்கு வகைகள்'
+                : 'Common Hobby Categories'}
+          </h3>
+          <div className="flex flex-wrap justify-center gap-6 text-gray-500">
+            <div className="flex flex-col items-center gap-2">
+              <Music className="w-8 h-8" />
+              <span className="text-sm">
+                {lang === 'kn' ? 'ಸಂಗೀತ' : lang === 'ta' ? 'இசை' : 'Music'}
+              </span>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <Camera className="w-8 h-8" />
+              <span className="text-sm">
+                {lang === 'kn' ? 'ಛಾಯಾಗ್ರಹಣ' : lang === 'ta' ? 'புகைப்படம்' : 'Photography'}
+              </span>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <BookOpen className="w-8 h-8" />
+              <span className="text-sm">
+                {lang === 'kn' ? 'ಓದು' : lang === 'ta' ? 'வாசிப்பு' : 'Reading'}
+              </span>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <Gamepad2 className="w-8 h-8" />
+              <span className="text-sm">
+                {lang === 'kn' ? 'ಗೇಮಿಂಗ್' : lang === 'ta' ? 'விளையாட்டு (கேமிங்)' : 'Gaming'}
+              </span>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <Paintbrush className="w-8 h-8" />
+              <span className="text-sm">
+                {lang === 'kn' ? 'ಕಲೆ' : lang === 'ta' ? 'கலை' : 'Art'}
+              </span>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <Dumbbell className="w-8 h-8" />
+              <span className="text-sm">
+                {lang === 'kn' ? 'ಕ್ರೀಡೆ' : lang === 'ta' ? 'விளையாட்டு' : 'Sports'}
+              </span>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <Code className="w-8 h-8" />
+              <span className="text-sm">
+                {lang === 'kn' ? 'ತಂತ್ರಜ್ಞಾನ' : lang === 'ta' ? 'தொழில்நுட்பம்' : 'Technology'}
+              </span>
             </div>
           </div>
-        </TooltipProvider>
+        </div>
+
       </div>
       <KannadaKeyboard lang={lang} />
     </div>

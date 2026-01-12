@@ -95,11 +95,11 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
           if (!authUser) {
             throw new Error('User not authenticated. Please log in again.');
           }
-          
+
           // Use auth.uid() for the path to ensure it matches the RLS policy
           const userId = authUser.id;
           const path = `${userId}/${Date.now()}_${avatarFile.name}`;
-          
+
           console.log('📤 Uploading profile picture:', {
             path,
             userId,
@@ -108,7 +108,7 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
             fileName: avatarFile.name,
             fileType: avatarFile.type
           });
-          
+
           const { error: upErr } = await supabase.storage.from('avatars').upload(path, avatarFile, { upsert: true });
           if (upErr) {
             console.error('❌ Avatar upload error:', upErr);
@@ -128,7 +128,7 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
             }
             throw upErr;
           }
-          
+
           console.log('✅ Avatar uploaded successfully');
           const { data } = supabase.storage.from('avatars').getPublicUrl(path);
           avatarUrl = data.publicUrl;
@@ -138,34 +138,34 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
         }
       }
       // update users row
-      const updateData = { 
-        full_name: fullName, 
+      const updateData = {
+        full_name: fullName,
         gender: gender || null,
         school: school || null,
         profile_picture_url: avatarUrl,
         career_goals: isTeacher ? (userProfile as any).career_goals || null : goal || null
       };
-      
+
       console.log('🔄 Updating user profile with data:', updateData);
-      
+
       const { data: updateResult, error } = await supabase
         .from('users')
         .update(updateData)
         .eq('id', userProfile.id)
         .select();
-        
+
       if (error) {
         console.error('❌ Database update error:', error);
         throw error;
       }
-      
+
       console.log('✅ Database update successful:', updateResult);
       // password change
       if (password) {
         if (!isTeacher) {
           // Custom-auth students: update student_auth_credentials
           console.log('Updating student password for user:', userProfile.id);
-          
+
           const { error: credErr } = await supabase
             .from('student_auth_credentials')
             .update({
@@ -173,12 +173,12 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
               is_active: true
             })
             .eq('user_id', userProfile.id);
-          
+
           if (credErr) {
             console.error('Password update error:', credErr);
             throw new Error(`Failed to update password: ${credErr.message}`);
           }
-          
+
           console.log('Student password updated successfully');
           toast({
             title: lang === 'kn' ? "ಪಾಸ್ವರ್ಡ್ ನವೀಕರಿಸಲಾಗಿದೆ! 🔐" : lang === 'ta' ? "கடவுச்சொல் மாற்றப்பட்டது! 🔐" : "Password Updated! 🔐",
@@ -197,23 +197,23 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
           });
         }
       }
-      
+
       // Show success message
       toast({
         title: lang === 'kn' ? "ಪ್ರೊಫೈಲ್ ನವೀಕರಿಸಲಾಗಿದೆ! ✨" : lang === 'ta' ? "சுயவிவரம் மாற்றப்பட்டது! ✨" : "Profile Updated! ✨",
         description: lang === 'kn' ? "ನಿಮ್ಮ ಪ್ರೊಫೈಲ್ ಯಶಸ್ವಿಯಾಗಿ ನವೀಕರಿಸಲಾಗಿದೆ." : lang === 'ta' ? "உங்கள் சுயவிவரம் மாற்றப்பட்டது." : "Your profile has been updated successfully.",
       });
-      
+
       // Small delay to ensure database update is complete
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       // Refresh user profile to show updated picture
       console.log('🔄 Refreshing user profile after update...');
       await refreshUserProfile();
-      
+
       // Force re-render of profile dialog with fresh data
       console.log('🔄 Profile dialog will re-render with fresh data');
-      
+
       onOpenChange(false);
     } catch (err: any) {
       console.error('Profile save error:', err);
@@ -227,15 +227,15 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
           lang === 'kn'
             ? 'ಪ್ರೊಫೈಲ್ ಚಿತ್ರವನ್ನು ಈಗ ಅಪ್‌ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ. ದಯವಿಟ್ಟು ನಿರ್ವಾಹಕರು "avatars" ಸ್ಟೋರೇಜ್ ಬಕೆಟ್ ಅನ್ನು ಸೃಷ್ಟಿಸಲಿ.'
             : lang === 'ta'
-            ? 'சுயவிவர படத்தை இப்போது பதிவேற்ற முடியவில்லை. நிர்வாகி "avatars" சேமிப்பு பக்கெட்டை உருவாக்க வேண்டும்.'
-            : 'We cannot upload your profile picture right now. Please ask your administrator to create the "avatars" storage bucket.';
+              ? 'சுயவிவர படத்தை இப்போது பதிவேற்ற முடியவில்லை. நிர்வாகி "avatars" சேமிப்பு பக்கெட்டை உருவாக்க வேண்டும்.'
+              : 'We cannot upload your profile picture right now. Please ask your administrator to create the "avatars" storage bucket.';
       } else {
         description =
           lang === 'kn'
             ? 'ಪ್ರೊಫೈಲ್ ಅನ್ನು ನವೀಕರಿಸಲು ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.'
             : lang === 'ta'
-            ? 'சுயவிவரத்தை மாற்ற முடியவில்லை. தயவு செய்து மீண்டும் முயற்சிக்கவும்.'
-            : 'Failed to update profile. Please try again.';
+              ? 'சுயவிவரத்தை மாற்ற முடியவில்லை. தயவு செய்து மீண்டும் முயற்சிக்கவும்.'
+              : 'Failed to update profile. Please try again.';
       }
 
       toast({
@@ -258,10 +258,10 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
         <div className="space-y-4">
           <div>
             <Label>{lang === 'kn' ? 'ಪೂರ್ಣ ಹೆಸರು' : lang === 'ta' ? 'முழு பெயர்' : 'Full Name'}</Label>
-            <Input 
+            <Input
               lang={lang}
-              value={fullName} 
-              onChange={(e)=> setFullName(e.target.value)} 
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
             />
           </div>
           <div>
@@ -270,7 +270,7 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
           </div>
           <div>
             <Label>{lang === 'kn' ? 'ಲಿಂಗ' : lang === 'ta' ? 'பாலினம்' : 'Gender'}</Label>
-            <Select value={gender} onValueChange={(v: any)=> setGender(v)}>
+            <Select value={gender} onValueChange={(v: any) => setGender(v)}>
               <SelectTrigger><SelectValue placeholder={lang === 'kn' ? 'ಲಿಂಗವನ್ನು ಆಯ್ಕೆಮಾಡಿ' : lang === 'ta' ? 'பாலினத்தைத் தேர்ந்தெடுக்கவும்' : 'Select gender'} /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="male">{lang === 'kn' ? 'ಪುರುಷ' : lang === 'ta' ? 'ஆண்' : 'Male'}</SelectItem>
@@ -286,10 +286,10 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
             </div>
             <div>
               <Label>{lang === 'kn' ? 'ಶಾಲೆ' : lang === 'ta' ? 'பள்ளி' : 'School'}</Label>
-              <Input 
+              <Input
                 lang={lang}
-                value={school} 
-                onChange={(e) => setSchool(e.target.value)} 
+                value={school}
+                onChange={(e) => setSchool(e.target.value)}
                 placeholder={lang === 'kn' ? 'ನಿಮ್ಮ ಶಾಲೆಯ ಹೆಸರನ್ನು ನಮೂದಿಸಿ' : lang === 'ta' ? 'உங்கள் பள்ளியின் பெயரை உள்ளிடவும்' : 'Enter your school name'}
               />
             </div>
@@ -309,30 +309,40 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
           {!isTeacher && (
             <div>
               <Label>{lang === 'kn' ? 'ಆಸೆ / ವೃತ್ತಿ ಗುರಿ' : lang === 'ta' ? 'ஆசை / வாழ்க்கை இலக்கு' : 'Aspiration / Career Goal'}</Label>
-              <Input 
+              <Input
                 lang={lang}
-                value={goal} 
-                onChange={(e)=> setGoal(e.target.value)} 
-                placeholder={lang === 'kn' ? 'ನಿಮ್ಮ ವೃತ್ತಿ ಗುರಿ' : lang === 'ta' ? 'உங்கள் வாழ்க்கை இலக்கு' : 'Your career goal'} 
+                value={goal}
+                onChange={(e) => setGoal(e.target.value)}
+                placeholder={lang === 'kn' ? 'ನಿಮ್ಮ ವೃತ್ತಿ ಗುರಿ' : lang === 'ta' ? 'உங்கள் வாழ்க்கை இலக்கு' : 'Your career goal'}
               />
             </div>
           )}
           <div>
+            <Label>{lang === 'kn' ? 'ಆಯ್ಕೆ ಮಾಡಿದ ಭಾಷೆ' : lang === 'ta' ? 'தேர்ந்தெடுக்கப்பட்ட மொழி' : 'Preferred Language'}</Label>
+            <Input
+              value={userProfile?.preferred_language === 'kn' ? (lang === 'kn' ? 'ಕನ್ನಡ' : 'Kannada') :
+                userProfile?.preferred_language === 'ta' ? (lang === 'ta' ? 'தமிழ்' : 'Tamil') :
+                  'English'}
+              disabled
+              className="bg-slate-50 opacity-80"
+            />
+          </div>
+          <div>
             <Label>{lang === 'kn' ? 'ಪ್ರೊಫೈಲ್ ಚಿತ್ರ' : lang === 'ta' ? 'படம்' : 'Profile Picture'}</Label>
-            <Input type="file" accept="image/*" onChange={(e)=> setAvatarFile(e.target.files?.[0] || null)} />
+            <Input type="file" accept="image/*" onChange={(e) => setAvatarFile(e.target.files?.[0] || null)} />
           </div>
           <div>
             <Label>{lang === 'kn' ? 'ಪಾಸ್ವರ್ಡ್ ಬದಲಾಯಿಸಿ' : lang === 'ta' ? 'கடவுச்சொல் மாற்ற' : 'Change Password'}</Label>
-            <Input 
-              type="password" 
-              value={password} 
-              onChange={(e)=> setPassword(e.target.value)} 
-              placeholder={lang === 'kn' ? 'ಹೊಸ ಪಾಸ್ವರ್ಡ್' : lang === 'ta' ? 'புதிய கடவுச்சொல்' : 'New password'} 
+            <Input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={lang === 'kn' ? 'ಹೊಸ ಪಾಸ್ವರ್ಡ್' : lang === 'ta' ? 'புதிய கடவுச்சொல்' : 'New password'}
             />
           </div>
-          
+
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={()=> onOpenChange(false)}>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
               {lang === 'kn' ? 'ಮುಚ್ಚಿ' : lang === 'ta' ? 'மூடு' : 'Close'}
             </Button>
             <Button className="bg-green-600 hover:bg-green-700" onClick={saveProfile} disabled={saving}>
@@ -342,7 +352,7 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
         </div>
         {(lang === 'kn' || lang === 'ta') && <KannadaKeyboard lang={lang} />}
       </DialogContent>
-    </Dialog>
+    </Dialog >
   );
 }
 

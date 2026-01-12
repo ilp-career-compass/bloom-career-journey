@@ -187,6 +187,8 @@ export class AssessmentService {
   static async getHollandCodeData(): Promise<{
     categories: { [key: string]: string };
     questions: { [key: string]: string[] };
+    description: string | null;
+    instructions: string | null;
   } | null> {
     try {
       const template = await this.getAssessmentTemplate('personality');
@@ -194,7 +196,7 @@ export class AssessmentService {
 
       const categories: { [key: string]: string } = {
         'R': 'Realistic',
-        'I': 'Investigative', 
+        'I': 'Investigative',
         'A': 'Artistic',
         'S': 'Social',
         'E': 'Enterprising',
@@ -230,7 +232,12 @@ export class AssessmentService {
         });
       });
 
-      return { categories, questions };
+      return {
+        categories,
+        questions,
+        description: template.description,
+        instructions: template.instructions
+      };
     } catch (error) {
       console.error('Error in getHollandCodeData:', error);
       return null;
@@ -255,7 +262,7 @@ export class AssessmentService {
 
       // Get questions from the first section
       const questions = template.sections[0]?.questions || [];
-      
+
       // Create help texts object
       const helpTexts: { [key: string]: string } = {};
       questions.forEach((question, index) => {

@@ -87,7 +87,9 @@ export default function AISummaryReview({ selectedStudentId }: AISummaryReviewPr
         .maybeSingle();
 
       if (teacherError || !teacherData) {
-        throw new Error('Teacher profile not found');
+        console.warn('Teacher profile not found');
+        setStudents([]);
+        return;
       }
 
       // Get students
@@ -123,14 +125,27 @@ export default function AISummaryReview({ selectedStudentId }: AISummaryReviewPr
 
             const existing = latestAssessments.get(assessment.assessment_type);
             const assessmentTimestamp = new Date(assessment.completed_at || assessment.updated_at || 0).getTime();
+            const isCompleted = !!assessment.completed_at;
+
             if (!existing) {
               latestAssessments.set(assessment.assessment_type, assessment);
               return;
             }
 
             const existingTimestamp = new Date(existing.completed_at || existing.updated_at || 0).getTime();
-            if (assessmentTimestamp > existingTimestamp) {
+            const isExistingCompleted = !!existing.completed_at;
+
+            // Prioritize completed assessments over drafts
+            if (isCompleted && !isExistingCompleted) {
               latestAssessments.set(assessment.assessment_type, assessment);
+            } else if (!isCompleted && isExistingCompleted) {
+              // Keep the existing completed one
+              return;
+            } else {
+              // Both are completed or both are drafts - take the latest
+              if (assessmentTimestamp > existingTimestamp) {
+                latestAssessments.set(assessment.assessment_type, assessment);
+              }
             }
           });
 
@@ -189,17 +204,33 @@ export default function AISummaryReview({ selectedStudentId }: AISummaryReviewPr
           return;
         }
 
-        const existing = uniqueAssessments[assessment.assessment_type];
+        // We assume one active version per assessment type
+        // The logic below ensures we prioritize COMPLETED assessments over drafts
+        // This aligns with Student Dashboard which locks onto the completed one
+        const key = assessment.assessment_type;
+
+        const existing = uniqueAssessments[key];
         const assessmentTimestamp = new Date(assessment.completed_at || assessment.updated_at || 0).getTime();
+        const isCompleted = !!assessment.completed_at;
 
         if (!existing) {
-          uniqueAssessments[assessment.assessment_type] = assessment;
+          uniqueAssessments[key] = assessment;
           return;
         }
 
         const existingTimestamp = new Date(existing.completed_at || existing.updated_at || 0).getTime();
-        if (assessmentTimestamp > existingTimestamp) {
-          uniqueAssessments[assessment.assessment_type] = assessment;
+        const isExistingCompleted = !!existing.completed_at;
+
+        // Prioritize completed assessments over drafts
+        if (isCompleted && !isExistingCompleted) {
+          uniqueAssessments[key] = assessment;
+        } else if (!isCompleted && isExistingCompleted) {
+          return;
+        } else {
+          // Both are completed or both are drafts - take the latest
+          if (assessmentTimestamp > existingTimestamp) {
+            uniqueAssessments[key] = assessment;
+          }
         }
       });
 
@@ -243,7 +274,7 @@ export default function AISummaryReview({ selectedStudentId }: AISummaryReviewPr
 
           return {
             ...summary,
-            student_name: studentData?.users?.full_name || 'Unknown',
+            student_name: (studentData as any)?.users?.full_name || 'Unknown',
             student_id: studentId,
             assessment_type: assessmentResponse.assessment_type || 'unknown',
             assessment_title: assessmentResponse.assessment_title || 'Unknown Assessment',
@@ -264,7 +295,7 @@ export default function AISummaryReview({ selectedStudentId }: AISummaryReviewPr
         .map((ar: any) => ({
           ...ar,
           student_id: studentId,
-          student_name: studentData?.users?.full_name || 'Unknown',
+          student_name: (studentData as any)?.users?.full_name || 'Unknown',
           student_user_id: studentData?.user_id || null
         }));
 
@@ -314,7 +345,7 @@ export default function AISummaryReview({ selectedStudentId }: AISummaryReviewPr
       for (const assessment of assessmentsWithoutSummaries) {
         try {
           console.log(`🤖 Generating summary for ${assessment.student_name}...`);
-          
+
           // Determine which summary generator to use based on assessment type
           let summaryResult;
           if (assessment.assessment_type === 'about_me') {
@@ -419,11 +450,15 @@ export default function AISummaryReview({ selectedStudentId }: AISummaryReviewPr
           teacherUserId={userProfile.id}
           studentName={selectedSummary.student_name}
           assessmentType={selectedSummary.assessment_type}
-          onSummaryUpdated={() => {
+          onSummaryUpdated={(updatedData) => {
             if (selectedStudent) {
               fetchSummaries(selectedStudent.id);
             }
-            setSelectedSummary(null);
+            if (updatedData) {
+              setSelectedSummary(prev => prev ? ({ ...prev, ...updatedData } as any) : null);
+            } else {
+              setSelectedSummary(null);
+            }
           }}
         />
       </div>
@@ -431,7 +466,7 @@ export default function AISummaryReview({ selectedStudentId }: AISummaryReviewPr
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
       {/* Left Panel: Students List */}
       <div className="lg:col-span-1">
         <Card>
@@ -452,11 +487,10 @@ export default function AISummaryReview({ selectedStudentId }: AISummaryReviewPr
                 <div
                   key={student.id}
                   onClick={() => handleStudentClick(student)}
-                  className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                    selectedStudent?.id === student.id
-                      ? 'bg-blue-50 border-blue-300 shadow-sm'
-                      : 'bg-white hover:bg-gray-50 border-gray-200'
-                  }`}
+                  className={`p-3 rounded-lg border cursor-pointer transition-all ${selectedStudent?.id === student.id
+                    ? 'bg-blue-50 border-blue-300 shadow-sm'
+                    : 'bg-white hover:bg-gray-50 border-gray-200'
+                    }`}
                 >
                   <div className="font-medium text-gray-900">{student.full_name}</div>
                   <div className="text-xs text-gray-500">{student.class_name}</div>
@@ -523,8 +557,8 @@ export default function AISummaryReview({ selectedStudentId }: AISummaryReviewPr
             {/* Summaries List */}
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -533,25 +567,26 @@ export default function AISummaryReview({ selectedStudentId }: AISummaryReviewPr
                         setSummaries([]);
                         setSelectedSummary(null);
                       }}
+                      className="w-fit"
                     >
                       <ArrowLeft className="w-4 h-4 mr-2" />
-                      Back to Students
+                      Back
                     </Button>
                     <CardTitle className="text-lg flex items-center gap-2">
                       <Sparkles className="w-5 h-5" />
-                      {selectedStudent.full_name}'s AI Summaries ({summaries.length})
+                      <span className="truncate">{selectedStudent.full_name}'s Summaries</span>
                     </CardTitle>
                   </div>
                   {assessmentsWithoutSummaries.length > 0 && (
-                    <Button 
-                      onClick={generateMissingSummaries} 
+                    <Button
+                      onClick={generateMissingSummaries}
                       disabled={generating}
                       size="sm"
                       variant="outline"
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0"
                     >
                       <RefreshCw className={`w-4 h-4 ${generating ? 'animate-spin' : ''}`} />
-                      {generating ? 'Generating...' : `Generate ${assessmentsWithoutSummaries.length} Missing`}
+                      {generating ? 'Generating...' : `Generate ${assessmentsWithoutSummaries.length}`}
                     </Button>
                   )}
                 </div>
@@ -577,7 +612,7 @@ export default function AISummaryReview({ selectedStudentId }: AISummaryReviewPr
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
+                            <div className="flex flex-wrap items-center gap-2 mb-2">
                               <span className="font-medium text-gray-900">
                                 {summary.assessment_title}
                               </span>

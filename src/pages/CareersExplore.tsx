@@ -55,7 +55,7 @@ export default function CareersExplore() {
             <CardTitle className="text-2xl text-gray-800">Explore Careers</CardTitle>
           </CardHeader>
           <CardContent>
-            <Input placeholder="Search careers (e.g., Accountant, Animator)" value={q} onChange={(e)=> setQ(e.target.value)} />
+            <Input placeholder="Search careers (e.g., Accountant, Animator)" value={q} onChange={(e) => setQ(e.target.value)} />
           </CardContent>
         </Card>
 
@@ -79,9 +79,9 @@ export default function CareersExplore() {
                       <div className="text-white font-semibold text-sm truncate">{toTitle(item.path)}</div>
                     </div>
                   </div>
-                  <CardContent className="p-3 flex items-center justify-between">
-                    <Button size="sm" variant="outline" onClick={() => setViewUrl(item.url)}>View</Button>
-                    <a href={item.url} target="_blank" rel="noreferrer" className="text-sm text-blue-600 hover:underline">Open in new tab</a>
+                  <CardContent className="p-3 flex flex-wrap items-center justify-between gap-2">
+                    <Button size="sm" variant="outline" onClick={() => setViewUrl(item.url)} className="flex-1 sm:flex-none">View</Button>
+                    <a href={item.url} target="_blank" rel="noreferrer" className="text-sm text-blue-600 hover:underline whitespace-nowrap">Open in new tab</a>
                   </CardContent>
                 </div>
               </Card>
@@ -89,7 +89,7 @@ export default function CareersExplore() {
           </div>
         )}
 
-        <Dialog open={!!viewUrl} onOpenChange={(o)=> !o && setViewUrl(null)}>
+        <Dialog open={!!viewUrl} onOpenChange={(o) => !o && setViewUrl(null)}>
           <DialogContent className="max-w-5xl">
             <DialogHeader>
               <DialogTitle>{viewUrl ? 'Career Card' : ''}</DialogTitle>

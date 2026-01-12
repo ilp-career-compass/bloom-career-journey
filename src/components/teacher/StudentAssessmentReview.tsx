@@ -110,8 +110,8 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
           const rows: any[] = Array.isArray(i18nData)
             ? i18nData
             : (i18nData as any)?.data && Array.isArray((i18nData as any).data)
-            ? (i18nData as any).data
-            : [];
+              ? (i18nData as any).data
+              : [];
           rows.forEach((row: any) => {
             if (row?.key && row?.text) {
               langMap[row.key] = row.text;
@@ -219,8 +219,8 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
           const rows: any[] = Array.isArray(i18nData)
             ? i18nData
             : (i18nData as any)?.data && Array.isArray((i18nData as any).data)
-            ? (i18nData as any).data
-            : [];
+              ? (i18nData as any).data
+              : [];
           rows.forEach((row: any) => {
             if (row?.key && row?.text) {
               langMap[row.key] = row.text;
@@ -268,8 +268,8 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
           const rows: any[] = Array.isArray(i18nData)
             ? i18nData
             : (i18nData as any)?.data && Array.isArray((i18nData as any).data)
-            ? (i18nData as any).data
-            : [];
+              ? (i18nData as any).data
+              : [];
           rows.forEach((row: any) => {
             if (row?.key && row?.text) {
               langMap[row.key] = row.text;
@@ -320,8 +320,8 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
           const rows: any[] = Array.isArray(i18nData)
             ? i18nData
             : (i18nData as any)?.data && Array.isArray((i18nData as any).data)
-            ? (i18nData as any).data
-            : [];
+              ? (i18nData as any).data
+              : [];
           rows.forEach((row: any) => {
             if (row?.key && row?.text) {
               langMap[row.key] = row.text;
@@ -364,11 +364,11 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
 
   const updateReviewStatus = async (assessmentId: string, status: 'reviewed' | 'needs_revision' | 'flagged') => {
     setUpdatingStatus(assessmentId);
-    
+
     try {
       const { error } = await supabase
         .from('assessment_responses')
-        .update({ 
+        .update({
           review_status: status,
           updated_at: new Date().toISOString()
         })
@@ -377,8 +377,8 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
       if (error) throw error;
 
       // Update local state
-      setAssessments(prev => prev.map(assessment => 
-        assessment.id === assessmentId 
+      setAssessments(prev => prev.map(assessment =>
+        assessment.id === assessmentId
           ? { ...assessment, review_status: status }
           : assessment
       ));
@@ -419,7 +419,9 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
         .maybeSingle();
 
       if (teacherError || !teacherData) {
-        throw new Error('Teacher profile not found');
+        console.warn('Teacher profile not found');
+        setStudents([]);
+        return;
       }
 
       // Get students
@@ -588,7 +590,7 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
 
   const countNonEmptyResponses = (responses: any): number => {
     if (!responses || typeof responses !== 'object') return 0;
-    return Object.values(responses).reduce((count, value) => {
+    return Object.values(responses).reduce((count: number, value: any) => {
       if (typeof value === 'string') {
         return value.trim() ? count + 1 : count;
       }
@@ -620,9 +622,9 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
     if (assessment.assessment_type === 'inspiration' && responses) {
       // Inspiration assessment has structure: { video1: {...}, video2: {...}, ... }
       const videoKeys = Object.keys(responses).filter(key => key.startsWith('video'));
-      
+
       console.log('🎥 Video keys found:', videoKeys);
-      
+
       if (videoKeys.length === 0) {
         console.warn('⚠️ No video keys found in responses');
         return (
@@ -634,11 +636,11 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
         <div className="space-y-6">
           {videoKeys.map((videoKey, index) => {
             const videoData = responses[videoKey];
-            
+
             console.log(`🎬 Processing ${videoKey}:`, videoData);
             console.log(`   Keys in ${videoKey}:`, Object.keys(videoData));
             console.log(`   Full ${videoKey} structure:`, JSON.stringify(videoData, null, 2));
-            
+
             if (!videoData) {
               console.warn(`⚠️ No data for ${videoKey}`);
               return null;
@@ -649,18 +651,20 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
                 <h4 className="font-semibold text-gray-800 mb-3">
                   Video {index + 1}
                 </h4>
-                
+
                 <div className="space-y-4">
                   {/* Render each question dynamically - show ALL questions for ALL videos */}
                   {(() => {
                     // Always show all questions from the database (should be 9 questions)
                     // but also include any additional answers that were persisted even if the template changed
-                    const questionCount = inspirationQuestions.length || 9; // Default to 9 if not loaded
-                    
-                    // Generate array of question numbers from the template (1..questionCount)
+                    // Always show exactly 10 questions as per requirement
+                    const questionCount = 10;
+
+                    // Generate array of question numbers from the template (1..10)
                     const templateQuestionNumbers = Array.from({ length: questionCount }, (_, i) => i + 1);
 
                     // Include any question numbers that exist in the stored responses to avoid hiding answers
+                    // BUT strictly filter to keep only <= 10 as per user requirement
                     const answeredQuestionNumbers = Object.keys(videoData || {})
                       .filter((key) => /^question\d+$/.test(key))
                       .map((key) => parseInt(key.replace('question', ''), 10))
@@ -668,78 +672,80 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
 
                     const questionNumbers = Array.from(
                       new Set<number>([...templateQuestionNumbers, ...answeredQuestionNumbers])
-                    ).sort((a, b) => a - b);
-                    
+                    )
+                      .filter(num => num <= 10) // STRICT FILTER: Never show > 10
+                      .sort((a, b) => a - b);
+
                     return questionNumbers.map((questionNum) => {
                       const questionKey = `question${questionNum}`;
-                      
+
                       // Get the actual question text from database
                       const questionData = inspirationQuestions[questionNum - 1];
                       const questionText = questionData?.question_text || questionData?.help_text || `Question ${questionNum}`;
-                      
+
                       // Get the answer from database - check videoData directly
                       // The student saves data as: question1, question2, etc.
                       // This will get answers for questions 1-9 for all videos (1-5 and 6)
-                      const textResponse = videoData && typeof videoData === 'object' 
-                        ? videoData[questionKey] 
+                      const textResponse = videoData && typeof videoData === 'object'
+                        ? videoData[questionKey]
                         : null;
-                      
+
                       // Handle both string and other types
-                      const responseText = textResponse 
+                      const responseText = textResponse
                         ? (typeof textResponse === 'string' ? textResponse : String(textResponse))
                         : '';
-                      
+
                       // Audio is stored separately in audio_responses table, 
                       // check audioResponsesMap with key like "video1_question3"
                       const audioKey = `${videoKey}_${questionKey}`;
                       const audioUrl = videoData && typeof videoData === 'object'
-                        ? videoData[`${questionKey}_audio`] 
+                        ? videoData[`${questionKey}_audio`]
                         : null; // Check if audio URL is stored in responses
-                      
+
                       console.log(`  Q${questionNum}: questionKey="${questionKey}", videoKey="${videoKey}", hasText=${!!responseText}, responseLength=${responseText.length}, audioUrl=${!!audioUrl}`);
-                      
+
                       // Show ALL questions for ALL videos (1-9)
                       // Display answers from database if they exist
                       // Show "No response provided" if the answer doesn't exist in database
-                    
-                    return (
-                      <div key={questionNum} className="border-l-4 border-blue-500 pl-4">
-                        <div className="flex items-start gap-2 mb-2">
-                          <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                            Q{questionNum}
-                          </span>
-                          <p className="text-sm font-medium text-gray-700 flex-1">
-                            {questionText}
-                          </p>
+
+                      return (
+                        <div key={questionNum} className="border-l-4 border-blue-500 pl-4">
+                          <div className="flex items-start gap-2 mb-2">
+                            <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                              Q{questionNum}
+                            </span>
+                            <p className="text-sm font-medium text-gray-700 flex-1">
+                              {questionText}
+                            </p>
+                          </div>
+
+                          <div className="space-y-2 ml-8">
+                            {responseText && responseText.trim() ? (
+                              <div className="bg-white p-3 rounded border border-gray-200">
+                                <p className="text-sm text-gray-600 whitespace-pre-wrap">
+                                  {responseText}
+                                </p>
+                              </div>
+                            ) : audioUrl ? (
+                              <div className="flex items-center gap-2">
+                                <Volume2 className="w-4 h-4 text-gray-400" />
+                                <audio controls className="flex-1 max-w-md">
+                                  <source src={audioUrl} type="audio/webm" />
+                                  <source src={audioUrl} type="audio/mp4" />
+                                  <source src={audioUrl} type="audio/mpeg" />
+                                  Your browser does not support the audio element.
+                                </audio>
+                              </div>
+                            ) : (
+                              <div className="bg-gray-50 p-3 rounded border border-gray-200 border-dashed">
+                                <p className="text-sm text-gray-400 italic">
+                                  No response provided
+                                </p>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        
-                        <div className="space-y-2 ml-8">
-                          {responseText && responseText.trim() ? (
-                            <div className="bg-white p-3 rounded border border-gray-200">
-                              <p className="text-sm text-gray-600 whitespace-pre-wrap">
-                                {responseText}
-                              </p>
-                            </div>
-                          ) : audioUrl ? (
-                            <div className="flex items-center gap-2">
-                              <Volume2 className="w-4 h-4 text-gray-400" />
-                              <audio controls className="flex-1 max-w-md">
-                                <source src={audioUrl} type="audio/webm" />
-                                <source src={audioUrl} type="audio/mp4" />
-                                <source src={audioUrl} type="audio/mpeg" />
-                                Your browser does not support the audio element.
-                              </audio>
-                            </div>
-                          ) : (
-                            <div className="bg-gray-50 p-3 rounded border border-gray-200 border-dashed">
-                              <p className="text-sm text-gray-400 italic">
-                                No response provided
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
+                      );
                     });
                   })()}
                 </div>
@@ -761,10 +767,10 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
       // Dreams responses can have two structures:
       // 1. Old structure: { questionId1: "answer", questionId2: "answer", ... }
       // 2. New structure: { part1: { question1: "answer", ... }, part2: { ... }, ... }
-      
+
       // Check if it's the new structure (has "part" keys)
       const hasPartStructure = Object.keys(responses).some(key => key.startsWith('part'));
-      
+
       const dreamsLangKey = detectLangKeyFromResponses(responses);
       const dreamsLangMap =
         dreamsQuestionTextByLang[dreamsLangKey] ||
@@ -774,12 +780,12 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
       if (hasPartStructure) {
         // New structure: { part1: { question1: "...", question2: "..." }, part2: {...} }
         const parts = Object.keys(responses).filter(key => key.startsWith('part')).sort();
-        
+
         if (parts.length === 0) {
-      return (
-        <div className="text-sm text-gray-500">No responses recorded</div>
-      );
-    }
+          return (
+            <div className="text-sm text-gray-500">No responses recorded</div>
+          );
+        }
 
         // Group questions by section
         const questionsBySection: Record<string, any[]> = {};
@@ -798,7 +804,7 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
             <div className="space-y-6">
               {parts.map((partKey) => {
                 const partResponses = responses[partKey] || {};
-                const questionKeys = Object.keys(partResponses).filter(key => 
+                const questionKeys = Object.keys(partResponses).filter(key =>
                   key.startsWith('question')
                 ).sort((a, b) => {
                   const numA = parseInt(a.replace('question', ''), 10) || 0;
@@ -817,7 +823,7 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
                     <h4 className="font-semibold text-gray-800 mb-4">
                       {sectionTitles[partKey] || partKey}
                     </h4>
-                    
+
                     <div className="space-y-4">
                       {questionKeys.map((questionKey, questionIndex) => {
                         const responseText = partResponses[questionKey];
@@ -834,7 +840,7 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
                                 {questionKey.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim()}
                               </p>
                             </div>
-                            
+
                             <div className="ml-8">
                               {displayText && displayText.trim() ? (
                                 <div className="bg-white p-3 rounded border border-gray-200">
@@ -869,9 +875,9 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
               const partNumber = parseInt(partKey.replace('part', ''), 10);
               const sectionKey = `section${partNumber}`;
               const sectionQuestions = questionsBySection[sectionKey] || [];
-              
+
               // Sort questions by sequence_number (this is the order they were shown to the student)
-              const sortedQuestions = [...sectionQuestions].sort((a, b) => 
+              const sortedQuestions = [...sectionQuestions].sort((a, b) =>
                 (a.sequence_number || 0) - (b.sequence_number || 0)
               );
 
@@ -886,7 +892,7 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
                   <h4 className="font-semibold text-gray-800 mb-4">
                     {sectionTitles[sectionKey] || partKey}
                   </h4>
-                  
+
                   <div className="space-y-4">
                     {sortedQuestions.length > 0 ? (
                       sortedQuestions.map((question) => {
@@ -896,13 +902,13 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
                         const questionKey = `question${questionIndex + 1}`;
                         const responseText = partResponses[questionKey];
                         const displayText = typeof responseText === 'string' ? responseText : String(responseText || '');
-                        
+
                         // Display questions in simple sequential order within this section (Q1, Q2, Q3...)
                         // regardless of underlying global sequence_number to keep things easy to read.
                         const displayQuestionNum = questionIndex + 1;
-                        
+
                         console.log(`  Part ${partKey}, Seq ${question.sequence_number}, Q${questionIndex + 1}: questionKey="${questionKey}", hasResponse=${!!responseText}, responseLength=${displayText.length}`);
-                        
+
                         const seqNum = question.sequence_number || questionIndex + 1;
                         const translationKey = `question${seqNum}`;
                         const questionText =
@@ -920,7 +926,7 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
                                 {questionText}
                               </p>
                             </div>
-                            
+
                             <div className="ml-8">
                               {displayText && displayText.trim() ? (
                                 <div className="bg-white p-3 rounded border border-gray-200">
@@ -960,7 +966,7 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
                                 {questionKey.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim()}
                               </p>
                             </div>
-                            
+
                             <div className="ml-8">
                               {displayText && displayText.trim() ? (
                                 <div className="bg-white p-3 rounded border border-gray-200">
@@ -1071,14 +1077,14 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
 
       // About Me responses are stored as { question1: "...", question2: "...", ... }
       // Sort fields by sequence_number
-      const sortedFields = [...localizedFields].sort((a, b) => 
+      const sortedFields = [...localizedFields].sort((a, b) =>
         (a.sequence_number || 0) - (b.sequence_number || 0)
       );
 
       // If fields are not loaded yet, try to render from response keys directly
       if (sortedFields.length === 0) {
         console.log('⚠️ About Me fields not loaded, rendering from response keys');
-        const responseKeys = Object.keys(responses).filter(key => 
+        const responseKeys = Object.keys(responses).filter(key =>
           key.startsWith('question') || /^question\d+$/.test(key)
         ).sort((a, b) => {
           const numA = parseInt(a.replace('question', ''), 10) || 0;
@@ -1090,9 +1096,9 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
           <div className="space-y-4">
             {responseKeys.map((key, index) => {
               const responseText = responses[key];
-              const displayText = typeof responseText === 'string' ? responseText : 
-                                 Array.isArray(responseText) ? responseText.join(', ') : 
-                                 String(responseText || '');
+              const displayText = typeof responseText === 'string' ? responseText :
+                Array.isArray(responseText) ? responseText.join(', ') :
+                  String(responseText || '');
 
               return (
                 <div key={key} className="border-l-4 border-blue-500 pl-4">
@@ -1104,7 +1110,7 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
                       {key.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim()}
                     </p>
                   </div>
-                  
+
                   <div className="ml-8">
                     {displayText && displayText.trim() ? (
                       <div className="bg-white p-3 rounded border border-gray-200">
@@ -1134,12 +1140,12 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
             // The sequence_number from the database is the global order (1-20)
             const questionNum = field.sequence_number;
             const questionKey = `question${questionNum}`;
-            
+
             // Try questionN format first (most common), then field_key
             const responseText = responses[questionKey] || responses[field.field_key] || '';
-            const displayText = typeof responseText === 'string' ? responseText : 
-                               Array.isArray(responseText) ? responseText.join(', ') : 
-                               String(responseText || '');
+            const displayText = typeof responseText === 'string' ? responseText :
+              Array.isArray(responseText) ? responseText.join(', ') :
+                String(responseText || '');
 
             console.log(`  Seq ${questionNum}, Q${questionNum}: questionKey="${questionKey}", fieldKey="${field.field_key}", hasResponse=${!!responseText}, responseLength=${displayText.length}, questionText="${field.question_text?.substring(0, 50)}..."`);
 
@@ -1153,7 +1159,7 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
                     {field.question_text}
                   </p>
                 </div>
-                
+
                 <div className="ml-8">
                   {displayText && displayText.trim() ? (
                     <div className="bg-white p-3 rounded border border-gray-200">
@@ -1401,7 +1407,7 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
       }
 
       const roleModels = roleModelsSource;
-      
+
       if (!Array.isArray(roleModels) || roleModels.length === 0) {
         return (
           <div className="text-sm text-gray-500">No role models recorded</div>
@@ -1425,7 +1431,7 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
               <h4 className="font-semibold text-gray-800 mb-4">
                 Role Model {roleIndex + 1}: {roleModel.name || 'Unnamed'}
               </h4>
-              
+
               <div className="space-y-4">
                 {sortedQuestions.map((question, questionIndex) => {
                   // Map question IDs/sequence to fields on RoleModel
@@ -1486,7 +1492,7 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
                           {questionText}
                         </p>
                       </div>
-                      
+
                       <div className="ml-8">
                         {displayText && displayText.trim() ? (
                           <div className="bg-white p-3 rounded border border-gray-200">
@@ -1642,29 +1648,29 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
           }
 
           return (
-          <div key={key} className="border-l-4 border-blue-500 pl-4">
-            <div className="flex items-start gap-2 mb-2">
-              <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">
+            <div key={key} className="border-l-4 border-blue-500 pl-4">
+              <div className="flex items-start gap-2 mb-2">
+                <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">
                   Q{index + 1}
-              </span>
+                </span>
                 <p className="text-sm font-medium text-gray-700 flex-1">
                   {key.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim()}
                 </p>
-            </div>
-              
-            <div className="ml-8">
+              </div>
+
+              <div className="ml-8">
                 {responseText && responseText.trim() ? (
                   <div className="bg-white p-3 rounded border border-gray-200">
                     <p className="text-sm text-gray-600 whitespace-pre-wrap">
                       {responseText}
                     </p>
-            </div>
+                  </div>
                 ) : (
                   <div className="bg-gray-50 p-3 rounded border border-gray-200 border-dashed">
                     <p className="text-sm text-gray-400 italic">
                       No response provided
                     </p>
-          </div>
+                  </div>
                 )}
               </div>
             </div>
@@ -1704,11 +1710,10 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
                 <div
                   key={student.id}
                   onClick={() => handleStudentClick(student)}
-                  className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                    selectedStudent?.id === student.id
-                      ? 'bg-blue-50 border-blue-300 shadow-sm'
-                      : 'bg-white hover:bg-gray-50 border-gray-200'
-                  }`}
+                  className={`p-3 rounded-lg border cursor-pointer transition-all ${selectedStudent?.id === student.id
+                    ? 'bg-blue-50 border-blue-300 shadow-sm'
+                    : 'bg-white hover:bg-gray-50 border-gray-200'
+                    }`}
                 >
                   <div className="font-medium text-gray-900">{student.full_name}</div>
                   <div className="text-xs text-gray-500">{student.class_name}</div>
@@ -1767,18 +1772,18 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
                               {(() => {
                                 // Use completed_at if available and valid, otherwise try updated_at
                                 const dateToUse = assessment.completed_at || assessment.updated_at;
-                                
+
                                 if (!dateToUse) {
                                   return 'Not completed';
                                 }
-                                
+
                                 // Check if it's a valid date (not epoch, not null, not empty string)
                                 const dateObj = new Date(dateToUse);
-                                const isValidDate = !isNaN(dateObj.getTime()) && 
-                                                   dateObj.getFullYear() > 1970 &&
-                                                   dateToUse !== '1970-01-01T00:00:00.000Z' &&
-                                                   dateToUse !== '1970-01-01T00:00:00Z';
-                                
+                                const isValidDate = !isNaN(dateObj.getTime()) &&
+                                  dateObj.getFullYear() > 1970 &&
+                                  dateToUse !== '1970-01-01T00:00:00.000Z' &&
+                                  dateToUse !== '1970-01-01T00:00:00Z';
+
                                 if (isValidDate) {
                                   return dateObj.toLocaleDateString('en-US', {
                                     year: 'numeric',
@@ -1786,7 +1791,7 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
                                     day: 'numeric'
                                   });
                                 }
-                                
+
                                 return 'Not completed';
                               })()}
                             </div>
@@ -1809,8 +1814,8 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
                         <div className="p-4 bg-white border-t">
                           {renderAssessmentResponses(assessment)}
                           <div className="mt-4 flex gap-2">
-                            <Button 
-                              size="sm" 
+                            <Button
+                              size="sm"
                               className="bg-green-600 hover:bg-green-700"
                               onClick={() => updateReviewStatus(assessment.id, 'reviewed')}
                               disabled={updatingStatus === assessment.id}
@@ -1818,16 +1823,16 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
                               <CheckCircle className="w-4 h-4 mr-1" />
                               {updatingStatus === assessment.id ? 'Updating...' : 'Mark as Reviewed'}
                             </Button>
-                            <Button 
-                              size="sm" 
+                            <Button
+                              size="sm"
                               variant="outline"
                               onClick={() => updateReviewStatus(assessment.id, 'needs_revision')}
                               disabled={updatingStatus === assessment.id}
                             >
                               Needs Revision
                             </Button>
-                            <Button 
-                              size="sm" 
+                            <Button
+                              size="sm"
                               variant="outline"
                               onClick={() => updateReviewStatus(assessment.id, 'flagged')}
                               disabled={updatingStatus === assessment.id}

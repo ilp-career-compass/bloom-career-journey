@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { aiChatService } from '@/services/aiChatService';
 
 type Message = {
   id: string;
@@ -35,38 +36,38 @@ export default function ChatbotDialog({ open, onOpenChange }: ChatbotDialogProps
     if (!canSend) return;
     const content = input.trim();
     setInput('');
+
+    // Optimistic UI update
     const userMessage: Message = { id: crypto.randomUUID(), role: 'user', text: content };
-    setMessages(prev => [...prev, userMessage]);
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
     scrollToBottom();
 
     if (!apiKey) {
-      const warn: Message = { id: crypto.randomUUID(), role: 'model', text: 'Gemini API key is not configured. Please set VITE_GEMINI_API_KEY.' };
+      const warn: Message = { id: crypto.randomUUID(), role: 'model', text: 'Gemini API key is not configured. Please set VITE_GEMINI_API_KEY in your .env file.' };
       setMessages(prev => [...prev, warn]);
       return;
     }
 
     setLoading(true);
     try {
-      const history = messages.map(m => ({ role: m.role === 'user' ? 'user' : 'model', parts: [{ text: m.text }] }));
-      const body = {
-        contents: [
-          ...history,
-          { role: 'user', parts: [{ text: content }] }
-        ]
-      };
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) throw new Error(`Gemini error: ${res.status}`);
-      const data = await res.json();
-      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || 'No response.';
-      const modelMessage: Message = { id: crypto.randomUUID(), role: 'model', text };
-      setMessages(prev => [...prev, modelMessage]);
+      // Call shared service
+      const response = await aiChatService.sendMessage(messages, content);
+
+      if (response.success && response.text) {
+        const modelMessage: Message = { id: crypto.randomUUID(), role: 'model', text: response.text };
+        setMessages(prev => [...prev, modelMessage]);
+      } else {
+        throw new Error(response.error || 'Unknown error');
+      }
+
       scrollToBottom();
-    } catch (err) {
-      const fail: Message = { id: crypto.randomUUID(), role: 'model', text: 'Failed to get a response. Please try again later.' };
+    } catch (err: any) {
+      const fail: Message = {
+        id: crypto.randomUUID(),
+        role: 'model',
+        text: `I'm having trouble connecting right now. (${err.message}). Please try again later.`
+      };
       setMessages(prev => [...prev, fail]);
     } finally {
       setLoading(false);
@@ -95,9 +96,9 @@ export default function ChatbotDialog({ open, onOpenChange }: ChatbotDialogProps
           </div>
           <div className="space-y-2">
             <Label htmlFor="chat-input">Your question</Label>
-            <Textarea id="chat-input" value={input} onChange={(e)=> setInput(e.target.value)} placeholder="Type your question" rows={3} />
+            <Textarea id="chat-input" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Type your question" rows={3} />
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={()=> setMessages([])} disabled={loading}>Clear</Button>
+              <Button variant="outline" onClick={() => setMessages([])} disabled={loading}>Clear</Button>
               <Button className="bg-green-600 hover:bg-green-700" onClick={handleSend} disabled={!canSend}>{loading ? 'Sending…' : 'Send'}</Button>
             </div>
           </div>

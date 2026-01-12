@@ -1,0 +1,211 @@
+[
+  {
+    "id": "1aedb5ee-f7ea-4c15-a1f8-98adcbcd6d58",
+    "field_key": "question1",
+    "question_text": "In your family, with whom can you freely share your opinions without fear or hesitation? And how much trust do you have in them?",
+    "help_text": "Choose the family member you feel safest talking to",
+    "field_type": "textarea",
+    "section": "A. Your Profile",
+    "sequence_number": 1,
+    "is_active": true,
+    "created_at": "2026-01-03T21:43:16.788998+00:00"
+  },
+  {
+    "id": "1cd5f2b4-5339-4fe2-b926-bd9340ecc8a8",
+    "field_key": "question2",
+    "question_text": "Other than your family members, with whom can you freely share your opinions and feelings without fear or hesitation?",
+    "help_text": "Think about someone outside your family whom you trust and feel comfortable talking to.",
+    "field_type": "textarea",
+    "section": "A. Your Profile",
+    "sequence_number": 2,
+    "is_active": true,
+    "created_at": "2026-01-03T21:43:16.788998+00:00"
+  },
+  {
+    "id": "34c4f32b-ab72-4bfa-8bc8-3ad4745333b2",
+    "field_key": "question3",
+    "question_text": "What are the tasks you do at home? (e.g., helping in agricultural activities, bringing vegetables and groceries from the shop, money-related work, taking care of animals, filling water, etc.)",
+    "help_text": "Think about the daily work you help with at home.",
+    "field_type": "textarea",
+    "section": "A. Your Profile",
+    "sequence_number": 3,
+    "is_active": true,
+    "created_at": "2026-01-03T21:43:16.788998+00:00"
+  },
+  {
+    "id": "681961b0-5fb4-4a68-8462-a721abacaf04",
+    "field_key": "question4",
+    "question_text": "The tasks you like to do a. During school hours b. After school hours (before school starts and after school ends)",
+    "help_text": "Write the activities you enjoy doing during and after school.",
+    "field_type": "textarea",
+    "section": "B. What is your favourite work?",
+    "sequence_number": 4,
+    "is_active": true,
+    "created_at": "2026-01-03T21:43:16.788998+00:00"
+  },
+  {
+    "id": "f701c8cc-a540-4222-83ef-262710ca8088",
+    "field_key": "question5",
+    "question_text": "What are the activities you like to do alone, independently? (Tasks you do by yourself)",
+    "help_text": "Think about activities you enjoy doing by yourself.",
+    "field_type": "textarea",
+    "section": "B. What is your favourite work?",
+    "sequence_number": 5,
+    "is_active": true,
+    "created_at": "2026-01-03T21:43:16.788998+00:00"
+  },
+  {
+    "id": "c249628b-bc9f-4c3d-bd57-8199382d5a40",
+    "field_key": "question6",
+    "question_text": "What activities do you like to do in a group or with your friends?",
+    "help_text": "Think about activities you enjoy doing with friends.",
+    "field_type": "textarea",
+    "section": "B. What is your favourite work?",
+    "sequence_number": 6,
+    "is_active": true,
+    "created_at": "2026-01-03T21:43:16.788998+00:00"
+  },
+  {
+    "id": "57868be6-a4a9-46de-9004-114f6febd105",
+    "field_key": "question7",
+    "question_text": "What activities do you find difficult at school? Write them.",
+    "help_text": "Think about school activities that are hard for you.",
+    "field_type": "textarea",
+    "section": "C. The job that you find difficult to carry out",
+    "sequence_number": 7,
+    "is_active": true,
+    "created_at": "2026-01-03T21:43:16.788998+00:00"
+  },
+  {
+    "id": "ff18df05-5bf9-420d-a412-99bbd9a4b573",
+    "field_key": "question8",
+    "question_text": "Apart from school work or activities, what other tasks do you find difficult?",
+    "help_text": "Think about tasks outside school that you find difficult.",
+    "field_type": "textarea",
+    "section": "C. The job that you find difficult to carry out",
+    "sequence_number": 8,
+    "is_active": true,
+    "created_at": "2026-01-03T21:43:16.788998+00:00"
+  },
+  {
+    "id": "89fd53bc-074e-4c64-933c-64ed008d8b7b",
+    "field_key": "question9",
+    "question_text": "What activities do you like to do alone? For example, reading, drawing, playing, etc.",
+    "help_text": "Think about activities you enjoy doing alone",
+    "field_type": "textarea",
+    "section": "C. The job that you find difficult to carry out",
+    "sequence_number": 9,
+    "is_active": true,
+    "created_at": "2026-01-03T21:43:16.788998+00:00"
+  },
+  {
+    "id": "d77af31f-582a-437a-9cf6-f201808996d5",
+    "field_key": "question10",
+    "question_text": "Do you like to do the activities you like or dislike by yourself?",
+    "help_text": "Think about whether you like doing activities alone.",
+    "field_type": "textarea",
+    "section": "C. The job that you find difficult to carry out",
+    "sequence_number": 10,
+    "is_active": true,
+    "created_at": "2026-01-03T21:43:16.788998+00:00"
+  },
+  {
+    "id": "ec88ed0d-e8fd-4fcf-b071-2556295a07d0",
+    "field_key": "question12",
+    "question_text": "What would you say about yourself? What qualities do you have?",
+    "help_text": "What are your good qualities?",
+    "field_type": "textarea",
+    "section": "D. Answer the below questions to share more information about yourself",
+    "sequence_number": 12,
+    "is_active": true,
+    "created_at": "2026-01-03T21:43:16.788998+00:00"
+  },
+  {
+    "id": "e4e6cb31-bb09-4ed9-bf9b-c6f712c7859e",
+    "field_key": "question13",
+    "question_text": "Which of your qualities do you think these people (parents, teachers, friends, etc.) like? List them.",
+    "help_text": "What good qualities do your parents, teachers, and friends like? (Ask your parents, teachers, and friends and verify.)",
+    "field_type": "textarea",
+    "section": "D. Answer the below questions to share more information about yourself",
+    "sequence_number": 13,
+    "is_active": true,
+    "created_at": "2026-01-03T21:43:16.788998+00:00"
+  },
+  {
+    "id": "0cae3c43-fb50-4af5-ac41-9e0428168638",
+    "field_key": "question14",
+    "question_text": "Which habit or behaviour of yours do you want to improve or change?",
+    "help_text": "Is there any habit or behaviour you want to change or improve?",
+    "field_type": "textarea",
+    "section": "D. Answer the below questions to share more information about yourself",
+    "sequence_number": 14,
+    "is_active": true,
+    "created_at": "2026-01-03T21:43:16.788998+00:00"
+  },
+  {
+    "id": "7e5e634a-86ab-4bfb-aa99-a0b2473ca0c7",
+    "field_key": "question15",
+    "question_text": "Which of your qualities or behaviours do others want you to correct, or advise you to change?",
+    "help_text": "Think about the feedback you get from others.",
+    "field_type": "textarea",
+    "section": "D. Answer the below questions to share more information about yourself",
+    "sequence_number": 15,
+    "is_active": true,
+    "created_at": "2026-01-03T21:43:16.788998+00:00"
+  },
+  {
+    "id": "64724bd9-b874-4dba-903f-db39313ef3c9",
+    "field_key": "question16",
+    "question_text": "If you had a chance to become something or someone in the future, what would you like to become?",
+    "help_text": "If you could become anything or anyone, what would you like to be?",
+    "field_type": "textarea",
+    "section": "D. Answer the below questions to share more information about yourself",
+    "sequence_number": 16,
+    "is_active": true,
+    "created_at": "2026-01-03T21:43:16.788998+00:00"
+  },
+  {
+    "id": "6aea78b8-14b1-4e84-a5a2-a1422c0dbb17",
+    "field_key": "question17",
+    "question_text": "Recall an interview or feedback you received about yourself. Which of your actions or work earned you appreciation? How did you achieve it? Explain briefly.",
+    "help_text": "Think about a time when someone appreciated you",
+    "field_type": "textarea",
+    "section": "D. Answer the below questions to share more information about yourself",
+    "sequence_number": 17,
+    "is_active": true,
+    "created_at": "2026-01-03T21:43:16.788998+00:00"
+  },
+  {
+    "id": "f4b6b22f-cf4d-40dd-b722-7d0a8ffa932e",
+    "field_key": "question18",
+    "question_text": "Think about a difficult or challenging situation you faced recently. How did you face it or overcome it? What lesson did you learn from it?",
+    "help_text": "Think about a recent problem or challenge.",
+    "field_type": "textarea",
+    "section": "D. Answer the below questions to share more information about yourself",
+    "sequence_number": 18,
+    "is_active": true,
+    "created_at": "2026-01-03T21:43:16.788998+00:00"
+  },
+  {
+    "id": "ab879df9-17c1-4a79-83a8-151f96c657ba",
+    "field_key": "question19",
+    "question_text": "Recall a situation where others misunderstood you or had a wrong impression about you. How did you handle that situation, and what did you learn from it?",
+    "help_text": "Think about a time when someone misunderstood you.",
+    "field_type": "textarea",
+    "section": "D. Answer the below questions to share more information about yourself",
+    "sequence_number": 19,
+    "is_active": true,
+    "created_at": "2026-01-03T21:43:16.788998+00:00"
+  },
+  {
+    "id": "dd160d90-f6c3-485e-b0be-c41993f72bd7",
+    "field_key": "question20",
+    "question_text": "Based on the summary, write briefly about yourself. (You may use words, pictures, or symbols.)",
+    "help_text": "Write a short note about yourself using the summary.",
+    "field_type": "textarea",
+    "section": "D. Answer the below questions to share more information about yourself",
+    "sequence_number": 20,
+    "is_active": true,
+    "created_at": "2026-01-03T21:43:16.788998+00:00"
+  }
+]

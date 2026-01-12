@@ -7,12 +7,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { 
-  CheckCircle, 
-  XCircle, 
-  Edit3, 
-  Save, 
-  X, 
+import {
+  CheckCircle,
+  XCircle,
+  Edit3,
+  Save,
+  X,
   Lightbulb,
   AlertCircle,
   Users,
@@ -38,9 +38,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { 
-  AssessmentSummary, 
-  SummaryQuestions, 
+import {
+  AssessmentSummary,
+  SummaryQuestions,
   getDisplaySummary,
   getSummaryStatusColor,
   getSummaryStatusLabel
@@ -56,7 +56,7 @@ interface SummaryApprovalCardProps {
   teacherUserId: string;
   studentName: string;
   assessmentType?: string; // Assessment type (about_me, inspiration, dreams, etc.)
-  onSummaryUpdated?: () => void;
+  onSummaryUpdated?: (updatedData?: any) => void;
 }
 
 export default function SummaryApprovalCard({
@@ -75,8 +75,8 @@ export default function SummaryApprovalCard({
   const [showStudentResponses, setShowStudentResponses] = useState(false);
   const [expandedVideo, setExpandedVideo] = useState<string | null>(null);
   const [regenerating, setRegenerating] = useState(false);
-  const [aboutMeFields, setAboutMeFields] = useState<Array<{field_key: string; question_text: string}>>([]);
-  const [questionTitles, setQuestionTitles] = useState<{q1: string; q2: string; q3: string; q4?: string; q5?: string; q6?: string; q7?: string; q8?: string; q9?: string; q10?: string}>({
+  const [aboutMeFields, setAboutMeFields] = useState<Array<{ field_key: string; question_text: string }>>([]);
+  const [questionTitles, setQuestionTitles] = useState<{ [key: string]: string }>({
     q1: '1. What Inspired You?',
     q2: '2. Behaviors to Avoid',
     q3: '3. Similarities Between Inspirations'
@@ -181,7 +181,7 @@ export default function SummaryApprovalCard({
       question6: displaySummary.question6 || ''
     });
     setIsEditing(false);
-    
+
     // Fetch question titles from database template based on assessment type
     const fetchQuestionTitles = async () => {
       let assessmentTypeToUse = assessmentType;
@@ -192,7 +192,7 @@ export default function SummaryApprovalCard({
           .select('assessment_type')
           .eq('id', summary.assessment_response_id)
           .maybeSingle();
-        
+
         assessmentTypeToUse = assessmentResponse?.assessment_type || 'inspiration';
       }
 
@@ -224,25 +224,19 @@ export default function SummaryApprovalCard({
           };
 
           if (assessmentTypeToUse === 'about_me') {
-            if (isTa) {
-              setQuestionTitles({
-                q1: '15 அம்சங்களுடன் என்னைப் பற்றிய சுருக்கம்',
-                q2: 'சுய சிந்தனைச் சுருக்கம்',
-                q3: 'ஆதரவு மற்றும் செயல்திட்டம்'
-              });
-            } else if (isKn) {
-              setQuestionTitles({
-                q1: '15 ಅಂಶಗಳ ವೈಯಕ್ತಿಕ ಚಿತ್ರಣ',
-                q2: 'ಸ್ವ-ಪರಿಚಯ ಸಾರಾಂಶ',
-                q3: 'ಬೆಂಬಲ ಮತ್ತು ಕ್ರಿಯಾ ಯೋಜನೆ'
-              });
-            } else {
-              setQuestionTitles({
-                q1: '15-Point Personal Snapshot',
-                q2: 'Self-Reflection Summary',
-                q3: 'Support & Action Plan'
-              });
+            const newTitles: { [key: string]: string } = {};
+            // Map question1..question16 from baseBlock to q1..q16
+            for (let i = 1; i <= 16; i++) {
+              const qKey = `question${i}`;
+              if (baseBlock[qKey]) {
+                newTitles[`q${i}`] = baseBlock[qKey];
+              }
             }
+
+            // Fallback for key sections if DB update hasn't propagated or failed
+            if (!newTitles.q1) newTitles.q1 = isTa ? '1. ಕುಟುಂಬದ ಹೊರಗಿನ ನನ್ನ ಸ್ನೇಹಿತರು ಯಾರು?' : (isKn ? '1. ಕುಟುಂಬದ ಹೊರಗಿನ ನನ್ನ ಸ್ನೇಹಿತರು ಯಾರು?' : '1. Who are my friends outside my family?');
+
+            setQuestionTitles(newTitles);
           } else if (assessmentTypeToUse === 'dreams') {
             if (isTa) {
               setQuestionTitles({
@@ -321,12 +315,12 @@ export default function SummaryApprovalCard({
               });
             } else {
               setQuestionTitles({
-                q1: baseBlock.question1 || 'Hobbies Portfolio',
+                q1: 'Hobbies',
                 q2: 'Hobbies',
                 q3: 'I would like to turn this hobby into a career',
                 q4: 'Careers that are compatible with these hobbies',
                 q5: 'People you know who have turned their hobbies into careers',
-                q6: baseBlock.question6 || 'Talents Portfolio',
+                q6: 'Talents',
                 q7: 'Talents',
                 q8: 'Do you want to turn your talent into a career?',
                 q9: 'Careers that match your talents',
@@ -335,37 +329,43 @@ export default function SummaryApprovalCard({
             }
           } else if (assessmentTypeToUse === 'role_models') {
             if (isTa) {
-              setQuestionTitles({
+              setQuestionTitles(prev => ({
+                ...prev,
                 q1: 'தொழில் வழிகாட்டல் குறித்து உங்கள் முன்மாதிரி நபர்களிடம் கேட்க விரும்பும் 5 முதல் 10 கேள்விகளை எழுதுங்கள்.'
-              });
+              }));
             } else if (isKn) {
-              setQuestionTitles({
-                q1: 'ನಿಮ್ಮ ಪಾತ್ರ ಮಾದರಿಗಳಿಂದ ವೃತ್ತಿ ಮಾರ್ಗದರ್ಶನದ ಕುರಿತಾಗಿ ನೀವು ಕೇಳಲು ಬಯಸುವ 5 ರಿಂದ 10 ಪ್ರಶ್ನೆಗಳನ್ನು ಬರೆಯಿರಿ.'
-              });
+              setQuestionTitles(prev => ({
+                ...prev,
+                q1: 'ನಿಮ್ಮ ಪಾತ್ರ ಮಾದರಿಗಳಿಂದ ವೃತ್ತಿ ಮಾರ್ಗದರ್ಶನದ ಕುரிತಾಗಿ ನೀವು ಕೇಳಲು ಬಯಸುವ 5 ರಿಂದ 10 ಪ್ರಶ್ನೆಗಳನ್ನು ಬರೆಯಿರಿ.'
+              }));
             } else {
-              setQuestionTitles({
-                q1: defaultTitles.q1
-              });
+              setQuestionTitles(prev => ({
+                ...prev,
+                q1: 'Write 5 to 10 questions you would like to ask your role model for career guidance.'
+              }));
             }
           } else if (assessmentTypeToUse === 'inspiration') {
             if (isTa) {
-              setQuestionTitles({
+              setQuestionTitles(prev => ({
+                ...prev,
                 q1: 'என்னை ஊக்கப்படுத்தியவை',
                 q2: 'தவிர்க்க வேண்டிய நடத்தைகள்',
                 q3: 'ஊக்கமூட்டும் நபர்கள் / நிகழ்வுகளுக்கு இடையிலான ஒற்றுமைகள்'
-              });
+              }));
             } else if (isKn) {
-              setQuestionTitles({
+              setQuestionTitles(prev => ({
+                ...prev,
                 q1: 'ನನಗೆ ಪ್ರೇರಣೆ ನೀಡಿದವು',
                 q2: 'ತಪ್ಪಿಸಿಕೊಳ್ಳಬೇಕಾದ ವರ್ತನೆಗಳು',
                 q3: 'ಪ್ರೇರಣಾದಾಯಕ ವ್ಯಕ್ತಿಗಳು / ಘಟನೆಗಳ ನಡುವಿನ ಸಾಮ್ಯತೆಗಳು'
-              });
+              }));
             } else {
-              setQuestionTitles({
+              setQuestionTitles(prev => ({
+                ...prev,
                 q1: defaultTitles.q1,
                 q2: defaultTitles.q2,
                 q3: defaultTitles.q3
-              });
+              }));
             }
           } else {
             setQuestionTitles(defaultTitles);
@@ -570,10 +570,10 @@ export default function SummaryApprovalCard({
       });
       setShowRejectDialog(false);
       setRejectionReason('');
-      
+
       // Trigger regeneration - pass the summary's student_user_id if available
       await handleRegenerate();
-      
+
       // Refresh the summary after regeneration
       onSummaryUpdated?.();
     } catch (error) {
@@ -630,16 +630,16 @@ export default function SummaryApprovalCard({
           .select('assessment_type')
           .eq('id', summary.assessment_response_id)
           .maybeSingle();
-        
+
         if (error) {
           console.error('Error fetching assessment type:', error);
           throw new Error(`Failed to fetch assessment type: ${error.message}`);
         }
-        
+
         if (!assessmentResponse) {
           throw new Error('Assessment response not found');
         }
-        
+
         assessmentTypeToUse = assessmentResponse.assessment_type || 'inspiration';
       }
 
@@ -671,15 +671,15 @@ export default function SummaryApprovalCard({
 
       // Get student_user_id - use from summary if available, otherwise fetch it
       let studentUserId = summary.student_user_id;
-      
+
       console.log('🔍 Looking for student_user_id:', {
         fromSummary: studentUserId,
         assessmentResponseId: summary.assessment_response_id
       });
-      
+
       if (!studentUserId) {
         // Try multiple approaches to get student_user_id
-        
+
         // Approach 1: Direct query to assessment_responses with students join
         try {
           const { data: assessmentResponse, error: fetchError } = await supabase
@@ -698,7 +698,7 @@ export default function SummaryApprovalCard({
             } else if (studentsData && typeof studentsData === 'object') {
               studentUserId = studentsData.user_id || null;
             }
-            
+
             if (studentUserId) {
               console.log('✅ Found student_user_id via assessment_responses join');
             }
@@ -765,7 +765,7 @@ export default function SummaryApprovalCard({
         title: "Summary Regenerated! 🔄",
         description: "A new AI summary has been generated for review."
       });
-      
+
       onSummaryUpdated?.();
     } catch (error) {
       console.error('❌ Error regenerating summary:', error);
@@ -805,7 +805,7 @@ export default function SummaryApprovalCard({
           description: "Your changes have been saved. You can now approve the summary."
         });
         setIsEditing(false);
-        onSummaryUpdated?.();
+        onSummaryUpdated?.({ teacher_edited_summary: editedSummary });
       } else {
         throw new Error(result.error || 'Failed to save edits');
       }
@@ -827,7 +827,7 @@ export default function SummaryApprovalCard({
       setIsEditing(false);
       return;
     }
-    
+
     const displaySummary = getDisplaySummary(summary);
     setEditedSummary({
       question1: displaySummary.question1,
@@ -842,7 +842,7 @@ export default function SummaryApprovalCard({
 
   const displaySummary = getDisplaySummary(summary);
   const isPending = summary.approval_status === 'pending_approval' || summary.approval_status === 'revision_requested';
-  
+
   // Debug: Check actual database status
   const checkDatabaseStatus = async () => {
     try {
@@ -851,7 +851,7 @@ export default function SummaryApprovalCard({
         .select('id, approval_status, approved_at, approved_by, updated_at')
         .eq('id', summary.id)
         .maybeSingle();
-      
+
       if (error) {
         console.error('❌ Error checking database status:', error);
         toast({
@@ -861,7 +861,7 @@ export default function SummaryApprovalCard({
         });
         return;
       }
-      
+
       if (data) {
         console.log('📊 Database Status:', {
           id: data.id,
@@ -870,12 +870,12 @@ export default function SummaryApprovalCard({
           approved_by: data.approved_by,
           updated_at: data.updated_at
         });
-        
+
         toast({
           title: "Database Status",
           description: `Status: ${data.approval_status} | Updated: ${new Date(data.updated_at).toLocaleString()}`,
         });
-        
+
         // If database shows approved but UI shows pending, refresh
         if (data.approval_status === 'approved' && summary.approval_status !== 'approved') {
           console.log('🔄 Status mismatch detected - refreshing summary...');
@@ -976,8 +976,8 @@ export default function SummaryApprovalCard({
                   )}
                   <CardTitle className="text-base">Student's Original Responses</CardTitle>
                 </div>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   size="sm"
                   onClick={() => setShowStudentResponses(!showStudentResponses)}
                 >
@@ -993,18 +993,23 @@ export default function SummaryApprovalCard({
                   // Handle inspiration assessment structure: { video1: { question1: "...", ... }, video2: {...} }
                   if (assessmentType === 'inspiration' && studentResponses) {
                     const videoKeys = Object.keys(studentResponses).filter(key => key.startsWith('video'));
-                    
+
                     if (videoKeys.length === 0) {
                       return <div className="text-gray-500">No video responses found</div>;
                     }
-                    
+
                     return videoKeys.map((videoKey) => {
                       const videoData = studentResponses[videoKey];
                       if (!videoData || typeof videoData !== 'object') return null;
-                      
+
                       const isExpanded = expandedVideo === videoKey;
-                      const questionKeys = Object.keys(videoData).filter(key => key.startsWith('question'));
-                      
+                      const questionKeys = Object.keys(videoData)
+                        .filter(key => key.startsWith('question'))
+                        .filter(key => {
+                          const num = parseInt(key.replace('question', ''), 10);
+                          return !isNaN(num) && num <= 10;
+                        });
+
                       return (
                         <div key={videoKey} className="border rounded-lg overflow-hidden">
                           <div
@@ -1023,16 +1028,20 @@ export default function SummaryApprovalCard({
                               {isExpanded ? '▼' : '▶'}
                             </Button>
                           </div>
-                          
+
                           {isExpanded && (
                             <div className="p-3 bg-white border-t space-y-3">
                               {questionKeys.length === 0 ? (
                                 <div className="text-gray-400 italic text-sm">No responses for this video</div>
                               ) : (
-                                questionKeys.sort().map((qKey) => {
+                                questionKeys.sort((a, b) => {
+                                  const numA = parseInt(a.replace('question', ''), 10);
+                                  const numB = parseInt(b.replace('question', ''), 10);
+                                  return numA - numB;
+                                }).map((qKey) => {
                                   const answer = videoData[qKey];
                                   const questionNum = qKey.replace('question', '');
-                                  
+
                                   return (
                                     <div key={qKey} className="border-l-2 border-blue-300 pl-3">
                                       <div className="font-medium text-gray-700 mb-1">
@@ -1055,22 +1064,22 @@ export default function SummaryApprovalCard({
                       );
                     });
                   }
-                  
+
                   // Handle school_learning and hobbies (section-based structure)
                   if ((assessmentType === 'school_learning' || assessmentType === 'hobbies') && studentResponses) {
                     const sectionKeys = Object.keys(studentResponses).filter(key => key.startsWith('section'));
-                    
+
                     if (sectionKeys.length === 0) {
                       return <div className="text-gray-500">No section responses found</div>;
                     }
-                    
+
                     return sectionKeys.map((sectionKey) => {
                       const sectionData = studentResponses[sectionKey];
                       if (!sectionData || typeof sectionData !== 'object') return null;
-                      
+
                       const isExpanded = expandedVideo === sectionKey;
                       const questionKeys = Object.keys(sectionData);
-                      
+
                       return (
                         <div key={sectionKey} className="border rounded-lg overflow-hidden mb-3">
                           <div
@@ -1089,7 +1098,7 @@ export default function SummaryApprovalCard({
                               {isExpanded ? '▼' : '▶'}
                             </Button>
                           </div>
-                          
+
                           {isExpanded && (
                             <div className="p-3 bg-white border-t space-y-3">
                               {questionKeys.length === 0 ? (
@@ -1097,7 +1106,7 @@ export default function SummaryApprovalCard({
                               ) : (
                                 questionKeys.sort().map((qKey) => {
                                   const answer = sectionData[qKey];
-                                  
+
                                   // Handle nested objects (like question11 in school_learning)
                                   if (answer && typeof answer === 'object' && !Array.isArray(answer)) {
                                     return (
@@ -1116,7 +1125,7 @@ export default function SummaryApprovalCard({
                                       </div>
                                     );
                                   }
-                                  
+
                                   return (
                                     <div key={qKey} className="border-l-2 border-blue-300 pl-3">
                                       <div className="font-medium text-gray-700 mb-1 capitalize">
@@ -1139,7 +1148,7 @@ export default function SummaryApprovalCard({
                       );
                     });
                   }
-                  
+
                   // Handle about_me (field_key based with triple/double arrays)
                   if (assessmentType === 'about_me' && studentResponses) {
                     const fieldKeys = Object.keys(studentResponses).filter(key => {
@@ -1151,24 +1160,24 @@ export default function SummaryApprovalCard({
                       }
                       return String(value).trim() !== '';
                     });
-                    
+
                     if (fieldKeys.length === 0) {
                       return <div className="text-gray-500">No field responses found</div>;
                     }
-                    
+
                     return fieldKeys.map((fieldKey) => {
                       const value = studentResponses[fieldKey];
                       if (value === null || value === undefined) return null;
-                      
+
                       // Get question text from loaded fields, fallback to formatted field_key
                       const fieldInfo = aboutMeFields.find(f => f.field_key === fieldKey);
                       const displayLabel = fieldInfo?.question_text || fieldKey.replace(/_/g, ' ');
-                      
+
                       const isExpanded = expandedVideo === fieldKey;
-                      const hasValue = Array.isArray(value) 
+                      const hasValue = Array.isArray(value)
                         ? value.some(item => item && String(item).trim())
                         : String(value).trim() !== '';
-                      
+
                       return (
                         <div key={fieldKey} className="border rounded-lg overflow-hidden mb-2">
                           <div
@@ -1189,7 +1198,7 @@ export default function SummaryApprovalCard({
                               {isExpanded ? '▼' : '▶'}
                             </Button>
                           </div>
-                          
+
                           {isExpanded && (
                             <div className="p-3 bg-white border-t">
                               {!hasValue ? (
@@ -1213,18 +1222,18 @@ export default function SummaryApprovalCard({
                       );
                     });
                   }
-                  
+
                   // Handle dreams, role_models, and other simple key-value assessments
                   if (!studentResponses || typeof studentResponses !== 'object') {
                     return <div className="text-gray-500">No responses available</div>;
                   }
-                  
+
                   return Object.entries(studentResponses).map(([key, value]) => {
                     if (value === null || value === undefined) return null;
-                    
+
                     // Skip video keys if they somehow appear (should be handled by inspiration check)
                     if (key.startsWith('video')) return null;
-                    
+
                     return (
                       <div key={key} className="border-l-2 border-blue-300 pl-3 py-2 mb-2">
                         <div className="font-medium text-gray-700 mb-1 capitalize">
@@ -1265,37 +1274,21 @@ export default function SummaryApprovalCard({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Lightbulb className="h-5 w-5 text-yellow-600" />
-            {isAboutMeAssessment ? '15-Point Personal Snapshot' : isDreamsAssessment ? 'Dream Portfolio' : questionTitles.q1}
+            {isDreamsAssessment ? 'Dream Portfolio' : questionTitles.q1}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {isEditing && summary.approval_status !== 'approved' ? (
+          {isEditing && (summary.approval_status as string) !== 'approved' ? (
             <Textarea
               value={editedSummary.question1}
               onChange={(e) => setEditedSummary({ ...editedSummary, question1: e.target.value })}
               className="min-h-[120px]"
-              disabled={summary.approval_status === 'approved'}
+              disabled={(summary.approval_status as string) === 'approved'}
             />
           ) : (
             <div className="prose prose-sm max-w-none">
-              {isAboutMeAssessment ? (
-                <table className="w-full text-sm border border-gray-200 rounded-md overflow-hidden">
-                  <thead className="bg-gray-100">
-                    <tr>
-                      <th className="text-left px-3 py-2 text-gray-700 w-1/3">Category</th>
-                      <th className="text-left px-3 py-2 text-gray-700">Student Response</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {parseAboutMeSummary(displaySummary.question1).map((row, index) => (
-                      <tr key={`${row.category}-${index}`} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                        <td className="px-3 py-2 font-medium text-gray-700 align-top">{row.category}</td>
-                        <td className="px-3 py-2 text-gray-700 align-top">{row.detail}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              ) : isDreamsAssessment ? (
+
+              {isDreamsAssessment ? (
                 <table className="w-full text-sm border border-gray-200 rounded-md overflow-hidden">
                   <thead className="bg-gray-100">
                     <tr>
@@ -1345,6 +1338,41 @@ export default function SummaryApprovalCard({
         </CardContent>
       </Card>
 
+      {/* Dynamic About Me Questions (Questions 2-16) */}
+      {isAboutMeAssessment && Object.keys(questionTitles)
+        .filter(key => key !== 'q1' && key.startsWith('q'))
+        .sort((a, b) => parseInt(a.substring(1)) - parseInt(b.substring(1)))
+        .map((key) => {
+          const qNum = parseInt(key.substring(1));
+          const summaryKey = `question${qNum}` as keyof SummaryQuestions;
+          const title = questionTitles[key];
+
+          return (
+            <Card key={key}>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Lightbulb className="h-5 w-5 text-indigo-600" />
+                  {title}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isEditing && (summary.approval_status as string) !== 'approved' ? (
+                  <Textarea
+                    value={editedSummary[summaryKey] || ''}
+                    onChange={(e) => setEditedSummary({ ...editedSummary, [summaryKey]: e.target.value })}
+                    className="min-h-[120px]"
+                    disabled={(summary.approval_status as string) === 'approved'}
+                  />
+                ) : (
+                  <div className="prose prose-sm max-w-none">
+                    <p className="text-gray-700 whitespace-pre-wrap">{displaySummary[summaryKey] || ''}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
+
       {/* Talents Portfolio for Hobbies Assessment */}
       {isHobbiesAssessment && questionTitles.q6 && (
         <Card>
@@ -1355,12 +1383,12 @@ export default function SummaryApprovalCard({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {isEditing && summary.approval_status !== 'approved' ? (
+            {isEditing && (summary.approval_status as string) !== 'approved' ? (
               <Textarea
                 value={editedSummary.question6 || ''}
                 onChange={(e) => setEditedSummary({ ...editedSummary, question6: e.target.value })}
                 className="min-h-[120px]"
-                disabled={summary.approval_status === 'approved'}
+                disabled={(summary.approval_status as string) === 'approved'}
               />
             ) : (
               <div className="prose prose-sm max-w-none">
@@ -1390,7 +1418,7 @@ export default function SummaryApprovalCard({
         </Card>
       )}
 
-      {!isDreamsAssessment && !isHobbiesAssessment && !isRoleModelsAssessment && (
+      {!isDreamsAssessment && !isHobbiesAssessment && !isRoleModelsAssessment && !isAboutMeAssessment && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -1399,12 +1427,12 @@ export default function SummaryApprovalCard({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {isEditing && summary.approval_status !== 'approved' ? (
+            {isEditing && (summary.approval_status as string) !== 'approved' ? (
               <Textarea
                 value={editedSummary.question2}
                 onChange={(e) => setEditedSummary({ ...editedSummary, question2: e.target.value })}
                 className="min-h-[120px]"
-                disabled={summary.approval_status === 'approved'}
+                disabled={(summary.approval_status as string) === 'approved'}
               />
             ) : (
               <div className="prose prose-sm max-w-none">
@@ -1415,7 +1443,7 @@ export default function SummaryApprovalCard({
         </Card>
       )}
 
-      {!isDreamsAssessment && !isHobbiesAssessment && !isRoleModelsAssessment && (
+      {!isDreamsAssessment && !isHobbiesAssessment && !isRoleModelsAssessment && !isAboutMeAssessment && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -1424,12 +1452,12 @@ export default function SummaryApprovalCard({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {isEditing && summary.approval_status !== 'approved' ? (
+            {isEditing && (summary.approval_status as string) !== 'approved' ? (
               <Textarea
                 value={editedSummary.question3}
                 onChange={(e) => setEditedSummary({ ...editedSummary, question3: e.target.value })}
                 className="min-h-[120px]"
-                disabled={summary.approval_status === 'approved'}
+                disabled={(summary.approval_status as string) === 'approved'}
               />
             ) : (
               <div className="prose prose-sm max-w-none">
@@ -1450,12 +1478,12 @@ export default function SummaryApprovalCard({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {isEditing && summary.approval_status !== 'approved' ? (
+            {isEditing && (summary.approval_status as string) !== 'approved' ? (
               <Textarea
                 value={editedSummary.question4 || ''}
                 onChange={(e) => setEditedSummary({ ...editedSummary, question4: e.target.value })}
                 className="min-h-[120px]"
-                disabled={summary.approval_status === 'approved'}
+                disabled={(summary.approval_status as string) === 'approved'}
               />
             ) : (
               <div className="prose prose-sm max-w-none">
@@ -1475,12 +1503,12 @@ export default function SummaryApprovalCard({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {isEditing && summary.approval_status !== 'approved' ? (
+            {isEditing && (summary.approval_status as string) !== 'approved' ? (
               <Textarea
                 value={editedSummary.question5 || ''}
                 onChange={(e) => setEditedSummary({ ...editedSummary, question5: e.target.value })}
                 className="min-h-[120px]"
-                disabled={summary.approval_status === 'approved'}
+                disabled={(summary.approval_status as string) === 'approved'}
               />
             ) : (
               <div className="prose prose-sm max-w-none">
@@ -1500,12 +1528,12 @@ export default function SummaryApprovalCard({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {isEditing && summary.approval_status !== 'approved' ? (
+            {isEditing && (summary.approval_status as string) !== 'approved' ? (
               <Textarea
                 value={editedSummary.question6 || ''}
                 onChange={(e) => setEditedSummary({ ...editedSummary, question6: e.target.value })}
                 className="min-h-[120px]"
-                disabled={summary.approval_status === 'approved'}
+                disabled={(summary.approval_status as string) === 'approved'}
               />
             ) : (
               <div className="prose prose-sm max-w-none">
@@ -1517,13 +1545,14 @@ export default function SummaryApprovalCard({
       )}
 
       {/* Action Buttons */}
-      <div className="flex items-center justify-between pt-4 border-t">
-        <div className="flex gap-2">
+      <div className="flex flex-col sm:flex-row items-center justify-between pt-4 border-t gap-4 pb-20 sm:pb-0">
+        <div className="flex flex-wrap justify-center sm:justify-start gap-2 w-full sm:w-auto">
           {isPending && (
             <Button
               variant="outline"
               onClick={handleRegenerate}
               disabled={regenerating || saving}
+              className="w-full sm:w-auto"
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${regenerating ? 'animate-spin' : ''}`} />
               Regenerate AI Summary
@@ -1531,14 +1560,14 @@ export default function SummaryApprovalCard({
           )}
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap justify-center sm:justify-end gap-2 w-full sm:w-auto">
           {isEditing ? (
             <>
-              <Button variant="outline" onClick={handleCancelEdit} disabled={saving}>
+              <Button variant="outline" onClick={handleCancelEdit} disabled={saving} className="flex-1 sm:flex-none">
                 <X className="h-4 w-4 mr-2" />
                 Cancel
               </Button>
-              <Button onClick={handleSaveEdits} disabled={saving}>
+              <Button onClick={handleSaveEdits} disabled={saving} className="flex-1 sm:flex-none">
                 <Save className="h-4 w-4 mr-2" />
                 Save Edits
               </Button>
@@ -1562,14 +1591,16 @@ export default function SummaryApprovalCard({
                       setIsEditing(true);
                     }}
                     disabled={saving}
+                    className="flex-1 sm:flex-none"
                   >
                     <Edit3 className="h-4 w-4 mr-2" />
-                    Edit Summary
+                    Edit
                   </Button>
                   <Button
                     variant="destructive"
                     onClick={() => setShowRejectDialog(true)}
                     disabled={saving}
+                    className="flex-1 sm:flex-none"
                   >
                     <XCircle className="h-4 w-4 mr-2" />
                     Reject
@@ -1577,7 +1608,7 @@ export default function SummaryApprovalCard({
                   <Button
                     onClick={handleApprove}
                     disabled={saving}
-                    className="bg-green-600 hover:bg-green-700"
+                    className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
                   >
                     {saving ? 'Approving...' : (
                       <>

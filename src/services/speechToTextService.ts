@@ -10,6 +10,7 @@ export interface TranscriptionOptions {
   useEnhanced: boolean;
   sampleRateHertz: number;
   encoding: 'WEBM_OPUS' | 'LINEAR16' | 'MP3' | 'FLAC';
+  contextPhrases?: string[];
 }
 
 export interface TranscriptionResult {
@@ -171,6 +172,7 @@ class SpeechToTextService {
         'which qualities of the characters do you identify in yourself',
         // Common confusions (bias the correct words)
         'this', 'that', 'they', 'them', 'with', 'the', 'you', 'your', 'identify', 'qualities', 'characters',
+        'to', 'too', 'two', 'hard work', 'never', 'should', 'in', 'succeed', 'there',
         // Indian English common words and phrases
         'well', 'actually', 'really', 'very', 'much', 'many', 'some', 'any', 'all', 'also', 'too', 'also',
         'because', 'so', 'then', 'when', 'where', 'what', 'who', 'why', 'how',
@@ -200,15 +202,19 @@ class SpeechToTextService {
         maxAlternatives: 3,
         speechContexts: [
           {
-            phrases: PHRASE_HINTS,
-            boost: 20.0, // Increased boost for better recognition of Indian English
+            phrases: [
+              ...PHRASE_HINTS,
+              ...(options.contextPhrases || [])
+            ],
+            boost: 25.0, // Increased boost for context + Indian English
           },
         ],
         // Use enhanced model for Indian English for better accuracy
         model: options.language === 'en-IN' ? 'latest_long' : undefined,
         useEnhanced: options.language === 'en-IN' ? true : false,
         // Help with code-switching (Hindi-English mix common in India)
-        alternativeLanguageCodes: options.language === 'en-IN' ? ['hi-IN'] : undefined,
+        // DISABLE for now as it causes "UP Tu" type errors where English is transcribed as Hindi script
+        // alternativeLanguageCodes: options.language === 'en-IN' ? ['hi-IN'] : undefined,
       };
 
       // Google v1 expects sampleRateHertz to either be omitted or match the file header.
@@ -673,13 +679,16 @@ class SpeechToTextService {
         maxAlternatives: 3,
         speechContexts: [
           {
-            phrases: finalOptions.language === 'kn-IN' ? [
-              'ಪ್ರೇರಣೆ', 'ಪ್ರೇರೇಪಿಸು', 'ಮೌಲ್ಯಗಳು', 'ಗುಣಗಳು', 'ಪಾತ್ರಗಳು', 'ನೀವು', 'ನಿಮ್ಮ',
-              'ವೀಡಿಯೊ', 'ಆಡಿಯೊ', 'ಪ್ರಶ್ನೆ', 'ಉತ್ತರ', 'ಕಲಿ', 'ಕಲಿಕೆ'
-            ] : [
-              'inspiration', 'motivated', 'values', 'qualities', 'characters', 'identify', 'yourself', 'video', 'audio', 'question', 'response', 'answer', 'learn', 'learning'
+            phrases: [
+              ...(finalOptions.language === 'kn-IN' ? [
+                'ಪ್ರೇರಣೆ', 'ಪ್ರೇರೇಪಿಸು', 'ಮೌಲ್ಯಗಳು', 'ಗುಣಗಳು', 'ಪಾತ್ರಗಳು', 'ನೀವು', 'ನಿಮ್ಮ',
+                'ವೀಡಿಯೊ', 'ಆಡಿಯೊ', 'ಪ್ರಶ್ನೆ', 'ಉತ್ತರ', 'ಕಲಿ', 'ಕಲಿಕೆ'
+              ] : [
+                'inspiration', 'motivated', 'values', 'qualities', 'characters', 'identify', 'yourself', 'video', 'audio', 'question', 'response', 'answer', 'learn', 'learning'
+              ]),
+              ...(finalOptions.contextPhrases || [])
             ],
-            boost: 15.0,
+            boost: 25.0,
           },
         ],
       },

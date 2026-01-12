@@ -18,10 +18,10 @@ interface AuthContextType {
   loading: boolean;
   signIn: (identifier: string, password: string) => Promise<{ error: any }>;
   signUp: (
-    mobile: string | null, 
-    email: string, 
-    password: string, 
-    fullName: string, 
+    mobile: string | null,
+    email: string,
+    password: string,
+    fullName: string,
     role: 'teacher' | 'student',
     stateId: string,
     classId?: string,
@@ -40,14 +40,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [isCustomAuth, setIsCustomAuth] = useState(false);
-  const { toast} = useToast();
-  
+  const { toast } = useToast();
+
   // Use a ref to track if we're currently fetching a profile
   const fetchingProfileRef = useRef<string | null>(null);
-  
+
   // Use a ref to track if we have a valid authenticated state
   const hasAuthStateRef = useRef(false);
-  
+
   // Use a ref to store the subscription so we can unsubscribe when we have auth
   const authSubscriptionRef = useRef<any>(null);
 
@@ -58,17 +58,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const savedCustomAuth = localStorage.getItem('customAuth');
     const savedUser = localStorage.getItem('customUser');
     const savedProfile = localStorage.getItem('customProfile');
-    
+
     if (savedCustomAuth === 'true' && savedUser && savedProfile) {
       console.log('🔄 Restoring custom auth state from localStorage');
       try {
         const parsedUser = JSON.parse(savedUser);
         const parsedProfile = JSON.parse(savedProfile);
-        
+
         setIsCustomAuth(true);
         setUser(parsedUser);
         setUserProfile(parsedProfile);
-        
+
         // Also restore the mock session
         const mockSession = {
           user: parsedUser,
@@ -78,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           token_type: 'bearer'
         } as Session;
         setSession(mockSession);
-        
+
         setLoading(false);
         console.log('✅ Custom auth state restored successfully');
       } catch (error) {
@@ -97,13 +97,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log('🔄 Current user state:', user);
     console.log('🔄 Loading state:', loading);
     console.log('🔄 Custom auth state:', isCustomAuth);
-    
+
     // Update the ref to track if we have valid auth state
     const hasValidAuth = user !== null && userProfile !== null;
     const wasAuthenticated = hasAuthStateRef.current;
     hasAuthStateRef.current = hasValidAuth;
     console.log('🔄 hasAuthStateRef updated to:', hasValidAuth);
-    
+
     // CRITICAL: Unsubscribe from auth listener once we have valid auth
     // This prevents Supabase from interfering with our authenticated state
     if (hasValidAuth && !wasAuthenticated && authSubscriptionRef.current) {
@@ -117,45 +117,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const testDatabase = async () => {
     try {
       console.log('Testing database connection...');
-      
+
       // Test basic connection
       const { data: basicTest, error: basicError } = await supabase
         .from('users')
         .select('count')
         .limit(1);
-      
+
       if (basicError) {
         console.error('Basic database test failed:', basicError);
         return false;
       }
-      
+
       console.log('Basic database connection successful');
-      
+
       // Test if email column exists
       const { data: emailTest, error: emailError } = await supabase
         .from('users')
         .select('email')
         .limit(1);
-      
+
       if (emailError) {
         console.error('Email column test failed:', emailError);
         console.log('This suggests the migration has not been applied');
         return false;
       }
-      
+
       console.log('Email column exists - migration appears to be applied');
-      
+
       // Test if mobile column allows nulls
       const { data: mobileTest, error: mobileError } = await supabase
         .from('users')
         .select('mobile')
         .limit(1);
-      
+
       if (mobileError) {
         console.error('Mobile column test failed:', mobileError);
         return false;
       }
-      
+
       console.log('Mobile column test successful');
       console.log('Database connection and migration test successful');
       return true;
@@ -210,6 +210,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           role: userData.role,
           full_name: userData.full_name,
           state_id: userData.state_id || null,
+          preferred_language: userData.preferred_language,
+          has_selected_language: userData.has_selected_language,
         };
         const retry = await supabase.from('users').insert(minimalPayload);
         if (!retry.error) {
@@ -232,6 +234,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             email: userData.email,
             mobile: userData.mobile,
             state_id: userData.state_id || null,
+            preferred_language: userData.preferred_language,
+            has_selected_language: userData.has_selected_language,
           },
           { onConflict: 'id' }
         );
@@ -255,14 +259,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     console.log('AuthProvider useEffect running');
-    
+
     // Check if we already restored custom auth from localStorage
     const hasCustomAuth = localStorage.getItem('customAuth') === 'true';
     if (hasCustomAuth) {
       console.log('⏭️ Skipping Supabase auth setup - custom auth already restored');
       return;
     }
-    
+
     // Test database connection
     testDatabase();
 
@@ -274,44 +278,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         const now = Date.now();
-        
+
         console.log('🔔 Auth event:', event, '| hasAuthStateRef:', hasAuthStateRef.current);
-        
+
         // CRITICAL: If we already have valid auth, ignore ALL events except explicit SIGNED_OUT
         if (hasAuthStateRef.current && event !== 'SIGNED_OUT') {
           console.log(`🛑 Already authenticated - ignoring ${event} event completely`);
           return;
         }
-        
+
         // Ignore duplicate events within 100ms
         if (event === lastEventType && (now - lastEventTime) < 100) {
           console.log(`⏭️ Ignoring duplicate ${event} event within 100ms`);
           return;
         }
-        
+
         lastEventTime = now;
         lastEventType = event;
-        
+
         console.log('Auth state change:', event, session?.user?.id);
-        
+
         // Don't interfere with custom authentication
         if (isCustomAuth) {
           console.log('🔄 Ignoring auth state change - custom auth in progress');
           return;
         }
-        
+
         // Also check if we have a custom session
         if (session?.user?.user_metadata?.role === 'student' && !session?.user?.email?.includes('@')) {
           console.log('🔄 Ignoring auth state change - custom student session detected');
           return;
         }
-        
+
         // Don't process SIGNED_OUT events if we have custom auth
         if (event === 'SIGNED_OUT' && isCustomAuth) {
           console.log('🔄 Ignoring SIGNED_OUT event - custom auth should stay active');
           return;
         }
-        
+
         // For TOKEN_REFRESHED events, do ABSOLUTELY NOTHING if we already have user and profile
         if (event === 'TOKEN_REFRESHED') {
           console.log('🔄 Token refreshed event received');
@@ -330,13 +334,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
           return;
         }
-        
+
         // For all other events, only process SIGNED_IN
         if (event === 'SIGNED_IN') {
           console.log('✅ SIGNED_IN event, setting up auth state');
           setSession(session);
           setUser(session?.user as AuthUser || null);
-          
+
           if (session?.user) {
             setTimeout(() => {
               fetchUserProfile(session.user.id, session.user as AuthUser);
@@ -358,28 +362,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       console.log('Initial session check:', session?.user?.id);
-      
+
       // Don't interfere with custom authentication
       if (isCustomAuth) {
         console.log('🔄 Ignoring initial session check - custom auth in progress');
         return;
       }
-      
+
       // Also check if we have a custom session
       if (session?.user?.user_metadata?.role === 'student' && !session?.user?.email?.includes('@')) {
         console.log('🔄 Ignoring initial session check - custom student session detected');
         return;
       }
-      
+
       setSession(session);
       setUser(session?.user as AuthUser || null);
-      
+
       if (session?.user) {
         fetchUserProfile(session.user.id, session.user as AuthUser);
       }
       setLoading(false);
     });
-    
+
     // Store subscription in ref so we can unsubscribe it later
     authSubscriptionRef.current = subscription;
     console.log('📡 Auth subscription created and stored in ref');
@@ -393,30 +397,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchUserProfile = async (userId: string, userOverride?: AuthUser) => {
     try {
       console.log('🔍 Fetching user profile for:', userId);
-      
+
       // If we're already fetching this profile, don't fetch again
       if (fetchingProfileRef.current === userId) {
         console.log('⏭️ Already fetching profile for this user, skipping duplicate fetch');
         return;
       }
-      
+
       // If we already have a profile for this user, don't fetch again
       if (userProfile && userProfile.id === userId) {
         console.log('✅ Profile already exists for this user, skipping refetch');
         return;
       }
-      
+
       // Mark that we're fetching this profile
       fetchingProfileRef.current = userId;
-      
+
       const currentUser = userOverride || user;
       console.log('Current user state:', currentUser);
       console.log('User metadata:', currentUser?.user_metadata);
-      
+
       // For custom authenticated students, prioritize the auth metadata
       if (currentUser && currentUser.user_metadata?.role === 'student') {
         console.log('🎓 Custom student authentication detected, using auth metadata');
-        
+
         const baseProfile: any = {
           id: userId,
           full_name: currentUser.user_metadata.full_name,
@@ -426,22 +430,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           state_id: null,
           // We will enrich preferred_language and profile_picture_url from the users table below
           preferred_language: (currentUser as any)?.user_metadata?.preferred_language || 'en',
+          has_selected_language: (currentUser as any)?.user_metadata?.has_selected_language || false,
           profile_picture_url: null,
         };
-        
+
         setUserProfile(baseProfile);
         console.log('✅ Student profile set from auth metadata:', baseProfile);
-        
+
         // Save profile to localStorage for persistence
         localStorage.setItem('customProfile', JSON.stringify(baseProfile));
         console.log('💾 Saved profile to localStorage');
-        
+
         // Try to fetch student-specific data without blocking
         try {
           // Fetch preferred_language and profile_picture_url from users table (authoritative)
           const { data: userRow } = await supabase
             .from('users')
-            .select('preferred_language, profile_picture_url')
+            .select('preferred_language, profile_picture_url, has_selected_language')
             .eq('id', userId)
             .maybeSingle();
 
@@ -449,11 +454,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUserProfile((prev: any) => ({
               ...prev,
               preferred_language: userRow.preferred_language || prev?.preferred_language || 'en',
+              has_selected_language: userRow.has_selected_language ?? prev?.has_selected_language ?? false,
               profile_picture_url: (userRow as any).profile_picture_url ?? prev?.profile_picture_url ?? null,
             }));
             localStorage.setItem('customProfile', JSON.stringify({
               ...(baseProfile || {}),
               preferred_language: userRow.preferred_language || 'en',
+              has_selected_language: userRow.has_selected_language ?? false,
               profile_picture_url: (userRow as any).profile_picture_url ?? null,
             }));
           }
@@ -463,10 +470,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             .select('*')
             .eq('user_id', userId)
             .maybeSingle();
-          
+
           if (studentData) {
-            const finalProfile = { 
-              ...(baseProfile || {}), 
+            const finalProfile = {
+              ...(baseProfile || {}),
               studentProfile: studentData,
               preferred_language: userRow?.preferred_language || baseProfile?.preferred_language || 'en',
               profile_picture_url: (userRow as any)?.profile_picture_url ?? baseProfile?.profile_picture_url ?? null,
@@ -479,13 +486,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } catch (error) {
           console.warn('Could not fetch student-specific data:', error);
         }
-        
+
         // Ensure the profile is set before continuing
         console.log('🎓 Custom student profile setup complete');
         fetchingProfileRef.current = null; // Clear the fetching flag
         return;
       }
-      
+
       // For regular Supabase Auth users (teachers/admins), fetch from users table
       console.log('🔄 Fetching fresh profile data from database...');
       const { data: freshProfile, error: dbError } = await supabase
@@ -493,17 +500,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .select('*')
         .eq('id', userId)
         .single();
-      
+
       if (!dbError && freshProfile) {
         console.log('✅ Fresh profile data loaded from database:', freshProfile);
         setUserProfile(freshProfile);
         fetchingProfileRef.current = null; // Clear the fetching flag
         return;
       }
-      
+
       // Fallback to auth data only if database fetch fails
       console.log('⚠️ Database fetch failed, falling back to auth data');
-      
+
       // General fallback: derive role from auth metadata for all roles
       if (currentUser && currentUser.user_metadata?.role) {
         const derivedRole = currentUser.user_metadata.role;
@@ -515,44 +522,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           role: derivedRole,
           state_id: null
         };
-        
+
         setUserProfile(baseProfile);
         console.log('✅ Profile set from auth metadata:', baseProfile);
-        
+
         // Try to fetch role-specific records without blocking routing
         try {
           if (derivedRole === 'student') {
             const { data: studentData } = await supabase
-            .from('students')
-            .select('*')
-            .eq('user_id', userId)
+              .from('students')
+              .select('*')
+              .eq('user_id', userId)
               .maybeSingle();
-            if (studentData) setUserProfile((prev:any) => ({ ...prev, studentProfile: studentData }));
+            if (studentData) setUserProfile((prev: any) => ({ ...prev, studentProfile: studentData }));
           } else if (derivedRole === 'teacher') {
             const { data: teacherData } = await supabase
               .from('teachers')
               .select('*')
               .eq('user_id', userId)
               .maybeSingle();
-            if (teacherData) setUserProfile((prev:any) => ({ ...prev, teacherProfile: teacherData }));
+            if (teacherData) setUserProfile((prev: any) => ({ ...prev, teacherProfile: teacherData }));
           }
-        } catch {}
+        } catch { }
         fetchingProfileRef.current = null; // Clear the fetching flag
         return;
       }
-      
+
       // Original logic for Supabase Auth users (teachers/admins)
       console.log('🔍 Fetching profile for Supabase Auth user (database query)');
-      
+
       // Retry a few times because profile insert may race with auth state change
       let attempts = 0;
       let userData: any = null;
       let userError: any = null;
       while (attempts < 4) {
         const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
+          .from('users')
+          .select('*')
+          .eq('id', userId)
           .maybeSingle();
         userData = data;
         userError = error;
@@ -574,21 +581,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (userData) {
         console.log('User data fetched successfully:', userData);
-        
+
         // Set basic user profile first
         setUserProfile(userData);
         console.log('Basic userProfile set:', userData);
-        
+
         // Fetch role-specific data (optional - don't fail if tables don't exist)
         try {
-        if (userData.role === 'student') {
+          if (userData.role === 'student') {
             console.log('Fetching student profile data for user:', userId);
             const { data: studentData, error: studentError } = await supabase
-            .from('students')
+              .from('students')
               .select('*')
-            .eq('user_id', userId)
-            .single();
-          
+              .eq('user_id', userId)
+              .single();
+
             if (studentError) {
               console.warn('Could not fetch student data:', studentError);
               // Set userProfile with empty studentProfile to avoid undefined errors
@@ -601,14 +608,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               setUserProfile(finalProfile);
               console.log('Final userProfile set (student, with profile):', finalProfile);
             }
-        } else if (userData.role === 'teacher') {
+          } else if (userData.role === 'teacher') {
             console.log('Fetching teacher profile data for user:', userId);
             const { data: teacherData, error: teacherError } = await supabase
-            .from('teachers')
+              .from('teachers')
               .select('*')
-            .eq('user_id', userId)
-            .single();
-          
+              .eq('user_id', userId)
+              .single();
+
             if (teacherError) {
               console.warn('Could not fetch teacher data:', teacherError);
               // Set userProfile with empty teacherProfile to avoid undefined errors
@@ -660,7 +667,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = async (identifier: string, password: string) => {
     try {
       console.log('🔐 Sign in attempt for:', identifier);
-      
+
       // 1) Try custom student authentication first (email or mobile)
       try {
         console.log('🔄 Attempting custom student authentication...');
@@ -762,10 +769,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signUp = async (
-    mobile: string | null, 
-    email: string, 
-    password: string, 
-    fullName: string, 
+    mobile: string | null,
+    email: string,
+    password: string,
+    fullName: string,
     role: 'teacher' | 'student',
     stateId: string,
     classId?: string,
@@ -780,11 +787,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error('SignUp blocked:', err);
         return { error: err };
       }
-      
+
       // Handle email/mobile logic
       let finalEmail = email;
       let finalMobile = mobile;
-      
+
       if (!email && mobile) {
         // If only mobile is provided, generate an email for Supabase auth
         finalEmail = `${mobile}@internal.app`;
@@ -802,7 +809,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .select('id')
         .eq('email', finalEmail)
         .maybeSingle();
-      
+
       if (emailCheckError) {
         console.error('Error checking email:', emailCheckError);
         return { error: { message: 'Failed to check email availability' } };
@@ -821,7 +828,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .select('id')
           .eq('mobile', finalMobile)
           .maybeSingle();
-        
+
         if (mobileCheckError) {
           console.error('Error checking mobile:', mobileCheckError);
           return { error: { message: 'Failed to check mobile availability' } };
@@ -845,6 +852,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             full_name: fullName,
             role,
             preferred_language: preferredLanguage,
+            has_selected_language: true,
           }
         }
       });
@@ -857,8 +865,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             lang === 'kn'
               ? 'ನೋಂದಣಿ ವಿಫಲವಾಗಿದೆ'
               : lang === 'ta'
-              ? 'பதிவு முடியவில்லை'
-              : 'Registration failed',
+                ? 'பதிவு முடியவில்லை'
+                : 'Registration failed',
           description: authError.message,
           variant: 'destructive',
         });
@@ -871,14 +879,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Insert into custom users table
         console.log('Inserting user profile into database');
         const userProfileData: any = {
-            id: authData.user.id,
-            password_hash: 'handled_by_auth',
-            role,
-            full_name: fullName,
+          id: authData.user.id,
+          password_hash: 'handled_by_auth',
+          role,
+          full_name: fullName,
           state_id: stateId,
           preferred_language: preferredLanguage || 'en',
+          has_selected_language: true,
         };
-        
+
         // Only add email and mobile if the columns exist
         if (finalEmail) {
           userProfileData.email = finalEmail;
@@ -886,22 +895,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (finalMobile) {
           userProfileData.mobile = finalMobile;
         }
-        
-        
+
+
         // Use the new createUserProfile function
         const { success, error: userInsertError } = await createUserProfile(userProfileData);
 
         if (!success) {
           console.error('Error creating user profile:', userInsertError);
-          
           // Verify if the profile was actually created despite the error
+
           console.log('Verifying if user profile exists despite error...');
           const { data: existingProfile, error: checkError } = await supabase
             .from('users')
             .select('id')
             .eq('id', authData.user.id)
             .maybeSingle();
-          
+
           if (existingProfile) {
             console.log('✅ User profile exists despite error - continuing with registration');
             // Profile exists, so we can continue
@@ -914,19 +923,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 lang === 'kn'
                   ? 'ನೋಂದಣಿ ವಿಫಲವಾಗಿದೆ'
                   : lang === 'ta'
-                  ? 'பதிவு முடியவில்லை'
-                  : 'Registration failed',
+                    ? 'பதிவு முடியவில்லை'
+                    : 'Registration failed',
               description:
                 lang === 'kn'
                   ? 'ಬಳಕೆದಾರರ ಪ್ರೊಫೈಲ್ ರಚಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಸಹಾಯಕ್ಕೆ ಸಂಪರ್ಕಿಸಿ.'
                   : lang === 'ta'
-                  ? 'பயனர் விவரத்தை உருவாக்க முடியவில்லை. தயவு செய்து உதவியை தொடர்பு கொள்ளவும்.'
-                  : 'Failed to create user profile. Please contact support.',
+                    ? 'பயனர் விவரத்தை உருவாக்க முடியவில்லை. தயவு செய்து உதவியை தொடர்பு கொள்ளவும்.'
+                    : 'Failed to create user profile. Please contact support.',
               variant: 'destructive',
             });
             return { error: userInsertError };
           }
         }
+
+
 
         console.log('User profile created successfully');
 
@@ -951,14 +962,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                   lang === 'kn'
                     ? 'ನೋಂದಣಿ ಎಚ್ಚರಿಕೆ'
                     : lang === 'ta'
-                    ? 'பதிவு எச்சரிக்கை'
-                    : 'Registration warning',
+                      ? 'பதிவு எச்சரிக்கை'
+                      : 'Registration warning',
                 description:
                   lang === 'kn'
                     ? 'ಖಾತೆ ರಚಿಸಲಾಗಿದೆ ಆದರೆ ಶಿಕ್ಷಕರ ಪ್ರೊಫೈಲ್ ಸಿದ್ಧಪಡಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಸಹಾಯಕ್ಕೆ ಸಂಪರ್ಕಿಸಿ.'
                     : lang === 'ta'
-                    ? 'கணக்கு உருவாகியுள்ளது ஆனால் ஆசிரியர் விவரம் அமைக்கப்படவில்லை. தயவு செய்து உதவியை தொடர்பு கொள்ளவும்.'
-                    : 'Account created but teacher profile setup failed. Please contact support.',
+                      ? 'கணக்கு உருவாகியுள்ளது ஆனால் ஆசிரியர் விவரம் அமைக்கப்படவில்லை. தயவு செய்து உதவியை தொடர்பு கொள்ளவும்.'
+                      : 'Account created but teacher profile setup failed. Please contact support.',
                 variant: 'destructive',
               });
             }
@@ -982,14 +993,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                   lang === 'kn'
                     ? 'ನೋಂದಣಿ ಎಚ್ಚರಿಕೆ'
                     : lang === 'ta'
-                    ? 'பதிவு எச்சரிக்கை'
-                    : 'Registration warning',
+                      ? 'பதிவு எச்சரிக்கை'
+                      : 'Registration warning',
                 description:
                   lang === 'kn'
                     ? 'ಖಾತೆ ರಚಿಸಲಾಗಿದೆ ಆದರೆ ವಿದ್ಯಾರ್ಥಿ ಪ್ರೊಫೈಲ್ ಸಿದ್ಧಪಡಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಸಹಾಯಕ್ಕೆ ಸಂಪರ್ಕಿಸಿ.'
                     : lang === 'ta'
-                    ? 'கணக்கு உருவாகியுள்ளது ஆனால் மாணவர் விவரம் அமைக்கப்படவில்லை. தயவு செய்து உதவியை தொடர்பு கொள்ளவும்.'
-                    : 'Account created but student profile setup failed. Please contact support.',
+                      ? 'கணக்கு உருவாகியுள்ளது ஆனால் மாணவர் விவரம் அமைக்கப்படவில்லை. தயவு செய்து உதவியை தொடர்பு கொள்ளவும்.'
+                      : 'Account created but student profile setup failed. Please contact support.',
                 variant: 'destructive',
               });
             }
@@ -1004,12 +1015,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log('Attempting auto sign-in');
           // Wait a moment for the user profile to be fully created
           await new Promise(resolve => setTimeout(resolve, 1000));
-          
+
           const { error: signInError } = await supabase.auth.signInWithPassword({
             email: finalEmail,
             password,
           });
-          
+
           if (signInError) {
             console.error('Auto sign-in failed:', signInError);
             // Even if auto sign-in fails, registration was successful
@@ -1019,36 +1030,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 lang === 'kn'
                   ? 'ನೋಂದಣಿ ಯಶಸ್ವಿಯಾಗಿದೆ'
                   : lang === 'ta'
-                  ? 'பதிவு முடிந்தது'
-                  : 'Registration successful',
+                    ? 'பதிவு முடிந்தது'
+                    : 'Registration successful',
               description:
                 lang === 'kn'
                   ? `CareerCompass‌ಗೆ ಸ್ವಾಗತ, ${fullName}! ದಯವಿಟ್ಟು ಕೈಯಾರೆ ಲಾಗಿನ್ ಆಗಿ.`
                   : lang === 'ta'
-                  ? `CareerCompass-க்கு வரவேற்பு, ${fullName}! தயவு செய்து உங்களே நுழையுங்கள்.`
-                  : `Welcome to CareerCompass, ${fullName}! Please sign in manually.`,
+                    ? `CareerCompass-க்கு வரவேற்பு, ${fullName}! தயவு செய்து உங்களே நுழையுங்கள்.`
+                    : `Welcome to CareerCompass, ${fullName}! Please sign in manually.`,
             });
           } else {
             console.log('Auto sign-in successful');
-            
+
             // CRITICAL: Manually fetch user profile since our auth listener might be blocked
             // Get the current session to fetch the user
             const { data: sessionData } = await supabase.auth.getSession();
             if (sessionData.session?.user) {
               console.log('📥 Manually fetching user profile after registration');
-              
+
               // Ensure user state is set
               const authUser = sessionData.session.user as AuthUser;
               setUser(authUser);
               setSession(sessionData.session);
-              
+
               // Fetch user profile
               await fetchUserProfile(authUser.id, authUser);
-              
+
               // Wait a moment for state to propagate
               await new Promise(resolve => setTimeout(resolve, 500));
             }
-            
+
             // Auto sign-in successful
             const lang = preferredLanguage === 'kn' || preferredLanguage === 'ta' ? preferredLanguage : 'en';
             toast({
@@ -1056,14 +1067,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 lang === 'kn'
                   ? 'ನೋಂದಣಿ ಯಶಸ್ವಿಯಾಗಿದೆ'
                   : lang === 'ta'
-                  ? 'பதிவு முடிந்தது'
-                  : 'Registration successful',
+                    ? 'பதிவு முடிந்தது'
+                    : 'Registration successful',
               description:
                 lang === 'kn'
                   ? `CareerCompass‌ಗೆ ಸ್ವಾಗತ, ${fullName}! ನೀವು ಈಗ ಲಾಗಿನ್ ಆಗಿದ್ದೀರಿ.`
                   : lang === 'ta'
-                  ? `CareerCompass-க்கு வரவேற்பு, ${fullName}! நீங்கள் இப்போது உள்ளே வந்துவிட்டீர்கள்.`
-                  : `Welcome to CareerCompass, ${fullName}! You're now signed in.`,
+                    ? `CareerCompass-க்கு வரவேற்பு, ${fullName}! நீங்கள் இப்போது உள்ளே வந்துவிட்டீர்கள்.`
+                    : `Welcome to CareerCompass, ${fullName}! You're now signed in.`,
             });
           }
         } catch (signInError) {
@@ -1074,14 +1085,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               lang === 'kn'
                 ? 'ನೋಂದಣಿ ಯಶಸ್ವಿಯಾಗಿದೆ'
                 : lang === 'ta'
-                ? 'பதிவு முடிந்தது'
-                : 'Registration successful',
+                  ? 'பதிவு முடிந்தது'
+                  : 'Registration successful',
             description:
               lang === 'kn'
                 ? `CareerCompass‌ಗೆ ಸ್ವಾಗತ, ${fullName}! ದಯವಿಟ್ಟು ಕೈಯಾರೆ ಲಾಗಿನ್ ಆಗಿ.`
                 : lang === 'ta'
-                ? `CareerCompass-க்கு வரவேற்பு, ${fullName}! தயவு செய்து உங்களே நுழையுங்கள்.`
-                : `Welcome to CareerCompass, ${fullName}! Please sign in manually.`,
+                  ? `CareerCompass-க்கு வரவேற்பு, ${fullName}! தயவு செய்து உங்களே நுழையுங்கள்.`
+                  : `Welcome to CareerCompass, ${fullName}! Please sign in manually.`,
           });
         }
       }
@@ -1110,12 +1121,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUserProfile(null);
       setIsCustomAuth(false);
       setLoading(false);
-      
+
       // Clear localStorage
       localStorage.removeItem('customAuth');
       localStorage.removeItem('customUser');
       localStorage.removeItem('customProfile');
-      
+
       toast({
         title: "Signed out",
         description: "You have been signed out successfully",
@@ -1147,15 +1158,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshUserProfile,
   };
 
-  console.log('AuthProvider rendering with value:', { 
-    user: !!user, 
-    loading, 
+  console.log('AuthProvider rendering with value:', {
+    user: !!user,
+    loading,
     userProfile: userProfile ? {
       id: userProfile.id,
       role: userProfile.role,
       hasStudentProfile: !!userProfile.studentProfile,
       hasTeacherProfile: !!userProfile.teacherProfile
-    } : null 
+    } : null
   });
 
   return (

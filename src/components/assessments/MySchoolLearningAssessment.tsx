@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLang } from '@/hooks/useLang';
 import { fetchTranslations } from '@/services/translationService';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
 import { KannadaKeyboard } from '@/components/ui/KannadaKeyboard';
 import { checkAssessmentUnlock } from '@/utils/assessmentUnlock';
 
@@ -34,13 +34,12 @@ interface SchoolLearningAssessmentResponse {
     question10: string;
     question11: {
       visual: boolean;
-      reading: boolean;
-      listening: boolean;
+      audio: boolean;
       experimenting: boolean;
       discuss: boolean;
       groupDiscussions: boolean;
-      writing: boolean;
-      readingByheart: boolean;
+      presentation: boolean;
+      rolePlay: boolean;
       teaching: boolean;
       other: string;
     };
@@ -83,13 +82,12 @@ export default function MySchoolLearningAssessment() {
       question10: '',
       question11: {
         visual: false,
-        reading: false,
-        listening: false,
+        audio: false,
         experimenting: false,
         discuss: false,
         groupDiscussions: false,
-        writing: false,
-        readingByheart: false,
+        presentation: false,
+        rolePlay: false,
         teaching: false,
         other: ''
       },
@@ -110,8 +108,14 @@ export default function MySchoolLearningAssessment() {
     }
   });
   const [loading, setLoading] = useState(true);
+  const [questions, setQuestions] = useState<any[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [savingSection, setSavingSection] = useState<string | null>(null);
+  const [helpOpen, setHelpOpen] = useState<Record<string, boolean>>({});
+
+  const toggleHelp = (key: string) => {
+    setHelpOpen(prev => ({ ...prev, [key]: !prev[key] }));
+  };
   const [isCompleted, setIsCompleted] = useState(false);
   const [currentSection, setCurrentSection] = useState<'section1' | 'section2' | 'section3' | 'section4' | 'section5'>('section1');
   const navigate = useNavigate();
@@ -121,6 +125,8 @@ export default function MySchoolLearningAssessment() {
   const isReadOnly = isCompleted || readOnlyView;
   const [helpTranslations, setHelpTranslations] = useState<Record<string, string>>({});
 
+  // Load localized help text from content_translations (school_help)
+  // Load localized help text from content_translations (school_help)
   // Load localized help text from content_translations (school_help)
   useEffect(() => {
     const loadHelpTranslations = async () => {
@@ -134,7 +140,28 @@ export default function MySchoolLearningAssessment() {
       }
     };
 
+    const fetchQuestions = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('school_learning_questions')
+          .select('*')
+          .order('sequence_number');
+
+        if (error) {
+          console.error('Error fetching questions:', error);
+          return;
+        }
+
+        if (data) {
+          setQuestions(data);
+        }
+      } catch (error) {
+        console.error('Error in fetchQuestions:', error);
+      }
+    };
+
     loadHelpTranslations();
+    fetchQuestions();
   }, [lang]);
 
   const getHelpText = (id: number, fallback: string) => {
@@ -142,78 +169,46 @@ export default function MySchoolLearningAssessment() {
     return helpTranslations[key] || fallback;
   };
 
+  const getLearningMethodOption = (key: string) => {
+    const options: Record<string, { label: string; help: string }> = {
+      visual: {
+        label: 'Observe the experiment and explain by relating it with suitable illustrative pictures (audio-visual medium).',
+        help: 'Observe and explain clearly using related pictures.'
+      },
+      audio: {
+        label: 'Oral explanation (audio medium).',
+        help: 'Explain clearly through oral explanation.'
+      },
+      experimenting: {
+        label: 'Learning through experiment / experiential learning.',
+        help: 'Learn through hands-on activity and experience.'
+      },
+      discuss: {
+        label: 'Discussion / Reasoning.',
+        help: 'Discuss ideas and explain logically.'
+      },
+      groupDiscussions: {
+        label: 'Group discussion.',
+        help: 'Share ideas and discuss as a group.'
+      },
+      presentation: {
+        label: 'Presentation.',
+        help: 'Present the topic clearly and in an organized manner.'
+      },
+      rolePlay: {
+        label: 'Oral practice through role play.',
+        help: 'Practice speaking through role play.'
+      },
+      teaching: {
+        label: 'I learn by teaching others.',
+        help: 'Write about how you learn by teaching others.'
+      }
+    };
+    return options[key] || { label: key, help: '' };
+  };
+
   const getLearningMethodLabel = (key: string): string => {
-    if (lang === 'kn') {
-      switch (key) {
-        case 'visual':
-          return 'ವೀಡಿಯೋಗಳನ್ನು ನೋಡುವುದು ಅಥವಾ ಚಿತ್ರಗಳನ್ನು ನೋಡಿ ಕಲಿಯುವುದು (ದೃಶ್ಯ)';
-        case 'reading':
-          return 'ಓದುವುದು';
-        case 'listening':
-          return 'ಕೇಳುವುದು (ಆಡಿಯೋ)';
-        case 'experimenting':
-          return 'ಪ್ರಯೋಗ ಮಾಡುವುದು';
-        case 'discuss':
-          return 'ಚರ್ಚೆ / ಚಿಂತನೆ ಹಂಚಿಕೊಳ್ಳುವುದು';
-        case 'groupDiscussions':
-          return 'ಗುಂಪು ಚರ್ಚೆಗಳು';
-        case 'writing':
-          return 'ಬರೆಯುವುದು';
-        case 'readingByheart':
-          return 'ಓದಿ ಮನಪಾಠ ಮಾಡುವುದು';
-        case 'teaching':
-          return 'ಇತರರಿಗೆ ಕಲಿಸುವ ಮೂಲಕ ಅಥವಾ ಯಾರಾದರೂ ನನ್ನ ಮಾತು ಕೇಳುವುದರಿಂದ ನಾನು ಚೆನ್ನಾಗಿ ಕಲಿಯುತ್ತೇನೆ';
-        default:
-          return key;
-      }
-    }
-    if (lang === 'ta') {
-      switch (key) {
-        case 'visual':
-          return 'காணொளி/படங்களைப் பார்த்து கற்றல் (காண்பது மூலம் கற்றல்)';
-        case 'reading':
-          return 'வாசித்து கற்றல்';
-        case 'listening':
-          return 'கேட்டு கற்றல் (ஒலிப்பதிவு, உரை முதலியன)';
-        case 'experimenting':
-          return 'செய்முறை செய்து கற்றல் (பரிசோதனை)';
-        case 'discuss':
-          return 'விவாதம் / சேர்ந்து யோசித்து கற்றல்';
-        case 'groupDiscussions':
-          return 'குழு விவாதங்கள் மூலம் கற்றல்';
-        case 'writing':
-          return 'எழுதிக் கொண்டு கற்றல்';
-        case 'readingByheart':
-          return 'வாசித்து மனப்பாடம் செய்து கற்றல்';
-        case 'teaching':
-          return 'பிறருக்கு கற்றுக்கொடுப்பதன் மூலம் அல்லது யாராவது கவனமாக கேட்கும்போது நான் நன்றாக கற்றுக்கொள்கிறேன்';
-        default:
-          return key;
-      }
-    }
-    // default English labels
-    switch (key) {
-      case 'visual':
-        return 'Watching videos or relating to pictures (visual)';
-      case 'reading':
-        return 'Reading';
-      case 'listening':
-        return 'Listening (audio)';
-      case 'experimenting':
-        return 'Experimenting';
-      case 'discuss':
-        return 'Discuss / Brainstorming';
-      case 'groupDiscussions':
-        return 'Group discussions';
-      case 'writing':
-        return 'Writing';
-      case 'readingByheart':
-        return 'Reading & byheart';
-      case 'teaching':
-        return 'I learn by teaching others, or I like someone to listen to me';
-      default:
-        return key;
-    }
+    return getLearningMethodOption(key).label;
   };
 
   // Helper to get Tamil question labels while preserving existing English structure
@@ -266,7 +261,11 @@ export default function MySchoolLearningAssessment() {
           return en;
       }
     }
-    return en;
+
+
+    // Dynamic fetching for English
+    const q = questions.find(i => i.sequence_number === id);
+    return q?.question_text || en;
   };
 
   useEffect(() => {
@@ -361,13 +360,12 @@ export default function MySchoolLearningAssessment() {
             question10: savedResponses.section3?.question10 || savedResponses.part2?.question10 || '',
             question11: {
               visual: savedResponses.section3?.question11?.visual || savedResponses.part2?.question11?.lookingAtPictures || false,
-              reading: savedResponses.section3?.question11?.reading || savedResponses.part2?.question11?.reading || false,
-              listening: savedResponses.section3?.question11?.listening || savedResponses.part2?.question11?.listening || false,
+              audio: savedResponses.section3?.question11?.audio || savedResponses.section3?.question11?.listening || false,
               experimenting: savedResponses.section3?.question11?.experimenting || savedResponses.part2?.question11?.experiment || false,
               discuss: savedResponses.section3?.question11?.discuss || savedResponses.part2?.question11?.discussions || false,
               groupDiscussions: savedResponses.section3?.question11?.groupDiscussions || savedResponses.part2?.question11?.groupSessions || false,
-              writing: savedResponses.section3?.question11?.writing || false,
-              readingByheart: savedResponses.section3?.question11?.readingByheart || false,
+              presentation: savedResponses.section3?.question11?.presentation || false,
+              rolePlay: savedResponses.section3?.question11?.rolePlay || false,
               teaching: savedResponses.section3?.question11?.teaching || false,
               other: savedResponses.section3?.question11?.other || savedResponses.part2?.question11?.others || ''
             },
@@ -410,7 +408,7 @@ export default function MySchoolLearningAssessment() {
     }));
   };
 
-  const handleLearningMethodChange = (method: string, checked: boolean) => {
+  const handleLearningMethodChange = (method: string, value: boolean | string) => {
     if (isReadOnly) return;
     setResponses(prev => ({
       ...prev,
@@ -418,7 +416,7 @@ export default function MySchoolLearningAssessment() {
         ...prev.section3,
         question11: {
           ...prev.section3.question11,
-          [method]: checked
+          [method]: value
         }
       }
     }));
@@ -852,6 +850,7 @@ export default function MySchoolLearningAssessment() {
     );
   }
 
+  const sectionOrder = ['section1', 'section2', 'section3', 'section4', 'section5'] as const;
   const sectionNames = {
     section1: 'School Experience',
     section2: 'Subjects & Learning Preferences',
@@ -863,755 +862,842 @@ export default function MySchoolLearningAssessment() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 py-8" lang={lang} dir="auto">
       <div className="container mx-auto px-4 max-w-4xl">
-        <TooltipProvider>
-          <div className="text-center mb-8">
-            <div className="text-left mb-2">
-              <Button variant="ghost" onClick={() => navigate('/student')} className="text-green-700 hover:text-green-800">
-                <ArrowLeft className="w-4 h-4 mr-2" />{t('backToDashboard')}
-              </Button>
-            </div>
-            <h1 className="text-2xl md:text-3xl font-bold text-green-800 mb-2">
-              {lang === 'kn'
-                ? '🏫 ನನ್ನ ಶಾಲೆ, ನನ್ನ ಕಲಿಕೆ ಮತ್ತು ನಾನು'
-                : lang === 'ta'
-                  ? '🏫 என் பள்ளி, என் படிப்பு மற்றும் நான்'
-                  : '🏫 My School, My Learning and I'}
-            </h1>
-            <p className="text-gray-700 mt-4">
-              {lang === 'kn'
-                ? 'ಶಾಲೆ, ಕಲಿಕೆ ಮತ್ತು ನಿಮ್ಮ ಅನುಭವಗಳ ಬಗ್ಗೆ ನಿಮ್ಮ ಆಲೋಚನೆಗಳನ್ನು ಹಂಚಿಕೊಳ್ಳಿ. ನಿಧಾನವಾಗಿ ಯೋಚಿಸಿ, ಸತ್ಯವಾಗಿ ಉತ್ತರಿಸಿ.'
-                : lang === 'ta'
-                  ? 'பள்ளி, படிப்பு மற்றும் உங்கள் அனுபவங்களைப் பற்றி உங்கள் எண்ணங்களை பகிருங்கள். மெதுவாக யோசித்து நேர்மையாக பதில் எழுதுங்கள்.'
-                  : 'Share your thoughts about school, learning, and your experiences. Take your time and answer honestly.'}
-            </p>
-          </div>
 
-          <Card className="mb-6 border-0 shadow-lg">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-800">{t('yourProgress')}</h2>
-                <Badge variant="secondary">
-                  {Math.round(getProgressPercentage())}% {t('completeSuffix')}
-                </Badge>
+        <div className="text-center mb-8">
+          <div className="text-left mb-2">
+            <Button variant="ghost" onClick={() => navigate('/student')} className="text-green-700 hover:text-green-800">
+              <ArrowLeft className="w-4 h-4 mr-2" />{t('backToDashboard')}
+            </Button>
+          </div>
+          <h1 className="text-2xl md:text-3xl font-bold text-green-800 mb-2">
+            {lang === 'kn'
+              ? '🏫 ನನ್ನ ಶಾಲೆ, ನನ್ನ ಕಲಿಕೆ ಮತ್ತು ನಾನು'
+              : lang === 'ta'
+                ? '🏫 என் பள்ளி, என் படிப்பு மற்றும் நான்'
+                : '🏫 My School, My Learning and I'}
+          </h1>
+          <p className="text-gray-700 mt-4">
+            {lang === 'kn'
+              ? 'ಶಾಲೆ, ಕಲಿಕೆ ಮತ್ತು ನಿಮ್ಮ ಅನುಭವಗಳ ಬಗ್ಗೆ ನಿಮ್ಮ ಆಲೋಚನೆಗಳನ್ನು ಹಂಚಿಕೊಳ್ಳಿ. ನಿಧಾನವಾಗಿ ಯೋಚಿಸಿ, ಸತ್ಯವಾಗಿ ಉತ್ತರಿಸಿ.'
+              : lang === 'ta'
+                ? 'பள்ளி, படிப்பு மற்றும் உங்கள் அனுபவங்களைப் பற்றி உங்கள் எண்ணங்களை பகிருங்கள். மெதுவாக யோசித்து நேர்மையாக பதில் எழுதுங்கள்.'
+                : 'Share your thoughts about school, learning, and your experiences. Take your time and answer honestly.'}
+          </p>
+        </div>
+
+        <Card className="mb-6 border-0 shadow-lg">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-800">{t('yourProgress')}</h2>
+              <Badge variant="secondary">
+                {Math.round(getProgressPercentage())}% {t('completeSuffix')}
+              </Badge>
+            </div>
+            <Progress value={getProgressPercentage()} className="h-3" />
+          </CardContent>
+        </Card>
+
+        <div className="flex justify-center mb-6 gap-2 flex-wrap flex-col sm:flex-row">
+          {(['section1', 'section2', 'section3', 'section4', 'section5'] as const).map((section) => {
+            const sectionNumber = Number(section.replace('section', ''));
+            const label =
+              lang === 'kn'
+                ? `ಭಾಗ ${sectionNumber}`
+                : lang === 'ta'
+                  ? `பகுதி ${sectionNumber}`
+                  : `Section ${sectionNumber}`;
+            return (
+              <button
+                key={section}
+                onClick={() => setCurrentSection(section)}
+                className={`px-4 py-2 rounded-md transition-all text-sm w-full sm:w-auto ${currentSection === section
+                  ? 'bg-green-600 text-white shadow-md'
+                  : 'bg-white text-gray-600 hover:text-green-600 border border-gray-200'
+                  }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+
+        {currentSection === 'section1' && (
+          <Card className="border-0 shadow-lg mb-4">
+            <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50">
+              <CardTitle className="text-xl text-green-800">
+                {lang === 'kn'
+                  ? 'ಭಾಗ 1: ಶಾಲಾ ಅನುಭವ'
+                  : lang === 'ta'
+                    ? 'பகுதி 1: பள்ளி அனுபவம்'
+                    : 'Section 1: School Experience'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  {qLabel(1, '1. Do you like coming to school? Why?')}
+                  <button
+                    type="button"
+                    aria-label="Help"
+                    className="text-green-700 hover:text-green-800 ml-2"
+                    onClick={() => toggleHelp('q1')}
+                  >
+                    💬
+                  </button>
+                </label>
+                {helpOpen['q1'] && (
+                  <div className="mb-2 p-3 rounded border bg-green-50 border-green-200 text-sm text-green-800">
+                    {getHelpText(1, 'Write whether you like coming to school and give the reason.')}
+                  </div>
+                )}
+                <Textarea
+                  placeholder={getHelpText(1, 'Write whether you like coming to school and give the reason.')}
+                  value={responses.section1.question1}
+                  onChange={(e) => handleResponseChange('section1', 'question1', e.target.value)}
+                  rows={3}
+                  readOnly={isReadOnly}
+                  className="border-green-200 focus:border-green-400"
+                />
               </div>
-              <Progress value={getProgressPercentage()} className="h-3" />
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  {qLabel(2, '2. What do you like to learn at school?')}
+                  <button
+                    type="button"
+                    aria-label="Help"
+                    className="text-green-700 hover:text-green-800 ml-2"
+                    onClick={() => toggleHelp('q2')}
+                  >
+                    💬
+                  </button>
+                </label>
+                {helpOpen['q2'] && (
+                  <div className="mb-2 p-3 rounded border bg-green-50 border-green-200 text-sm text-green-800">
+                    {getHelpText(2, 'Write what you like to learn in school.')}
+                  </div>
+                )}
+                <Textarea
+                  placeholder={getHelpText(2, 'Write what you like to learn in school.')}
+                  value={responses.section1.question2}
+                  onChange={(e) => handleResponseChange('section1', 'question2', e.target.value)}
+                  rows={3}
+                  readOnly={isReadOnly}
+                  className="border-green-200 focus:border-green-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  {qLabel(3, "3. What are the reasons you do not like learning in school? Explain.")}
+                  <button
+                    type="button"
+                    aria-label="Help"
+                    className="text-green-700 hover:text-green-800 ml-2"
+                    onClick={() => toggleHelp('q3')}
+                  >
+                    💬
+                  </button>
+                </label>
+                {helpOpen['q3'] && (
+                  <div className="mb-2 p-3 rounded border bg-green-50 border-green-200 text-sm text-green-800">
+                    {getHelpText(3, 'Clearly write the reasons why you do not like learning in school.')}
+                  </div>
+                )}
+                <Textarea
+                  placeholder={getHelpText(3, 'Clearly write the reasons why you do not like learning in school.')}
+                  value={responses.section1.question3}
+                  onChange={(e) => handleResponseChange('section1', 'question3', e.target.value)}
+                  rows={3}
+                  readOnly={isReadOnly}
+                  className="border-green-200 focus:border-green-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  {qLabel(4, '4. Who are your close friends in school? What qualities or traits in them have made them your close friends?')}
+                  <button
+                    type="button"
+                    aria-label="Help"
+                    className="text-green-700 hover:text-green-800 ml-2"
+                    onClick={() => toggleHelp('q4')}
+                  >
+                    💬
+                  </button>
+                </label>
+                {helpOpen['q4'] && (
+                  <div className="mb-2 p-3 rounded border bg-green-50 border-green-200 text-sm text-green-800">
+                    {getHelpText(4, 'Write about your close friends and the qualities that make them special.')}
+                  </div>
+                )}
+                <Textarea
+                  placeholder={getHelpText(4, 'Write about your close friends and the qualities that make them special.')}
+                  value={responses.section1.question4}
+                  onChange={(e) => handleResponseChange('section1', 'question4', e.target.value)}
+                  rows={3}
+                  readOnly={isReadOnly}
+                  className="border-green-200 focus:border-green-400"
+                />
+              </div>
+
             </CardContent>
           </Card>
+        )}
 
-          <div className="flex justify-center mb-6 gap-2 flex-wrap flex-col sm:flex-row">
-            {(['section1', 'section2', 'section3', 'section4', 'section5'] as const).map((section) => {
-              const sectionNumber = Number(section.replace('section', ''));
-              const label =
-                lang === 'kn'
-                  ? `ಭಾಗ ${sectionNumber}`
+        {currentSection === 'section2' && (
+          <Card className="border-0 shadow-lg mb-4">
+            <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
+              <CardTitle className="text-xl text-blue-800">
+                {lang === 'kn'
+                  ? 'ಭಾಗ 2: ವಿಷಯಗಳು ಮತ್ತು ಕಲಿಕೆಯ ಮೆಚ್ಚುಗೆಗಳು'
                   : lang === 'ta'
-                    ? `பகுதி ${sectionNumber}`
-                    : `Section ${sectionNumber}`;
-              return (
-                <button
-                  key={section}
-                  onClick={() => setCurrentSection(section)}
-                  className={`px-4 py-2 rounded-md transition-all text-sm w-full sm:w-auto ${currentSection === section
-                      ? 'bg-green-600 text-white shadow-md'
-                      : 'bg-white text-gray-600 hover:text-green-600 border border-gray-200'
-                    }`}
-                >
-                  {label}
-                </button>
-              );
-            })}
-          </div>
+                    ? 'பகுதி 2: பாடங்கள் மற்றும் கற்றல் விருப்பங்கள்'
+                    : 'Section 2: Subjects & Learning Preferences'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  {qLabel(5, '5. Which subjects do you like the most? Write them.')}
+                  <button
+                    type="button"
+                    aria-label="Help"
+                    className="text-blue-700 hover:text-blue-800 ml-2"
+                    onClick={() => toggleHelp('q5')}
+                  >
+                    💬
+                  </button>
+                </label>
+                {helpOpen['q5'] && (
+                  <div className="mb-2 p-3 rounded border bg-blue-50 border-blue-200 text-sm text-blue-800">
+                    {getHelpText(5, 'List the subjects you like the most.')}
+                  </div>
+                )}
+                <Textarea
+                  placeholder={getHelpText(5, 'List the subjects you like the most.')}
+                  value={responses.section2.question5}
+                  onChange={(e) => handleResponseChange('section2', 'question5', e.target.value)}
+                  rows={3}
+                  readOnly={isReadOnly}
+                  className="border-blue-200 focus:border-blue-400"
+                />
+              </div>
 
-          {currentSection === 'section1' && (
-            <Card className="border-0 shadow-lg mb-4">
-              <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50">
-                <CardTitle className="text-xl text-green-800">
-                  {lang === 'kn'
-                    ? 'ಭಾಗ 1: ಶಾಲಾ ಅನುಭವ'
-                    : lang === 'ta'
-                      ? 'பகுதி 1: பள்ளி அனுபவம்'
-                      : 'Section 1: School Experience'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6 space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    {qLabel(1, '1. Do you like coming to school? Why?')}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="text-green-700 hover:text-green-800">💬</button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {getHelpText(1, 'Say Yes or No, then explain why. Example: "Yes, because I like meeting my friends and learning new things."')}
-                      </TooltipContent>
-                    </Tooltip>
-                  </label>
-                  <Textarea
-                    placeholder={getHelpText(1, 'Example: Yes, because I enjoy learning and spending time with friends...')}
-                    value={responses.section1.question1}
-                    onChange={(e) => handleResponseChange('section1', 'question1', e.target.value)}
-                    rows={3}
-                    readOnly={isReadOnly}
-                    className="border-green-200 focus:border-green-400"
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  {qLabel(6, '6. Why do you like this subject? Write the reason.')}
+                  <button
+                    type="button"
+                    aria-label="Help"
+                    className="text-blue-700 hover:text-blue-800 ml-2"
+                    onClick={() => toggleHelp('q6')}
+                  >
+                    💬
+                  </button>
+                </label>
+                {helpOpen['q6'] && (
+                  <div className="mb-2 p-3 rounded border bg-blue-50 border-blue-200 text-sm text-blue-800">
+                    {getHelpText(6, 'You may like the subject because it is easy, interesting, or taught well by the teacher.')}
+                  </div>
+                )}
+                <Textarea
+                  placeholder={getHelpText(6, 'You may like the subject because it is easy, interesting, or taught well by the teacher.')}
+                  value={responses.section2.question6}
+                  onChange={(e) => handleResponseChange('section2', 'question6', e.target.value)}
+                  rows={3}
+                  readOnly={isReadOnly}
+                  className="border-blue-200 focus:border-blue-400"
+                />
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    {qLabel(2, '2. What do you like to learn at school?')}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="text-green-700 hover:text-green-800">💬</button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {getHelpText(2, 'Write about the topics or subjects you enjoy. Example: "I like learning about science experiments and stories in English."')}
-                      </TooltipContent>
-                    </Tooltip>
-                  </label>
-                  <Textarea
-                    placeholder={getHelpText(2, 'Example: I enjoy learning about science, mathematics, and stories...')}
-                    value={responses.section1.question2}
-                    onChange={(e) => handleResponseChange('section1', 'question2', e.target.value)}
-                    rows={3}
-                    readOnly={isReadOnly}
-                    className="border-green-200 focus:border-green-400"
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  {qLabel(7, '7. Which subjects do you not like to study?')}
+                  <button
+                    type="button"
+                    aria-label="Help"
+                    className="text-blue-700 hover:text-blue-800 ml-2"
+                    onClick={() => toggleHelp('q7')}
+                  >
+                    💬
+                  </button>
+                </label>
+                {helpOpen['q7'] && (
+                  <div className="mb-2 p-3 rounded border bg-blue-50 border-blue-200 text-sm text-blue-800">
+                    {getHelpText(7, 'Some subjects may be disliked because they are difficult or hard to understand.')}
+                  </div>
+                )}
+                <Textarea
+                  placeholder={getHelpText(7, 'Some subjects may be disliked because they are difficult or hard to understand.')}
+                  value={responses.section2.question7}
+                  onChange={(e) => handleResponseChange('section2', 'question7', e.target.value)}
+                  rows={3}
+                  readOnly={isReadOnly}
+                  className="border-blue-200 focus:border-blue-400"
+                />
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    {qLabel(3, "3. Are there reasons why you don't like learning at school?")}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="text-green-700 hover:text-green-800">💬</button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {getHelpText(3, 'If you have any problems with learning, write them here. Example: "Sometimes the teacher goes too fast and I can\'t understand."')}
-                      </TooltipContent>
-                    </Tooltip>
-                  </label>
-                  <Textarea
-                    placeholder={getHelpText(3, 'Example: Sometimes I find it hard to understand when the teacher explains too quickly...')}
-                    value={responses.section1.question3}
-                    onChange={(e) => handleResponseChange('section1', 'question3', e.target.value)}
-                    rows={3}
-                    readOnly={isReadOnly}
-                    className="border-green-200 focus:border-green-400"
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  {qLabel(8, '8. Why do you have less interest in the above subjects? What help did you receive to learn these subjects?')}
+                  <button
+                    type="button"
+                    aria-label="Help"
+                    className="text-blue-700 hover:text-blue-800 ml-2"
+                    onClick={() => toggleHelp('q8')}
+                  >
+                    💬
+                  </button>
+                </label>
+                {helpOpen['q8'] && (
+                  <div className="mb-2 p-3 rounded border bg-blue-50 border-blue-200 text-sm text-blue-800">
+                    {getHelpText(8, 'Interest may be less because the subject is difficult, and help from teachers or friends supports learning.')}
+                  </div>
+                )}
+                <Textarea
+                  placeholder={getHelpText(8, 'Interest may be less because the subject is difficult, and help from teachers or friends supports learning.')}
+                  value={responses.section2.question8}
+                  onChange={(e) => handleResponseChange('section2', 'question8', e.target.value)}
+                  rows={3}
+                  readOnly={isReadOnly}
+                  className="border-blue-200 focus:border-blue-400"
+                />
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    {qLabel(4, '4. Who are your best friends at school, and what qualities or shared experiences make them your best friends?')}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="text-green-700 hover:text-green-800">💬</button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {getHelpText(4, 'Write your friend\'s name and what makes them special. Example: "Ravi is my best friend because he helps me with studies and we play together."')}
-                      </TooltipContent>
-                    </Tooltip>
-                  </label>
-                  <Textarea
-                    placeholder={getHelpText(4, 'Example: My best friend is Priya. She is kind, helps me with homework, and we enjoy playing together...')}
-                    value={responses.section1.question4}
-                    onChange={(e) => handleResponseChange('section1', 'question4', e.target.value)}
-                    rows={3}
-                    readOnly={isReadOnly}
-                    className="border-green-200 focus:border-green-400"
-                  />
-                </div>
+            </CardContent>
+          </Card>
+        )}
 
-                <Button
-                  onClick={() => saveSection('section1')}
-                  disabled={savingSection === 'section1' || isReadOnly}
-                  className="w-full bg-green-600 hover:bg-green-700"
-                >
-                  {savingSection === 'section1' ? (
-                    <>Saving...</>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4 mr-2" />
-                      {lang === 'kn'
-                        ? 'ಭಾಗ 1 ಅನ್ನು ಉಳಿಸಿ'
-                        : lang === 'ta'
-                          ? 'பகுதி 1ஐ சேமிக்கவும்'
-                          : 'Save Section 1'}
-                    </>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-          )}
+        {currentSection === 'section3' && (
+          <Card className="border-0 shadow-lg mb-4">
+            <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50">
+              <CardTitle className="text-xl text-purple-800">
+                {lang === 'kn'
+                  ? 'ಭಾಗ 3: ಶೈಕ್ಷಣಿಕ ಸಾಧನೆ ಮತ್ತು ಕಲಿಕೆಯ ವಿಧಾನಗಳು'
+                  : lang === 'ta'
+                    ? 'பகுதி 3: கல்வி முன்னேற்றம் மற்றும் கற்றல் முறைகள்'
+                    : 'Section 3: Academic Performance & Learning Methods'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  {qLabel(9, '9. Which subjects do you score the highest marks in?')}
+                  <button
+                    type="button"
+                    aria-label="Help"
+                    className="text-purple-700 hover:text-purple-800 ml-2"
+                    onClick={() => toggleHelp('q9')}
+                  >
+                    💬
+                  </button>
+                </label>
+                {helpOpen['q9'] && (
+                  <div className="mb-2 p-3 rounded border bg-purple-50 border-purple-200 text-sm text-purple-800">
+                    {getHelpText(9, 'Students usually score higher marks in subjects they understand well and like.')}
+                  </div>
+                )}
+                <Textarea
+                  placeholder={getHelpText(9, 'Students usually score higher marks in subjects they understand well and like.')}
+                  value={responses.section3.question9}
+                  onChange={(e) => handleResponseChange('section3', 'question9', e.target.value)}
+                  rows={3}
+                  readOnly={isReadOnly}
+                  className="border-purple-200 focus:border-purple-400"
+                />
+              </div>
 
-          {currentSection === 'section2' && (
-            <Card className="border-0 shadow-lg mb-4">
-              <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
-                <CardTitle className="text-xl text-blue-800">
-                  {lang === 'kn'
-                    ? 'ಭಾಗ 2: ವಿಷಯಗಳು ಮತ್ತು ಕಲಿಕೆಯ ಮೆಚ್ಚುಗೆಗಳು'
-                    : lang === 'ta'
-                      ? 'பகுதி 2: பாடங்கள் மற்றும் கற்றல் விருப்பங்கள்'
-                      : 'Section 2: Subjects & Learning Preferences'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6 space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    {qLabel(5, '5. Which topics/subjects do you enjoy learning? Write.')}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="text-blue-700 hover:text-blue-800">💬</button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {getHelpText(5, 'List the subjects you like. Example: "I enjoy Mathematics, Science, and English."')}
-                      </TooltipContent>
-                    </Tooltip>
-                  </label>
-                  <Textarea
-                    placeholder={getHelpText(5, 'Example: I enjoy Mathematics, Science, English, and Social Studies...')}
-                    value={responses.section2.question5}
-                    onChange={(e) => handleResponseChange('section2', 'question5', e.target.value)}
-                    rows={3}
-                    readOnly={isReadOnly}
-                    className="border-blue-200 focus:border-blue-400"
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  {qLabel(10, '10. Which subjects do you score low marks in?')}
+                  <button
+                    type="button"
+                    aria-label="Help"
+                    className="text-purple-700 hover:text-purple-800 ml-2"
+                    onClick={() => toggleHelp('q10')}
+                  >
+                    💬
+                  </button>
+                </label>
+                {helpOpen['q10'] && (
+                  <div className="mb-2 p-3 rounded border bg-purple-50 border-purple-200 text-sm text-purple-800">
+                    {getHelpText(10, 'Low marks may be due to lack of understanding or insufficient practice.')}
+                  </div>
+                )}
+                <Textarea
+                  placeholder={getHelpText(10, 'Low marks may be due to lack of understanding or insufficient practice.')}
+                  value={responses.section3.question10}
+                  onChange={(e) => handleResponseChange('section3', 'question10', e.target.value)}
+                  rows={3}
+                  readOnly={isReadOnly}
+                  className="border-purple-200 focus:border-purple-400"
+                />
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    {qLabel(6, '6. What specifically draws you towards these topics/subjects? Write the reasons.')}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="text-blue-700 hover:text-blue-800">💬</button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {getHelpText(6, 'Explain why you like these subjects. Example: "I like Science because we do experiments and it\'s fun to see how things work."')}
-                      </TooltipContent>
-                    </Tooltip>
-                  </label>
-                  <Textarea
-                    placeholder={getHelpText(6, 'Example: I like Science because we do experiments and I find it interesting to learn how things work...')}
-                    value={responses.section2.question6}
-                    onChange={(e) => handleResponseChange('section2', 'question6', e.target.value)}
-                    rows={3}
-                    readOnly={isReadOnly}
-                    className="border-blue-200 focus:border-blue-400"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    {qLabel(7, '7. Which subjects do you dislike learning?')}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="text-blue-700 hover:text-blue-800">💬</button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {getHelpText(7, 'Write the subjects you don\'t like. Example: "I don\'t like History because there are too many dates to remember."')}
-                      </TooltipContent>
-                    </Tooltip>
-                  </label>
-                  <Textarea
-                    placeholder={getHelpText(7, 'Example: I find History difficult because there are many dates and events to remember...')}
-                    value={responses.section2.question7}
-                    onChange={(e) => handleResponseChange('section2', 'question7', e.target.value)}
-                    rows={3}
-                    readOnly={isReadOnly}
-                    className="border-blue-200 focus:border-blue-400"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    {qLabel(8, '8. Why do you have less interest in the above mentioned subjects? What challenges do you find in learning those subjects?')}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="text-blue-700 hover:text-blue-800">💬</button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {getHelpText(8, 'Explain what makes these subjects hard for you. Example: "History is difficult because I forget dates and names easily."')}
-                      </TooltipContent>
-                    </Tooltip>
-                  </label>
-                  <Textarea
-                    placeholder={getHelpText(8, 'Example: I find it hard to remember dates and names in History. The teacher explains too fast sometimes...')}
-                    value={responses.section2.question8}
-                    onChange={(e) => handleResponseChange('section2', 'question8', e.target.value)}
-                    rows={3}
-                    readOnly={isReadOnly}
-                    className="border-blue-200 focus:border-blue-400"
-                  />
-                </div>
-
-                <Button
-                  onClick={() => saveSection('section2')}
-                  disabled={savingSection === 'section2' || isReadOnly}
-                  className="w-full bg-blue-600 hover:bg-blue-700"
-                >
-                  {savingSection === 'section2' ? (
-                    <>Saving...</>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4 mr-2" />
-                      {lang === 'kn'
-                        ? 'ಭಾಗ 2 ಅನ್ನು ಉಳಿಸಿ'
-                        : lang === 'ta'
-                          ? 'பகுதி 2ஐ சேமிக்கவும்'
-                          : 'Save Section 2'}
-                    </>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {currentSection === 'section3' && (
-            <Card className="border-0 shadow-lg mb-4">
-              <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50">
-                <CardTitle className="text-xl text-purple-800">
-                  {lang === 'kn'
-                    ? 'ಭಾಗ 3: ಶೈಕ್ಷಣಿಕ ಸಾಧನೆ ಮತ್ತು ಕಲಿಕೆಯ ವಿಧಾನಗಳು'
-                    : lang === 'ta'
-                      ? 'பகுதி 3: கல்வி முன்னேற்றம் மற்றும் கற்றல் முறைகள்'
-                      : 'Section 3: Academic Performance & Learning Methods'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6 space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    {qLabel(9, '9. In which subjects do you score/get marks well?')}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="text-purple-700 hover:text-purple-800">💬</button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {getHelpText(9, 'Write subjects where you get good marks. Example: "I score well in Mathematics and Science."')}
-                      </TooltipContent>
-                    </Tooltip>
-                  </label>
-                  <Textarea
-                    placeholder={getHelpText(9, 'Example: I usually get good marks in Mathematics, Science, and English...')}
-                    value={responses.section3.question9}
-                    onChange={(e) => handleResponseChange('section3', 'question9', e.target.value)}
-                    rows={3}
-                    readOnly={isReadOnly}
-                    className="border-purple-200 focus:border-purple-400"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    {qLabel(10, '10. In which subjects do you find it challenging to achieve high scores?')}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="text-purple-700 hover:text-purple-800">💬</button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {getHelpText(10, 'Write subjects where you get low marks. Example: "I find it hard to score well in History and Hindi."')}
-                      </TooltipContent>
-                    </Tooltip>
-                  </label>
-                  <Textarea
-                    placeholder={getHelpText(10, 'Example: I find it difficult to get high marks in History and Hindi...')}
-                    value={responses.section3.question10}
-                    onChange={(e) => handleResponseChange('section3', 'question10', e.target.value)}
-                    rows={3}
-                    readOnly={isReadOnly}
-                    className="border-purple-200 focus:border-purple-400"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    {qLabel(11, '11. Which learning methodologies from the following options resonate with you the most? (Mark with ✔ that applies to you)')}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="text-purple-700 hover:text-purple-800">💬</button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {getHelpText(11, 'Check all the ways you like to learn. You can choose more than one.')}
-                      </TooltipContent>
-                    </Tooltip>
-                  </label>
-                  <div className="space-y-3">
-                    {[
-                      'visual',
-                      'reading',
-                      'listening',
-                      'experimenting',
-                      'discuss',
-                      'groupDiscussions',
-                      'writing',
-                      'readingByheart',
-                      'teaching'
-                    ].map((key) => (
-                      <div key={key} className="flex items-center space-x-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  {qLabel(11, '11. Which learning methodologies from the following options resonate with you the most? (Mark with ✔ that applies to you)')}
+                  <button
+                    type="button"
+                    aria-label="Help"
+                    className="text-purple-700 hover:text-purple-800 ml-2"
+                    onClick={() => toggleHelp('q11')}
+                  >
+                    💬
+                  </button>
+                </label>
+                {helpOpen['q11'] && (
+                  <div className="mb-2 p-3 rounded border bg-purple-50 border-purple-200 text-sm text-purple-800">
+                    {getHelpText(11, 'Check all the ways you like to learn. You can choose more than one.')}
+                  </div>
+                )}
+                <div className="space-y-3">
+                  {[
+                    'visual',
+                    'audio',
+                    'experimenting',
+                    'discuss',
+                    'groupDiscussions',
+                    'presentation',
+                    'rolePlay',
+                    'teaching'
+                  ].map((key) => {
+                    const option = getLearningMethodOption(key);
+                    return (
+                      <div key={key} className="flex items-start space-x-2">
                         <Checkbox
                           id={key}
                           checked={responses.section3.question11[key as keyof typeof responses.section3.question11] as boolean}
                           onCheckedChange={(checked) => handleLearningMethodChange(key, checked as boolean)}
                           disabled={isReadOnly}
+                          className="mt-1"
                         />
-                        <label htmlFor={key} className="text-sm text-gray-700">
-                          {getLearningMethodLabel(key)}
-                        </label>
+                        <div className="space-y-1">
+                          <label htmlFor={key} className="text-sm font-medium text-gray-700 block">
+                            {option.label}
+                          </label>
+                          <p className="text-xs text-gray-500">
+                            {option.help}
+                          </p>
+                        </div>
                       </div>
-                    ))}
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="other"
-                        checked={responses.section3.question11.other !== ''}
-                        onCheckedChange={(checked) => {
-                          if (!checked) handleLearningMethodChange('other', '');
-                        }}
-                        disabled={isReadOnly}
-                      />
-                      <label htmlFor="other" className="text-sm text-gray-700">
+                    )
+                  })}
+                  <div className="flex items-start space-x-2">
+                    <Checkbox
+                      id="other"
+                      checked={responses.section3.question11.other !== ''}
+                      onCheckedChange={(checked) => {
+                        if (checked) handleLearningMethodChange('other', ' ');
+                        else handleLearningMethodChange('other', '');
+                      }}
+                      disabled={isReadOnly}
+                      className="mt-1"
+                    />
+                    <div className="space-y-1 w-full">
+                      <label htmlFor="other" className="text-sm font-medium text-gray-700 block">
                         {lang === 'kn'
                           ? 'ಇನ್ನೊಂದು ವಿಧಾನ ಇದ್ದರೆ – ಅದರಿಂದ ನಾನು ಹೆಚ್ಚು ಚೆನ್ನಾಗಿ ಕಲಿಯುತ್ತೇನೆ (ವಿವರಿಸಿ)'
                           : lang === 'ta'
                             ? 'வேறு ஏதேனும் முறையில் நான் நன்றாக கற்றுக்கொள்கிறேன் – (அந்த முறையை எழுதுங்கள்)'
-                            : 'I learn better when - (any other method you apply)'}
+                            : '____________________________ (Any other learning method applicable to you)'}
                       </label>
+                      <p className="text-xs text-gray-500">
+                        {lang === 'kn'
+                          ? ''
+                          : lang === 'ta'
+                            ? ''
+                            : 'Mention any other learning method that suits you.'}
+                      </p>
+
+                      {responses.section3.question11.other !== '' && (
+                        <Textarea
+                          placeholder={getHelpText(11, 'Mention any other learning method that suits you...')}
+                          value={responses.section3.question11.other}
+                          onChange={(e) => handleLearningMethodChange('other', e.target.value)}
+                          rows={2}
+                          readOnly={isReadOnly}
+                          className="border-purple-200 focus:border-purple-400 mt-2"
+                        />
+                      )}
                     </div>
-                    {responses.section3.question11.other !== '' && (
-                      <Textarea
-                        placeholder={getHelpText(11, 'Write your other learning method...')}
-                        value={responses.section3.question11.other}
-                        onChange={(e) => handleLearningMethodChange('other', e.target.value)}
-                        rows={2}
-                        readOnly={isReadOnly}
-                        className="border-purple-200 focus:border-purple-400 ml-6"
-                      />
-                    )}
                   </div>
                 </div>
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    {qLabel(12, '12. Do you enjoy studying alone or in a group? Why? Write the reason.')}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="text-purple-700 hover:text-purple-800">💬</button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {getHelpText(12, 'Say if you like studying alone or with friends, and explain why. Example: "I like studying in a group because we can help each other and discuss doubts."')}
-                      </TooltipContent>
-                    </Tooltip>
-                  </label>
-                  <Textarea
-                    placeholder={getHelpText(12, 'Example: I prefer studying in a group because we can discuss and help each other understand difficult topics...')}
-                    value={responses.section3.question12}
-                    onChange={(e) => handleResponseChange('section3', 'question12', e.target.value)}
-                    rows={3}
-                    readOnly={isReadOnly}
-                    className="border-purple-200 focus:border-purple-400"
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  {qLabel(12, '12. Do you prefer to learn alone or in a group? Why? Write the reason.')}
+                  <button
+                    type="button"
+                    aria-label="Help"
+                    className="text-purple-700 hover:text-purple-800 ml-2"
+                    onClick={() => toggleHelp('q12')}
+                  >
+                    💬
+                  </button>
+                </label>
+                {helpOpen['q12'] && (
+                  <div className="mb-2 p-3 rounded border bg-purple-50 border-purple-200 text-sm text-purple-800">
+                    {getHelpText(12, 'Select your preferred learning method and write the reason.')}
+                  </div>
+                )}
+                <Textarea
+                  placeholder={getHelpText(12, 'Select your preferred learning method and write the reason.')}
+                  value={responses.section3.question12}
+                  onChange={(e) => handleResponseChange('section3', 'question12', e.target.value)}
+                  rows={3}
+                  readOnly={isReadOnly}
+                  className="border-purple-200 focus:border-purple-400"
+                />
+              </div>
 
-                <Button
-                  onClick={() => saveSection('section3')}
-                  disabled={savingSection === 'section3' || isReadOnly}
-                  className="w-full bg-purple-600 hover:bg-purple-700"
-                >
-                  {savingSection === 'section3' ? (
-                    <>Saving...</>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4 mr-2" />
-                      {lang === 'kn'
-                        ? 'ಭಾಗ 3 ಅನ್ನು ಉಳಿಸಿ'
-                        : lang === 'ta'
-                          ? 'பகுதி 3ஐ சேமிக்கவும்'
-                          : 'Save Section 3'}
-                    </>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-          )}
+            </CardContent>
+          </Card>
+        )}
 
-          {currentSection === 'section4' && (
-            <Card className="border-0 shadow-lg mb-4">
-              <CardHeader className="bg-gradient-to-r from-orange-50 to-red-50">
-                <CardTitle className="text-xl text-orange-800">
+        {currentSection === 'section4' && (
+          <Card className="border-0 shadow-lg mb-4">
+            <CardHeader className="bg-gradient-to-r from-orange-50 to-red-50">
+              <CardTitle className="text-xl text-orange-800">
+                {lang === 'kn'
+                  ? 'ಭಾಗ 4: ಶಾಲೆಯ ಸಂಬಂಧಗಳು ಮತ್ತು ಅನುಭವಗಳು'
+                  : lang === 'ta'
+                    ? 'பகுதி 4: பள்ளியில் உள்ள உறவுகள் மற்றும் அனுபவங்கள்'
+                    : 'Section 4: School Relationships & Experiences'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  {qLabel(13, '13. Do you learn from your friends in school? List some of the things you have recently learned from friends at school.')}
+                  <button
+                    type="button"
+                    aria-label="Help"
+                    className="text-orange-700 hover:text-orange-800 ml-2"
+                    onClick={() => toggleHelp('q13')}
+                  >
+                    💬
+                  </button>
+                </label>
+                {helpOpen['q13'] && (
+                  <div className="mb-2 p-3 rounded border bg-orange-50 border-orange-200 text-sm text-orange-800">
+                    {getHelpText(13, 'Recall and list what you learned from your friends.')}
+                  </div>
+                )}
+
+                <Textarea
+                  placeholder={getHelpText(13, 'Recall and list what you learned from your friends.')}
+                  value={responses.section4.question13}
+                  onChange={(e) => handleResponseChange('section4', 'question13', e.target.value)}
+                  rows={3}
+                  readOnly={isReadOnly}
+                  className="border-orange-200 focus:border-orange-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  {qLabel(14, '14. Apart from textbook subjects, what aspects attract you to school?')}
+                  <button
+                    type="button"
+                    aria-label="Help"
+                    className="text-orange-700 hover:text-orange-800 ml-2"
+                    onClick={() => toggleHelp('q14')}
+                  >
+                    💬
+                  </button>
+                </label>
+                {helpOpen['q14'] && (
+                  <div className="mb-2 p-3 rounded border bg-orange-50 border-orange-200 text-sm text-orange-800">
+                    {getHelpText(14, 'Write the other activities or aspects that make school appealing.')}
+                  </div>
+                )}
+                <Textarea
+                  placeholder={getHelpText(14, 'Write the other activities or aspects that make school appealing.')}
+                  value={responses.section4.question14}
+                  onChange={(e) => handleResponseChange('section4', 'question14', e.target.value)}
+                  rows={3}
+                  readOnly={isReadOnly}
+                  className="border-orange-200 focus:border-orange-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  {qLabel(15, '15. Who are your two favourite teachers and why? How have these two teachers influenced you?')}
+                  <button
+                    type="button"
+                    aria-label="Help"
+                    className="text-orange-700 hover:text-orange-800 ml-2"
+                    onClick={() => toggleHelp('q15')}
+                  >
+                    💬
+                  </button>
+                </label>
+                {helpOpen['q15'] && (
+                  <div className="mb-2 p-3 rounded border bg-orange-50 border-orange-200 text-sm text-orange-800">
+                    {getHelpText(15, 'Write about your favourite teachers and how they influenced you.')}
+                  </div>
+                )}
+                <Textarea
+                  placeholder={getHelpText(15, 'Write about your favourite teachers and how they influenced you.')}
+                  value={responses.section4.question15}
+                  onChange={(e) => handleResponseChange('section4', 'question15', e.target.value)}
+                  rows={3}
+                  readOnly={isReadOnly}
+                  className="border-orange-200 focus:border-orange-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  {qLabel(16, '16. Is there any specific incident or experience in school that gave you a great sense of success or satisfaction? What is it?')}
+                  <button
+                    type="button"
+                    aria-label="Help"
+                    className="text-orange-700 hover:text-orange-800 ml-2"
+                    onClick={() => toggleHelp('q16')}
+                  >
+                    💬
+                  </button>
+                </label>
+                {helpOpen['q16'] && (
+                  <div className="mb-2 p-3 rounded border bg-orange-50 border-orange-200 text-sm text-orange-800">
+                    {getHelpText(16, 'Write about a school incident that made you feel successful or satisfied.')}
+                  </div>
+                )}
+                <Textarea
+                  placeholder={getHelpText(16, 'Write about a school incident that made you feel successful or satisfied.')}
+                  value={responses.section4.question16}
+                  onChange={(e) => handleResponseChange('section4', 'question16', e.target.value)}
+                  rows={3}
+                  readOnly={isReadOnly}
+                  className="border-orange-200 focus:border-orange-400"
+                />
+              </div>
+
+            </CardContent>
+          </Card>
+        )}
+
+        {currentSection === 'section5' && (
+          <Card className="border-0 shadow-lg mb-4">
+            <CardHeader className="bg-gradient-to-r from-teal-50 to-cyan-50">
+              <CardTitle className="text-xl text-teal-800">
+                {lang === 'kn'
+                  ? 'ಭಾಗ 5: ಭವಿಷ್ಯ ಮತ್ತು ಚಿಂತನೆ'
+                  : lang === 'ta'
+                    ? 'பகுதி 5: எதிர்காலம் மற்றும் சிந்தனை'
+                    : 'Section 5: Future & Reflection'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  {qLabel(17, '17. How do the things you learned in school help you achieve your dreams and expectations?')}
+                  <button
+                    type="button"
+                    aria-label="Help"
+                    className="text-teal-700 hover:text-teal-800 ml-2"
+                    onClick={() => toggleHelp('q17')}
+                  >
+                    💬
+                  </button>
+                </label>
+                {helpOpen['q17'] && (
+                  <div className="mb-2 p-3 rounded border bg-teal-50 border-teal-200 text-sm text-teal-800">
+                    {getHelpText(17, 'Relate what you learned in school to your dreams and goals.')}
+                  </div>
+                )}
+                <Textarea
+                  placeholder={getHelpText(17, 'Relate what you learned in school to your dreams and goals.')}
+                  value={responses.section5.question17}
+                  onChange={(e) => handleResponseChange('section5', 'question17', e.target.value)}
+                  rows={3}
+                  readOnly={isReadOnly}
+                  className="border-teal-200 focus:border-teal-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  {qLabel(18, '18. What are the things you want to be changed in your school? What is the reason for that?')}
+                  <button
+                    type="button"
+                    aria-label="Help"
+                    className="text-teal-700 hover:text-teal-800 ml-2"
+                    onClick={() => toggleHelp('q18')}
+                  >
+                    💬
+                  </button>
+                </label>
+                {helpOpen['q18'] && (
+                  <div className="mb-2 p-3 rounded border bg-teal-50 border-teal-200 text-sm text-teal-800">
+                    {getHelpText(18, 'Write the changes you want and the reasons for them.')}
+                  </div>
+                )}
+                <Textarea
+                  placeholder={getHelpText(18, 'Write the changes you want and the reasons for them.')}
+                  value={responses.section5.question18}
+                  onChange={(e) => handleResponseChange('section5', 'question18', e.target.value)}
+                  rows={3}
+                  readOnly={isReadOnly}
+                  className="border-teal-200 focus:border-teal-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  {qLabel(19, '19. Do you have any special place to express yourself? Why is it necessary?')}
+                  <button
+                    type="button"
+                    aria-label="Help"
+                    className="text-teal-700 hover:text-teal-800 ml-2"
+                    onClick={() => toggleHelp('q19')}
+                  >
+                    💬
+                  </button>
+                </label>
+                {helpOpen['q19'] && (
+                  <div className="mb-2 p-3 rounded border bg-teal-50 border-teal-200 text-sm text-teal-800">
+                    {getHelpText(19, 'Write about a place where you express yourself and why it is necessary.')}
+                  </div>
+                )}
+                <Textarea
+                  placeholder={getHelpText(19, 'Write about a place where you express yourself and why it is necessary.')}
+                  value={responses.section5.question19}
+                  onChange={(e) => handleResponseChange('section5', 'question19', e.target.value)}
+                  rows={3}
+                  readOnly={isReadOnly}
+                  className="border-teal-200 focus:border-teal-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  {qLabel(20, '20. Does the school play an important role in your life related to learning? Write your opinion.')}
+                  <button
+                    type="button"
+                    aria-label="Help"
+                    className="text-teal-700 hover:text-teal-800 ml-2"
+                    onClick={() => toggleHelp('q20')}
+                  >
+                    💬
+                  </button>
+                </label>
+                {helpOpen['q20'] && (
+                  <div className="mb-2 p-3 rounded border bg-teal-50 border-teal-200 text-sm text-teal-800">
+                    {getHelpText(20, 'Write your opinion about the role of school in your learning.')}
+                  </div>
+                )}
+                <Textarea
+                  placeholder={getHelpText(20, 'Write your opinion about the role of school in your learning.')}
+                  value={responses.section5.question20}
+                  onChange={(e) => handleResponseChange('section5', 'question20', e.target.value)}
+                  rows={3}
+                  readOnly={isReadOnly}
+                  className="border-teal-200 focus:border-teal-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  {qLabel(21, '21. Do you like to discuss school activities and learning with your parents? What topics do you discuss with them?')}
+                  <button
+                    type="button"
+                    aria-label="Help"
+                    className="text-teal-700 hover:text-teal-800 ml-2"
+                    onClick={() => toggleHelp('q21')}
+                  >
+                    💬
+                  </button>
+                </label>
+                {helpOpen['q21'] && (
+                  <div className="mb-2 p-3 rounded border bg-teal-50 border-teal-200 text-sm text-teal-800">
+                    {getHelpText(21, 'Write the school-related topics you discuss with your parents.')}
+                  </div>
+                )}
+                <Textarea
+                  placeholder={getHelpText(21, 'Write the school-related topics you discuss with your parents.')}
+                  value={responses.section5.question21}
+                  onChange={(e) => handleResponseChange('section5', 'question21', e.target.value)}
+                  rows={3}
+                  readOnly={isReadOnly}
+                  className="border-teal-200 focus:border-teal-400"
+                />
+              </div>
+
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Unified Navigation Footer */}
+        <div className="flex flex-col-reverse sm:flex-row justify-between items-center mt-8 gap-4 sm:gap-0">
+          <Button
+            variant="outline"
+            onClick={() => {
+              const currentIndex = sectionOrder.indexOf(currentSection);
+              if (currentIndex > 0) {
+                setCurrentSection(sectionOrder[currentIndex - 1]);
+                window.scrollTo(0, 0);
+              }
+            }}
+            disabled={sectionOrder.indexOf(currentSection) === 0}
+            className="w-full sm:w-auto border-green-200 text-green-700 hover:bg-green-50"
+          >
+            {lang === 'kn'
+              ? 'ಹಿಂದಿನ ಭಾಗ'
+              : lang === 'ta'
+                ? 'முந்தைய பகுதி'
+                : 'Previous Section'}
+          </Button>
+
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <Button
+              variant="outline"
+              onClick={() => saveSection(currentSection)}
+              disabled={!!savingSection || isReadOnly}
+              className="w-full sm:w-auto border-green-200 text-green-700 hover:bg-green-50"
+            >
+              {savingSection === currentSection ? (
+                <>Saving...</>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
                   {lang === 'kn'
-                    ? 'ಭಾಗ 4: ಶಾಲೆಯ ಸಂಬಂಧಗಳು ಮತ್ತು ಅನುಭವಗಳು'
+                    ? 'ಪ್ರಗತಿಯನ್ನು ಉಳಿಸಿ'
                     : lang === 'ta'
-                      ? 'பகுதி 4: பள்ளியில் உள்ள உறவுகள் மற்றும் அனுபவங்கள்'
-                      : 'Section 4: School Relationships & Experiences'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6 space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    {qLabel(13, '13. Do you learn from your friends in school? Can you list a few things that you learnt from your friends in school recently.')}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="text-orange-700 hover:text-orange-800">💬</button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {getHelpText(13, 'Write what you learned from friends. Example: "My friend taught me how to solve math problems and play cricket."')}
-                      </TooltipContent>
-                    </Tooltip>
-                  </label>
-                  <Textarea
-                    placeholder={getHelpText(13, 'Example: Yes, my friend Ravi taught me how to solve difficult math problems. Another friend showed me how to play cricket...')}
-                    value={responses.section4.question13}
-                    onChange={(e) => handleResponseChange('section4', 'question13', e.target.value)}
-                    rows={3}
-                    readOnly={isReadOnly}
-                    className="border-orange-200 focus:border-orange-400"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    {qLabel(14, '14. Besides academics, what aspects of school do you enjoy the most?')}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="text-orange-700 hover:text-orange-800">💬</button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {getHelpText(14, 'Write about non-study activities you like. Example: "I enjoy sports day, annual day celebrations, and playing with friends during break time."')}
-                      </TooltipContent>
-                    </Tooltip>
-                  </label>
-                  <Textarea
-                    placeholder={getHelpText(14, 'Example: I enjoy sports day, annual day celebrations, playing games during break time, and participating in cultural events...')}
-                    value={responses.section4.question14}
-                    onChange={(e) => handleResponseChange('section4', 'question14', e.target.value)}
-                    rows={3}
-                    readOnly={isReadOnly}
-                    className="border-orange-200 focus:border-orange-400"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    {qLabel(15, '15. Who is your favourite teacher and why? How has this teacher influenced you?')}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="text-orange-700 hover:text-orange-800">💬</button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {getHelpText(15, 'Write about a teacher you like and how they helped you. Example: "My Science teacher is my favorite because she explains clearly and encourages me to ask questions."')}
-                      </TooltipContent>
-                    </Tooltip>
-                  </label>
-                  <Textarea
-                    placeholder={getHelpText(15, 'Example: My Mathematics teacher is my favorite because she explains clearly, is patient, and always encourages me to do better...')}
-                    value={responses.section4.question15}
-                    onChange={(e) => handleResponseChange('section4', 'question15', e.target.value)}
-                    rows={3}
-                    readOnly={isReadOnly}
-                    className="border-orange-200 focus:border-orange-400"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    {qLabel(16, '16. Was there a specific instance in school that made you feel very successful or proud? What was it?')}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="text-orange-700 hover:text-orange-800">💬</button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {getHelpText(16, 'Write about a time you felt proud or successful. Example: "I felt proud when I won first prize in the science exhibition."')}
-                      </TooltipContent>
-                    </Tooltip>
-                  </label>
-                  <Textarea
-                    placeholder={getHelpText(16, 'Example: I felt very proud when I won first prize in the science exhibition. The teacher praised my project...')}
-                    value={responses.section4.question16}
-                    onChange={(e) => handleResponseChange('section4', 'question16', e.target.value)}
-                    rows={3}
-                    readOnly={isReadOnly}
-                    className="border-orange-200 focus:border-orange-400"
-                  />
-                </div>
-
-                <Button
-                  onClick={() => saveSection('section4')}
-                  disabled={savingSection === 'section4' || isReadOnly}
-                  className="w-full bg-orange-600 hover:bg-orange-700"
-                >
-                  {savingSection === 'section4' ? (
-                    <>Saving...</>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4 mr-2" />
-                      {lang === 'kn'
-                        ? 'ಭಾಗ 4 ಅನ್ನು ಉಳಿಸಿ'
-                        : lang === 'ta'
-                          ? 'பகுதி 4ஐ சேமிக்கவும்'
-                          : 'Save Section 4'}
-                    </>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {currentSection === 'section5' && (
-            <Card className="border-0 shadow-lg mb-4">
-              <CardHeader className="bg-gradient-to-r from-teal-50 to-cyan-50">
-                <CardTitle className="text-xl text-teal-800">
-                  {lang === 'kn'
-                    ? 'ಭಾಗ 5: ಭವಿಷ್ಯ ಮತ್ತು ಚಿಂತನೆ'
-                    : lang === 'ta'
-                      ? 'பகுதி 5: எதிர்காலம் மற்றும் சிந்தனை'
-                      : 'Section 5: Future & Reflection'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6 space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    {qLabel(17, '17. How will the things you learned in school help you achieve your dreams and aspirations? Explain.')}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="text-teal-700 hover:text-teal-800">💬</button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {getHelpText(17, 'Explain how school learning connects to your future goals. Example: "Learning Science will help me become a doctor, which is my dream."')}
-                      </TooltipContent>
-                    </Tooltip>
-                  </label>
-                  <Textarea
-                    placeholder={getHelpText(17, 'Example: Learning Mathematics and Science will help me become an engineer. English will help me communicate better...')}
-                    value={responses.section5.question17}
-                    onChange={(e) => handleResponseChange('section5', 'question17', e.target.value)}
-                    rows={3}
-                    readOnly={isReadOnly}
-                    className="border-teal-200 focus:border-teal-400"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    {qLabel(18, '18. What is the one thing you would like to change in your school? Give reasons.')}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="text-teal-700 hover:text-teal-800">💬</button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {getHelpText(18, 'Write what you wish could be better. Example: "I wish we had a bigger library with more books to read."')}
-                      </TooltipContent>
-                    </Tooltip>
-                  </label>
-                  <Textarea
-                    placeholder={getHelpText(18, 'Example: I would like to have a bigger playground and more sports equipment so we can play better...')}
-                    value={responses.section5.question18}
-                    onChange={(e) => handleResponseChange('section5', 'question18', e.target.value)}
-                    rows={3}
-                    readOnly={isReadOnly}
-                    className="border-teal-200 focus:border-teal-400"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    {qLabel(19, '19. Do you have a separate place to practice? Explain why it is necessary.')}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="text-teal-700 hover:text-teal-800">💬</button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {getHelpText(19, 'Write about where you study at home and why it\'s important. Example: "I have a small table in my room where I study. It\'s quiet and helps me focus."')}
-                      </TooltipContent>
-                    </Tooltip>
-                  </label>
-                  <Textarea
-                    placeholder={getHelpText(19, 'Example: Yes, I have a small study table in my room. It\'s necessary because it\'s quiet and I can focus better there...')}
-                    value={responses.section5.question19}
-                    onChange={(e) => handleResponseChange('section5', 'question19', e.target.value)}
-                    rows={3}
-                    readOnly={isReadOnly}
-                    className="border-teal-200 focus:border-teal-400"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    {qLabel(20, "20. Does school play an important role in your life's learning process? Write your opinion.")}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="text-teal-700 hover:text-teal-800">💬</button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {getHelpText(20, 'Say if school is important for you and why. Example: "Yes, school is very important because I learn new things every day and teachers guide me."')}
-                      </TooltipContent>
-                    </Tooltip>
-                  </label>
-                  <Textarea
-                    placeholder={getHelpText(20, 'Example: Yes, school is very important for me because I learn new things, meet friends, and teachers help me understand difficult topics...')}
-                    value={responses.section5.question20}
-                    onChange={(e) => handleResponseChange('section5', 'question20', e.target.value)}
-                    rows={3}
-                    readOnly={isReadOnly}
-                    className="border-teal-200 focus:border-teal-400"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    {qLabel(21, '21. Do you like talking to your parents about school activities and your learnings? What topics do you discuss with them?')}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="text-teal-700 hover:text-teal-800">💬</button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {getHelpText(21, 'Write if you talk to parents about school and what you discuss. Example: "Yes, I tell my parents about my test results, friends, and what I learned in class."')}
-                      </TooltipContent>
-                    </Tooltip>
-                  </label>
-                  <Textarea
-                    placeholder={getHelpText(21, 'Example: Yes, I like talking to my parents about school. I tell them about my test results, friends, and what I learned in class...')}
-                    value={responses.section5.question21}
-                    onChange={(e) => handleResponseChange('section5', 'question21', e.target.value)}
-                    rows={3}
-                    readOnly={isReadOnly}
-                    className="border-teal-200 focus:border-teal-400"
-                  />
-                </div>
-
-                <Button
-                  onClick={() => saveSection('section5')}
-                  disabled={savingSection === 'section5' || isReadOnly}
-                  className="w-full bg-teal-600 hover:bg-teal-700"
-                >
-                  {savingSection === 'section5' ? (
-                    <>Saving...</>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4 mr-2" />
-                      {lang === 'kn'
-                        ? 'ಭಾಗ 5ವನ್ನು ಉಳಿಸಿ'
-                        : lang === 'ta'
-                          ? 'பகுதி 5ஐ சேமிக்கவும்'
-                          : 'Save Section 5'}
-                    </>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {currentSection === 'section5' && (
-            <div className="flex flex-col items-end gap-2 mt-6">
-              {!canSubmit() && (
-                <p className="text-sm text-gray-600">
-                  Please complete all sections before submitting.
-                </p>
+                      ? 'முன்னேற்றத்தைச் சேமி'
+                      : 'Save Progress'}
+                </>
               )}
+            </Button>
+
+            {sectionOrder.indexOf(currentSection) < sectionOrder.length - 1 ? (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const currentIndex = sectionOrder.indexOf(currentSection);
+                  if (currentIndex < sectionOrder.length - 1) {
+                    setCurrentSection(sectionOrder[currentIndex + 1]);
+                    window.scrollTo(0, 0);
+                  }
+                }}
+                className="w-full sm:w-auto border-green-200 text-green-700 hover:bg-green-50"
+              >
+                {lang === 'kn'
+                  ? 'ಮುಂದಿನ ಭಾಗ'
+                  : lang === 'ta'
+                    ? 'அடுத்த பகுதி'
+                    : 'Next Section'}
+              </Button>
+            ) : (
               <Button
                 onClick={submitAssessment}
                 disabled={!canSubmit() || submitting || isReadOnly}
-                className={`${canSubmit() && !submitting && !isReadOnly
-                    ? 'bg-green-600 hover:bg-green-700'
-                    : 'bg-gray-400 cursor-not-allowed'
-                  }`}
+                className="w-full sm:w-auto bg-green-600 hover:bg-green-700"
               >
                 {submitting ? (
                   <>
@@ -1633,12 +1719,13 @@ export default function MySchoolLearningAssessment() {
                   </>
                 )}
               </Button>
-            </div>
-          )}
-        </TooltipProvider>
-      </div>
+            )}
+          </div>
+        </div>
+
+      </div >
       <KannadaKeyboard lang={lang} />
-    </div>
+    </div >
   );
 }
 

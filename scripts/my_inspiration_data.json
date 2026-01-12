@@ -1,0 +1,178 @@
+[
+  {
+    "unnamed:_0": NaN,
+    "unnamed:_1": "Module Title",
+    "kannada": "ನನ್ನ ಪ್ರೇರಣೆ",
+    "tamil": "என் உத்வேகம்",
+    "english": "My inspiration",
+    "unnamed:_5": NaN
+  },
+  {
+    "unnamed:_0": NaN,
+    "unnamed:_1": "Title Text",
+    "kannada": NaN,
+    "tamil": NaN,
+    "english": NaN,
+    "unnamed:_5": NaN
+  },
+  {
+    "unnamed:_0": NaN,
+    "unnamed:_1": "SubTitle Text",
+    "kannada": NaN,
+    "tamil": NaN,
+    "english": NaN,
+    "unnamed:_5": NaN
+  },
+  {
+    "unnamed:_0": NaN,
+    "unnamed:_1": NaN,
+    "kannada": NaN,
+    "tamil": NaN,
+    "english": NaN,
+    "unnamed:_5": NaN
+  },
+  {
+    "unnamed:_0": "Sno",
+    "unnamed:_1": "Kannada Question",
+    "kannada": "Tamil Question",
+    "tamil": "Tamil Help Text",
+    "english": "English Question",
+    "unnamed:_5": "English Help Text"
+  },
+  {
+    "unnamed:_0": 1,
+    "unnamed:_1": "ಈ ವೀಡಿಯೋ / ಆಡಿಯೋದಲ್ಲಿ ನಿಮಗೆ ಹೆಚ್ಚು ಇಷ್ಟವಾದ / ಪ್ರೇರಣಾದಾಯಕ ಅಂಶಗಳು ಯಾವುವು?",
+    "kannada": "இந்த வீடியோ/ஆடியோவில் உங்களுக்கு மிகவும் பிடித்த பகுதி அல்லது உத்வேகத்தை அளித்தது எது?",
+    "tamil": "இந்த வீடியோ/ஆடியோவில் எந்த பகுதி உங்களை அதிகம் ஊக்கமளித்தது?",
+    "english": "Which parts of this video/audio did you like the most or find inspiring?",
+    "unnamed:_5": "Which part of the video/audio inspired you most?"
+  },
+  {
+    "unnamed:_0": 2,
+    "unnamed:_1": "ಈ ವೀಡಿಯೋ/ಆಡಿಯೋದಲ್ಲಿ ನಿಮಗೆ ಯಾರ ನಡೆ-ನುಡಿಗೆ ಹೆಚ್ಚು ಇಷ್ಟವಾಯಿತು?",
+    "kannada": "இந்த வீடியோ/ஆடியோவில் உங்களுக்கு யாருடைய செயல் அல்லது பேசும் விதம் மிகவும் பிடித்தது? ?",
+    "tamil": "யாருடைய செயல் உங்களுக்கு மிகவும் பிடித்தது?",
+    "english": "Whose behavior or way of speaking did you like the most in this video/audio?",
+    "unnamed:_5": "Whose behavior or speech did you like most?"
+  },
+  {
+    "unnamed:_0": 3,
+    "unnamed:_1": "ಅಚರ್ಯರಲ್ಲಿ ನಿಮಗೆ ಗೊತ್ತಾದ ಗುಣಗಳು ಯಾವುವು?",
+    "kannada": "பயிற்சியாளரின் எந்த பண்புகளை நீங்கள் கவனித்தீர்கள்?",
+    "tamil": "பயிற்சியாளருக்கு என்னென்ன குணங்கள் உள்ளன?",
+    "english": "Which qualities did you notice in the Trainer?",
+    "unnamed:_5": "What qualities does the Trainer have?"
+  },
+  {
+    "unnamed:_0": 4,
+    "unnamed:_1": "ಅಧ್ಯಾಪಕನಲ್ಲಿ ಯಾವ ಅಂಶ ನಿಮಗೆ ಜೀವನದಲ್ಲಿ ಉತ್ತಮ ಬದಲಾವಣೆ ತರಲಿದೆ?",
+    "kannada": "பயிற்சியாளரின் எந்த குணம்/பண்பு உங்கள் வாழ்க்கையில் நல்ல மாற்றத்தை கொண்டுவரும்?",
+    "tamil": "பயிற்சியாளரின் எந்த குணம் உங்களுக்கு உதவும்?",
+    "english": "Which quality/Character of the Trainer will help bring a positive change in your life?",
+    "unnamed:_5": "Which Trainer quality can help you?"
+  },
+  {
+    "unnamed:_0": 5,
+    "unnamed:_1": "ಯಾಚಿ ಪಾತ್ರ ನಿಮಗೆ ಹೆಚ್ಚು ನೋವು/ದುಃಖಕರವಾಗಿ ಕಂಡುದು ಎಂದು ನೀವು ಅನುಭವಿಸಿದರೆ, ಅದಕ್ಕೆ ಕಾರಣವೇನು ಎಂದು ತಿಳಿಸಬಹುದೇ?",
+    "kannada": "கதையில் உள்ள கதாபாத்திரம் சோகமாக அல்லது வேதனைப்படுவது போல உங்களுக்கு தோன்றினால், அதற்கான காரணத்தை எழுத முடியுமா?",
+    "tamil": "அந்த கதாபாத்திரம் ஏன் வருத்தமாக இருந்தது?",
+    "english": "If you felt the character in the story was sad/upset, can you explain the reason for it?",
+    "unnamed:_5": "Why was the character sad?"
+  },
+  {
+    "unnamed:_0": 6,
+    "unnamed:_1": "ನೀವು ನಿಜ ಜೀವನದಲ್ಲಿ ಕಥಾಪಾತ್ರದಂತೆಯೇ ಯಾರಿಗಾದರೂ ಸಹಾಯ ಮಾಡಿದಿರಾ? ಆ ಅನುಭವವನ್ನು ಸಂಕ್ಷಿಪ್ತವಾಗಿ ವಿವರಿಸಿ ಮತ್ತು ಚಿಂತಿಸಿ.",
+    "kannada": "கதையில் உள்ள கதாபாத்திரம் போல நீங்கள் உண்மையான வாழ்க்கையில் யாருக்காவது உதவியிருக்கிறீர்களா? அந்த அனுபவத்தை சுருக்கமாக விவரித்து, அதைப் பற்றிச் சிந்தியுங்கள்",
+    "tamil": "நீங்கள் அந்த கதாபாத்திரம் போல யாருக்காவது  உதவியுள்ளீர்களா?",
+    "english": "Have you ever helped someone in real life like the character in the story? Briefly describe and reflect on that experience",
+    "unnamed:_5": "Did you help someone like the character?"
+  },
+  {
+    "unnamed:_0": 7,
+    "unnamed:_1": "ನೀವು ಆ ಪಾತ್ರಧಾರಿಯಾದರೆ ಏನು ಮಾಡುತ್ತಿರೀರಿ?",
+    "kannada": "நீங்கள் அந்த கதாபாத்திரமாக இருந்தால், நீங்கள் என்ன செய்வீர்கள்?",
+    "tamil": "நீங்கள் அந்த கதாபாத்திரமாக இருந்தால் என்ன செய்வீர்கள்?",
+    "english": "If you were that character, what would you do?",
+    "unnamed:_5": "What would you do as the character?"
+  },
+  {
+    "unnamed:_0": 8,
+    "unnamed:_1": "ಈ ವೀಡಿಯೋ/ಆಡಿಯೋದಲ್ಲಿ ನೀವು ನೋಡಿದ ಪಾತ್ರ ನಿಮಗೆ ಪ್ರೇರಣೆಯಾಗಿದೆಯೇ? ಆ ವ್ಯಕ್ತಿಯು ನಿಮಗೆ ಪ್ರೇರಣೆಯಾದ ಅಂಶವನ್ನು ಬರೆಯಿರಿ",
+    "kannada": "இந்த வீடியோ/ஆடியோவில் ஏதாவது கதாபாத்திரம் உங்களை ஊக்கமளித்ததா? அந்த மனிதர் உங்களை ஊக்கமளிப்பவர் என்பதை விளக்கும் காரணத்தை எழுதுங்கள்.",
+    "tamil": "எந்த கதாபாத்திரம் உங்களை ஊக்கமளித்தது? ஏன்?",
+    "english": "In this video/audio, did any character inspire you? Write down what makes that person an inspiration to you",
+    "unnamed:_5": "Did any character inspire you? Why?"
+  },
+  {
+    "unnamed:_0": 9,
+    "unnamed:_1": "ಆ ಪಾತ್ರದಿಂದ ನೀವು ಯಾವ ಅಂಶವನ್ನು ನಿಜ ಜೀವನದಲ್ಲಿ ಅನುಸರಿಸಲು ಬಯಸುತ್ತೀರಿ?",
+    "kannada": "அந்த கதாபாத்திரத்தின் எந்த குணத்தை நீங்கள் உண்மையான வாழ்க்கையில் பின்பற்ற விரும்புகிறீர்கள்?",
+    "tamil": "நீங்கள் எந்த குணத்தை பின்பற்ற விரும்புகிறீர்கள்?",
+    "english": "9.Which quality of that character would you like to follow in real life?",
+    "unnamed:_5": "Which quality will you follow?"
+  },
+  {
+    "unnamed:_0": 10,
+    "unnamed:_1": "ನೀವು ಗಮನಿಸಿದ್ದ ಪಾತ್ರದಿಂದ ಇನ್ನೇನಾದರೂ ಹೆಚ್ಚು ಇಷ್ಟವಾದ ಅಂಶವಿದ್ದರೆ, ಅದನ್ನು ಬರೆಯಿರಿ.",
+    "kannada": "கதாபாத்திரத்தின் வேறு ஏதாவது குணம் உங்களுக்கு பிடித்திருந்தால், அதை எழுதுங்கள்",
+    "tamil": "கதாபாத்திரத்தின் மற்றொரு பிடித்த குணத்தை எழுதுங்கள்.",
+    "english": "10.If there is any other quality of the character you liked more, write it down.",
+    "unnamed:_5": "Write any other quality of the character you liked."
+  },
+  {
+    "unnamed:_0": NaN,
+    "unnamed:_1": NaN,
+    "kannada": NaN,
+    "tamil": NaN,
+    "english": NaN,
+    "unnamed:_5": NaN
+  },
+  {
+    "unnamed:_0": "Summary",
+    "unnamed:_1": NaN,
+    "kannada": NaN,
+    "tamil": NaN,
+    "english": NaN,
+    "unnamed:_5": NaN
+  },
+  {
+    "unnamed:_0": "SNo",
+    "unnamed:_1": "Kannada",
+    "kannada": "Tamil ",
+    "tamil": "English",
+    "english": NaN,
+    "unnamed:_5": NaN
+  },
+  {
+    "unnamed:_0": NaN,
+    "unnamed:_1": "ಸಾರಾಂಶ: ನಾನು ಪ್ರೇರಣೆ ಪಡೆದ ಅಂಶವೇ…",
+    "kannada": "சுருக்கம்: எனக்கு ஊக்கம் அளித்தது…",
+    "tamil": "Summary: What inspired me to…",
+    "english": NaN,
+    "unnamed:_5": NaN
+  },
+  {
+    "unnamed:_0": 1,
+    "unnamed:_1": "ಈ ಎಲ್ಲ ವಿಡಿಯೋವನ್ನು ನೋಡಿದಾಗ ನಿಮ್ಮ ಅನುಭವದಿಂದ ನೀವು ಪ್ರೇರಣೆ ಪಡೆದ ಅಂಶವನ್ನು ಪಟ್ಟಿಮಾಡಿ",
+    "kannada": "இந்த அனைத்து வீடியோக்களையும் பார்த்த பிறகு, உங்கள் அனுபவத்தில் உங்களை ஊக்கமளித்த முக்கியமானவற்றை பட்டியலிடுங்கள்",
+    "tamil": "After watching all these videos, list the points that inspired you from your experience",
+    "english": NaN,
+    "unnamed:_5": NaN
+  },
+  {
+    "unnamed:_0": 2,
+    "unnamed:_1": "ಈ ಎಲ್ಲ ವಿಡಿಯೋಗಳನ್ನು ನೋಡಿದಾಗ ನೀವು ಅನುಭವಿಸಿದ—ನಿಜ ಜೀವನದಲ್ಲಿ ಇರದಿದ್ದರೆ ನೀವು ಮಾಡಬೇಕಾದ ನಡವಳಿಕೆ ಯಾವುದು? ಅದನ್ನು ಬರೆಯಿರಿ",
+    "kannada": "இந்த வீடியோக்களை பார்த்த பிறகு, நீங்கள் தவிர்க்க வேண்டும் என்று நினைக்கும் செயல் என்ன? எழுதுங்கள்.",
+    "tamil": "After watching these videos, which behavior do you think you should avoid? Write it down.",
+    "english": NaN,
+    "unnamed:_5": NaN
+  },
+  {
+    "unnamed:_0": 3,
+    "unnamed:_1": "3.ನಿಮ್ಮ ಗೆಳೆಯರೊಂದಿಗೆ, ಈ ವಿಡಿಯೋದಲ್ಲಿ ನಿಮಗೆ ಪ್ರೇರಣೆ ನೀಡಿದ ಪಾತ್ರ ಮತ್ತು ಅದು ನಿಮ್ಮ ನಿಜ ಜೀವನದಲ್ಲಿ ಯಾರಿಗೆ ಪ್ರೇರಣೆಯಾದದ್ದೋ ಆ ವ್ಯಕ್ತಿಯ ಬಗ್ಗೆ ಚರ್ಚಿಸಿ. ಆ ಚರ್ಚೆಯ ಸಾರಾಂಶವನ್ನು ಬರೆಯಿರಿ.",
+    "kannada": NaN,
+    "tamil": "Discuss with your friend about the character in this video that inspired you and a person in real life who has inspired you. Write a summary of your discussion.",
+    "english": NaN,
+    "unnamed:_5": NaN
+  }
+]

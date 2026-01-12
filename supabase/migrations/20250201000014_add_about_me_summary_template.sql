@@ -5,17 +5,61 @@
 INSERT INTO assessment_summary_templates (assessment_type, title, summary_questions) VALUES
 ('about_me', 'Summary: About Me', 
  '{
-   "en": {
-     "question1": "Create a comprehensive summary table based on the student''s responses, organizing their answers into these 15 categories: 1) The friend in my family, 2) My friend outside of my family, 3) What activities am I doing at home?, 4) Activities/aspects I Enjoy during the school hours, 5) Activities/aspects I enjoy outside of the school, 6) Work/activities I enjoy personally, 7) Work/activities I enjoy as a team, 8) Activity that needs to be done in the school but I find difficult, 9) Activity that I find difficult to do after school hours, 10) Activities I must do, 11) Activities that come naturally to me, 12) Activities that don''t come naturally to me, 13) Qualities I like in myself, 14) Qualities that others like in me, 15) Qualities that I need to improve on. For each category, provide a concise summary based on the student''s actual responses.",
-     "question2": "Write a brief description of yourself based on the summary. (You can use words, pictures or symbols).",
-     "question3": "Based on the summary of \"My Motivation\" and the activities in \"About Me,\" identify the qualities, interests, strengths, and areas for improvement that would help you in each of your career interests. This will help you align better with your career choice."
-   },
-   "kn": {
-     "question1": "ವಿದ್ಯಾರ್ಥಿಯ ಪ್ರತಿಕ್ರಿಯೆಗಳ ಆಧಾರದ ಮೇಲೆ ಸಮಗ್ರ ಸಾರಾಂಶ ಕೋಷ್ಟಕವನ್ನು ರಚಿಸಿ, ಅವರ ಉತ್ತರಗಳನ್ನು ಈ 15 ವಿಭಾಗಗಳಲ್ಲಿ ಸಂಘಟಿಸಿ: 1) ನನ್ನ ಕುಟುಂಬದಲ್ಲಿನ ಸ್ನೇಹಿತ, 2) ನನ್ನ ಕುಟುಂಬದ ಹೊರಗಿನ ನನ್ನ ಸ್ನೇಹಿತ, 3) ನಾನು ಮನೆಯಲ್ಲಿ ಯಾವ ಚಟುವಟಿಕೆಗಳನ್ನು ಮಾಡುತ್ತಿದ್ದೇನೆ?, 4) ಶಾಲೆಯ ಸಮಯದಲ್ಲಿ ನಾನು ಆನಂದಿಸುವ ಚಟುವಟಿಕೆಗಳು/ಅಂಶಗಳು, 5) ಶಾಲೆಯ ಹೊರಗೆ ನಾನು ಆನಂದಿಸುವ ಚಟುವಟಿಕೆಗಳು/ಅಂಶಗಳು, 6) ನಾನು ವೈಯಕ್ತಿಕವಾಗಿ ಆನಂದಿಸುವ ಕೆಲಸ/ಚಟುವಟಿಕೆಗಳು, 7) ನಾನು ತಂಡವಾಗಿ ಆನಂದಿಸುವ ಕೆಲಸ/ಚಟುವಟಿಕೆಗಳು, 8) ಶಾಲೆಯಲ್ಲಿ ಮಾಡಬೇಕಾದ ಆದರೆ ನನಗೆ ಕಷ್ಟಕರವಾದ ಚಟುವಟಿಕೆ, 9) ಶಾಲೆಯ ನಂತರ ನನಗೆ ಮಾಡಲು ಕಷ್ಟಕರವಾದ ಚಟುವಟಿಕೆ, 10) ನಾನು ಮಾಡಬೇಕಾದ ಚಟುವಟಿಕೆಗಳು, 11) ನನಗೆ ಸ್ವಾಭಾವಿಕವಾಗಿ ಬರುವ ಚಟುವಟಿಕೆಗಳು, 12) ನನಗೆ ಸ್ವಾಭಾವಿಕವಾಗಿ ಬರದ ಚಟುವಟಿಕೆಗಳು, 13) ನನ್ನಲ್ಲಿ ನನಗೆ ಇಷ್ಟವಾದ ಗುಣಗಳು, 14) ಇತರರಲ್ಲಿ ನನಗೆ ಇಷ್ಟವಾದ ಗುಣಗಳು, 15) ನಾನು ಸುಧಾರಿಸಬೇಕಾದ ಗುಣಗಳು. ಪ್ರತಿ ವಿಭಾಗಕ್ಕೂ, ವಿದ್ಯಾರ್ಥಿಯ ನಿಜವಾದ ಪ್ರತಿಕ್ರಿಯೆಗಳ ಆಧಾರದ ಮೇಲೆ ಸಂಕ್ಷಿಪ್ತ ಸಾರಾಂಶವನ್ನು ಒದಗಿಸಿ.",
-     "question2": "ಸಾರಾಂಶದ ಆಧಾರದ ಮೇಲೆ ನಿಮ್ಮ ಬಗ್ಗೆ ಸಂಕ್ಷಿಪ್ತ ವಿವರಣೆಯನ್ನು ಬರೆಯಿರಿ. (ನೀವು ಪದಗಳು, ಚಿತ್ರಗಳು ಅಥವಾ ಚಿಹ್ನೆಗಳನ್ನು ಬಳಸಬಹುದು).",
-     "question3": "\"ನನ್ನ ಪ್ರೇರಣೆ\" ಮತ್ತು \"ನನ್ನ ಬಗ್ಗೆ\" ನಲ್ಲಿನ ಚಟುವಟಿಕೆಗಳ ಸಾರಾಂಶದ ಆಧಾರದ ಮೇಲೆ, ನಿಮ್ಮ ಪ್ರತಿಯೊಂದು ವೃತ್ತಿ ಆಸಕ್ತಿಗಳಲ್ಲಿ ನಿಮಗೆ ಸಹಾಯ ಮಾಡಬಹುದಾದ ಗುಣಗಳು, ಆಸಕ್ತಿಗಳು, ಶಕ್ತಿಗಳು ಮತ್ತು ಸುಧಾರಣೆಯ ಪ್ರದೇಶಗಳನ್ನು ಗುರುತಿಸಿ. ಇದು ನಿಮ್ಮ ವೃತ್ತಿ ಆಯ್ಕೆಯೊಂದಿಗೆ ನೀವು ಉತ್ತಮವಾಗಿ ಸಮಂಜಸವಾಗಲು ಸಹಾಯ ಮಾಡುತ್ತದೆ."
-   }
- }'::jsonb)
+    "en": {
+      "question1": "Who is the friend in my family? (Summarize based on student response)",
+      "question2": "Who are my friends outside my family?",
+      "question3": "What activities do I do daily at home?",
+      "question4": "Which activities/aspects do I enjoy during school hours?",
+      "question5": "Which activities/aspects do I enjoy outside of school?",
+      "question6": "What work/activities do I enjoy personally?",
+      "question7": "What work/activities do I enjoy doing as a team?",
+      "question8": "Which school activity do I find difficult even though I must do it?",
+      "question9": "Which activity do I find difficult to manage after school or outside school?",
+      "question10": "What activities must I do (jobs I dont like but have to)?",
+      "question11": "Which activities come naturally to me (easy to do)?",
+      "question12": "Which activities are not easy for me to do (dont come naturally)?",
+      "question13": "What qualities do I like about myself?",
+      "question14": "What qualities do others like in me?",
+      "question15": "Which qualities or aspects do I need to improve?",
+      "question16": "Prepare a personal profile or your own self-portrait. Summarize the points you wrote about yourself above in one or a few words."
+    },
+    "kn": {
+      "question1": "ನನ್ನ ಕುಟುಂಬದಲ್ಲಿರುವ ಸ್ನೇಹಿತ ಯಾರು?",
+      "question2": "ನನ್ನ ಕುಟುಂಬದ ಹೊರಗಿನ ನನ್ನ ಸ್ನೇಹಿತ ಯಾರು?",
+      "question3": "ನಾನು ಮನೆಯಲ್ಲಿ ಪ್ರತಿದಿನ ಯಾವ ಚಟುವಟಿಕೆಗಳನ್ನು ಮಾಡುತ್ತೇನೆ?",
+      "question4": "ಶಾಲೆಯ ಸಮಯದಲ್ಲಿ ನಾನು ಯಾವ ಚಟುವಟಿಕೆಗಳು/ಅಂಶಗಳನ್ನು ಆನಂದಿಸುತ್ತೇನೆ?",
+      "question5": "ಶಾಲೆಯ ಹೊರಗೆ ನಾನು ಯಾವ ಚಟುವಟಿಕೆಗಳು/ಅಂಶಗಳನ್ನು ಆನಂದಿಸುತ್ತೇನೆ?",
+      "question6": "ನಾನು ವೈಯಕ್ತಿಕವಾಗಿ ಯಾವ ಕೆಲಸ/ಚಟುವಟಿಕೆಗಳನ್ನು ಆನಂದಿಸುತ್ತೇನೆ?",
+      "question7": "ನಾನು ತಂಡವಾಗಿ ಯಾವ ಕೆಲಸ/ಚಟುವಟಿಕೆಗಳನ್ನು ಆನಂದಿಸುತ್ತೇನೆ?",
+      "question8": "ಶಾಲೆಯಲ್ಲಿ ಮಾಡಬೇಕಾದ, ಆದರೆ ನನಗೆ ಕಷ್ಟಕರವಾದ ಚಟುವಟಿಕೆ ಯಾವುದು?",
+      "question9": "ಶಾಲೆಯ ನಂತರ ಅಥವಾ ಹೊರಗೆ ನಿರ್ವಹಿಸಲು ನನಗೆ ಕಷ್ಟಕರವಾದ ಚಟುವಟಿಕೆ ಯಾವುದು?",
+      "question10": "ನಾನು ಮಾಡಲೇಬೇಕಾದ ಚಟುವಟಿಕೆಗಳು ಯಾವುವು (ಇಷ್ಟವಿಲ್ಲದಿದ್ದರೂ)?",
+      "question11": "ನನಗೆ ಸ್ವಾಭಾವಿಕವಾಗಿ/ಸುಲಭವಾಗಿ ಬರುವ ಚಟುವಟಿಕೆಗಳು ಯಾವುವು?",
+      "question12": "ನನಗೆ ಮಾಡಲು ಸುಲಭವಲ್ಲದ (ಸ್ವಾಭಾವಿಕವಾಗಿ ಬಾರದ) ಚಟುವಟಿಕೆಗಳು ಯಾವುವು?",
+      "question13": "ನನ್ನಲ್ಲಿ ನನಗೆ ಇಷ್ಟವಾಗುವ ಗುಣಗಳು ಯಾವುವು?",
+      "question14": "ಇತರರು ನನ್ನಲ್ಲಿ ಇಷ್ಟಪಡುವ ಗುಣಗಳು ಯಾವುವು?",
+      "question15": "ನಾನು ಯಾವ ಗುಣಗಳು ಅಥವಾ ಅಂಶಗಳನ್ನು ಸುಧಾರಿಸಿಕೊಳ್ಳಬೇಕು?",
+      "question16": "ನಿಮ್ಮ ವೈಯಕ್ತಿಕ ಪರಿಚಯ ಅಥವಾ ಸ್ವಯಂ-ಚಿತ್ರಣವನ್ನು ತಯಾರಿಸಿ. ನಿಮ್ಮ ಬಗ್ಗೆ ನೀವು ಬರೆದ ಅಂಶಗಳನ್ನು ಒಂದೆರಡು ಪದಗಳಲ್ಲಿ ಸಾರಾಂಶಿಸಿ."
+    },
+    "ta": {
+      "question1": "என் குடும்பத்தில் உள்ள நண்பர் யார்?",
+      "question2": "என் குடும்பத்திற்கு வெளியே உள்ள நண்பர்கள் யார்?",
+      "question3": "நான் வீட்டில் தினமும் என்ன வேலைகளை செய்கிறேன்?",
+      "question4": "பள்ளி நேரத்தில் நான் விரும்பி செய்யும் செயல்கள் எவை?",
+      "question5": "பள்ளிக்கு வெளியே நான் விரும்பி செய்யும் செயல்கள் எவை?",
+      "question6": "நான் தனிப்பட்ட முறையில் விரும்பி செய்யும் வேலைகள்/செயல்கள் எவை?",
+      "question7": "நான் ஒரு குழுவாக செய்ய விரும்பும் வேலைகள்/செயல்கள் எவை?",
+      "question8": "நான் செய்ய வேண்டியிருந்தாலும், பள்ளியில் எனக்கு கடினமாக இருக்கும் செயல் எது?",
+      "question9": "பள்ளிக்கு பிறகு அல்லது வெளியே நிர்வகிக்க கடினமாக இருக்கும் செயல் எது?",
+      "question10": "நான் கண்டிப்பாக செய்ய வேண்டிய வேலைகள் எவை (பிடிக்காவிட்டாலும்)?",
+      "question11": "எனக்கு இயல்பாகவே (எளிதாக) வரும் செயல்கள் எவை?",
+      "question12": "எனக்கு செய்ய எளிதாக இல்லாத (இயல்பாக வராத) செயல்கள் எவை?",
+      "question13": "என்னிடம் எனக்கு பிடித்த குணங்கள் எவை?",
+      "question14": "மற்றவர்கள் என்னிடம் விரும்பும் குணங்கள் எவை?",
+      "question15": "நான் மேம்படுத்திக்கொள்ள வேண்டிய குணங்கள் அல்லது அம்சங்கள் எவை?",
+      "question16": "உங்கள் தனிப்பட்ட சுயவிவரம் அல்லது சுய சித்திரத்தை தயார் செய்யுங்கள். உங்களைப் பற்றி நீங்கள் எழுதிய கருத்துக்களை ஓரிரு வார்த்தைகளில் சுருக்கமாக எழுதுங்கள்."
+    }
+  }'::jsonb)
 ON CONFLICT (assessment_type) 
 DO UPDATE SET
     title = EXCLUDED.title,

@@ -28,15 +28,21 @@ interface GenerateSummaryResult {
 type SummaryTemplateLanguageBlock = {
   question1: string;
   question2: string;
-  question3?: string;  // Optional for assessments with only 2 questions
-  question4?: string;  // Optional for assessments with 4 questions (Dreams)
-  question5?: string;  // Optional for assessments with 6 questions (School Learning)
-  question6?: string;  // Optional for assessments with 6 questions (School Learning)
-  question7?: string;  // Optional for Hobbies assessment (talents)
-  question8?: string;  // Optional for Hobbies assessment (talents)
-  question9?: string;  // Optional for Hobbies assessment (talents)
-  question10?: string; // Optional for Hobbies assessment (talents)
-  [key: string]: string | undefined; // Allow any additional question keys
+  question3?: string;
+  question4?: string;
+  question5?: string;
+  question6?: string;
+  question7?: string;
+  question8?: string;
+  question9?: string;
+  question10?: string;
+  question11?: string;
+  question12?: string;
+  question13?: string;
+  question14?: string;
+  question15?: string;
+  question16?: string;
+  [key: string]: string | undefined;
 };
 
 interface SummaryTemplate {
@@ -63,7 +69,7 @@ class AISummaryService {
     this.fallbackEndpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-exp-1206:generateContent';
   }
 
-  /**
+  /*
    * Check if Gemini API is configured
    */
   isConfigured(): boolean {
@@ -92,8 +98,14 @@ class AISummaryService {
    * Detect if student responses are primarily in Kannada, Tamil, or default to English.
    * - Works for BOTH flat and deeply nested response objects (sections, question groups, etc.).
    * - Looks only at the actual answer strings, not at UI language.
+   * - If preferredLanguage is provided (and supported), it takes precedence.
    */
-  private detectLanguage(responses: AssessmentResponses): SummaryLanguage {
+  private detectLanguage(responses: AssessmentResponses, preferredLanguage?: string): SummaryLanguage {
+    // If a supported preferred language is provided, strictly enforce it
+    if (preferredLanguage === 'kn') return 'kn';
+    if (preferredLanguage === 'ta') return 'ta';
+    if (preferredLanguage === 'en') return 'en';
+
     let kannadaCount = 0;
     let tamilCount = 0;
     let totalCount = 0;
@@ -149,17 +161,17 @@ class AISummaryService {
    */
   private formatResponses(responses: AssessmentResponses): string {
     let formatted = '';
-    
+
     Object.keys(responses).forEach((key) => {
       const videoData = responses[key];
-      
+
       // Handle different response structures
       if (videoData && typeof videoData === 'object') {
         const videoTitle = videoData.videoTitle || videoData.title || key;
         formatted += `\n=== ${videoTitle} ===\n`;
-        
+
         const videoResponses = videoData.responses || videoData;
-        
+
         Object.keys(videoResponses).forEach((qKey) => {
           const answer = videoResponses[qKey];
           if (answer && typeof answer === 'string' && answer.trim()) {
@@ -168,7 +180,7 @@ class AISummaryService {
         });
       }
     });
-    
+
     return formatted || 'No responses available';
   }
 
@@ -197,10 +209,10 @@ class AISummaryService {
       }
 
       const template = data[0].summary_questions as SummaryTemplate;
-      
+
       // Cache the template
       this.templateCache.set(assessmentType, template);
-      
+
       return template;
     } catch (error) {
       console.error('Exception fetching summary template:', error);
@@ -216,10 +228,10 @@ class AISummaryService {
     language: SummaryLanguage = 'en'
   ): Promise<string> {
     const formattedResponses = this.formatResponses(responses);
-    
+
     // Fetch template from database
     const template = await this.getSummaryTemplate('inspiration');
-    
+
     if (!template) {
       console.error('Failed to fetch summary template, falling back to default');
       // Fallback to a basic prompt if database fetch fails
@@ -240,40 +252,40 @@ class AISummaryService {
       : isTamil
         ? '\n\nIMPORTANT LANGUAGE REQUIREMENT:\n- The student\'s responses are in Tamil (தமிழ்).\n- You MUST generate your summary answers in Tamil (தமிழ்) script.\n- Write all three answers in Tamil, maintaining the student\'s natural voice.\n- Use Tamil script for all text in question1, question2, and question3.\n'
         : '';
-    
+
     // Get questions from database template – fall back to English if specific language block is missing
     const questions =
       (template[langKey] as SummaryTemplateLanguageBlock | undefined) ?? template.en;
-    
+
     // Instructions remain hardcoded in the service
     const instructions = isKannada
       ? {
-          question1:
-            "- ವೀಡಿಯೊಗಳಿಂದ ನಿರ್ದಿಷ್ಟ ಕ್ಷಣಗಳು, ಉಲ್ಲೇಖಗಳು ಅಥವಾ ವಿಷಯಗಳನ್ನು ಗುರುತಿಸಿ\n- ವಿದ್ಯಾರ್ಥಿ ಉಲ್ಲೇಖಿಸಿದ ವೈಯಕ್ತಿಕ ಅನುಭವಗಳಿಗೆ ಸಂಪರ್ಕಿಸಿ\n- 3-5 ಪ್ರಮುಖ ತೆಗೆದುಕೊಳ್ಳುವಿಕೆಗಳೊಂದಿಗೆ ನಿರ್ದಿಷ್ಟವಾಗಿರಿ\n- ಮೊದಲ ವ್ಯಕ್ತಿಯಲ್ಲಿ ಬರೆಯಿರಿ (\"ನಾನು ... ಮೂಲಕ ಪ್ರೇರೇಪಿಸಲ್ಪಟ್ಟೆನು\")",
-          question2:
-            "- ವೀಡಿಯೊಗಳಲ್ಲಿ ಉಲ್ಲೇಖಿಸಲಾದ ನಕಾರಾತ್ಮಕ ಮಾದರಿಗಳು, ಅಭ್ಯಾಸಗಳು ಅಥವಾ ಮನೋಭಾವಗಳನ್ನು ಗುರುತಿಸಿ\n- ಇವುಗಳನ್ನು ಏಕೆ ತಪ್ಪಿಸಬೇಕು ಎಂಬುದನ್ನು ವಿವರಿಸಿ\n- ರಚನಾತ್ಮಕ ಚೌಕಟ್ಟನ್ನು ಒದಗಿಸಿ\n- ಮೊದಲ ವ್ಯಕ್ತಿಯಲ್ಲಿ ಬರೆಯಿರಿ (\"ನಾನು ... ತಪ್ಪಿಸಬೇಕು\")",
-          question3:
-            "- ಸಾಮಾನ್ಯ ವಿಷಯಗಳು, ಮೌಲ್ಯಗಳು ಅಥವಾ ಗುಣಲಕ್ಷಣಗಳನ್ನು ಹುಡುಕಿ\n- ವೀಡಿಯೊ ಪಾತ್ರಗಳನ್ನು ವಿದ್ಯಾರ್ಥಿ ಉಲ್ಲೇಖಿಸಿದ ನಿಜ ಜೀವನದ ಮಾದರಿಗಳಿಗೆ ಸಂಪರ್ಕಿಸಿ\n- ಯಾರನ್ನಾದರೂ ಪ್ರೇರೇಪಿಸುವ ಮಾದರಿಗಳನ್ನು ಗುರುತಿಸಿ\n- ಮೊದಲ ವ್ಯಕ್ತಿಯಲ್ಲಿ ಬರೆಯಿರಿ (\"ನಾನು ಗಮನಿಸಿದ್ದೇನೆ ...\")"
-        }
+        question1:
+          "- ವೀಡಿಯೊಗಳಿಂದ ನಿರ್ದಿಷ್ಟ ಕ್ಷಣಗಳು, ಉಲ್ಲೇಖಗಳು ಅಥವಾ ವಿಷಯಗಳನ್ನು ಗುರುತಿಸಿ\n- ವಿದ್ಯಾರ್ಥಿ ಉಲ್ಲೇಖಿಸಿದ ವೈಯಕ್ತಿಕ ಅನುಭವಗಳಿಗೆ ಸಂಪರ್ಕಿಸಿ\n- 3-5 ಪ್ರಮುಖ ತೆಗೆದುಕೊಳ್ಳುವಿಕೆಗಳೊಂದಿಗೆ ನಿರ್ದಿಷ್ಟವಾಗಿರಿ\n- ಮೊದಲ ವ್ಯಕ್ತಿಯಲ್ಲಿ ಬರೆಯಿರಿ (\"ನಾನು ... ಮೂಲಕ ಪ್ರೇರೇಪಿಸಲ್ಪಟ್ಟೆನು\")",
+        question2:
+          "- ವೀಡಿಯೊಗಳಲ್ಲಿ ಉಲ್ಲೇಖಿಸಲಾದ ನಕಾರಾತ್ಮಕ ಮಾದರಿಗಳು, ಅಭ್ಯಾಸಗಳು ಅಥವಾ ಮನೋಭಾವಗಳನ್ನು ಗುರುತಿಸಿ\n- ಇವುಗಳನ್ನು ಏಕೆ ತಪ್ಪಿಸಬೇಕು ಎಂಬುದನ್ನು ವಿವರಿಸಿ\n- ರಚನಾತ್ಮಕ ಚೌಕಟ್ಟನ್ನು ಒದಗಿಸಿ\n- ಮೊದಲ ವ್ಯಕ್ತಿಯಲ್ಲಿ ಬರೆಯಿರಿ (\"ನಾನು ... ತಪ್ಪಿಸಬೇಕು\")",
+        question3:
+          "- ಸಾಮಾನ್ಯ ವಿಷಯಗಳು, ಮೌಲ್ಯಗಳು ಅಥವಾ ಗುಣಲಕ್ಷಣಗಳನ್ನು ಹುಡುಕಿ\n- ವೀಡಿಯೊ ಪಾತ್ರಗಳನ್ನು ವಿದ್ಯಾರ್ಥಿ ಉಲ್ಲೇಖಿಸಿದ ನಿಜ ಜೀವನದ ಮಾದರಿಗಳಿಗೆ ಸಂಪರ್ಕಿಸಿ\n- ಯಾರನ್ನಾದರೂ ಪ್ರೇರೇಪಿಸುವ ಮಾದರಿಗಳನ್ನು ಗುರುತಿಸಿ\n- ಮೊದಲ ವ್ಯಕ್ತಿಯಲ್ಲಿ ಬರೆಯಿರಿ (\"ನಾನು ಗಮನಿಸಿದ್ದೇನೆ ...\")"
+      }
       : isTamil
         ? {
-            // Simple Tamil guidance; model is still instructed separately to answer in Tamil
-            question1:
-              "- வீடியோக்களில் உங்களை குறிப்பாக பாதித்த தருணங்கள், வசனங்கள் அல்லது கருத்துகளை குறிப்பிடுங்கள்\n- மாணவர் சொன்ன தனிப்பட்ட அனுபவங்களுடன் இணைத்துச் सोचிக்கவும்\n- 3–5 முக்கிய புள்ளிகளாக எழுதுங்கள்\n- முதல் நபர் பார்வையில் எழுதுங்கள் (\"என்னை ... மிகவும் ஊக்கப்படுத்தியது\")",
-            question2:
-              "- வீடியோக்களில் வரும் தவிர்க்க வேண்டிய பழக்கங்கள், நடத்தைகள் அல்லது மனப்பாங்குகளை குறிப்பிடுங்கள்\n- ஏன் அவற்றை தவிர்க்க வேண்டும் என்று சுலபமான சொல்லில் விளக்குங்கள்\n- கட்டுரை போல் அல்லாமல் சாதாரண வாக்கியங்களில் எழுதுங்கள்\n- முதல் நபர் பார்வையில் எழுதுங்கள் (\"நான் ... தவிர்க்க வேண்டும்\")",
-            question3:
-              "- உங்களை ஊக்கப்படுத்தும் மனிதர்களில் காணப்படும் பொதுவான குணங்களையும் மதிப்புகளையும் கண்டுபிடிக்கவும்\n- வீடியோ கதாபாத்திரங்களையும் உங்கள் உண்மை வாழ்க்கை முன்மாதிரிகளையும் ஒப்பிடுங்கள்\n- இந்த ஒற்றுமைகள் உங்கள் எதிர்காலத்திற்கு எப்படி உதவுகின்றன என்று எழுதுங்கள்\n- முதல் நபர் பார்வையில் எழுதுங்கள் (\"நான் கவனித்தது என்னவென்றால் ...\")"
-          }
+          // Simple Tamil guidance; model is still instructed separately to answer in Tamil
+          question1:
+            "- வீடியோக்களில் உங்களை குறிப்பாக பாதித்த தருணங்கள், வசனங்கள் அல்லது கருத்துகளை குறிப்பிடுங்கள்\n- மாணவர் சொன்ன தனிப்பட்ட அனுபவங்களுடன் இணைத்துச் सोचிக்கவும்\n- 3–5 முக்கிய புள்ளிகளாக எழுதுங்கள்\n- முதல் நபர் பார்வையில் எழுதுங்கள் (\"என்னை ... மிகவும் ஊக்கப்படுத்தியது\")",
+          question2:
+            "- வீடியோக்களில் வரும் தவிர்க்க வேண்டிய பழக்கங்கள், நடத்தைகள் அல்லது மனப்பாங்குகளை குறிப்பிடுங்கள்\n- ஏன் அவற்றை தவிர்க்க வேண்டும் என்று சுலபமான சொல்லில் விளக்குங்கள்\n- கட்டுரை போல் அல்லாமல் சாதாரண வாக்கியங்களில் எழுதுங்கள்\n- முதல் நபர் பார்வையில் எழுதுங்கள் (\"நான் ... தவிர்க்க வேண்டும்\")",
+          question3:
+            "- உங்களை ஊக்கப்படுத்தும் மனிதர்களில் காணப்படும் பொதுவான குணங்களையும் மதிப்புகளையும் கண்டுபிடிக்கவும்\n- வீடியோ கதாபாத்திரங்களையும் உங்கள் உண்மை வாழ்க்கை முன்மாதிரிகளையும் ஒப்பிடுங்கள்\n- இந்த ஒற்றுமைகள் உங்கள் எதிர்காலத்திற்கு எப்படி உதவுகின்றன என்று எழுதுங்கள்\n- முதல் நபர் பார்வையில் எழுதுங்கள் (\"நான் கவனித்தது என்னவென்றால் ...\")"
+        }
         : {
-            question1:
-              "- Identify specific moments, quotes, or themes from the videos\n- Connect to any personal experiences the student mentioned\n- Be specific with 3-5 key takeaways\n- Write in first person (\"I was inspired by...\")",
-            question2:
-              "- Identify negative patterns, habits, or attitudes mentioned in the videos\n- Explain why these should be avoided\n- Provide constructive framing\n- Write in first person (\"I should avoid...\")",
-            question3:
-              "- Find common themes, values, or traits\n- Connect video characters to real-life role models the student mentioned\n- Identify patterns of what makes someone inspiring\n- Write in first person (\"I notice that...\")"
-          };
-    
+          question1:
+            "- Identify specific moments, quotes, or themes from the videos\n- Connect to any personal experiences the student mentioned\n- Be specific with 3-5 key takeaways\n- Write in first person (\"I was inspired by...\")",
+          question2:
+            "- Identify negative patterns, habits, or attitudes mentioned in the videos\n- Explain why these should be avoided\n- Provide constructive framing\n- Write in first person (\"I should avoid...\")",
+          question3:
+            "- Find common themes, values, or traits\n- Connect video characters to real-life role models the student mentioned\n- Identify patterns of what makes someone inspiring\n- Write in first person (\"I notice that...\")"
+        };
+
     const questionsPrompt = `Question 1: ${questions.question1}
 ${instructions.question1}
 
@@ -342,7 +354,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
       : isTamil
         ? '\n\nIMPORTANT LANGUAGE REQUIREMENT:\n- The student\'s responses are in Tamil (தமிழ்).\n- You MUST generate your summary answers in Tamil (தமிழ்) script.\n- Write all three answers in Tamil, maintaining the student\'s natural voice.\n- Use Tamil script for all text in question1, question2, and question3.\n'
         : '';
-    
+
     const questionsPrompt = isKannada
       ? `Question 1: ಈ ವೀಡಿಯೊಗಳಿಂದ ಮತ್ತು ನಿಮ್ಮ ಸ್ವಂತ ಅನುಭವಗಳಿಂದ ನಿಮ್ಮನ್ನು ಪ್ರೇರೇಪಿಸಿದ ವಿಷಯಗಳನ್ನು ಪಟ್ಟಿ ಮಾಡಿ.
 
@@ -410,18 +422,18 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
     try {
       // Remove markdown code blocks if present
       let cleanedText = responseText.trim();
-      
+
       // Remove ```json and ``` markers
       cleanedText = cleanedText.replace(/^```json\s*/i, '');
       cleanedText = cleanedText.replace(/^```\s*/i, '');
       cleanedText = cleanedText.replace(/\s*```$/i, '');
       cleanedText = cleanedText.trim();
-      
+
       // Parse JSON
       const parsed = JSON.parse(cleanedText);
-      
+
       console.log('📋 Parsed JSON structure:', Object.keys(parsed));
-      
+
       // Handle dream portfolio structure
       if (Array.isArray(parsed.entries)) {
         const entries = parsed.entries.map((entry: any) => ({
@@ -462,10 +474,21 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
           question3: parsed.question3 || '', // Optional third question
           question4: parsed.question4 || '', // Optional fourth question (Dreams)
           question5: parsed.question5 || '', // Optional fifth question (School Learning)
-          question6: parsed.question6 || '' // Optional sixth question (School Learning)
+
+          question6: parsed.question6 || '', // Optional sixth question
+          question7: parsed.question7 || '',
+          question8: parsed.question8 || '',
+          question9: parsed.question9 || '',
+          question10: parsed.question10 || '',
+          question11: parsed.question11 || '',
+          question12: parsed.question12 || '',
+          question13: parsed.question13 || '',
+          question14: parsed.question14 || '',
+          question15: parsed.question15 || '',
+          question16: parsed.question16 || ''
         };
       }
-      
+
       console.error('❌ Invalid JSON structure - missing question1 or question2:', parsed);
       return null;
     } catch (error) {
@@ -479,7 +502,8 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
    * Generate AI summary for inspiration assessment
    */
   async generateInspirationSummary(
-    responses: AssessmentResponses
+    responses: AssessmentResponses,
+    preferredLanguage?: string
   ): Promise<GenerateSummaryResult> {
     if (!this.isConfigured()) {
       return {
@@ -498,11 +522,11 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
 
     try {
       // Detect language from student responses
-      const detectedLanguage = this.detectLanguage(responses);
+      const detectedLanguage = this.detectLanguage(responses, preferredLanguage);
       console.log(`🌐 Detected language from student responses: ${detectedLanguage}`);
-      
+
       const prompt = await this.buildPrompt(responses, detectedLanguage);
-      
+
       // Use exact same format as chatbot - no generationConfig initially
       const requestBody = {
         contents: [
@@ -530,7 +554,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
       // If 404, try fallback endpoint (gemini-1.5-pro-latest)
       if (!response.ok && response.status === 404) {
         console.warn('⚠️ Primary model not found, trying fallback:', this.fallbackEndpoint);
-        
+
         response = await fetch(`${this.fallbackEndpoint}?key=${this.apiKey}`, {
           method: 'POST',
           headers: {
@@ -546,12 +570,12 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
         console.error('❌ Status:', response.status);
         console.error('❌ Status Text:', response.statusText);
         console.error('❌ Response Headers:', Object.fromEntries(response.headers.entries()));
-        
+
         // Try to parse error for more details
         try {
           const errorJson = JSON.parse(errorData);
           console.error('❌ Parsed Error:', JSON.stringify(errorJson, null, 2));
-          
+
           // Log suggested models if available
           if (errorJson.error?.message) {
             console.error('❌ Error Message:', errorJson.error.message);
@@ -559,7 +583,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
         } catch (e) {
           console.error('❌ Could not parse error as JSON');
         }
-        
+
         return {
           success: false,
           error: `API request failed: ${response.status} - ${response.statusText}`
@@ -614,12 +638,15 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
    */
   validateSummary(summary: SummaryQuestions): boolean {
     const minLength = 50; // Minimum characters per answer
-    
+
     return !!(
       summary.question1 && summary.question1.length >= minLength &&
       summary.question2 && summary.question2.length >= minLength &&
       summary.question3 && summary.question3.length >= minLength
-    );
+    ) || (
+        // Or if it's the detailed About Me (check a few key questions)
+        summary.question1 && summary.question16 && summary.question1.length > 5
+      );
   }
 
   /**
@@ -635,13 +662,13 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
    */
   private formatDreamsResponses(responses: Record<string, string>): string {
     let formatted = '=== MY DREAMS ASSESSMENT ===\n';
-    
+
     Object.entries(responses).forEach(([key, value]) => {
       if (value && typeof value === 'string' && value.trim()) {
         formatted += `${key}: ${value}\n`;
       }
     });
-    
+
     return formatted || 'No responses available';
   }
 
@@ -859,7 +886,8 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
    * Generate AI summary for Dreams assessment
    */
   async generateDreamsSummary(
-    responses: Record<string, string>
+    responses: Record<string, string>,
+    preferredLanguage?: string
   ): Promise<GenerateSummaryResult> {
     if (!this.isConfigured()) {
       return {
@@ -878,7 +906,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
 
     try {
       // Detect language from student responses
-      const detectedLanguage = this.detectLanguage({ part1: responses });
+      const detectedLanguage = this.detectLanguage({ part1: responses }, preferredLanguage);
       console.log(`🌐 Detected language from student responses: ${detectedLanguage}`);
 
       const prompt = await this.buildDreamsPrompt(responses, detectedLanguage);
@@ -989,7 +1017,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
       // For Dreams, we'll store it as a structured format
       // question1-3 will contain JSON string of entries, question4 will be empty
       const portfolioJson = JSON.stringify(parsed.entries);
-      
+
       return {
         question1: portfolioJson, // Store full portfolio as JSON string
         question2: '', // Not used for Dreams
@@ -1008,7 +1036,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
    */
   private formatSchoolLearningResponses(responses: Record<string, any>): string {
     let formatted = '=== MY SCHOOL, MY LEARNING AND I ASSESSMENT ===\n';
-    
+
     Object.entries(responses).forEach(([key, value]) => {
       if (value && typeof value === 'string' && value.trim()) {
         formatted += `${key}: ${value}\n`;
@@ -1029,7 +1057,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
         }
       }
     });
-    
+
     return formatted || 'No responses available';
   }
 
@@ -1238,7 +1266,8 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
    * Generate AI summary for School Learning assessment
    */
   async generateSchoolLearningSummary(
-    responses: Record<string, any>
+    responses: Record<string, any>,
+    preferredLanguage?: string
   ): Promise<GenerateSummaryResult> {
     if (!this.isConfigured()) {
       return {
@@ -1257,7 +1286,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
 
     try {
       // Detect language from student responses (supports Kannada, Tamil, or default English)
-      const detectedLanguage = this.detectLanguage({ part1: responses });
+      const detectedLanguage = this.detectLanguage({ part1: responses }, preferredLanguage);
       console.log(`🌐 Detected language from student responses: ${detectedLanguage}`);
 
       const prompt = await this.buildSchoolLearningPrompt(responses, detectedLanguage);
@@ -1348,13 +1377,13 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
    */
   private formatHobbiesResponses(responses: Record<string, string>): string {
     let formatted = '=== MY TALENTS AND HOBBIES ASSESSMENT ===\n';
-    
+
     Object.entries(responses).forEach(([key, value]) => {
       if (value && typeof value === 'string' && value.trim()) {
         formatted += `${key}: ${value}\n`;
       }
     });
-    
+
     return formatted || 'No responses available';
   }
 
@@ -1550,7 +1579,8 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
    * Generate AI summary for Hobbies assessment
    */
   async generateHobbiesSummary(
-    responses: Record<string, string>
+    responses: Record<string, string>,
+    preferredLanguage?: string
   ): Promise<GenerateSummaryResult> {
     if (!this.isConfigured()) {
       return {
@@ -1569,7 +1599,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
 
     try {
       // Detect language from student responses
-      const detectedLanguage = this.detectLanguage({ part1: responses });
+      const detectedLanguage = this.detectLanguage({ part1: responses }, preferredLanguage);
       console.log(`🌐 Detected language from student responses: ${detectedLanguage}`);
 
       const prompt = await this.buildHobbiesPrompt(responses, detectedLanguage);
@@ -1691,7 +1721,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
       // Store talents portfolio as JSON string in question6
       const hobbiesJson = JSON.stringify(parsed.hobbiesPortfolio.entries);
       const talentsJson = JSON.stringify(parsed.talentsPortfolio.entries);
-      
+
       return {
         question1: hobbiesJson, // Store hobbies portfolio as JSON string
         question2: '', // Not used for Hobbies
@@ -1711,7 +1741,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
    */
   private formatAboutMeResponses(responses: Record<string, any>): string {
     let formatted = '=== ABOUT ME ASSESSMENT ===\n';
-    
+
     Object.entries(responses).forEach(([key, value]) => {
       if (value) {
         if (Array.isArray(value)) {
@@ -1722,7 +1752,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
         }
       }
     });
-    
+
     return formatted || 'No responses available';
   }
 
@@ -1760,18 +1790,19 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
     const questions =
       (template[langKey] as SummaryTemplateLanguageBlock | undefined) ?? template.en;
 
-    const listInstruction = isKannada
-      ? 'ಪ್ರಶ್ನೆ 1 ಉತ್ತರವನ್ನು 15 ಪ್ರತ್ಯೇಕ ಸಾಲುಗಳಲ್ಲಿ ನೀಡಿ. ಪ್ರತಿಯೊಂದು ಸಾಲು "ವರ್ಗ: ನಾನು ಬರೆದದ್ದು" ವಿನ್ಯಾಸದಲ್ಲಿರಲಿ ಹಾಗೂ ನೀಡಿರುವ ಕ್ರಮದಲ್ಲೇ ಇರಲಿ.'
-      : isTamil
-        ? 'கேள்வி 1க்கு 15 வரிகளாகப் பதில் எழுதுங்கள். ஒவ்வொரு வரியையும் "பகுப்பு: நான் சொன்னது" என்ற வடிவில், கொடுக்கப்பட்ட வரிசையில் எழுதுங்கள்.'
-        : 'Write the answer for Question 1 as 15 separate lines. Use the pattern "Category: What I said" and keep the categories in the given order.';
+    // Dynamically build questions prompt to avoid "undefined" for missing questions
+    let questionsPrompt = '';
+    const jsonStructure: Record<string, string> = {};
 
-    const questionsPrompt = `Question 1: ${questions.question1}
-${listInstruction}
-
-Question 2: ${questions.question2}
-
-Question 3: ${questions.question3}`;
+    // We support up to 20 questions just in case
+    for (let i = 1; i <= 20; i++) {
+      const qKey = `question${i}`;
+      const qText = (questions as any)[qKey];
+      if (qText) {
+        questionsPrompt += `Question ${i}: ${qText}\n`;
+        jsonStructure[qKey] = `Answer for Q${i}...`;
+      }
+    }
 
     const coreInstructions =
       'You are a career guidance counsellor for rural students in India.\n' +
@@ -1792,26 +1823,21 @@ ${languageInstruction}
 STUDENT ANSWERS ABOUT THEMSELVES:
 ${formattedResponses}
 
-Write answers to these 3 questions as if the student is speaking (use "I" and "me").
+Write answers to the questions based on the student's input. Use "I" and "me".
 
 ${questionsPrompt}
 
 IMPORTANT RULES:
 - Write like the student is talking (use "I" and "me")
-- Use very simple words that a grade 8 or 9 student can easily understand
 - Use plain English - no difficult words
+- The TOTAL length should be 200-300 words
 - For Question 1, make sure each category is on its own line following the "Category: What I said" pattern
-- The TOTAL length should be 100-150 words for all three answers together
 - Be short and clear
 - Use the student's own words from their answers
 - Write like the student himself/herself is writing
 - Format the response as valid JSON with this exact structure:
 
-{
-  "question1": "Your answer here...",
-  "question2": "Your answer here...",
-  "question3": "Your answer here..."
-}
+${JSON.stringify(jsonStructure, null, 2)}
 
 Return ONLY the JSON object, no additional text or markdown formatting.`;
   }
@@ -1899,7 +1925,8 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
    * Generate AI summary for About Me assessment
    */
   async generateAboutMeSummary(
-    responses: Record<string, any>
+    responses: Record<string, any>,
+    preferredLanguage?: string
   ): Promise<GenerateSummaryResult> {
     if (!this.isConfigured()) {
       return {
@@ -1918,7 +1945,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
 
     try {
       // Detect language from student responses
-      const detectedLanguage = this.detectLanguage({ part1: responses });
+      const detectedLanguage = this.detectLanguage({ part1: responses }, preferredLanguage);
       console.log(`🌐 Detected language from student responses: ${detectedLanguage}`);
 
       const prompt = await this.buildAboutMePrompt(responses, detectedLanguage);
@@ -2009,7 +2036,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
    */
   private formatRoleModelsResponses(responses: Record<string, any>): string {
     let formatted = '=== MY ROLE MODELS ASSESSMENT ===\n';
-    
+
     // Role Models has roleModel1, roleModel2, roleModel3 structure
     if (responses.roleModel1 || responses.roleModel2 || responses.roleModel3) {
       ['roleModel1', 'roleModel2', 'roleModel3'].forEach((key, index) => {
@@ -2033,7 +2060,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
         }
       });
     }
-    
+
     return formatted || 'No responses available';
   }
 
@@ -2071,7 +2098,11 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
     const questions =
       (template[langKey] as SummaryTemplateLanguageBlock | undefined) ?? template.en;
 
-    const questionsPrompt = `Question 1: ${questions.question1}`;
+    const questionsPrompt = isKannada
+      ? `Question 1: ನಿಮ್ಮ ಪಾತ್ರ ಮಾದರಿಗಳಿಂದ ವೃತ್ತಿ ಮಾರ್ಗದರ್ಶನದ ಕುರಿತಾಗಿ ನೀವು ಕೇಳಲು ಬಯಸುವ 5 ರಿಂದ 10 ಪ್ರಶ್ನೆಗಳನ್ನು ಬರೆಯಿರಿ.`
+      : isTamil
+        ? `Question 1: தொழில் வழிகாட்டல் குறித்து உங்கள் முன்மாதிரி நபர்களிடம் கேட்க விரும்பும் 5 முதல் 10 கேள்விகளை எழுதுங்கள்.`
+        : `Question 1: Write 5 to 10 questions you would like to ask your role model for career guidance.`;
 
     const coreInstructions =
       'You are a career guidance counsellor for rural students in India.\n' +
@@ -2100,14 +2131,16 @@ IMPORTANT RULES:
 - Write like the student is talking (use "I" and "me")
 - Use very simple words that a grade 8 or 9 student can easily understand
 - Use plain English - no difficult words
-- The TOTAL length should be 100-150 words
+- The output MUST be a numbered list of 5 to 10 specific questions
+- Each question in the list should be something the student would want to ask their role model
+- Base the questions on the specific role models and qualities the student mentioned (e.g., if they chose a teacher, ask about teaching; if they chose a doctor, ask about medicine)
 - Be short and clear
 - Use the student's own words from their answers
 - Write like the student himself/herself is writing
 - Format the response as valid JSON with this exact structure:
 
 {
-  "question1": "Your answer here..."
+  "question1": "1. [First Question]\\n2. [Second Question]\\n..."
 }
 
 Return ONLY the JSON object, no additional text or markdown formatting.`;
@@ -2163,14 +2196,16 @@ IMPORTANT RULES:
 - Write like the student is talking (use "I" and "me")
 - Use very simple words that a grade 8 or 9 student can easily understand
 - Use plain English - no difficult words
-- The TOTAL length should be 100-150 words
+- The output MUST be a numbered list of 5 to 10 specific questions
+- Each question in the list should be something the student would want to ask their role model
+- Base the questions on the specific role models and qualities the student mentioned
 - Be short and clear
 - Use the student's own words from their answers
 - Write like the student himself/herself is writing
 - Format the response as valid JSON with this exact structure:
 
 {
-  "question1": "Your answer here..."
+  "question1": "1. [First Question]\\n2. [Second Question]\\n..."
 }
 
 Return ONLY the JSON object, no additional text or markdown formatting.`;
@@ -2180,7 +2215,8 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
    * Generate AI summary for Role Models assessment
    */
   async generateRoleModelsSummary(
-    responses: Record<string, any>
+    responses: Record<string, any>,
+    preferredLanguage?: string
   ): Promise<GenerateSummaryResult> {
     if (!this.isConfigured()) {
       return {
@@ -2199,7 +2235,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
 
     try {
       // Detect language from student responses
-      const detectedLanguage = this.detectLanguage({ part1: responses });
+      const detectedLanguage = this.detectLanguage({ part1: responses }, preferredLanguage);
       console.log(`🌐 Detected language from student responses: ${detectedLanguage}`);
 
       const prompt = await this.buildRoleModelsPrompt(responses, detectedLanguage);
@@ -2272,7 +2308,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
           error: 'Failed to parse AI response. Please check the console for details.'
         };
       }
-      
+
       console.log('✅ Successfully parsed Role Models summary:', summary);
 
       return {

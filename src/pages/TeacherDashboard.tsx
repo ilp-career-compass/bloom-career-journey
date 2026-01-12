@@ -128,7 +128,7 @@ export default function TeacherDashboard() {
   const lang = (urlLang || userProfile?.preferred_language || (localStorage.getItem('lang') as 'en' | 'kn' | 'ta' | null) || 'en') as 'en' | 'kn' | 'ta';
   useEffect(() => { try { localStorage.setItem('lang', lang); } catch { } }, [lang]);
 
-  const strings: Record<'en' | 'kn' | 'ta', Record<string, string>> = {
+  const strings: Record<'en' | 'kn' | 'ta', Record<string, any>> = {
     en: {
       brand: 'Vidya Saathi',
       welcome: (name: string) => `Welcome, ${name}!`,
@@ -240,6 +240,7 @@ export default function TeacherDashboard() {
   const [existingResults, setExistingResults] = useState<any[]>([]);
   const [enrollTarget, setEnrollTarget] = useState<{ userId: string; name: string } | null>(null);
   const [enrollClassId, setEnrollClassId] = useState<string>('');
+  const [isClassLocked, setIsClassLocked] = useState(false);
   const [enrolling, setEnrolling] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -312,13 +313,46 @@ export default function TeacherDashboard() {
       setLoading(true);
 
       // First get the teacher row
-      const { data: teacherData, error: teacherError } = await supabase
+      // First get the teacher row - handling cases where it might not exist yet
+      let { data: teacherData, error: teacherError } = await supabase
         .from('teachers')
         .select('id, state_id')
         .eq('user_id', userProfile?.id)
-        .single();
+        .maybeSingle();
 
       if (teacherError) throw teacherError;
+
+      // Self-healing: If teacher profile doesn't exist, try to create it
+      if (!teacherData && userProfile?.state_id) {
+        console.log('⚠️ Teacher profile missing, attempting to create...');
+        try {
+          const { data: newTeacher, error: createError } = await supabase
+            .from('teachers')
+            .insert({
+              user_id: userProfile.id,
+              state_id: userProfile.state_id,
+              is_active: true,
+              joining_date: new Date().toISOString()
+            })
+            .select('id, state_id')
+            .single();
+
+          if (!createError && newTeacher) {
+            teacherData = newTeacher;
+            console.log('✅ Teacher profile auto-created');
+          } else {
+            console.error('Failed to auto-create teacher profile:', createError);
+          }
+        } catch (err) {
+          console.error('Error during teacher profile auto-creation:', err);
+        }
+      }
+
+      if (!teacherData) {
+        console.warn('Could not load teacher profile, cannot load students');
+        setLoading(false);
+        return;
+      }
 
       // Get students from the teacher's state using the new state-based approach
       const { data, error } = await supabase
@@ -437,6 +471,27 @@ export default function TeacherDashboard() {
           .eq('mobile', newStudent.contact)
           .maybeSingle();
         existingUser = data || null;
+      }
+
+      // Check if this user is already a student of another teacher
+      if (existingUser) {
+        const { data: existingStudent, error: checkError } = await supabase
+          .from('students')
+          .select('teacher_id')
+          .eq('user_id', existingUser.id)
+          .maybeSingle();
+
+        if (existingStudent && existingStudent.teacher_id !== teacherData.id) {
+          const { data: teacherInfo } = await supabase
+            .from('teachers')
+            .select('is_default, users(full_name)')
+            .eq('id', existingStudent.teacher_id)
+            .single();
+
+          if (teacherInfo && !(teacherInfo as any).is_default) {
+            throw new Error(`This student is already mentored by ${(teacherInfo as any).users?.full_name || 'another teacher'}.`);
+          }
+        }
       }
 
       // Create or reuse the user
@@ -1004,7 +1059,7 @@ export default function TeacherDashboard() {
                         </span>
                       </div>
                     )}
-                    <span className="text-gray-700 font-medium">{userProfile?.full_name || 'Teacher'}</span>
+                    <span className="text-gray-700 font-medium hidden md:inline-block">{userProfile?.full_name || 'Teacher'}</span>
                     <ChevronDown className="w-4 h-4 text-gray-500" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -1031,45 +1086,51 @@ export default function TeacherDashboard() {
 
       <div className="container mx-auto px-4 py-8">
         {/* Welcome Section */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-4">{(strings[lang].welcome as any)(userProfile?.full_name || '')}</h1>
-          <p className="text-xl text-gray-600">{t('manageStudents')}</p>
+        <div className="text-center mb-8 px-2">
+          <h1 className="text-2xl md:text-4xl font-bold text-gray-800 mb-2 md:mb-4">{(strings[lang].welcome as any)(userProfile?.full_name || '')}</h1>
+          <p className="text-base md:text-xl text-gray-600 leading-relaxed">{t('manageStudents')}</p>
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100">
             <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex flex-col items-center text-center sm:flex-row sm:items-center sm:justify-between sm:text-left gap-4">
+                <div className="order-2 sm:order-1">
                   <p className="text-blue-600 text-sm font-medium">{t('totalStudents')}</p>
                   <p className="text-3xl font-bold text-blue-800">{studentStats.totalStudents}</p>
                 </div>
-                <Users className="w-8 h-8 text-blue-600" />
+                <div className="order-1 sm:order-2 p-3 bg-blue-100/50 rounded-xl sm:bg-transparent sm:p-0">
+                  <Users className="w-8 h-8 text-blue-600" />
+                </div>
               </div>
             </CardContent>
           </Card>
 
           <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-green-100">
             <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex flex-col items-center text-center sm:flex-row sm:items-center sm:justify-between sm:text-left gap-4">
+                <div className="order-2 sm:order-1">
                   <p className="text-green-600 text-sm font-medium">{t('activeStudents')}</p>
                   <p className="text-3xl font-bold text-green-800">{studentStats.activeStudents}</p>
                 </div>
-                <CheckCircle className="w-8 h-8 text-green-600" />
+                <div className="order-1 sm:order-2 p-3 bg-green-100/50 rounded-xl sm:bg-transparent sm:p-0">
+                  <CheckCircle className="w-8 h-8 text-green-600" />
+                </div>
               </div>
             </CardContent>
           </Card>
 
           <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 to-purple-100">
             <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex flex-col items-center text-center sm:flex-row sm:items-center sm:justify-between sm:text-left gap-4">
+                <div className="order-2 sm:order-1">
                   <p className="text-purple-600 text-sm font-medium">{t('recentAdditions')}</p>
                   <p className="text-3xl font-bold text-purple-800">{studentStats.recentAdditions}</p>
                 </div>
-                <UserPlus className="w-8 h-8 text-purple-600" />
+                <div className="order-1 sm:order-2 p-3 bg-purple-100/50 rounded-xl sm:bg-transparent sm:p-0">
+                  <UserPlus className="w-8 h-8 text-purple-600" />
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -1390,80 +1451,7 @@ export default function TeacherDashboard() {
                                       <Activity className="w-4 h-4 mr-2" />
                                       View Progress
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={async () => {
-                                      setSelectedStudent(student);
-                                      try {
-                                        // Fetch all assessment responses
-                                        const { data: allAnswers, error: aerr } = await supabase
-                                          .from('assessment_responses')
-                                          .select('assessment_type, assessment_title, responses, completed_at, updated_at')
-                                          .eq('student_id', student.id)
-                                          .order('completed_at', { ascending: false, nullsFirst: false })
-                                          .order('updated_at', { ascending: false });
-                                        if (aerr) throw aerr;
 
-                                        // Get only the LATEST submission for each assessment type
-                                        const latestByType: Record<string, any> = {};
-                                        (allAnswers || []).forEach((answer: any) => {
-                                          const existing = latestByType[answer.assessment_type];
-                                          const answerTimestamp = new Date(answer.completed_at || answer.updated_at || 0).getTime();
-
-                                          if (!existing) {
-                                            latestByType[answer.assessment_type] = answer;
-                                            return;
-                                          }
-
-                                          const existingTimestamp = new Date(existing.completed_at || existing.updated_at || 0).getTime();
-                                          if (answerTimestamp > existingTimestamp) {
-                                            latestByType[answer.assessment_type] = answer;
-                                          }
-                                        });
-
-                                        // Convert to array and order by assessment sequence
-                                        const assessmentOrder = ['inspiration', 'about_me', 'dreams', 'school_learning', 'hobbies', 'role_models'];
-                                        const orderedAnswers = assessmentOrder
-                                          .map(type => latestByType[type])
-                                          .filter(Boolean)
-                                          .filter((answer, index, self) => {
-                                            // Remove duplicates by assessment_type
-                                            return index === self.findIndex(a => a.assessment_type === answer.assessment_type);
-                                          });
-
-                                        console.log('📋 Latest assessment answers:', {
-                                          total: orderedAnswers.length,
-                                          types: orderedAnswers.map(a => a.assessment_type),
-                                          details: orderedAnswers.map(a => ({
-                                            type: a.assessment_type,
-                                            title: a.assessment_title,
-                                            hasResponses: !!a.responses,
-                                            responseKeys: a.responses ? Object.keys(a.responses) : [],
-                                            completedAt: a.completed_at,
-                                            updatedAt: a.updated_at
-                                          }))
-                                        });
-
-                                        // Verify no duplicates
-                                        const typeSet = new Set(orderedAnswers.map(a => a.assessment_type));
-                                        if (typeSet.size !== orderedAnswers.length) {
-                                          console.warn('⚠️ Duplicate assessment types detected!', {
-                                            unique: typeSet.size,
-                                            total: orderedAnswers.length,
-                                            duplicates: orderedAnswers.filter((a, i, arr) =>
-                                              arr.findIndex(x => x.assessment_type === a.assessment_type) !== i
-                                            ).map(a => a.assessment_type)
-                                          });
-                                        }
-
-                                        setAssessmentAnswers(orderedAnswers);
-                                        setIsAnswersOpen(true);
-                                      } catch (err) {
-                                        console.error('Load answers error:', err);
-                                        toast({ title: 'Failed to load answers', variant: 'destructive' });
-                                      }
-                                    }}>
-                                      <FileText className="w-4 h-4 mr-2" />
-                                      View Assessment Answers
-                                    </DropdownMenuItem>
                                     <DropdownMenuItem className="text-red-600"
                                       onClick={async () => {
                                         if (!confirm('Unenroll this student from your list?')) return;
@@ -1707,7 +1695,7 @@ export default function TeacherDashboard() {
           onOpenChange={setImportOpen}
           classes={classes}
           teacherId={teacherRow.id}
-          schoolId={teacherRow.state_id}
+          stateId={teacherRow.state_id}
           onImported={loadStudents}
         />
       )}
@@ -1961,22 +1949,51 @@ export default function TeacherDashboard() {
                       <th className="text-left py-2 px-3">Name</th>
                       <th className="text-left py-2 px-3">Mobile / Email</th>
                       <th className="text-left py-2 px-3">Current Class</th>
+                      <th className="text-left py-2 px-3">Mentor</th>
                       <th className="text-left py-2 px-3">Action</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {existingResults.map((row: any) => (
-                      <tr key={row.student_user_id} className="border-b border-gray-100">
-                        <td className="py-2 px-3">{row.full_name}</td>
-                        <td className="py-2 px-3">{row.mobile || row.email}</td>
-                        <td className="py-2 px-3">{row.current_class || '—'}</td>
-                        <td className="py-2 px-3">
-                          <Button size="sm" variant="outline" onClick={() => { setEnrollTarget({ userId: row.student_user_id, name: row.full_name }); setEnrollClassId(row.current_class_id || ''); }}>
-                            Enroll
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
+                    {existingResults.map((row: any) => {
+                      // Treat "ILP Mentor", default mentors, AND missing names as enrollable
+                      const isDefault = row.is_default_mentor ||
+                        !row.mentor_name ||
+                        (row.mentor_name && row.mentor_name.includes('ILP Mentor'));
+
+                      return (
+                        <tr key={row.student_user_id} className="border-b border-gray-100">
+                          <td className="py-2 px-3">{row.full_name}</td>
+                          <td className="py-2 px-3">{row.mobile || row.email}</td>
+                          <td className="py-2 px-3">{row.current_class || '—'}</td>
+                          <td className="py-2 px-3">
+                            <Badge variant={isDefault ? "secondary" : "outline"} className="text-[10px]">
+                              {row.mentor_name}
+                            </Badge>
+                          </td>
+                          <td className="py-2 px-3">
+                            <Button
+                              size="sm"
+                              variant={isDefault ? "outline" : "ghost"}
+                              disabled={!isDefault && row.mentor_name !== 'None'}
+                              onClick={() => {
+                                setEnrollTarget({ userId: row.student_user_id, name: row.full_name });
+                                // Auto-select class based on name match
+                                const matchedClass = classes.find(c => c.name === row.current_class);
+                                if (matchedClass) {
+                                  setEnrollClassId(matchedClass.id);
+                                  setIsClassLocked(true);
+                                } else {
+                                  setEnrollClassId('');
+                                  setIsClassLocked(false);
+                                }
+                              }}
+                            >
+                              {row.mentor_name !== 'None' && !isDefault ? 'Already Mentored' : 'Enroll'}
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -1988,8 +2005,12 @@ export default function TeacherDashboard() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2 items-end">
                   <div className="space-y-1 md:col-span-2">
                     <div className="text-sm text-gray-600">Select Class (required)</div>
-                    <Select value={enrollClassId} onValueChange={setEnrollClassId}>
-                      <SelectTrigger>
+                    <Select
+                      value={enrollClassId}
+                      onValueChange={setEnrollClassId}
+                      disabled={isClassLocked}
+                    >
+                      <SelectTrigger className={isClassLocked ? "bg-gray-100" : ""}>
                         <SelectValue placeholder={classes.length ? 'Choose class' : 'No classes available'} />
                       </SelectTrigger>
                       <SelectContent>
@@ -1998,6 +2019,7 @@ export default function TeacherDashboard() {
                         ))}
                       </SelectContent>
                     </Select>
+
                   </div>
                   <div className="flex gap-2 justify-end md:justify-start">
                     <Button disabled={enrolling || !enrollClassId} onClick={async () => {

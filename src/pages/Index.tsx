@@ -76,10 +76,10 @@ const Index = () => {
               <div className="mx-auto w-20 h-20 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center mb-6">
                 <GraduationCap className="w-10 h-10 text-white" />
               </div>
-              <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6">
+              <h1 className="text-3xl md:text-6xl font-bold text-foreground mb-4 md:mb-6">
                 {t('titleBrandA')}<span className="text-primary">{t('titleBrandB')}</span>
               </h1>
-              <p className="text-xl text-muted-foreground mb-8 leading-relaxed">{t('heroDesc')}</p>
+              <p className="text-lg md:text-xl text-muted-foreground mb-8 leading-relaxed px-4 md:px-0">{t('heroDesc')}</p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button asChild size="lg" className="text-lg px-8">
                   <a href="/auth">

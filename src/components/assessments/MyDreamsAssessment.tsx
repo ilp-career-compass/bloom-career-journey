@@ -18,13 +18,14 @@ import {
   TrendingUp,
   AlertTriangle,
   Play,
-  ExternalLink
+  ExternalLink,
+  Save
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLang } from '@/hooks/useLang';
 import { ArrowLeft } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
 import { KannadaKeyboard } from '@/components/ui/KannadaKeyboard';
 import { checkAssessmentUnlock } from '@/utils/assessmentUnlock';
 
@@ -58,6 +59,43 @@ export default function MyDreamsAssessment() {
   const [currentSection, setCurrentSection] = useState<string>('section1');
   const [helpOpen, setHelpOpen] = useState<Record<string, boolean>>({});
   const toggleHelp = (k: string) => setHelpOpen(prev => ({ ...prev, [k]: !prev[k] }));
+  const [saving, setSaving] = useState(false);
+
+  const saveProgress = async () => {
+    if (isReadOnly) return;
+    const studentId = await getStudentId();
+    if (!studentId) return;
+
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('assessment_responses')
+        .upsert({
+          student_id: studentId,
+          assessment_type: 'dreams',
+          assessment_title: 'My Dreams',
+          responses: responses,
+          updated_at: new Date().toISOString(),
+          completed_at: null
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: lang === 'kn' ? 'ಪ್ರಗತಿಯನ್ನು ಉಳಿಸಲಾಗಿದೆ' : lang === 'ta' ? 'முன்னேற்றம் சேமிக்கப்பட்டது' : 'Progress Saved',
+        description: lang === 'kn' ? 'ನಿಮ್ಮ ಉತ್ತರಗಳನ್ನು ಉಳಿಸಲಾಗಿದೆ.' : lang === 'ta' ? 'உங்கள் பதில்கள் சேமிக்கப்பட்டன.' : 'Your answers have been saved.',
+      });
+    } catch (error) {
+      console.error('Error saving progress:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save progress.",
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   // Debug helper: expose state in the browser console for troubleshooting
   useEffect(() => {
@@ -102,9 +140,7 @@ export default function MyDreamsAssessment() {
             ? `ದಾಯವಿಟ್ಟು ಮೊದಲು "${unlockResult.missingPrerequisites.join(', ')}" ಪೂರ್ಣಗೊಳಿಸಿ.`
             : lang === 'ta'
               ? `"${unlockResult.missingPrerequisites.join(', ')}" செயல்களை முதலில் முடித்தால் இந்த பகுதி திறக்கும்.`
-              : lang === 'ta'
-                ? `"${unlockResult.missingPrerequisites.join(', ')}" செயல்களை முதலில் முடித்தால் இந்த பகுதி திறக்கும்.`
-                : `Please complete "${unlockResult.missingPrerequisites.join(', ')}" first.`,
+              : `Please complete "${unlockResult.missingPrerequisites.join(', ')}" first.`,
           variant: 'destructive',
         });
         navigate('/student');
@@ -355,7 +391,7 @@ export default function MyDreamsAssessment() {
           ...initialResponses,
         }));
 
-        if (data.completed_at) {
+        if (row.completed_at) {
           setIsCompleted(true);
         }
       }
@@ -647,328 +683,350 @@ export default function MyDreamsAssessment() {
             {t('backToDashboard')}
           </Button>
         </div>
-        <TooltipProvider>
-          {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-2xl md:text-3xl font-bold text-blue-800 mb-4">
+
+
+
+
+
+
+
+
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold text-blue-800 mb-4">
+            {lang === 'kn'
+              ? '🌟 ನನ್ನ ಕನಸುಗಳ ಮೌಲ್ಯಮಾಪನ'
+              : lang === 'ta'
+                ? '🌟 என் கனவுகள் மதிப்பீடு'
+                : '🌟 My Dreams Assessment'}
+          </h1>
+
+          {/* Quote Box */}
+          <div className="max-w-3xl mx-auto mb-6 p-4 md:p-6 border-2 border-gray-800 rounded-lg bg-white">
+            <p className="text-lg font-bold text-gray-900 mb-2">
               {lang === 'kn'
-                ? '🌟 ನನ್ನ ಕನಸುಗಳ ಮೌಲ್ಯಮಾಪನ'
+                ? '“ನೀವು ನಿದ್ರಿಸುವಾಗ ಕಾಣುವದನ್ನು ಅಲ್ಲ ಕನಸು, ನಿಮ್ಮನ್ನು ನಿದ್ರಿಸದಂತೆ 만드는 ಆಲೋಚನೆಯೇ ನಿಜವಾದ ಕನಸು.”'
                 : lang === 'ta'
-                  ? '🌟 என் கனவுகள் மதிப்பீடு'
-                  : '🌟 My Dreams Assessment'}
-            </h1>
-
-            {/* Quote Box */}
-            <div className="max-w-3xl mx-auto mb-6 p-4 md:p-6 border-2 border-gray-800 rounded-lg bg-white">
-              <p className="text-lg font-bold text-gray-900 mb-2">
-                {lang === 'kn'
-                  ? '“ನೀವು ನಿದ್ರಿಸುವಾಗ ಕಾಣುವದನ್ನು ಅಲ್ಲ ಕನಸು, ನಿಮ್ಮನ್ನು ನಿದ್ರಿಸದಂತೆ 만드는 ಆಲೋಚನೆಯೇ ನಿಜವಾದ ಕನಸು.”'
-                  : lang === 'ta'
-                    ? '“நீங்கள் தூங்கும்போது காண்பது கனவு அல்ல; உங்களைத் தூங்க விடாமல் செய்யும் எண்ணங்களே உண்மையான கனவுகள்.”'
-                    : '“Dream is not that which you see while sleeping, it is something that does not let you sleep”.'}
-              </p>
-              <p className="text-gray-700 italic">
-                {lang === 'kn'
-                  ? 'ಡಾ. ಎ. ಪಿ. ಜೇ. ಅಬ್ದುಲ್ ಕಲಾಂ'
-                  : lang === 'ta'
-                    ? 'டாக்டர் ஏ. பி. ஜே. அப்துல் கலாம்'
-                    : 'By Dr. A. P. J. Abdul Kalam'}
-              </p>
-            </div>
-
-            {/* Description Text */}
-            <div className="max-w-3xl mx-auto space-y-3 text-gray-700">
-              <p className="text-base leading-relaxed">
-                {lang === 'kn'
-                  ? 'ನಮ್ಮ ಭವಿಷ್ಯದ ಬಗ್ಗೆ ಪ್ರತಿಯೊಬ್ಬರಿಗೂ ಹಲವು ಕನಸುಗಳು ಇವೆ. ನಿಮ್ಮ ಕನಸುಗಳು ಯಾವುವು? ನಿಮಗೆ ಬಹಳ ಮುಖ್ಯವಾಗಿ ಅನಿಸುವ ಯಾವುದೇ ಗುರಿ ಅಥವಾ ಆಶೆ ಇದೆಯೇ?'
-                  : lang === 'ta'
-                    ? 'நாம் ஒவ்வொருவரும் எங்கள் எதிர்காலத்தைப் பற்றி பல கனவுகளை வைத்திருக்கிறோம். உங்கள் கனவுகள் என்ன? உங்களுக்கு மிகவும் நெருக்கமாக உணரப்படும் ஒரு இலக்கு அல்லது ஆசை இருக்கிறதா?'
-                    : 'We all hold dreams for our future. What are your dreams? Is there a particular goal or aspiration that resonates strongly with you?'}
-              </p>
-              <p className="text-base leading-relaxed">
-                {lang === 'kn'
-                  ? 'ಈ பகுதಿಯಲ್ಲಿ, ನಿಮ್ಮ ಕನಸುಗಳು ಮತ್ತು ಆಶೆಗಳ ಪ್ರಪಂಚವನ್ನು ನಿಧಾನವಾಗಿ ಅನ್ವೇಷಿಸೋಣ.'
-                  : lang === 'ta'
-                    ? 'இந்த ஆராய்ச்சி பகுதியின் மூலம், உங்கள் கனவுகள் மற்றும் ஆசைகளின் உலகத்தை மெதுவாக ஆராயப் போகிறோம்.'
-                    : "In this exploratory section, we'll uncover your world of dreams and aspirations."}
-              </p>
-            </div>
+                  ? '“நீங்கள் தூங்கும்போது காண்பது கனவு அல்ல; உங்களைத் தூங்க விடாமல் செய்யும் எண்ணங்களே உண்மையான கனவுகள்.”'
+                  : '“Dream is not that which you see while sleeping, it is something that does not let you sleep”.'}
+            </p>
+            <p className="text-gray-700 italic">
+              {lang === 'kn'
+                ? 'ಡಾ. ಎ. ಪಿ. ಜೇ. ಅಬ್ದುಲ್ ಕಲಾಂ'
+                : lang === 'ta'
+                  ? 'டாக்டர் ஏ. பி. ஜே. அப்துல் கலாம்'
+                  : 'By Dr. A. P. J. Abdul Kalam'}
+            </p>
           </div>
 
-          {/* Progress Bar */}
-          <Card className="mb-6 border-0 shadow-lg">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-800">{t('yourProgress')}</h2>
-                <Badge variant="secondary">{Math.round(getProgressPercentage())}% {t('completeSuffix')}</Badge>
-              </div>
-              <Progress value={getProgressPercentage()} className="h-3" />
-              <div className="flex justify-between text-sm text-gray-600 mt-2">
-                <span>
-                  {lang === 'kn'
-                    ? `ವಿಭಾಗ ${sections.indexOf(currentSection) + 1} / ${sections.length}`
+          {/* Description Text */}
+          <div className="max-w-3xl mx-auto space-y-3 text-gray-700">
+            <p className="text-base leading-relaxed">
+              {lang === 'kn'
+                ? 'ನಮ್ಮ ಭವಿಷ್ಯದ ಬಗ್ಗೆ ಪ್ರತಿಯೊಬ್ಬರಿಗೂ ಹಲವು ಕನಸುಗಳು ಇವೆ. ನಿಮ್ಮ ಕನಸುಗಳು ಯಾವುವು? ನಿಮಗೆ ಬಹಳ ಮುಖ್ಯವಾಗಿ ಅನಿಸುವ ಯಾವುದೇ ಗುರಿ ಅಥವಾ ಆಶೆ ಇದೆಯೇ?'
+                : lang === 'ta'
+                  ? 'நாம் ஒவ்வொருவரும் எங்கள் எதிர்காலத்தைப் பற்றி பல கனவுகளை வைத்திருக்கிறோம். உங்கள் கனவுகள் என்ன? உங்களுக்கு மிகவும் நெருக்கமாக உணரப்படும் ஒரு இலக்கு அல்லது ஆசை இருக்கிறதா?'
+                  : 'We all hold dreams for our future. What are your dreams? Is there a particular goal or aspiration that resonates strongly with you?'}
+            </p>
+            <p className="text-base leading-relaxed">
+              {lang === 'kn'
+                ? 'ಈ பகுதಿಯಲ್ಲಿ, ನಿಮ್ಮ ಕನಸುಗಳು ಮತ್ತು ಆಶೆಗಳ ಪ್ರಪಂಚವನ್ನು ನಿಧಾನವಾಗಿ ಅನ್ವೇಷಿಸೋಣ.'
+                : lang === 'ta'
+                  ? 'இந்த ஆராய்ச்சி பகுதியின் மூலம், உங்கள் கனவுகள் மற்றும் ஆசைகளின் உலகத்தை மெதுவாக ஆராயப் போகிறோம்.'
+                  : "In this exploratory section, we'll uncover your world of dreams and aspirations."}
+            </p>
+          </div>
+        </div>
+
+        {/* Progress Bar */}
+        <Card className="mb-6 border-0 shadow-lg">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-800">{t('yourProgress')}</h2>
+              <Badge variant="secondary">{Math.round(getProgressPercentage())}% {t('completeSuffix')}</Badge>
+            </div>
+            <Progress value={getProgressPercentage()} className="h-3" />
+            <div className="flex justify-between text-sm text-gray-600 mt-2">
+              <span>
+                {lang === 'kn'
+                  ? `ವಿಭಾಗ ${sections.indexOf(currentSection) + 1} / ${sections.length}`
+                  : lang === 'ta'
+                    ? `பகுதி ${sections.indexOf(currentSection) + 1} / ${sections.length}`
+                    : `Section ${sections.indexOf(currentSection) + 1} of ${sections.length}`}
+              </span>
+              <span>{Math.round(getProgressPercentage())}% {t('completeSuffix')}</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Section Navigation */}
+        <div className="flex justify-center mb-6">
+          <div className="flex flex-col md:flex-row bg-white rounded-lg p-1 shadow-md w-full md:w-auto">
+            {sections.map((sectionKey, index) => {
+              const sectionQuestions = questionsBySection[sectionKey] || [];
+              const sectionNumber = index + 1;
+              let sectionTitle = '';
+              if (sectionKey === 'section1') {
+                sectionTitle =
+                  lang === 'kn'
+                    ? 'ಭಾಗ 1: ನಿಮ್ಮ ಕನಸುಗಳು ಮತ್ತು ಭವಿಷ್ಯದ ಗುರಿಗಳು'
                     : lang === 'ta'
-                      ? `பகுதி ${sections.indexOf(currentSection) + 1} / ${sections.length}`
-                      : `Section ${sections.indexOf(currentSection) + 1} of ${sections.length}`}
-                </span>
-                <span>{Math.round(getProgressPercentage())}% {t('completeSuffix')}</span>
-              </div>
-            </CardContent>
-          </Card>
+                      ? 'பகுதி 1: உங்கள் கனவுகள் மற்றும் எதிர்கால இலக்குகள்'
+                      : 'Section 1: Your Dreams & Future Goals';
+              } else if (sectionKey === 'section2') {
+                sectionTitle =
+                  lang === 'kn'
+                    ? 'ಭಾಗ 2: ವೃತ್ತಿ ಮತ್ತು ಜೀವನದ ಆಶೆಗಳು'
+                    : lang === 'ta'
+                      ? 'பகுதி 2: தொழில் மற்றும் வாழ்க்கை ஆசைகள்'
+                      : 'Section 2: Career & Life Aspirations';
+              } else if (sectionKey === 'section3') {
+                sectionTitle =
+                  lang === 'kn'
+                    ? 'ಭಾಗ 3: ಕನಸುಗಳನ್ನು ನಿಜವಾಗಿಸುವುದು'
+                    : lang === 'ta'
+                      ? 'பகுதி 3: கனவுகளை நனவாக்குதல்'
+                      : 'Section 3: Making Dreams Reality';
+              } else {
+                sectionTitle =
+                  lang === 'kn'
+                    ? `ಭಾಗ ${sectionNumber}`
+                    : lang === 'ta'
+                      ? `பகுதி ${sectionNumber}`
+                      : `Section ${sectionNumber}`;
+              }
 
-          {/* Section Navigation */}
-          <div className="flex justify-center mb-6">
-            <div className="flex flex-col md:flex-row bg-white rounded-lg p-1 shadow-md w-full md:w-auto">
-              {sections.map((sectionKey, index) => {
-                const sectionQuestions = questionsBySection[sectionKey] || [];
-                const sectionNumber = index + 1;
-                let sectionTitle = '';
-                if (sectionKey === 'section1') {
-                  sectionTitle =
-                    lang === 'kn'
-                      ? 'ಭಾಗ 1: ನಿಮ್ಮ ಕನಸುಗಳು ಮತ್ತು ಭವಿಷ್ಯದ ಗುರಿಗಳು'
-                      : lang === 'ta'
-                        ? 'பகுதி 1: உங்கள் கனவுகள் மற்றும் எதிர்கால இலக்குகள்'
-                        : 'Section 1: Your Dreams & Future Goals';
-                } else if (sectionKey === 'section2') {
-                  sectionTitle =
-                    lang === 'kn'
-                      ? 'ಭಾಗ 2: ವೃತ್ತಿ ಮತ್ತು ಜೀವನದ ಆಶೆಗಳು'
-                      : lang === 'ta'
-                        ? 'பகுதி 2: தொழில் மற்றும் வாழ்க்கை ஆசைகள்'
-                        : 'Section 2: Career & Life Aspirations';
-                } else if (sectionKey === 'section3') {
-                  sectionTitle =
-                    lang === 'kn'
-                      ? 'ಭಾಗ 3: ಕನಸುಗಳನ್ನು ನಿಜವಾಗಿಸುವುದು'
-                      : lang === 'ta'
-                        ? 'பகுதி 3: கனவுகளை நனவாக்குதல்'
-                        : 'Section 3: Making Dreams Reality';
-                } else {
-                  sectionTitle =
-                    lang === 'kn'
-                      ? `ಭಾಗ ${sectionNumber}`
-                      : lang === 'ta'
-                        ? `பகுதி ${sectionNumber}`
-                        : `Section ${sectionNumber}`;
-                }
-
-                return (
-                  <button
-                    key={sectionKey}
-                    onClick={() => setCurrentSection(sectionKey)}
-                    className={`px-6 py-2 rounded-md transition-all ${currentSection === sectionKey
-                        ? 'bg-blue-600 text-white shadow-md'
-                        : 'text-gray-600 hover:text-blue-600'
-                      }`}
-                  >
-                    {sectionTitle}
-                  </button>
-                );
-              })}
-            </div>
+              return (
+                <button
+                  key={sectionKey}
+                  onClick={() => setCurrentSection(sectionKey)}
+                  className={`px-6 py-2 rounded-md transition-all ${currentSection === sectionKey
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'text-gray-600 hover:text-blue-600'
+                    }`}
+                >
+                  {sectionTitle}
+                </button>
+              );
+            })}
           </div>
+        </div>
 
-          {/* Dynamically render sections from database */}
-          {sections.map((sectionKey) => {
-            const sectionQuestions = questionsBySection[sectionKey] || [];
-            if (sectionQuestions.length === 0) return null;
+        {/* Dynamically render sections from database */}
+        {sections.map((sectionKey) => {
+          const sectionQuestions = questionsBySection[sectionKey] || [];
+          if (sectionQuestions.length === 0) return null;
 
-            const sectionNumber = sections.indexOf(sectionKey) + 1;
-            let sectionTitle = '';
-            let sectionDescription = '';
-            let headerColor = 'from-blue-50 to-indigo-50';
-            let titleColor = 'text-blue-800';
-            let descColor = 'text-blue-600';
+          const sectionNumber = sections.indexOf(sectionKey) + 1;
+          let sectionTitle = '';
+          let sectionDescription = '';
+          let headerColor = 'from-blue-50 to-indigo-50';
+          let titleColor = 'text-blue-800';
+          let descColor = 'text-blue-600';
 
-            if (sectionKey === 'section1') {
-              sectionTitle =
-                lang === 'kn'
-                  ? 'ಭಾಗ 1: ನಿಮ್ಮ ಕನಸುಗಳು ಮತ್ತು ಭವಿಷ್ಯದ ಗುರಿಗಳು'
-                  : lang === 'ta'
-                    ? 'பகுதி 1: உங்கள் கனவுகள் மற்றும் எதிர்கால இலக்குகள்'
-                    : 'Section 1: Your Dreams & Future Goals';
-              sectionDescription =
-                lang === 'kn'
-                  ? 'ನಿಮ್ಮ ಭವಿಷ್ಯದ ಕನಸುಗಳು ಮತ್ತು ನೀವು ಸಾಧಿಸಲು ಬಯಸುವ ಗುರಿಗಳನ್ನು ಇಲ್ಲಿ ಬರೆಯಿರಿ.'
-                  : lang === 'ta'
-                    ? 'எதிர்காலத்தில் நீங்கள் அடைய விரும்பும் கனவுகளையும் இலக்குகளையும் இங்கே எழுதுங்கள்.'
-                    : 'Express your dreams for the future and what you aspire to achieve';
-            } else if (sectionKey === 'section2') {
-              sectionTitle =
-                lang === 'kn'
-                  ? 'ಭಾಗ 2: ವೃತ್ತಿ ಮತ್ತು ಜೀವನದ ಆಶೆಗಳು'
-                  : lang === 'ta'
-                    ? 'பகுதி 2: தொழில் மற்றும் வாழ்க்கை ஆசைகள்'
-                    : 'Section 2: Career & Life Aspirations';
-              sectionDescription =
-                lang === 'kn'
-                  ? 'ನೀವು ಯಾವ ವೃತ್ತಿಯಲ್ಲಿ/ಜೀವನ ಶೈಲಿಯಲ್ಲಿ ಇರಬೇಕೆಂದುಕೊಳ್ಳುತ್ತೀರಿ ಮತ್ತು ಸಮಾಜಕ್ಕೆ ಹೇಗೆ ಕೊಡುಗೆ ನೀಡಲು ಬಯಸುತ್ತೀರಿ ಎಂಬುದನ್ನು ಅನ್ವೇಷಿಸಿ.'
-                  : lang === 'ta'
-                    ? 'எந்த தொழிலில் செல்ல வேண்டும், எங்கு வாழ வேண்டும், சமுதாயத்திற்கு எப்படி பங்களிக்க வேண்டும் என்பதை இங்கே எண்ணிப் பார்க்கவும்.'
-                    : 'Explore your career and life goals, where you want to live, and how you want to contribute';
-              headerColor = 'from-purple-50 to-pink-50';
-              titleColor = 'text-purple-800';
-              descColor = 'text-purple-600';
-            } else if (sectionKey === 'section3') {
-              sectionTitle =
-                lang === 'kn'
-                  ? 'ಭಾಗ 3: ಕನಸುಗಳನ್ನು ನಿಜವಾಗಿಸುವುದು'
-                  : lang === 'ta'
-                    ? 'பகுதி 3: கனவுகளை நனவாக்குதல்'
-                    : 'Section 3: Making Dreams Reality';
-              sectionDescription =
-                lang === 'kn'
-                  ? 'ನಿಮ್ಮ ಕನಸುಗಳನ್ನು ನಿಜವಾಗಿಸಲು ಬೇಕಾದ ಹೆಜ್ಜೆಗಳು ಮತ್ತು ಮಧ್ಯದಲ್ಲಿರಬಹುದಾದ ಅಡಚಣೆಗಳನ್ನು ಇಲ್ಲಿ ಯೋಜಿಸಿ.'
-                  : lang === 'ta'
-                    ? 'உங்கள் கனவுகளை நனவாக்க எவ்வாறு படிப்படியாக செயல்படலாம், வரும் சிரமங்களை எப்படி சமாளிக்கலாம் என்பதைக் குறித்து இங்கே திட்டமிடுங்கள்.'
-                    : 'Plan the steps needed to achieve your dreams and identify potential obstacles';
-              headerColor = 'from-green-50 to-emerald-50';
-              titleColor = 'text-green-800';
-              descColor = 'text-green-600';
-            } else {
-              sectionTitle =
-                lang === 'kn'
-                  ? `ಭಾಗ ${sectionNumber}`
-                  : lang === 'ta'
-                    ? `பகுதி ${sectionNumber}`
-                    : `Section ${sectionNumber}`;
-              sectionDescription =
-                lang === 'kn'
-                  ? 'ಈ ಭಾಗದಲ್ಲಿನ ಪ್ರಶ್ನೆಗಳಿಗೆ ನಿಮ್ಮ ಆಲೋಚನೆಗಳನ್ನು ಬರೆಯಿರಿ.'
-                  : lang === 'ta'
-                    ? 'இந்த பகுதியில் உள்ள கேள்விகளுக்கு உங்கள் எண்ணங்களை எழுதுங்கள்.'
-                    : 'Answer the questions in this section';
-            }
+          if (sectionKey === 'section1') {
+            sectionTitle =
+              lang === 'kn'
+                ? 'ಭಾಗ 1: ನಿಮ್ಮ ಕನಸುಗಳು ಮತ್ತು ಭವಿಷ್ಯದ ಗುರಿಗಳು'
+                : lang === 'ta'
+                  ? 'பகுதி 1: உங்கள் கனவுகள் மற்றும் எதிர்கால இலக்குகள்'
+                  : 'Section 1: Your Dreams & Future Goals';
+            sectionDescription =
+              lang === 'kn'
+                ? 'ನಿಮ್ಮ ಭವಿಷ್ಯದ ಕನಸುಗಳು ಮತ್ತು ನೀವು ಸಾಧಿಸಲು ಬಯಸುವ ಗುರಿಗಳನ್ನು ಇಲ್ಲಿ ಬರೆಯಿರಿ.'
+                : lang === 'ta'
+                  ? 'எதிர்காலத்தில் நீங்கள் அடைய விரும்பும் கனவுகளையும் இலக்குகளையும் இங்கே எழுதுங்கள்.'
+                  : 'Express your dreams for the future and what you aspire to achieve';
+          } else if (sectionKey === 'section2') {
+            sectionTitle =
+              lang === 'kn'
+                ? 'ಭಾಗ 2: ವೃತ್ತಿ ಮತ್ತು ಜೀವನದ ಆಶೆಗಳು'
+                : lang === 'ta'
+                  ? 'பகுதி 2: தொழில் மற்றும் வாழ்க்கை ஆசைகள்'
+                  : 'Section 2: Career & Life Aspirations';
+            sectionDescription =
+              lang === 'kn'
+                ? 'ನೀವು ಯಾವ ವೃತ್ತಿಯಲ್ಲಿ/ಜೀವನ ಶೈಲಿಯಲ್ಲಿ ಇರಬೇಕೆಂದುಕೊಳ್ಳುತ್ತೀರಿ ಮತ್ತು ಸಮಾಜಕ್ಕೆ ಹೇಗೆ ಕೊಡುಗೆ ನೀಡಲು ಬಯಸುತ್ತೀರಿ ಎಂಬುದನ್ನು ಅನ್ವೇಷಿಸಿ.'
+                : lang === 'ta'
+                  ? 'எந்த தொழிலில் செல்ல வேண்டும், எங்கு வாழ வேண்டும், சமுதாயத்திற்கு எப்படி பங்களிக்க வேண்டும் என்பதை இங்கே எண்ணிப் பார்க்கவும்.'
+                  : 'Explore your career and life goals, where you want to live, and how you want to contribute';
+            headerColor = 'from-purple-50 to-pink-50';
+            titleColor = 'text-purple-800';
+            descColor = 'text-purple-600';
+          } else if (sectionKey === 'section3') {
+            sectionTitle =
+              lang === 'kn'
+                ? 'ಭಾಗ 3: ಕನಸುಗಳನ್ನು ನಿಜವಾಗಿಸುವುದು'
+                : lang === 'ta'
+                  ? 'பகுதி 3: கனவுகளை நனவாக்குதல்'
+                  : 'Section 3: Making Dreams Reality';
+            sectionDescription =
+              lang === 'kn'
+                ? 'ನಿಮ್ಮ ಕನಸುಗಳನ್ನು ನಿಜವಾಗಿಸಲು ಬೇಕಾದ ಹೆಜ್ಜೆಗಳು ಮತ್ತು ಮಧ್ಯದಲ್ಲಿರಬಹುದಾದ ಅಡಚಣೆಗಳನ್ನು ಇಲ್ಲಿ ಯೋಜಿಸಿ.'
+                : lang === 'ta'
+                  ? 'உங்கள் கனவுகளை நனவாக்க எவ்வாறு படிப்படியாக செயல்படலாம், வரும் சிரமங்களை எப்படி சமாளிக்கலாம் என்பதைக் குறித்து இங்கே திட்டமிடுங்கள்.'
+                  : 'Plan the steps needed to achieve your dreams and identify potential obstacles';
+            headerColor = 'from-green-50 to-emerald-50';
+            titleColor = 'text-green-800';
+            descColor = 'text-green-600';
+          } else {
+            sectionTitle =
+              lang === 'kn'
+                ? `ಭಾಗ ${sectionNumber}`
+                : lang === 'ta'
+                  ? `பகுதி ${sectionNumber}`
+                  : `Section ${sectionNumber}`;
+            sectionDescription =
+              lang === 'kn'
+                ? 'ಈ ಭಾಗದಲ್ಲಿನ ಪ್ರಶ್ನೆಗಳಿಗೆ ನಿಮ್ಮ ಆಲೋಚನೆಗಳನ್ನು ಬರೆಯಿರಿ.'
+                : lang === 'ta'
+                  ? 'இந்த பகுதியில் உள்ள கேள்விகளுக்கு உங்கள் எண்ணங்களை எழுதுங்கள்.'
+                  : 'Answer the questions in this section';
+          }
 
-            return (
-              <div key={sectionKey} style={{ display: currentSection === sectionKey ? 'block' : 'none' }}>
-                <Card className="border-0 shadow-lg">
-                  <CardHeader className={`bg-gradient-to-r ${headerColor}`}>
-                    <CardTitle className={`text-xl ${titleColor}`}>{sectionTitle}</CardTitle>
-                    <CardDescription className={descColor}>
-                      {sectionDescription}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <div className="space-y-6">
-                      {sectionQuestions.map((question, index) => {
-                        const questionNumber = index + 1;
-                        const questionValue = responses[question.id] || '';
-                        const helpKey = question.id;
-                        const isOpen = !!helpOpen[helpKey];
-                        const helpText = question.help_text || '';
+          return (
+            <div key={sectionKey} style={{ display: currentSection === sectionKey ? 'block' : 'none' }}>
+              <Card className="border-0 shadow-lg">
+                <CardHeader className={`bg-gradient-to-r ${headerColor}`}>
+                  <CardTitle className={`text-xl ${titleColor}`}>{sectionTitle}</CardTitle>
+                  <CardDescription className={descColor}>
+                    {sectionDescription}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="space-y-6">
+                    {sectionQuestions.map((question, index) => {
+                      const questionNumber = index + 1;
+                      const questionValue = responses[question.id] || '';
+                      const helpKey = question.id;
+                      const isOpen = !!helpOpen[helpKey];
+                      const helpText = question.help_text || '';
 
-                        // Format label - don't add number if already present
-                        const hasNumber = /^\d+\.\s/.test(question.question_text || '');
-                        const label = hasNumber
-                          ? question.question_text
-                          : `${questionNumber}. ${question.question_text}`;
+                      // Format label - don't add number if already present
+                      const hasNumber = /^\d+\.\s/.test(question.question_text || '');
+                      const label = hasNumber
+                        ? question.question_text
+                        : `${questionNumber}. ${question.question_text}`;
 
-                        return (
-                          <div key={question.id}>
-                            <label className="block text-base font-medium text-gray-800 mb-2 flex items-center gap-2">
-                              {label}
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <button
-                                    type="button"
-                                    aria-label="Help"
-                                    className="text-blue-600 hover:text-blue-700"
-                                    onClick={() => toggleHelp(helpKey)}
-                                  >
-                                    💬
-                                  </button>
-                                </TooltipTrigger>
-                                <TooltipContent className="max-w-xs">{helpText}</TooltipContent>
-                              </Tooltip>
-                            </label>
-                            {isOpen && (
-                              <div className="mb-2 p-3 rounded border bg-blue-50 border-blue-200 text-sm text-blue-800">
-                                {helpText}
-                              </div>
-                            )}
-                            <Textarea
-                              placeholder={helpText}
-                              value={questionValue}
-                              onChange={(e) => handleResponseChange(question.id, e.target.value)}
-                              readOnly={isReadOnly}
-                              rows={4}
-                              className="text-base border-blue-200 focus:border-blue-400"
-                            />
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            );
-          })}
+                      return (
+                        <div key={question.id}>
+                          <label className="block text-base font-medium text-gray-800 mb-2 flex items-center gap-2">
+                            {label}
+                            <button
+                              type="button"
+                              aria-label="Help"
+                              className="text-blue-600 hover:text-blue-700"
+                              onClick={() => toggleHelp(helpKey)}
+                            >
+                              💬
+                            </button>
+                          </label>
+                          {isOpen && (
+                            <div className="mb-2 p-3 rounded border bg-blue-50 border-blue-200 text-sm text-blue-800">
+                              {helpText}
+                            </div>
+                          )}
+                          <Textarea
+                            placeholder={helpText}
+                            value={questionValue}
+                            onChange={(e) => handleResponseChange(question.id, e.target.value)}
+                            readOnly={isReadOnly}
+                            rows={4}
+                            className={`text-base border-blue-200 focus:border-blue-400 ${isReadOnly ? 'bg-gray-100 cursor-not-allowed opacity-80' : 'bg-white'}`}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          );
+        })}
 
-          {/* Navigation and Submit */}
-          <div className="flex justify-between items-center mt-8">
+        {/* Navigation and Submit */}
+        <div className="flex flex-col-reverse sm:flex-row justify-between items-center mt-8 gap-4 sm:gap-0">
+          <Button
+            variant="outline"
+            onClick={() => {
+              const currentIndex = sections.indexOf(currentSection);
+              if (currentIndex > 0) {
+                setCurrentSection(sections[currentIndex - 1]);
+              }
+            }}
+            disabled={sections.indexOf(currentSection) === 0}
+            className="w-full sm:w-auto border-blue-200 text-blue-700 hover:bg-blue-50"
+          >
+            {lang === 'kn'
+              ? 'ಹಿಂದಿನ ಭಾಗ'
+              : lang === 'ta'
+                ? 'முந்தைய பகுதி'
+                : 'Previous Section'}
+          </Button>
+
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <Button
+              variant="outline"
+              onClick={saveProgress}
+              disabled={saving || isReadOnly}
+              className="w-full sm:w-auto border-blue-200 text-blue-700 hover:bg-blue-50"
+            >
+              {saving ? (
+                <>Saving...</>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  {lang === 'kn'
+                    ? 'ಪ್ರಗತಿಯನ್ನು ಉಳಿಸಿ'
+                    : lang === 'ta'
+                      ? 'முன்னேற்றத்தைச் சேமி'
+                      : 'Save Progress'}
+                </>
+              )}
+            </Button>
+
             <Button
               variant="outline"
               onClick={() => {
                 const currentIndex = sections.indexOf(currentSection);
-                if (currentIndex > 0) {
-                  setCurrentSection(sections[currentIndex - 1]);
+                if (currentIndex < sections.length - 1) {
+                  setCurrentSection(sections[currentIndex + 1]);
                 }
               }}
-              disabled={sections.indexOf(currentSection) === 0}
-              className="border-blue-200 text-blue-700 hover:bg-blue-50"
+              disabled={sections.indexOf(currentSection) === sections.length - 1}
+              className="w-full sm:w-auto border-blue-200 text-blue-700 hover:bg-blue-50"
             >
               {lang === 'kn'
-                ? 'ಹಿಂದಿನ ಭಾಗ'
+                ? 'ಮುಂದಿನ ಭಾಗ'
                 : lang === 'ta'
-                  ? 'முந்தைய பகுதி'
-                  : 'Previous Section'}
+                  ? 'அடுத்த பகுதி'
+                  : 'Next Section'}
             </Button>
 
-            <div className="flex gap-2">
+            {sections.indexOf(currentSection) === sections.length - 1 && (
               <Button
-                variant="outline"
-                onClick={() => {
-                  const currentIndex = sections.indexOf(currentSection);
-                  if (currentIndex < sections.length - 1) {
-                    setCurrentSection(sections[currentIndex + 1]);
-                  }
-                }}
-                disabled={sections.indexOf(currentSection) === sections.length - 1}
-                className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                onClick={submitAssessment}
+                disabled={!canSubmit() || submitting || isReadOnly}
+                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700"
               >
-                {lang === 'kn'
-                  ? 'ಮುಂದಿನ ಭಾಗ'
-                  : lang === 'ta'
-                    ? 'அடுத்த பகுதி'
-                    : 'Next Section'}
+                {submitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    {t('submitting')}
+                  </>
+                ) : (
+                  <>
+                    <Star className="w-4 h-4 mr-2" />
+                    {t('submitDreams')}
+                  </>
+                )}
               </Button>
-
-              {sections.indexOf(currentSection) === sections.length - 1 && (
-                <Button
-                  onClick={submitAssessment}
-                  disabled={!canSubmit() || submitting || isReadOnly}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  {submitting ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      {t('submitting')}
-                    </>
-                  ) : (
-                    <>
-                      <Star className="w-4 h-4 mr-2" />
-                      {t('submitDreams')}
-                    </>
-                  )}
-                </Button>
-              )}
-            </div>
+            )}
           </div>
-        </TooltipProvider>
+        </div>
+
       </div>
       <KannadaKeyboard lang={lang} />
-    </div>
+    </div >
   );
 }

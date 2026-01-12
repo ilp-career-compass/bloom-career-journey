@@ -1,0 +1,154 @@
+{
+    "module_title": {
+        "en": "Career guidance tools and finding information using them (Charts, career guide books, websites, mobile apps, and WhatsApp chatbots)",
+        "ta": "தொழில் வழிகாட்டி கருவிகள் மற்றும் அவற்றில் தகவல் தேடுதல் (வரைபடங்கள், தொழில் வழிகாட்டி புத்தகம், இணையதளம், மொபைல் செயலி, வாட்ஸ்அப் சாட்பாட்)",
+        "kn": "ವೃತ್ತಿ ಮಾರ್ಗದರ್ಶನ ಪರಿಕರಗಳು ಮತ್ತು ಅವುಗಳಲ್ಲಿ ಮಾಹಿತಿ ಹುಡುಕಾಟ (ಚಾರ್ಟ್, ವೃತ್ತಿ ಕೈಪಿಡಿ, ವೆಬ್‌ಸೈಟ್, ಮೊಬೈಲ್ ಆಪ್ ಮತ್ತು ವಾಟ್ಸ್ಆಪ್ ಚಾಟ್‌ಬಾಟ್)"
+    },
+    "questions": [
+        {
+            "sequence": 1,
+            "text": {
+                "en": "Before seeing the career chart and career guide book, did you know that there are so many different careers and courses to choose from?",
+                "ta": "கரியர் சார்ட் மற்றும் தொழில் வழிகாட்டி புத்தகத்தைப் பார்ப்பதற்கு முன், தேர்வு செய்ய இவ்வளவு விதமான தொழில்கள் / பாடநெறிகள் உள்ளன என்பதை நீங்கள் அறிந்திருந்தீர்களா?",
+                "kn": "೧. ಕೆರಿಯರ್ ಚಾರ್ಟ್ ಮತ್ತು ವೃತ್ತಿ ಕೈಪಿಡಿಯನ್ನು ನೋಡುವ ಮೊದಲು, ಆಯ್ಕೆ ಮಾಡಲು ಇಷ್ಟು ವಿಭಿನ್ನ ವೃತ್ತಿಗಳು / ಕೋರ್ಸ್‌ಗಳು ಇವೆ ಎಂಬುದು ನಿಮಗೆ ತಿಳಿದಿತ್ತೇ?"
+            },
+            "help_text": {
+                "en": "Did you know there are many careers and courses?",
+                "ta": "பல தொழில்கள் மற்றும் பாடங்கள் உள்ளதை அறிந்தீர்களா?",
+                "kn": null
+            }
+        },
+        {
+            "sequence": 2,
+            "text": {
+                "en": "List 5 careers you learned about after the career guidance class.",
+                "ta": "தொழில் வழிகாட்டி வகுப்புக்குப் பிறகு தெரிந்த 5 தொழில்களை பட்டியலிடுங்கள்.",
+                "kn": "೨. ಈ ಚಟುವಟಿಕೆಯ ಮೊದಲು ನಿಮಗೆ ತಿಳಿದಿರದ ಮತ್ತು ವೃತ್ತಿ ಮಾರ್ಗದರ್ಶನ ತರಗತಿಯ ನಂತರ ತಿಳಿದ ೫ ವೃತ್ತಿಗಳನ್ನು ಪಟ್ಟಿ ಮಾಡಿ."
+            },
+            "help_text": {
+                "en": "Name 5 careers you learned after the career guidance class",
+                "ta": "தொழில் வழிகாட்டல் வகுப்புக்குப் பிறகு நீங்கள் தெரிந்த 5 தொழில்களை எழுதுங்கள்.",
+                "kn": null
+            }
+        },
+        {
+            "sequence": 3,
+            "text": {
+                "en": "List 2 careers from the career chart that are easiest or most reachable.\n\n(Example: To become a teacher, you can take certain subjects in PU, then complete B.Sc / M.Sc, and become a teacher.)",
+                "ta": "தொழில் சார்ட்-ல் மிகவும் எளிதாக அடையக்கூடிய 2 தொழில்களை பட்டியலிடுங்கள்.\n(உதாரணம்: ஆசிரியர் ஆக, PU-ல் சில பாடங்களை எடுத்துக் கொண்டு, பிறகு B.Sc / M.Sc முடித்து ஆசிரியராகலாம்.)",
+                "kn": "೩. ಕೆರಿಯರ್ ಚಾರ್ಟ್‌ನಲ್ಲಿ ಹೆಚ್ಚು ಪ್ರಾಮುಖ್ಯತೆಯಿಂದ ತಲುಪಬಹುದಾದ 2 ವೃತ್ತಿಗಳನ್ನು ಪಟ್ಟಿ ಮಾಡಿ.\n(ಉದಾ: ನೀವು ಶಿಕ್ಷಕರಾಗಲು, PU ಲೆವೆಲ್‌ನಲ್ಲಿ ಕೌಶಲ್ಯ/ವಿಷಯ ತೆಗೆದುಕೊಂಡು, ನಂತರ ಬಿಎಸ್ಸಿ / ಎಂಎಸ್ಸಿ ಮುಗಿಸಿ ಶಿಕ್ಷಕರಾಗಬಹುದು.)"
+            },
+            "help_text": {
+                "en": "Easiest / Most Reachable Careers:\nTeacher – PU → B.Sc/M.Sc → Teacher\nNurse – PU Science → B.Sc Nursing → Nurse",
+                "ta": "எளிதில் சேரக்கூடிய / எளிதில் அடையக்கூடிய தொழில்கள்:\n\nஆசிரியர் – PU → B.Sc/M.Sc → ஆசிரியர்\n\nசிகிச்சை நல ஊழியர் (Nurse) – PU அறிவியல் → B.Sc நர்சிங் → நர்ஸ்",
+                "kn": null
+            }
+        },
+        {
+            "sequence": 4,
+            "text": {
+                "en": "For the job/career you are interested in, look at the career chart and career guide book. Write step by step the process to progress, including:\nRequired education\nJob opportunities\nSkills needed\nTraining or courses (2–3 hours per day) to improve",
+                "ta": "நீங்கள் ஆர்வமுள்ள வேலை/தொழிலுக்காக, தொழில் சார்ட் மற்றும் வழிகாட்டி புத்தகத்தைப் பாருங்கள். முன்னேறுவதற்கான படி படியாக செயல்முறையை எழுதுங்கள், அதில்:\nதேவையான கல்வி\nவேலை வாய்ப்புகள்\nதேவைப்படும் திறன்கள்\nமுன்னேற்றம் பெற 2–3 மணி நேர பயிற்சி/பாடநெறிகள்",
+                "kn": "ನಿಮ್ಮ ಆಸಕ್ತಿಯ ಉದ್ಯೋಗ/ವೃತ್ತಿಗಾಗಿ, ಕೆರಿಯರ್ ಚಾರ್ಟ್ ಮತ್ತು ವೃತ್ತಿ ಮಾರ್ಗದರ್ಶನ ಕೈಪಿಡಿಯನ್ನು ನೋಡಿ, ಅಗತ್ಯವಿರುವ ಶೈಕ್ಷಣಿಕ ಅರ್ಹತೆ, ಉದ್ಯೋಗ ಅವಕಾಶಗಳು, ಅದಕ್ಕೆ ಬೇಕಾದ ಕೌಶಲ್ಯಗಳು ಮತ್ತು ದಿನದ 2–3 ಘಂಟೆಗಳ ತರಬೇತಿ/ಕೋರ್ಸ್ ಮೂಲಕ ಪ್ರಗತಿ ಪಡೆಯಲು ಬೇಕಾದ ಪ್ರಕ್ರಿಯೆಯನ್ನು ಕ್ರಮವಾಗಿ ಬರೆಯಿರಿ."
+            },
+            "help_text": {
+                "en": "How to get your career: Courses → Job → Skills → Practice",
+                "ta": "உங்கள் தொழிலுக்கு செல்லும் வழி: பாடங்கள் → வேலை → திறன்கள் → பயிற்சி",
+                "kn": null
+            }
+        },
+        {
+            "sequence": 5,
+            "text": {
+                "en": "Visit the ILP website and list all the information needed for career guidance.",
+                "ta": "ILP இணையதளத்தைப் பார்வையிட்டு, தொழில் வழிகாட்டிக்கு தேவையான அனைத்து தகவல்களையும் பட்டியலிடுங்கள்.",
+                "kn": "೫. ILP ವೆಬ್‌ಸೈಟ್‌ಗೆ ಭೇಟಿ ನೀಡಿ, ವೃತ್ತಿ ಮಾರ್ಗದರ್ಶನಕ್ಕೆ ಅಗತ್ಯವಿರುವ ಎಲ್ಲಾ ಮಾಹಿತಿಯನ್ನು ಪಟ್ಟಿ ಮಾಡಿ."
+            },
+            "help_text": {
+                "en": "Visit ILP Website — Information Needed",
+                "ta": "ILP இணையதளத்தை பார்வையிடவும் — தேவையான தகவல்கள்",
+                "kn": null
+            }
+        },
+        {
+            "sequence": 6,
+            "text": {
+                "en": "Is the ILP app available on the Android Play Store? – Yes / No",
+                "ta": "ILP செயலி ஆன்ட்ராய்டு பிளே ஸ்டோரில் கிடைக்குமா? – ஆம் / இல்லை",
+                "kn": "ILP ವೆಬ್‌ಸೈಟ್ ಅಪ್ಲಿಕೇಶನ್ ಆಂಡ್ರಾಯ್ಡ್ ಪ್ಲೇ ಸ್ಟೋರ್‌ನಲ್ಲಿ ಲಭ್ಯವಿದೆಯೆ? – ಹೌದು / ಇಲ್ಲ"
+            },
+            "help_text": {
+                "en": "ILP app on Android Play Store?",
+                "ta": "ILP ஆப் Android Play Store‑இல் கிடைக்குமா?",
+                "kn": null
+            }
+        },
+        {
+            "sequence": 7,
+            "text": {
+                "en": "Write the ILP WhatsApp chat link/number:",
+                "ta": "ILP வாட்ஸ்அப் சாட் லிங்க்/நம்பரை எழுதுங்கள்:",
+                "kn": "ILP ವಾಟ್ಸ್ಆಪ್ ಚಾಟ್ ಲಿಂಕ್/ನಂಬರ್ ಅನ್ನು ಬರೆಯಿರಿ:"
+            },
+            "help_text": {
+                "en": "ILP WhatsApp chatbot / Link",
+                "ta": "ILP WhatsApp சாட்பாட் / இணைப்பு",
+                "kn": null
+            }
+        }
+    ],
+    "summary_questions": [
+        {
+            "sequence": 1,
+            "text": {
+                "en": "Subject",
+                "ta": "பாடம்",
+                "kn": "ವಿಷಯ"
+            },
+            "help_text": {
+                "en": null,
+                "ta": null,
+                "kn": null
+            }
+        },
+        {
+            "sequence": 2,
+            "text": {
+                "en": "Lesson / Chapter",
+                "ta": "பாடம் / அத்தியாயம்",
+                "kn": "ಪಾಠ / ಅಧ್ಯಾಯ"
+            },
+            "help_text": {
+                "en": null,
+                "ta": null,
+                "kn": null
+            }
+        },
+        {
+            "sequence": 3,
+            "text": {
+                "en": "Why did I like this lesson/chapter?",
+                "ta": "எனக்கு இந்த பாடம்/அத்தியாயம் பிடித்த காரணம் என்ன?",
+                "kn": "ನನಗೆ ಈ ಪಾಠ/ಅಧ್ಯಾಯ ಇಷ್ಟವಾದ ಕಾರಣವೇನು?"
+            },
+            "help_text": {
+                "en": null,
+                "ta": null,
+                "kn": null
+            }
+        },
+        {
+            "sequence": 4,
+            "text": {
+                "en": "suitable career",
+                "ta": "தகுந்த தொழில்",
+                "kn": "ಒಂದಾಣಿಕೆಯಾಗುತ್ತಿ ಚಿತ್ತ"
+            },
+            "help_text": {
+                "en": null,
+                "ta": null,
+                "kn": null
+            }
+        }
+    ]
+}

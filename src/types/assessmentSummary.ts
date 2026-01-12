@@ -1,12 +1,12 @@
 // Types for Assessment Summary Approval Workflow
 
-export type SummaryApprovalStatus = 
+export type SummaryApprovalStatus =
   | 'pending_approval'
   | 'approved'
   | 'rejected'
   | 'revision_requested';
 
-export type SummaryType = 
+export type SummaryType =
   | 'ai_generated'
   | 'teacher_edited'
   | 'student_edited';
@@ -18,6 +18,7 @@ export interface SummaryQuestions {
   question4?: string; // Optional 4th question (for Dreams assessment)
   question5?: string; // Optional 5th question (for School Learning assessment)
   question6?: string; // Optional 6th question (for School Learning assessment)
+  [key: string]: string | undefined; // Allow additional questions (e.g., About Me has 16)
 }
 
 // Special structure for Dreams portfolio - array of 3 dream entries
@@ -35,24 +36,24 @@ export interface DreamsSummary {
 export interface AssessmentSummary {
   id: string;
   assessment_response_id: string;
-  
+
   // Summary content
   ai_summary: SummaryQuestions;
   student_edited_summary: SummaryQuestions | null;
   teacher_edited_summary: SummaryQuestions | null;
-  
+
   // Metadata
   summary_type: SummaryType;
   approval_status: SummaryApprovalStatus;
   version: number;
-  
+
   // Approval tracking
   approved_by: string | null;
   approved_at: string | null;
   rejected_by: string | null;
   rejected_at: string | null;
   rejection_reason: string | null;
-  
+
   // Timestamps
   generated_at: string;
   created_at: string;
@@ -133,8 +134,8 @@ export function canStudentEdit(summary: AssessmentSummary): boolean {
 
 // Check if teacher can approve the summary
 export function canTeacherApprove(summary: AssessmentSummary): boolean {
-  return summary.approval_status === 'pending_approval' || 
-         summary.approval_status === 'revision_requested';
+  return summary.approval_status === 'pending_approval' ||
+    summary.approval_status === 'revision_requested';
 }
 
 // Get summary status badge color

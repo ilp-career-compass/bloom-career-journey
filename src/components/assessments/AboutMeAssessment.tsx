@@ -6,9 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { User, ArrowLeft } from 'lucide-react';
+import { User, ArrowLeft, CheckCircle } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -111,6 +111,36 @@ export default function AboutMeAssessment() {
 
   const setField = (key: string, value: any) => {
     setResponses(prev => ({ ...prev, [key]: value }));
+  };
+
+  const strFor = (v: any) => {
+    if (v === null || v === undefined) return '';
+    return String(v).trim();
+  };
+
+  const canSubmit = () => {
+    if (readOnlyView) return false;
+    if (aboutMeFields.length === 0) return false;
+
+    // Check if every required field has a value
+    return aboutMeFields.every(field => {
+      const value = responses[field.field_key];
+
+      if (field.field_type === 'triple') {
+        if (!Array.isArray(value)) return false;
+        // For triple, check if at least one field is filled (or all? usually all slots for triple are placeholders, but usually just checking if some content exists is enough, but typically we want full completion)
+        // Based on other assessments, usually we want strict non-empty. 
+        // Let's assume strict: if triple, all 3 are fields.
+        return value.every(v => strFor(v) !== '');
+      }
+
+      if (field.field_type === 'double') {
+        if (!Array.isArray(value)) return false;
+        return value.every(v => strFor(v) !== '');
+      }
+
+      return strFor(value) !== '';
+    });
   };
 
   const studentIdPromise = useMemo(async () => {
@@ -564,120 +594,174 @@ export default function AboutMeAssessment() {
 
         <Card className="border-0 shadow-lg">
           <CardContent className="p-6 space-y-6">
-            <TooltipProvider>
-              {/* Section Tabs */}
-              {sections.length > 0 && (
-                <Tabs value={currentSection} onValueChange={setCurrentSection} className="w-full">
-                  <TabsList className="grid w-full grid-cols-4 mb-6">
-                    {sections.map((sectionTitle) => {
-                      // Extract section letter (A, B, C, D)
-                      const sectionLetter = sectionTitle.match(/^([A-D])\./)?.[1] || sectionTitle.charAt(0);
-                      return (
-                        <TabsTrigger
-                          key={sectionTitle}
-                          value={sectionTitle}
-                          className="text-xs sm:text-sm"
-                        >
-                          {sectionLetter}
-                        </TabsTrigger>
-                      );
-                    })}
-                  </TabsList>
 
-                  {/* Tab Contents */}
+            {/* Section Tabs */}
+            {sections.length > 0 && (
+              <div className="w-full">
+                <div className="flex flex-wrap gap-2 mb-6 justify-center">
                   {sections.map((sectionTitle) => {
-                    const fields = fieldsBySection[sectionTitle] || [];
+                    const sectionLetter = sectionTitle.match(/^([A-D])\./)?.[1] || sectionTitle.charAt(0);
+                    const isCurrent = currentSection === sectionTitle;
                     return (
-                      <TabsContent key={sectionTitle} value={sectionTitle} className="space-y-4 mt-0">
-                        <div className="mb-4 pb-3 border-b border-gray-200">
-                          <h3 className="text-lg font-semibold text-gray-800">
-                            {getLocalizedSectionTitle(sectionTitle)}
-                          </h3>
-                        </div>
-                        {fields.map((field, index) => {
-                          const fieldValue = responses[field.field_key];
-                          const helpKey = field.field_key;
-                          const isOpen = !!helpOpen[helpKey];
-
-                          // Determine label - use question_text from database
-                          const label = field.question_text?.startsWith(`${index + 1}. `)
-                            ? field.question_text
-                            : `${index + 1}. ${field.question_text}`;
-
-                          // Use localized help text when available; otherwise fall back
-                          // to the database help_text (usually English). When Tamil
-                          // translations are added to `about_me_help`, they will
-                          // automatically override the fallback.
-                          const translatedHelp = helpTranslations[field.field_key];
-                          const helpText =
-                            translatedHelp !== undefined
-                              ? translatedHelp
-                              : (field.help_text || '');
-
-                          if (field.field_type === 'triple') {
-                            const tripleValue = (Array.isArray(fieldValue) && fieldValue.length === 3)
-                              ? fieldValue as Triple
-                              : ['', '', ''] as Triple;
-                            return (
-                              <TripleInput
-                                key={field.field_key}
-                                label={label}
-                                help={helpText}
-                                helpKey={helpKey}
-                                open={isOpen}
-                                onToggle={() => toggleHelp(helpKey)}
-                                values={tripleValue}
-                                onChange={(vals) => setField(field.field_key, vals)}
-                                readOnly={readOnlyView}
-                              />
-                            );
-                          } else if (field.field_type === 'double') {
-                            const doubleValue = (Array.isArray(fieldValue) && fieldValue.length === 2)
-                              ? fieldValue as Double
-                              : ['', ''] as Double;
-                            return (
-                              <DoubleInput
-                                key={field.field_key}
-                                label={label}
-                                help={helpText}
-                                helpKey={helpKey}
-                                open={isOpen}
-                                onToggle={() => toggleHelp(helpKey)}
-                                values={doubleValue}
-                                onChange={(vals) => setField(field.field_key, vals)}
-                                readOnly={readOnlyView}
-                              />
-                            );
-                          } else {
-                            // text or textarea
-                            const stringValue = typeof fieldValue === 'string' ? fieldValue : '';
-                            const isTextarea = field.field_type === 'textarea';
-                            return (
-                              <Question
-                                key={field.field_key}
-                                label={label}
-                                help={helpText}
-                                helpKey={helpKey}
-                                open={isOpen}
-                                onToggle={() => toggleHelp(helpKey)}
-                                value={stringValue}
-                                onChange={(v) => setField(field.field_key, v)}
-                                area={isTextarea}
-                                readOnly={readOnlyView}
-                              />
-                            );
-                          }
-                        })}
-                      </TabsContent>
+                      <Button
+                        key={sectionTitle}
+                        variant={isCurrent ? "default" : "outline"}
+                        onClick={() => setCurrentSection(sectionTitle)}
+                        className={isCurrent ? "bg-blue-600" : "text-blue-600 border-blue-200 hover:bg-blue-50"}
+                      >
+                        {sectionLetter}
+                      </Button>
                     );
                   })}
-                </Tabs>
-              )}
-            </TooltipProvider>
+                </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-              <Button variant="outline" onClick={() => save(false)} disabled={submitting} className="border-blue-200 text-blue-700 hover:bg-blue-50">{t('saveProgress')}</Button>
-              <Button onClick={() => save(true)} disabled={submitting || readOnlyView} className="bg-blue-600 hover:bg-blue-700">{t('submitAboutMe')}</Button>
+                {/* Tab Contents */}
+                {sections.map((sectionTitle) => {
+                  if (sectionTitle !== currentSection) return null;
+                  const fields = fieldsBySection[sectionTitle] || [];
+                  return (
+                    <div key={sectionTitle} className="space-y-4 mt-0 animate-in fade-in duration-300">
+                      <div className="mb-4 pb-3 border-b border-gray-200">
+                        <h3 className="text-lg font-semibold text-gray-800">
+                          {getLocalizedSectionTitle(sectionTitle)}
+                        </h3>
+                      </div>
+                      {fields.map((field, index) => {
+                        const fieldValue = responses[field.field_key];
+                        const helpKey = field.field_key;
+                        const isOpen = !!helpOpen[helpKey];
+
+                        // Determine label - use question_text from database
+                        const label = field.question_text?.startsWith(`${index + 1}. `)
+                          ? field.question_text
+                          : `${index + 1}. ${field.question_text}`;
+
+                        // Use localized help text when available; otherwise fall back
+                        // to the database help_text (usually English). When Tamil
+                        // translations are added to `about_me_help`, they will
+                        // automatically override the fallback.
+                        const translatedHelp = helpTranslations[field.field_key];
+                        const helpText =
+                          translatedHelp !== undefined
+                            ? translatedHelp
+                            : (field.help_text || '');
+
+                        if (field.field_type === 'triple') {
+                          const tripleValue = (Array.isArray(fieldValue) && fieldValue.length === 3)
+                            ? fieldValue as Triple
+                            : ['', '', ''] as Triple;
+                          return (
+                            <TripleInput
+                              key={field.field_key}
+                              label={label}
+                              help={helpText}
+                              helpKey={helpKey}
+                              open={isOpen}
+                              onToggle={() => toggleHelp(helpKey)}
+                              values={tripleValue}
+                              onChange={(vals) => setField(field.field_key, vals)}
+                              readOnly={readOnlyView}
+                            />
+                          );
+                        } else if (field.field_type === 'double') {
+                          const doubleValue = (Array.isArray(fieldValue) && fieldValue.length === 2)
+                            ? fieldValue as Double
+                            : ['', ''] as Double;
+                          return (
+                            <DoubleInput
+                              key={field.field_key}
+                              label={label}
+                              help={helpText}
+                              helpKey={helpKey}
+                              open={isOpen}
+                              onToggle={() => toggleHelp(helpKey)}
+                              values={doubleValue}
+                              onChange={(vals) => setField(field.field_key, vals)}
+                              readOnly={readOnlyView}
+                            />
+                          );
+                        } else {
+                          // text or textarea
+                          const stringValue = typeof fieldValue === 'string' ? fieldValue : '';
+                          const isTextarea = field.field_type === 'textarea';
+                          return (
+                            <Question
+                              key={field.field_key}
+                              label={label}
+                              help={helpText}
+                              helpKey={helpKey}
+                              open={isOpen}
+                              onToggle={() => toggleHelp(helpKey)}
+                              value={stringValue}
+                              onChange={(v) => setField(field.field_key, v)}
+                              area={isTextarea}
+                              readOnly={readOnlyView}
+                            />
+                          );
+                        }
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+
+            <div className="flex flex-col-reverse sm:flex-row justify-between items-center mt-8 pt-4 border-t border-gray-200 gap-4 sm:gap-0">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const idx = sections.indexOf(currentSection);
+                  if (idx > 0) setCurrentSection(sections[idx - 1]);
+                }}
+                disabled={sections.indexOf(currentSection) === 0}
+                className="w-full sm:w-auto border-blue-200 text-blue-700 hover:bg-blue-50"
+              >
+                {lang === 'kn' ? 'ಹಿಂದಿನ ವಿಭಾಗ' : lang === 'ta' ? 'முந்தைய பிரிவு' : 'Previous Section'}
+              </Button>
+
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <Button
+                  variant="outline"
+                  onClick={() => save(false)}
+                  disabled={submitting}
+                  className="w-full sm:w-auto border-blue-200 text-blue-700 hover:bg-blue-50"
+                >
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  {lang === 'kn' ? 'ಪ್ರಗತಿಯನ್ನು ಉಳಿಸಿ' : lang === 'ta' ? 'முன்னேற்றத்தைச் சேமி' : 'Save Progress'}
+                </Button>
+
+                {sections.indexOf(currentSection) < sections.length - 1 ? (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const idx = sections.indexOf(currentSection);
+                      if (idx < sections.length - 1) setCurrentSection(sections[idx + 1]);
+                    }}
+                    className="w-full sm:w-auto border-blue-200 text-blue-700 hover:bg-blue-50"
+                  >
+                    {lang === 'kn' ? 'ಮುಂದಿನ ವಿಭಾಗ' : lang === 'ta' ? 'அடுத்த பிரிவு' : 'Next Section'}
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => save(true)}
+                    disabled={submitting || !canSubmit()}
+                    className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700"
+                  >
+                    {submitting ? (
+                      <div className="flex items-center gap-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <span>Submitting...</span>
+                      </div>
+                    ) : (
+                      <>
+                        <Badge className="w-4 h-4 mr-2 bg-transparent border-0 p-0"><CheckCircle className="w-4 h-4" /></Badge>
+                        {lang === 'kn' ? 'ಸಲ್ಲಿಸಿ' : lang === 'ta' ? 'சமர்ப்பிக்கவும்' : 'Submit Assessment'}
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -701,12 +785,7 @@ function Question({ label, help, value, onChange, area, helpKey, open, onToggle,
     <div>
       <label className="block text-base font-medium text-gray-800 mb-2 flex items-center gap-2">
         {label}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button type="button" aria-label="Help" className="text-blue-600 hover:text-blue-700" onClick={onToggle}>💬</button>
-          </TooltipTrigger>
-          <TooltipContent className="max-w-xs">{help}</TooltipContent>
-        </Tooltip>
+        <button type="button" aria-label="Help" className="text-blue-600 hover:text-blue-700" onClick={onToggle}>💬</button>
       </label>
       {open && (
         <div className="mb-2 p-3 rounded border bg-blue-50 border-blue-200 text-sm text-blue-800">{help}</div>
@@ -749,12 +828,7 @@ function TripleInput({ label, help, values, onChange, helpKey, open, onToggle, r
     <div>
       <label className="block text-base font-medium text-gray-800 mb-2 flex items-center gap-2">
         {label}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button type="button" aria-label="Help" className="text-blue-600 hover:text-blue-700" onClick={onToggle}>💬</button>
-          </TooltipTrigger>
-          <TooltipContent className="max-w-xs">{help}</TooltipContent>
-        </Tooltip>
+        <button type="button" aria-label="Help" className="text-blue-600 hover:text-blue-700" onClick={onToggle}>💬</button>
       </label>
       {open && (
         <div className="mb-2 p-3 rounded border bg-blue-50 border-blue-200 text-sm text-blue-800">{help}</div>
@@ -777,12 +851,7 @@ function DoubleInput({ label, help, values, onChange, helpKey, open, onToggle, r
     <div>
       <label className="block text-base font-medium text-gray-800 mb-2 flex items-center gap-2">
         {label}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button type="button" aria-label="Help" className="text-blue-600 hover:text-blue-700" onClick={onToggle}>💬</button>
-          </TooltipTrigger>
-          <TooltipContent className="max-w-xs">{help}</TooltipContent>
-        </Tooltip>
+        <button type="button" aria-label="Help" className="text-blue-600 hover:text-blue-700" onClick={onToggle}>💬</button>
       </label>
       {open && (
         <div className="mb-2 p-3 rounded border bg-blue-50 border-blue-200 text-sm text-blue-800">{help}</div>

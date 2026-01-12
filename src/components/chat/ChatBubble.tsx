@@ -43,14 +43,29 @@ interface ChatChannel {
 
 interface ChatBubbleProps {
   role: 'student' | 'teacher';
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
 }
 
-export default function ChatBubble({ role }: ChatBubbleProps) {
+export default function ChatBubble({ role, isOpen: controlledIsOpen, onOpenChange, hideTrigger = false }: ChatBubbleProps) {
   const { userProfile, user } = useAuth();
   const { toast } = useToast();
   const { t, lang } = useLang();
-  
-  const [isOpen, setIsOpen] = useState(false);
+
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+
+  // Use controlled state if provided, otherwise internal state
+  const isControlled = controlledIsOpen !== undefined;
+  const isOpen = isControlled ? controlledIsOpen : internalIsOpen;
+
+  const setIsOpen = (open: boolean) => {
+    if (!isControlled) {
+      setInternalIsOpen(open);
+    }
+    onOpenChange?.(open);
+  };
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -125,9 +140,10 @@ export default function ChatBubble({ role }: ChatBubbleProps) {
         if (channelError) throw channelError;
 
         setChannelId(channelData.id);
-        setOtherPartyName(studentData.teachers?.users?.full_name || 'Vidya Saathi');
-        setOtherPartyAvatar(studentData.teachers?.users?.profile_picture_url);
-        
+        const teacherInfo = studentData.teachers as any;
+        setOtherPartyName(teacherInfo?.users?.full_name || 'Vidya Saathi');
+        setOtherPartyAvatar(teacherInfo?.users?.profile_picture_url);
+
         await loadMessages(channelData.id);
         await markAsRead(channelData.id, 'student');
       } else if (role === 'teacher' && selectedStudentId) {
@@ -158,7 +174,7 @@ export default function ChatBubble({ role }: ChatBubbleProps) {
 
         setChannelId(channelData.id);
         setShowStudentList(false);
-        
+
         await loadMessages(channelData.id);
         await markAsRead(channelData.id, 'teacher');
       }
@@ -169,8 +185,8 @@ export default function ChatBubble({ role }: ChatBubbleProps) {
         description: lang === 'kn'
           ? "ಚಾಟ್ ತೆರೆಯಲು ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ."
           : lang === 'ta'
-          ? "அரட்டை திறக்க முடியவில்லை. தயவு செய்து மீண்டும் முயற்சிக்கவும்."
-          : "Failed to open chat. Please try again.",
+            ? "அரட்டை திறக்க முடியவில்லை. தயவு செய்து மீண்டும் முயற்சிக்கவும்."
+            : "Failed to open chat. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -194,7 +210,7 @@ export default function ChatBubble({ role }: ChatBubbleProps) {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setMessages(data || []);
+      setMessages((data as any) || []);
     } catch (error) {
       console.error('Error loading messages:', error);
     }
@@ -208,7 +224,7 @@ export default function ChatBubble({ role }: ChatBubbleProps) {
         .from('chat_channels')
         .update({ [field]: new Date().toISOString() })
         .eq('id', channelId);
-      
+
       setUnreadCount(0);
     } catch (error) {
       console.error('Error marking as read:', error);
@@ -246,8 +262,8 @@ export default function ChatBubble({ role }: ChatBubbleProps) {
         description: lang === 'kn'
           ? "ಸಂದೇಶವನ್ನು ಕಳುಹಿಸಲು ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ."
           : lang === 'ta'
-          ? "செய்தியை அனுப்ப முடியவில்லை. தயவு செய்து மீண்டும் முயற்சிக்கவும்."
-          : "Failed to send message. Please try again.",
+            ? "செய்தியை அனுப்ப முடியவில்லை. தயவு செய்து மீண்டும் முயற்சிக்கவும்."
+            : "Failed to send message. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -277,8 +293,8 @@ export default function ChatBubble({ role }: ChatBubbleProps) {
 
         if (channels && channels.length > 0) {
           const channel = channels[0];
-          if (channel.last_message_at && (!channel.student_last_read_at || 
-              new Date(channel.last_message_at) > new Date(channel.student_last_read_at))) {
+          if (channel.last_message_at && (!channel.student_last_read_at ||
+            new Date(channel.last_message_at) > new Date(channel.student_last_read_at))) {
             // Count unread messages
             const { count } = await supabase
               .from('chat_messages')
@@ -307,8 +323,8 @@ export default function ChatBubble({ role }: ChatBubbleProps) {
 
         let totalUnread = 0;
         for (const channel of channels || []) {
-          if (channel.last_message_at && (!channel.teacher_last_read_at || 
-              new Date(channel.last_message_at) > new Date(channel.teacher_last_read_at))) {
+          if (channel.last_message_at && (!channel.teacher_last_read_at ||
+            new Date(channel.last_message_at) > new Date(channel.teacher_last_read_at))) {
             const { count } = await supabase
               .from('chat_messages')
               .select('*', { count: 'exact', head: true })
@@ -392,8 +408,8 @@ export default function ChatBubble({ role }: ChatBubbleProps) {
   return (
     <>
       {/* Floating Chat Bubble */}
-      {!isOpen && (
-        <div className="fixed bottom-6 right-6 z-50">
+      {!isOpen && !hideTrigger && (
+        <div className="fixed bottom-20 sm:bottom-6 right-6 z-50">
           <Button
             size="lg"
             onClick={() => setIsOpen(true)}
@@ -401,7 +417,7 @@ export default function ChatBubble({ role }: ChatBubbleProps) {
           >
             <MessageSquare className="h-7 w-7 text-white" />
             {unreadCount > 0 && (
-              <Badge 
+              <Badge
                 className="absolute -top-1 -right-1 h-6 w-6 rounded-full p-0 flex items-center justify-center bg-red-500 text-white font-semibold text-xs shadow-lg animate-pulse"
               >
                 {unreadCount > 9 ? '9+' : unreadCount}
@@ -433,16 +449,16 @@ export default function ChatBubble({ role }: ChatBubbleProps) {
               )}
               <div>
                 <CardTitle className="text-lg text-gray-800 font-semibold">
-                  {role === 'teacher' && showStudentList 
+                  {role === 'teacher' && showStudentList
                     ? (lang === 'kn' ? 'ವಿದ್ಯಾರ್ಥಿಗೆ ಸಂದೇಶ ಕಳುಹಿಸಿ' : 'Message a Student')
-                    : role === 'student' 
+                    : role === 'student'
                       ? otherPartyName || (lang === 'kn' ? 'ವಿದ್ಯಾ ಸಾಥಿ' : 'Vidya Saathi')
                       : otherPartyName || (lang === 'kn' ? 'ವಿದ್ಯಾರ್ಥಿ' : 'Student')
                   }
                 </CardTitle>
                 {!showStudentList && (
                   <p className="text-xs text-blue-700">
-                    {role === 'student' 
+                    {role === 'student'
                       ? (lang === 'kn' ? 'ನಿಮ್ಮ ವಿದ್ಯಾ ಸಾಥಿ' : 'Your Vidya Saathi')
                       : (lang === 'kn' ? 'ವಿದ್ಯಾರ್ಥಿ' : 'Student')
                     }
@@ -463,7 +479,7 @@ export default function ChatBubble({ role }: ChatBubbleProps) {
                   }}
                   className="text-blue-700 hover:bg-blue-100 text-sm"
                 >
-                    {lang === 'kn' ? '← ಹಿಂದೆ' : lang === 'ta' ? '← பின் செல்ல' : '← Back'}
+                  {lang === 'kn' ? '← ಹಿಂದೆ' : lang === 'ta' ? '← பின் செல்ல' : '← Back'}
                 </Button>
               )}
               <Button
@@ -505,16 +521,16 @@ export default function ChatBubble({ role }: ChatBubbleProps) {
                     {lang === 'kn'
                       ? 'ನಿಮ್ಮ ಶಿಕ್ಷಕರನ್ನು ನಿಯೋಜಿಸಿದ ನಂತರ ನೀವು ನಿಮ್ಮ ವಿದ್ಯಾ ಸಾಥಿಗೆ ಸಂದೇಶ ಕಳುಹಿಸಲು ಸಾಧ್ಯವಾಗುತ್ತದೆ.'
                       : lang === 'ta'
-                      ? 'ஆசிரியர் இணைக்கப்பட்ட பிறகு நீங்கள் உங்கள் விட்யா சாதியை தொடர்பு கொள்ளலாம்.'
-                      : "You'll be able to message your Vidya Saathi once your teacher is assigned."}
+                        ? 'ஆசிரியர் இணைக்கப்பட்ட பிறகு நீங்கள் உங்கள் விட்யா சாதியை தொடர்பு கொள்ளலாம்.'
+                        : "You'll be able to message your Vidya Saathi once your teacher is assigned."}
                   </p>
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                     <p className="text-xs text-blue-700">
                       💡 {lang === 'kn'
                         ? 'ದಯವಿಟ್ಟು ಸಹಾಯಕ್ಕಾಗಿ ನಿಮ್ಮ ನಿರ್ವಾಹಕರನ್ನು ಸಂಪರ್ಕಿಸಿ.'
                         : lang === 'ta'
-                        ? 'உதவி தேவை என்றால் நிர்வாகியை தொடர்பு கொள்ளவும்.'
-                        : 'Please contact your administrator for assistance.'}
+                          ? 'உதவி தேவை என்றால் நிர்வாகியை தொடர்பு கொள்ளவும்.'
+                          : 'Please contact your administrator for assistance.'}
                     </p>
                   </div>
                 </div>
@@ -533,8 +549,8 @@ export default function ChatBubble({ role }: ChatBubbleProps) {
                       {lang === 'kn'
                         ? 'ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು ನಿಯೋಜಿಸಿದ ನಂತರ ಅವರು ಇಲ್ಲಿ ಕಾಣಿಸುತ್ತಾರೆ'
                         : lang === 'ta'
-                        ? 'மாணவர்கள் இணைக்கப்பட்ட பிறகு அவர்கள் இங்கே தோன்றுவர்'
-                        : 'Students will appear here once assigned'}
+                          ? 'மாணவர்கள் இணைக்கப்பட்ட பிறகு அவர்கள் இங்கே தோன்றுவர்'
+                          : 'Students will appear here once assigned'}
                     </p>
                   </div>
                 ) : (
@@ -584,19 +600,17 @@ export default function ChatBubble({ role }: ChatBubbleProps) {
                             className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
                           >
                             <div
-                              className={`max-w-[75%] rounded-2xl px-4 py-3 shadow-sm ${
-                                isOwn
-                                  ? 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-br-md'
-                                  : 'bg-white border border-gray-200 text-gray-900 rounded-bl-md'
-                              }`}
+                              className={`max-w-[75%] rounded-2xl px-4 py-3 shadow-sm ${isOwn
+                                ? 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-br-md'
+                                : 'bg-white border border-gray-200 text-gray-900 rounded-bl-md'
+                                }`}
                             >
                               <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
                                 {message.content}
                               </p>
                               <p
-                                className={`text-xs mt-1.5 ${
-                                  isOwn ? 'text-blue-100' : 'text-gray-400'
-                                }`}
+                                className={`text-xs mt-1.5 ${isOwn ? 'text-blue-100' : 'text-gray-400'
+                                  }`}
                               >
                                 {new Date(message.created_at).toLocaleTimeString([], {
                                   hour: '2-digit',
@@ -620,8 +634,8 @@ export default function ChatBubble({ role }: ChatBubbleProps) {
                         lang === 'kn'
                           ? 'ನಿಮ್ಮ ಸಂದೇಶವನ್ನು ಟೈಪ್ ಮಾಡಿ...'
                           : lang === 'ta'
-                          ? 'உங்கள் செய்தியை எழுதுங்கள்...'
-                          : 'Type your message...'
+                            ? 'உங்கள் செய்தியை எழுதுங்கள்...'
+                            : 'Type your message...'
                       }
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}

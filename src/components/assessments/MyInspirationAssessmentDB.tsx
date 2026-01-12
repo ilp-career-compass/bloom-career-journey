@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+﻿import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -6,11 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { 
-  Play, 
-  ExternalLink, 
-  CheckCircle, 
-  Clock, 
+import {
+  Play,
+  ExternalLink,
+  CheckCircle,
+  Clock,
   Lightbulb,
   Heart,
   Star,
@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLang } from '@/hooks/useLang';
 import { AudioRecorder } from '@/components/ui/AudioRecorder';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AssessmentService, MediaSource, AssessmentQuestion } from '@/services/assessmentService';
@@ -53,12 +54,13 @@ interface VideoProgress {
 export default function MyInspirationAssessmentDB() {
   const { userProfile } = useAuth();
   const { toast } = useToast();
+  const { lang } = useLang();
   const [inspirationVideos, setInspirationVideos] = useState<InspirationVideo[]>([]);
   const [assessmentQuestions, setAssessmentQuestions] = useState<AssessmentQuestion[]>([]);
   const [helpTexts, setHelpTexts] = useState<{ [key: string]: string }>({});
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [responses, setResponses] = useState<AssessmentResponse>({});
-  const [audioResponses, setAudioResponses] = useState<{[key: string]: Blob | null}>({});
+  const [audioResponses, setAudioResponses] = useState<{ [key: string]: Blob | null }>({});
   const [loading, setLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -68,7 +70,7 @@ export default function MyInspirationAssessmentDB() {
   const [helpOpen, setHelpOpen] = useState<Record<string, boolean>>({});
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const readOnlyView = ['1','true'].includes((searchParams.get('readonly')||searchParams.get('view')||'').toLowerCase());
+  const readOnlyView = ['1', 'true'].includes((searchParams.get('readonly') || searchParams.get('view') || '').toLowerCase());
   const [assessmentRecordId, setAssessmentRecordId] = useState<string | null>(null);
   const [resolvedStudentId, setResolvedStudentId] = useState<string | null>(null);
   const [audioResponsesMap, setAudioResponsesMap] = useState<Record<string, any>>({});
@@ -84,7 +86,7 @@ export default function MyInspirationAssessmentDB() {
       try {
         setDataLoading(true);
         const data = await AssessmentService.getInspirationAssessmentData();
-        
+
         if (data) {
           // Convert media sources to inspiration videos
           const videos: InspirationVideo[] = data.videos.map((video, index) => ({
@@ -93,11 +95,11 @@ export default function MyInspirationAssessmentDB() {
             url: video.url,
             youtubeId: extractYouTubeId(video.url)
           }));
-          
+
           setInspirationVideos(videos);
           setAssessmentQuestions(data.questions);
           setHelpTexts(data.helpTexts);
-          
+
           // Initialize responses structure
           const initialResponses: AssessmentResponse = {};
           videos.forEach((_, index) => {
@@ -108,7 +110,7 @@ export default function MyInspirationAssessmentDB() {
             });
           });
           setResponses(initialResponses);
-          
+
           // Initialize video progress
           const initialProgress = videos.map(video => ({
             videoId: video.id,
@@ -228,7 +230,7 @@ export default function MyInspirationAssessmentDB() {
           updated_at: new Date().toISOString(),
           completed_at: null
         });
-      } catch {}
+      } catch { }
     }, 800);
     return () => clearTimeout(t);
   }, [responses, loading, isCompleted, userProfile]);
@@ -237,7 +239,7 @@ export default function MyInspirationAssessmentDB() {
   useEffect(() => {
     const checkExistingResponse = async () => {
       if (!userProfile || loading) return;
-      
+
       try {
         let studentId = userProfile.studentProfile?.id as string | undefined;
         if (!studentId) {
@@ -329,7 +331,7 @@ export default function MyInspirationAssessmentDB() {
       if (insertError) throw insertError;
 
       setAudioAnswered(prev => ({ ...prev, [audioKey]: true }));
-      
+
       toast({
         title: "Audio Saved",
         description: "Your audio response has been saved successfully.",
@@ -378,14 +380,14 @@ export default function MyInspirationAssessmentDB() {
 
       // Show success message for assessment submission
       toast({
-        title: "Assessment Completed! ✨",
+        title: "Assessment Completed! âœ¨",
         description: "Generating your reflection summary...",
       });
 
       // Generate AI summary in the background
       try {
         if (aiSummaryService.isConfigured()) {
-          const summaryResult = await aiSummaryService.generateInspirationSummary(responses);
+          const summaryResult = await aiSummaryService.generateInspirationSummary(responses, lang);
 
           if (summaryResult.success && summaryResult.summary) {
             // Save summary to database
@@ -399,15 +401,15 @@ export default function MyInspirationAssessmentDB() {
               toast({
                 title:
                   lang === 'kn'
-                    ? 'ಸಾರಾಂಶ ಸಿದ್ಧವಾಗಿದೆ! 📝'
+                    ? 'à²¸à²¾à²°à²¾à²‚à²¶ à²¸à²¿à²¦à³à²§à²µà²¾à²—à²¿à²¦à³†! ðŸ“'
                     : lang === 'ta'
-                      ? 'சுருக்கம் உருவாக்கப்பட்டது! 📝'
-                      : 'Summary Generated! 📝',
+                      ? 'à®šà¯à®°à¯à®•à¯à®•à®®à¯ à®‰à®°à¯à®µà®¾à®•à¯à®•à®ªà¯à®ªà®Ÿà¯à®Ÿà®¤à¯! ðŸ“'
+                      : 'Summary Generated! ðŸ“',
                 description:
                   lang === 'kn'
-                    ? 'ನೀವು ಬರೆದ ಚಿಂತನೆಗಳ ಸಾರಾಂಶವನ್ನು ನಿಮ್ಮ ಶಿಕ್ಷಕರು ಪರಿಶೀಲಿಸಲಿದ್ದಾರೆ.'
+                    ? 'à²¨à³€à²µà³ à²¬à²°à³†à²¦ à²šà²¿à²‚à²¤à²¨à³†à²—à²³ à²¸à²¾à²°à²¾à²‚à²¶à²µà²¨à³à²¨à³ à²¨à²¿à²®à³à²® à²¶à²¿à²•à³à²·à²•à²°à³ à²ªà²°à²¿à²¶à³€à²²à²¿à²¸à²²à²¿à²¦à³à²¦à²¾à²°à³†.'
                     : lang === 'ta'
-                      ? 'நீங்கள் எழுதிய சிந்தனைச் சுருக்கத்தை உங்கள் ஆசிரியா் விரைவில் பார்வையிடுவார்.'
+                      ? 'à®¨à¯€à®™à¯à®•à®³à¯ à®Žà®´à¯à®¤à®¿à®¯ à®šà®¿à®¨à¯à®¤à®©à¯ˆà®šà¯ à®šà¯à®°à¯à®•à¯à®•à®¤à¯à®¤à¯ˆ à®‰à®™à¯à®•à®³à¯ à®†à®šà®¿à®°à®¿à®¯à®¾à¯ à®µà®¿à®°à¯ˆà®µà®¿à®²à¯ à®ªà®¾à®°à¯à®µà¯ˆà®¯à®¿à®Ÿà¯à®µà®¾à®°à¯.'
                       : 'Your teacher will review your reflection summary.',
               });
             } else {
@@ -474,9 +476,9 @@ export default function MyInspirationAssessmentDB() {
   if (loading || dataLoading) {
     const loadingText =
       lang === 'kn'
-        ? 'ಮೌಲ್ಯಮಾಪನವನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...'
+        ? 'à²®à³Œà²²à³à²¯à²®à²¾à²ªà²¨à²µà²¨à³à²¨à³ à²²à³‹à²¡à³ à²®à²¾à²¡à²²à²¾à²—à³à²¤à³à²¤à²¿à²¦à³†...'
         : lang === 'ta'
-          ? 'மதிப்பீடு ஏற்றப்படுகிறது...'
+          ? 'à®®à®¤à®¿à®ªà¯à®ªà¯€à®Ÿà¯ à®à®±à¯à®±à®ªà¯à®ªà®Ÿà¯à®•à®¿à®±à®¤à¯...'
           : 'Loading assessment...';
 
     return (
@@ -545,7 +547,7 @@ export default function MyInspirationAssessmentDB() {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Dashboard
           </Button>
-          
+
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">My Inspiration Assessment</h1>
@@ -685,7 +687,7 @@ export default function MyInspirationAssessmentDB() {
                 >
                   Previous Video
                 </Button>
-                
+
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
@@ -695,7 +697,7 @@ export default function MyInspirationAssessmentDB() {
                     <Save className="h-4 w-4 mr-2" />
                     {saving ? 'Saving...' : 'Save Draft'}
                   </Button>
-                  
+
                   {currentVideoIndex === inspirationVideos.length - 1 ? (
                     <Button
                       onClick={handleSubmit}
@@ -706,51 +708,6 @@ export default function MyInspirationAssessmentDB() {
                   ) : (
                     <Button
                       onClick={nextVideo}
-                      disabled={!isCurrentVideoComplete()}
-                    >
-                      Next Video
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-                      disabled={!isCurrentVideoComplete()}
-                    >
-                      Next Video
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-                      disabled={!isCurrentVideoComplete()}
-                    >
-                      Next Video
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </div>
-  );
-}
-
                       disabled={!isCurrentVideoComplete()}
                     >
                       Next Video

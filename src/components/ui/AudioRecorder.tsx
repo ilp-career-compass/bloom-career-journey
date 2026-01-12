@@ -99,6 +99,8 @@ interface AudioRecorderProps {
   initialSavedAt?: string | null;
   // Lock recording after a successful save (one attempt per question)
   lockAfterSave?: boolean;
+  // Context phrases to boost identification of specific words
+  contextPhrases?: string[];
 }
 
 export function AudioRecorder({
@@ -123,6 +125,7 @@ export function AudioRecorder({
   initialConfidence = null,
   initialSavedAt = null,
   lockAfterSave = true,
+  contextPhrases = [],
 }: AudioRecorderProps) {
   const { toast } = useToast();
   const { t, lang } = useLang();
@@ -595,7 +598,8 @@ export function AudioRecorder({
         questionId,
         audioBlob,
         duration: state.duration,
-        fileSize: audioBlob.size
+        fileSize: audioBlob.size,
+        contextPhrases // Pass strict context hints
       });
 
       console.log('🎤 Audio processing result:', {
@@ -1059,9 +1063,9 @@ export function AudioRecorder({
             icon: <Mic className="w-4 h-4" />,
             variant: 'default' as const,
             className: 'bg-blue-500 hover:bg-blue-600 text-white',
-            disabled: disabled || (lockAfterSave && (state.buttonState === 'saved' || !!initialAudioUrl || !!initialSavedAt || !!initialTranscription)),
+            disabled: disabled || (lockAfterSave && (!!initialAudioUrl || !!initialSavedAt || !!initialTranscription)),
             onClick: startRecording,
-            extraUI: lockAfterSave && (state.buttonState === 'saved' || !!initialAudioUrl || !!initialSavedAt || !!initialTranscription) ? (lang === 'kn' ? 'ಸೇವ್ ನಂತರ ರೆಕಾರ್ಡಿಂಗ್ ಲಾಕ್ ಮಾಡಲಾಗಿದೆ' : 'Recording locked after save') : (lang === 'kn' ? 'ರೆಕಾರ್ಡ್ ಮಾಡಲು ಸಿದ್ಧ' : 'Ready to record')
+            extraUI: lockAfterSave && (!!initialAudioUrl || !!initialSavedAt || !!initialTranscription) ? (lang === 'kn' ? 'ಸೇವ್ ನಂತರ ರೆಕಾರ್ಡಿಂಗ್ ಲಾಕ್ ಮಾಡಲಾಗಿದೆ' : 'Recording locked after save') : (lang === 'kn' ? 'ರೆಕಾರ್ಡ್ ಮಾಡಲು ಸಿದ್ಧ' : 'Ready to record')
           };
         case 'recording':
           return {
@@ -1104,9 +1108,9 @@ export function AudioRecorder({
             icon: <Mic className="w-4 h-4" />,
             variant: 'default' as const,
             className: 'bg-blue-500 hover:bg-blue-600 text-white',
-            disabled: disabled || !state.hasPermission || (lockAfterSave && (state.buttonState === 'saved' || !!initialAudioUrl || !!initialSavedAt || !!initialTranscription)),
+            disabled: disabled || !state.hasPermission || (lockAfterSave && (!!initialAudioUrl || !!initialSavedAt || !!initialTranscription)),
             onClick: startRecording,
-            extraUI: lockAfterSave && (state.buttonState === 'saved' || !!initialAudioUrl || !!initialSavedAt || !!initialTranscription) ? (lang === 'kn' ? 'ಸೇವ್ ನಂತರ ರೆಕಾರ್ಡಿಂಗ್ ಲಾಕ್ ಮಾಡಲಾಗಿದೆ' : 'Recording locked after save') : (lang === 'kn' ? 'ರೆಕಾರ್ಡ್ ಮಾಡಲು ಸಿದ್ಧ' : 'Ready to record')
+            extraUI: lockAfterSave && (!!initialAudioUrl || !!initialSavedAt || !!initialTranscription) ? (lang === 'kn' ? 'ಸೇವ್ ನಂತರ ರೆಕಾರ್ಡಿಂಗ್ ಲಾಕ್ ಮಾಡಲಾಗಿದೆ' : 'Recording locked after save') : (lang === 'kn' ? 'ರೆಕಾರ್ಡ್ ಮಾಡಲು ಸಿದ್ಧ' : 'Ready to record')
           };
       }
     };
@@ -1142,7 +1146,7 @@ export function AudioRecorder({
               </div>
 
               {/* Status indicators */}
-              <div className="flex items-center gap-1">
+              <div className="flex flex-wrap items-center gap-1">
                 {state.buttonState === 'saved' && (
                   <Badge variant="default" className="text-xs bg-green-100 text-green-700">
                     {lang === 'kn' ? 'ಸೇವ್ ಮಾಡಲಾಗಿದೆ' : 'Saved'}
@@ -1223,6 +1227,19 @@ export function AudioRecorder({
                 </Button>
               )}
 
+              {/* Record Again button in compact mode */}
+              {allowRetry && (state.audioUrl || initialAudioUrl) && state.buttonState !== 'recording' && state.buttonState !== 'processing' && (
+                <Button
+                  onClick={resetRecording}
+                  size="sm"
+                  variant="ghost"
+                  className="w-full text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                >
+                  <RotateCcw className="w-3 h-3 mr-2" />
+                  {lang === 'kn' ? 'ಮತ್ತೆ ರೆಕಾರ್ಡ್ ಮಾಡಿ' : 'Record Again'}
+                </Button>
+              )}
+
               {/* Extra UI based on state */}
               {buttonConfig.extraUI && (
                 <div className="text-xs text-gray-600 text-center">
@@ -1285,7 +1302,7 @@ export function AudioRecorder({
       }`}>
       <CardContent className="p-6">
         {/* Phase 2: Enhanced header with better visual hierarchy */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
           <div className="flex items-center gap-3">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${state.buttonState === 'saved' ? 'bg-green-500 text-white' :
               state.buttonState === 'recording' ? 'bg-red-500 text-white' :

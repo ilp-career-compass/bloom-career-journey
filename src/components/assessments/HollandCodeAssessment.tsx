@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLang } from '@/hooks/useLang';
 import { checkAssessmentUnlock } from '@/utils/assessmentUnlock';
+import { AssessmentService } from '@/services/assessmentService';
 
 type CategoryKey = 'R' | 'I' | 'A' | 'S' | 'E' | 'C';
 
@@ -47,7 +48,7 @@ export default function HollandCodeAssessment() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const readOnlyView = ['1','true'].includes((searchParams.get('readonly')||searchParams.get('view')||'').toLowerCase());
+  const readOnlyView = ['1', 'true'].includes((searchParams.get('readonly') || searchParams.get('view') || '').toLowerCase());
   const [questions, setQuestions] = useState<HollandQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<number, boolean>>({});
   const [loading, setLoading] = useState(true);
@@ -55,6 +56,9 @@ export default function HollandCodeAssessment() {
   const [isCompleted, setIsCompleted] = useState(false);
   const [topTwoTypes, setTopTwoTypes] = useState<string>('');
   const [reflection, setReflection] = useState<string>('');
+  const [description, setDescription] = useState<string>('');
+  const [instructions, setInstructions] = useState<string>('');
+  const [assessmentTitle, setAssessmentTitle] = useState<string>('');
 
   // Check if assessment is unlocked
   useEffect(() => {
@@ -69,15 +73,15 @@ export default function HollandCodeAssessment() {
       if (!studentId) return;
 
       const unlockResult = await checkAssessmentUnlock(studentId, 'holland_code');
-      
+
       if (!unlockResult.isUnlocked) {
         toast({
           title: lang === 'kn' ? 'ಮೌಲ್ಯಮಾಪನ ಲಾಕ್ ಮಾಡಲಾಗಿದೆ' : lang === 'ta' ? 'செயல் பூட்டப்பட்டுள்ளது' : 'Assessment Locked',
-          description: lang === 'kn' 
+          description: lang === 'kn'
             ? `ದಯವಿಟ್ಟು ಮೊದಲು "${unlockResult.missingPrerequisites.join(', ')}" ಪೂರ್ಣಗೊಳಿಸಿ.`
             : lang === 'ta'
-            ? `"${unlockResult.missingPrerequisites.join(', ')}" செயல்களை முதலில் முடித்தால் இந்த பகுதி திறக்கும்.`
-            : `Please complete "${unlockResult.missingPrerequisites.join(', ')}" first.`,
+              ? `"${unlockResult.missingPrerequisites.join(', ')}" செயல்களை முதலில் முடித்தால் இந்த பகுதி திறக்கும்.`
+              : `Please complete "${unlockResult.missingPrerequisites.join(', ')}" first.`,
           variant: 'destructive',
         });
         navigate('/student');
@@ -87,10 +91,20 @@ export default function HollandCodeAssessment() {
     checkUnlock();
   }, [userProfile, navigate, toast, lang]);
 
-  // Load questions from database
+  // Load questions and template from database
   useEffect(() => {
-    const loadQuestions = async () => {
+    const loadData = async () => {
       try {
+        setLoading(true);
+
+        // Load template for text content
+        const template = await AssessmentService.getAssessmentTemplate('personality');
+        if (template) {
+          setAssessmentTitle(template.title);
+          setDescription(template.description || '');
+          setInstructions(template.instructions || '');
+        }
+
         console.log('🔄 Loading Holland Code questions from database...');
         const { data, error } = await supabase.rpc('get_holland_code_questions');
         if (error) {
@@ -104,12 +118,12 @@ export default function HollandCodeAssessment() {
           setQuestions(sorted);
         }
       } catch (error) {
-        console.error('Error loading Holland Code questions:', error);
+        console.error('Error loading Holland Code data:', error);
       } finally {
         setLoading(false);
       }
     };
-    loadQuestions();
+    loadData();
   }, []);
 
   // Load existing response
@@ -159,11 +173,11 @@ export default function HollandCodeAssessment() {
             }
           });
           setAnswers(loadedAnswers);
-          
+
           // Load top two types and reflection
           if (responses.topTwoTypes) setTopTwoTypes(responses.topTwoTypes);
           if (responses.reflection) setReflection(responses.reflection);
-          
+
           if (row.completed_at) {
             setIsCompleted(true);
           }
@@ -179,14 +193,14 @@ export default function HollandCodeAssessment() {
   // Calculate scores by category
   const scores = useMemo(() => {
     const categoryScores: Record<CategoryKey, number> = { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 };
-    
+
     questions.forEach((q, index) => {
       const questionNum = index + 1;
       if (answers[questionNum]) {
         categoryScores[q.category] += 1;
       }
     });
-    
+
     return categoryScores;
   }, [answers, questions]);
 
@@ -252,27 +266,67 @@ export default function HollandCodeAssessment() {
     setSubmitting(true);
     try {
       // Prepare responses object
-      const responsesObj: any = {};
+      const currentResponses: any = {};
       questions.forEach((q, index) => {
         const questionNum = index + 1;
-        responsesObj[`question${questionNum}`] = answers[questionNum] || false;
+        currentResponses[`question${questionNum}`] = answers[questionNum] || false;
       });
-      responsesObj.scores = scores;
-      responsesObj.topTwoTypes = topTwoTypes;
-      responsesObj.reflection = reflection;
+      currentResponses.scores = scores;
+      currentResponses.topTwoTypes = topTwoTypes;
+      currentResponses.reflection = reflection;
 
-      const { data: assessmentData, error } = await supabase
+      // Fetch latest existing data to merge
+      const { data: existingRecords } = await supabase
         .from('assessment_responses')
-        .upsert({
-          student_id: studentId,
-          assessment_type: 'personality',
-          assessment_title: 'Holland Code (RIASEC) Test',
-          responses: responsesObj,
+        .select('responses')
+        .eq('student_id', studentId)
+        .eq('assessment_type', 'personality')
+        .eq('assessment_title', 'Holland Code (RIASEC) Test')
+        .order('updated_at', { ascending: false })
+        .limit(1);
+
+      const existing = existingRecords && existingRecords.length > 0 ? existingRecords[0] : null;
+
+      const combinedResponses = {
+        ...(existing?.responses as any || {}),
+        ...currentResponses
+      };
+
+      // First try to update existing record
+      const { data: updateData, error: updateError } = await supabase
+        .from('assessment_responses')
+        .update({
+          responses: combinedResponses,
           completed_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
-        .select()
-        .single();
+        .eq('student_id', studentId)
+        .eq('assessment_type', 'personality')
+        .eq('assessment_title', 'Holland Code (RIASEC) Test')
+        .select();
+
+      let assessmentData = updateData && updateData.length > 0 ? updateData[0] : null;
+      let error = updateError;
+
+      // If no rows were updated (no existing record), insert a new one
+      if (!updateError && (!updateData || updateData.length === 0)) {
+        const { data: insertData, error: insertError } = await supabase
+          .from('assessment_responses')
+          .insert({
+            student_id: studentId,
+            assessment_type: 'personality',
+            assessment_title: 'Holland Code (RIASEC) Test',
+            responses: combinedResponses,
+            completed_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+        assessmentData = insertData;
+        error = insertError;
+      }
+
+      if (error) throw error;
 
       if (error) throw error;
 
@@ -315,24 +369,60 @@ export default function HollandCodeAssessment() {
         }
         if (!studentId) return;
 
-        const responsesObj: any = {};
+        // Fetch latest data to avoid race conditions
+        const { data: existingRecords } = await supabase
+          .from('assessment_responses')
+          .select('responses')
+          .eq('student_id', studentId)
+          .eq('assessment_type', 'personality')
+          .eq('assessment_title', 'Holland Code (RIASEC) Test')
+          .order('updated_at', { ascending: false })
+          .limit(1);
+
+        const existing = existingRecords && existingRecords.length > 0 ? existingRecords[0] : null;
+
+        const currentResponses: any = {};
         questions.forEach((q, index) => {
           const questionNum = index + 1;
-          responsesObj[`question${questionNum}`] = answers[questionNum] || false;
+          currentResponses[`question${questionNum}`] = answers[questionNum] || false;
         });
-        responsesObj.scores = scores;
-        responsesObj.topTwoTypes = topTwoTypes;
-        responsesObj.reflection = reflection;
+        currentResponses.scores = scores;
+        currentResponses.topTwoTypes = topTwoTypes;
+        currentResponses.reflection = reflection;
 
-        await supabase.from('assessment_responses').upsert({
-          student_id: studentId,
-          assessment_type: 'personality',
-          assessment_title: 'Holland Code (RIASEC) Test',
-          responses: responsesObj,
-          updated_at: new Date().toISOString(),
-          completed_at: null
-        });
-      } catch {}
+        const combinedResponses = {
+          ...(existing?.responses as any || {}),
+          ...currentResponses
+        };
+
+        // Update existing logic
+        const { data: updateData, error: updateError } = await supabase
+          .from('assessment_responses')
+          .update({
+            responses: combinedResponses,
+            updated_at: new Date().toISOString()
+          })
+          .eq('student_id', studentId)
+          .eq('assessment_type', 'personality')
+          .eq('assessment_title', 'Holland Code (RIASEC) Test')
+          .select();
+
+        let error = updateError;
+
+        if (!updateError && (!updateData || updateData.length === 0)) {
+          const { error: insertError } = await supabase.from('assessment_responses').insert({
+            student_id: studentId,
+            assessment_type: 'personality',
+            assessment_title: 'Holland Code (RIASEC) Test',
+            responses: combinedResponses,
+            updated_at: new Date().toISOString(),
+            completed_at: null
+          });
+          error = insertError;
+        }
+
+        if (error) throw error;
+      } catch { }
     }, 800);
     return () => clearTimeout(timer);
   }, [answers, scores, topTwoTypes, reflection, loading, isCompleted, userProfile, questions]);
@@ -409,14 +499,15 @@ export default function HollandCodeAssessment() {
 
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-blue-800 mb-4">🧭 7. Holland Code (RIASEC) Test</h1>
+          <h1 className="text-3xl font-bold text-blue-800 mb-4">{assessmentTitle || 'Holland Code (RIASEC) Test'}</h1>
           <div className="text-left max-w-4xl mx-auto space-y-4 text-gray-700">
-            <p className="text-base leading-relaxed">
-              This practice sheet will help you know your personality type and find out the career field that matches your personality.
-            </p>
-            <p className="text-base leading-relaxed">
-              Most people fall into one of six distinct personalities, abbreviated as RIASEC:
-            </p>
+            {description ? (
+              <div className="text-base leading-relaxed whitespace-pre-line">{description}</div>
+            ) : (
+              <p className="text-base leading-relaxed">Loading description...</p>
+            )}
+
+            {/* Hardcoded generic explanation of RIASEC if needed, or rely on DB description containing it */}
             <ol className="list-decimal list-inside space-y-2 ml-4">
               <li>Realistic</li>
               <li>Investigative</li>
@@ -425,20 +516,15 @@ export default function HollandCodeAssessment() {
               <li>Enterprising</li>
               <li>Conventional</li>
             </ol>
-            <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-              <p className="font-semibold text-blue-800 mb-2">How to take the Holland Code (RIASEC) Test?</p>
-              <ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
-                <li>The test is a self-assessment exercise comprising 42 statements about personal preferences.</li>
-                <li>Read professions/activities carefully and tick "Yes" (✔) if a statement describes your preference, or "No" (✗) if it does not.</li>
-                <li><strong>There are no wrong answers in these statements! So you can choose according to your compatibility.</strong></li>
-                <li>After completing the test, count the number of ticks under each category of R.I.A.S.E.C and write the total in a provided column.</li>
-                <li>The personality type corresponding to the highest two scores is then written in a box at the end of the sheet.</li>
-                <li>Look up "Majors for the Six Occupational Themes" to match your personality type with a suitable career area/subject or occupation.</li>
-              </ul>
-              <p className="mt-3 text-xs italic text-gray-600">
-                <strong>Note:</strong> This self-assessment provides you an idea of your personality and possible career options. You should use this as one of the inputs to your decision making process and do not decide only based on this.
-              </p>
-            </div>
+
+            {instructions && (
+              <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                <p className="font-semibold text-blue-800 mb-2">Instructions</p>
+                <div className="text-sm text-gray-700 whitespace-pre-line space-y-2">
+                  {instructions}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -471,7 +557,7 @@ export default function HollandCodeAssessment() {
                 const questionNum = index + 1;
                 const isYes = answers[questionNum] === true;
                 const isNo = answers[questionNum] === false;
-                
+
                 return (
                   <div key={question.id} className="flex items-start gap-4 p-4 bg-white rounded-lg border hover:border-blue-200 transition-colors">
                     <div className="flex-shrink-0 w-12 text-center font-semibold text-gray-600 pt-1">
@@ -550,7 +636,7 @@ export default function HollandCodeAssessment() {
                 </tbody>
               </table>
             </div>
-            
+
             {/* Top Two Types */}
             <div className="mt-6 p-4 bg-blue-50 rounded-lg">
               <label className="block text-sm font-semibold text-blue-800 mb-2">
