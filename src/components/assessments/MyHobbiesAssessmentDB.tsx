@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLang } from '@/hooks/useLang';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -7,8 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
-import { 
-  CheckCircle, 
+import {
+  CheckCircle,
   Heart,
   Music,
   Palette,
@@ -42,10 +43,11 @@ interface HobbiesAssessmentResponse {
 
 export default function MyHobbiesAssessmentDB() {
   const { userProfile } = useAuth();
+  const { lang } = useLang();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const readOnlyView = ['1','true'].includes((searchParams.get('readonly')||searchParams.get('view')||'').toLowerCase());
+  const readOnlyView = ['1', 'true'].includes((searchParams.get('readonly') || searchParams.get('view') || '').toLowerCase());
   const [assessmentTemplate, setAssessmentTemplate] = useState<AssessmentTemplate | null>(null);
   const [responses, setResponses] = useState<HobbiesAssessmentResponse>({
     hobbies: []
@@ -64,10 +66,10 @@ export default function MyHobbiesAssessmentDB() {
       try {
         setLoading(true);
         const template = await AssessmentService.getAssessmentTemplate('hobbies');
-        
+
         if (template) {
           setAssessmentTemplate(template);
-          
+
           // Initialize with one empty hobby
           setResponses({
             hobbies: [{
@@ -99,7 +101,7 @@ export default function MyHobbiesAssessmentDB() {
   useEffect(() => {
     const checkExistingResponse = async () => {
       if (!userProfile || loading) return;
-      
+
       try {
         let studentId = userProfile.studentProfile?.id as string | undefined;
         if (!studentId) {
@@ -162,7 +164,7 @@ export default function MyHobbiesAssessmentDB() {
           updated_at: new Date().toISOString(),
           completed_at: null
         });
-      } catch {}
+      } catch { }
     }, 800);
     return () => clearTimeout(t);
   }, [responses, loading, isCompleted, userProfile]);
@@ -170,7 +172,7 @@ export default function MyHobbiesAssessmentDB() {
   const handleHobbyChange = (index: number, field: keyof Hobby, value: string) => {
     setResponses(prev => ({
       ...prev,
-      hobbies: prev.hobbies.map((hobby, i) => 
+      hobbies: prev.hobbies.map((hobby, i) =>
         i === index ? { ...hobby, [field]: value } : hobby
       )
     }));
@@ -242,11 +244,11 @@ export default function MyHobbiesAssessmentDB() {
   };
 
   const isComplete = () => {
-    return responses.hobbies.every(hobby => 
-      hobby.name.trim() !== '' && 
-      hobby.description.trim() !== '' && 
-      hobby.timeSpent.trim() !== '' && 
-      hobby.enjoyment.trim() !== '' && 
+    return responses.hobbies.every(hobby =>
+      hobby.name.trim() !== '' &&
+      hobby.description.trim() !== '' &&
+      hobby.timeSpent.trim() !== '' &&
+      hobby.enjoyment.trim() !== '' &&
       hobby.skills.trim() !== ''
     );
   };
@@ -328,10 +330,16 @@ export default function MyHobbiesAssessmentDB() {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Dashboard
           </Button>
-          
+
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">🎨 My Talents and Hobbies</h1>
+              <h1 className="text-3xl font-bold text-gray-900">
+                {lang === 'kn'
+                  ? '🎨 ನನ್ನ ಪ್ರತಿಭೆಗಳು ಮತ್ತು ಹವ್ಯಾಸಗಳು'
+                  : lang === 'ta'
+                    ? '🎨 என் திறமைகள் மற்றும் பொழுதுபோக்குகள்'
+                    : '🎨 My Talents and Hobbies'}
+              </h1>
               {/* Description Text */}
               <div className="max-w-3xl space-y-4 text-gray-700 mt-4">
                 <p className="text-base leading-relaxed">
@@ -343,30 +351,88 @@ export default function MyHobbiesAssessmentDB() {
                 <p className="text-base leading-relaxed italic text-orange-700 font-medium">
                   "Hobbies bring out our talents and inspire us to pursue our dreams."
                 </p>
-                
+
                 {/* Definitions Section */}
                 <div className="mt-6 space-y-4 text-left bg-orange-50 p-6 rounded-lg border border-orange-200">
                   <div>
-                    <h3 className="font-semibold text-orange-800 mb-2">Section I: What is a hobby?</h3>
+                    <h3 className="font-semibold text-orange-800 mb-2">
+                      {lang === 'kn'
+                        ? 'ಭಾಗ I: ಹವ್ಯಾಸ (Hobby) ಎಂದರೆ ಏನು?'
+                        : lang === 'ta'
+                          ? 'பகுதி I: பொழுதுபோக்கு (Hobby) என்றால் என்ன?'
+                          : 'Section I: What is a hobby?'}
+                    </h3>
                     <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
-                      <li>It is an activity that we do for fun, after our daily chores.</li>
-                      <li>Work done to pass the time or to give pleasure to the mind.</li>
-                      <li>A hobby is something that can be learnt and developed over time.</li>
+                      {lang === 'kn' ? (
+                        <>
+                          <li>ನಾವು ನಮ್ಮ ಖುಷಿಗಾಗಿ, ನಮ್ಮ ದೈನಂದಿನ ಕೆಲಸಗಳ ಜೊತೆಗೆ ಮಾಡುವ ಚಟುವಟಿಕೆ.</li>
+                          <li>ಸಮಯ ಕಳೆಯಲು ಅಥವಾ ಮನಸ್ಸಿಗೆ ಸಂತೋಷ ನೀಡಲು ಮಾಡುವ ಕೆಲಸ.</li>
+                          <li>ಹವ್ಯಾಸ ಕಲಿತು ಬೆಳೆಯಬಹುದು.</li>
+                        </>
+                      ) : lang === 'ta' ? (
+                        <>
+                          <li>நமது மகிழ்ச்சிக்காக, தினசரி வேலைகளுடன் சேர்த்து செய்யப்படும் செயல்கள்.</li>
+                          <li>நேரத்தை பயனுள்ளதாக கழிக்க அல்லது மனதிற்கு மகிழ்ச்சி தர செய்யப்படும் செயல்கள்.</li>
+                          <li>பொழுதுபோக்கை கற்றுக்கொண்டு வளர்த்துக்கொள்ளலாம்.</li>
+                        </>
+                      ) : (
+                        <>
+                          <li>It is an activity that we do for fun, after our daily chores.</li>
+                          <li>Work done to pass the time or to give pleasure to the mind.</li>
+                          <li>A hobby is something that can be learnt and developed over time.</li>
+                        </>
+                      )}
                     </ul>
                     <p className="mt-2 text-gray-600">
-                      <strong>Examples:</strong> Drawing, singing, reading, dancing, bird watching, gardening, etc.
+                      <strong>
+                        {lang === 'kn' ? 'ಉದಾಹರಣೆಗಳು:' : lang === 'ta' ? 'உதாரணங்கள்:' : 'Examples:'}
+                      </strong>{' '}
+                      {lang === 'kn'
+                        ? 'ಚಿತ್ರ ಬಿಡಿಸುವುದು, ಹಾಡು ಹಾಡುವುದು, ಓದು, ನೃತ್ಯ, ಟಿವಿಯನ್ನು ನೋಡುವುದು, ತೋಟಗಾರಿಕೆ ಇತ್ಯಾದಿ.'
+                        : lang === 'ta'
+                          ? 'வரைதல், பாடுதல், வாசித்தல், நடனம் ஆடுதல், பறவைகளைப் பார்ப்பது, தோட்டப் பணி செய்வது போன்றவை.'
+                          : 'Drawing, singing, reading, dancing, bird watching, gardening, etc.'}
                     </p>
                   </div>
-                  
+
                   <div className="mt-4">
-                    <h3 className="font-semibold text-orange-800 mb-2">Section II: What is talent?</h3>
+                    <h3 className="font-semibold text-orange-800 mb-2">
+                      {lang === 'kn'
+                        ? 'ಭಾಗ II: ಪ್ರತಿಭೆ (Talent) ಎಂದರೆ ಏನು?'
+                        : lang === 'ta'
+                          ? 'பகுதி II: திறமை (Talent) என்றால் என்ன?'
+                          : 'Section II: What is talent?'}
+                    </h3>
                     <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
-                      <li>A natural ability that we are born with.</li>
-                      <li>A skill that can be done easily without much practice.</li>
-                      <li>This can lead to immense achievement with more practice.</li>
+                      {lang === 'kn' ? (
+                        <>
+                          <li>ಹುಟ್ಟಿನಿಂದಲೇ ನಮಗೆ ಇರುವ ಒಂದು ನೈಸರ್ಗಿಕ ಸಾಮರ್ಥ್ಯ.</li>
+                          <li>ಹೆಚ್ಚು ಅಭ್ಯಾಸ ಮಾಡದೆ ಸಹ ಸುಲಭವಾಗಿ ಮಾಡಬಹುದಾದ ಕೌಶಲ್ಯ.</li>
+                          <li>ಇದನ್ನು ಇನ್ನಷ್ಟು ಅಭ್ಯಾಸದಿಂದ ಅಪಾರ ಸಾಧನೆಗೆ ದಾರಿ ಮಾಡಬಹುದು.</li>
+                        </>
+                      ) : lang === 'ta' ? (
+                        <>
+                          <li>பிறப்பிலிருந்தே நமக்கு உள்ள இயற்கையான திறன்.</li>
+                          <li>அதிக பயிற்சி இல்லாமலேயே எளிதாக செய்யக்கூடிய திறமை.</li>
+                          <li>இதை மேலும் பயிற்சி செய்வதன் மூலம் பெரிய சாதனைகளை அடையலாம்.</li>
+                        </>
+                      ) : (
+                        <>
+                          <li>A natural ability that we are born with.</li>
+                          <li>A skill that can be done easily without much practice.</li>
+                          <li>This can lead to immense achievement with more practice.</li>
+                        </>
+                      )}
                     </ul>
                     <p className="mt-2 text-gray-600">
-                      <strong>Examples:</strong> The ability to sing naturally, communicate clearly, answer questions quickly in math, learn quickly, etc.
+                      <strong>
+                        {lang === 'kn' ? 'ಉದಾಹರಣೆಗಳು:' : lang === 'ta' ? 'உதாரணங்கள்:' : 'Examples:'}
+                      </strong>{' '}
+                      {lang === 'kn'
+                        ? 'ಸುಲಭವಾಗಿ ಹಾಡುವಂತಹುದು, ಸ್ಪಷ್ಟವಾಗಿ ಭಾಷಣ ಮಾಡುವಂತಹುದು, ಗಣಿತದಲ್ಲಿ ವೇಗವಾಗಿ ಉತ್ತರ ನೀಡುವಂತಹುದು, ತ್ವರಿತವಾಗಿ ಕಲಿಯುವ ಸಾಮರ್ಥ್ಯ ಇತ್ಯಾದಿ.'
+                        : lang === 'ta'
+                          ? 'எளிதாக பாடும் திறன், தெளிவாக பேசும் திறன், கணிதத்தில் வேகமாக விடை அளிக்கும் திறன், விரைவாக கற்றுக்கொள்ளும் திறன் போன்றவை.'
+                          : 'The ability to sing naturally, communicate clearly, answer questions quickly in math, learn quickly, etc.'}
                     </p>
                   </div>
                 </div>
@@ -484,7 +550,8 @@ export default function MyHobbiesAssessmentDB() {
                 <Save className="h-4 w-4 mr-2" />
                 Save Draft
               </Button>
-              
+
+
               <Button
                 onClick={handleSubmit}
                 disabled={submitting || !isComplete()}
@@ -492,24 +559,10 @@ export default function MyHobbiesAssessmentDB() {
               >
                 {submitting ? 'Submitting...' : 'Complete Assessment'}
               </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-              <Button
-                onClick={handleSubmit}
-                disabled={submitting || !isComplete()}
-                size="lg"
-              >
-                {submitting ? 'Submitting...' : 'Complete Assessment'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+            </div >
+          </div >
+        </div >
+      </div >
+    </div >
   );
 }

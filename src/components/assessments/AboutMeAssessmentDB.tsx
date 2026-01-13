@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useLang } from '@/hooks/useLang';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,8 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
-import { 
-  CheckCircle, 
+import {
+  CheckCircle,
   User,
   Heart,
   Star,
@@ -29,10 +30,11 @@ interface AboutMeResponse {
 
 export default function AboutMeAssessmentDB() {
   const { userProfile } = useAuth();
+  const { t } = useLang();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const readOnlyView = ['1','true'].includes((searchParams.get('readonly')||searchParams.get('view')||'').toLowerCase());
+  const readOnlyView = ['1', 'true'].includes((searchParams.get('readonly') || searchParams.get('view') || '').toLowerCase());
   const [assessmentTemplate, setAssessmentTemplate] = useState<AssessmentTemplate | null>(null);
   const [responses, setResponses] = useState<AboutMeResponse>({});
   const [loading, setLoading] = useState(true);
@@ -49,18 +51,18 @@ export default function AboutMeAssessmentDB() {
       try {
         setLoading(true);
         console.log('🔄 Loading About Me questions from database...');
-        
+
         // Use get_about_me_fields to get section information
         const { data, error } = await supabase.rpc('get_about_me_fields');
-        
+
         if (error) {
           handleDatabaseError(error, 'AboutMeAssessment');
           throw error;
         }
-        
+
         if (validateApiResponse(data, 'AboutMeAssessment')) {
           console.log('✅ Database fields loaded:', data.length, 'fields');
-          
+
           // Group fields by section
           const fieldsBySection: Record<string, any[]> = {};
           data.forEach((field: any) => {
@@ -70,10 +72,10 @@ export default function AboutMeAssessmentDB() {
             }
             fieldsBySection[section].push(field);
           });
-          
+
           // Sort all fields by sequence_number to maintain global order
           const allFields = data.sort((a: any, b: any) => a.sequence_number - b.sequence_number);
-          
+
           // Create sections from grouped data
           const sections = Object.keys(fieldsBySection)
             .sort((a, b) => {
@@ -83,10 +85,10 @@ export default function AboutMeAssessmentDB() {
               return sectionA.localeCompare(sectionB);
             })
             .map((sectionTitle, sectionIndex) => {
-              const sectionFields = fieldsBySection[sectionTitle].sort((a, b) => 
+              const sectionFields = fieldsBySection[sectionTitle].sort((a, b) =>
                 a.sequence_number - b.sequence_number
               );
-              
+
               return {
                 id: `section_${sectionIndex + 1}`,
                 title: sectionTitle,
@@ -98,8 +100,8 @@ export default function AboutMeAssessmentDB() {
                   return {
                     id: `question${globalIndex}`, // Use sequential numbering for compatibility
                     question_text: field.question_text,
-                    question_type: (field.field_type === 'triple' || field.field_type === 'double') 
-                      ? 'textarea' as const 
+                    question_type: (field.field_type === 'triple' || field.field_type === 'double')
+                      ? 'textarea' as const
                       : (field.field_type as 'textarea' | 'text'),
                     help_text: field.help_text,
                     is_required: true,
@@ -107,9 +109,10 @@ export default function AboutMeAssessmentDB() {
                     options: []
                   };
                 })
+                  .filter(q => q.question_text && q.question_text.trim() !== '') // Filter out empty questions (e.g. for specific languages)
               };
             });
-          
+
           // Create template structure
           const template: AssessmentTemplate = {
             template_id: 'about_me',
@@ -118,9 +121,9 @@ export default function AboutMeAssessmentDB() {
             instructions: 'Complete all questions to finish your assessment',
             sections
           };
-          
+
           setAssessmentTemplate(template);
-          
+
           // Initialize responses structure with sequential question numbers
           const initialResponses: AboutMeResponse = {};
           template.sections.forEach((section) => {
@@ -152,7 +155,7 @@ export default function AboutMeAssessmentDB() {
   useEffect(() => {
     const checkExistingResponse = async () => {
       if (!userProfile || loading || !assessmentTemplate) return;
-      
+
       try {
         let studentId = userProfile.studentProfile?.id as string | undefined;
         if (!studentId) {
@@ -179,7 +182,7 @@ export default function AboutMeAssessmentDB() {
           const loadedResponses = existing.responses as any;
           // Responses are already in question1, question2 format, so just use them directly
           setResponses(loadedResponses);
-          
+
           if (existing.completed_at) {
             setIsCompleted(true);
           }
@@ -216,7 +219,7 @@ export default function AboutMeAssessmentDB() {
           updated_at: new Date().toISOString(),
           completed_at: null
         });
-      } catch {}
+      } catch { }
     }, 800);
     return () => clearTimeout(t);
   }, [responses, loading, isCompleted, userProfile]);
@@ -273,15 +276,15 @@ export default function AboutMeAssessmentDB() {
 
   const isComplete = () => {
     if (!assessmentTemplate) return false;
-    
+
     // Check ALL sections (A, B, C, D) are complete
     // This ensures the submit button is only enabled when all sections are filled
-    return assessmentTemplate.sections.every(section => 
+    return assessmentTemplate.sections.every(section =>
       section.questions.every((question) => {
         const response = responses[question.id];
-        
+
         if (!response) return false;
-        
+
         // Handle string responses
         if (typeof response === 'string') {
           return response.trim() !== '';
@@ -361,10 +364,10 @@ export default function AboutMeAssessmentDB() {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Dashboard
           </Button>
-          
+
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">About Me Assessment</h1>
+              <h1 className="text-3xl font-bold text-gray-900">{t('aboutMeTitle')}</h1>
               <p className="text-gray-600 mt-2">
                 {assessmentTemplate.description}
               </p>
@@ -400,17 +403,17 @@ export default function AboutMeAssessmentDB() {
                       <p className="text-gray-600 text-sm">{section.description}</p>
                     )}
                   </div>
-                  
+
                   {section.questions.map((question, questionIndex) => {
                     // Use question.id (field_key) as the key
                     const questionKey = question.id;
                     const currentResponse = responses[questionKey] || '';
                     const helpKeyValue = helpKey(questionIndex);
                     const isHelpOpen = helpOpen[helpKeyValue];
-                    
+
                     // Handle array responses (for triple/double fields) - convert to string for display
-                    const displayValue = Array.isArray(currentResponse) 
-                      ? currentResponse.join(', ') 
+                    const displayValue = Array.isArray(currentResponse)
+                      ? currentResponse.join(', ')
                       : (typeof currentResponse === 'string' ? currentResponse : '');
 
                     return (
@@ -470,7 +473,7 @@ export default function AboutMeAssessmentDB() {
                     <Save className="h-4 w-4 mr-2" />
                     Save Draft
                   </Button>
-                  
+
                   <Button
                     onClick={handleSubmit}
                     disabled={submitting || !isComplete() || readOnlyView}
@@ -487,20 +490,5 @@ export default function AboutMeAssessmentDB() {
     </div>
   );
 }
-                  
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={submitting || !isComplete() || readOnlyView}
-                    size="lg"
-                  >
-                    {submitting ? 'Submitting...' : 'Complete Assessment'}
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </div>
-  );
-}
+
+

@@ -153,6 +153,8 @@ export default function TeacherDashboard() {
       logout: 'Logout',
       myProfile: 'My Profile',
       contactIlp: 'Contact ILP',
+      inspirationTitle: 'MY INSPIRATION',
+      aboutMeTitle: 'ABOUT ME',
     },
     kn: {
       brand: 'ವಿದ್ಯಾ ಸಾಥಿ',
@@ -178,6 +180,8 @@ export default function TeacherDashboard() {
       logout: 'ಲಾಗ್ ಔಟ್',
       myProfile: 'ನನ್ನ ಪ್ರೊಫೈಲ್',
       contactIlp: 'ILP ಸಂಪರ್ಕಿಸಿ',
+      inspirationTitle: 'ನನ್ನ ಪ್ರೇರಣೆ',
+      aboutMeTitle: 'ನನ್ನ ಬಗ್ಗೆ',
     },
     ta: {
       brand: 'வித்யா சாதி',
@@ -203,6 +207,8 @@ export default function TeacherDashboard() {
       logout: 'வெளியேறு',
       myProfile: 'என் விவரம்',
       contactIlp: 'ILP தொடர்பு',
+      inspirationTitle: 'என் உத்வேகம்',
+      aboutMeTitle: 'என்னைப் பற்றி',
     },
   };
   const t = (k: string) => (strings[lang] as any)[k] || (strings.en as any)[k] || k;
@@ -1339,8 +1345,8 @@ export default function TeacherDashboard() {
                                     // Build assessment-based timeline according to unlock rules
                                     // Must match StudentDashboard.tsx unlock logic exactly
                                     const order = [
-                                      { key: 'inspiration', title: 'MY INSPIRATION', seq: 1 },
-                                      { key: 'about_me', title: 'ABOUT ME', seq: 2 },
+                                      { key: 'inspiration', title: t('inspirationTitle'), seq: 1 },
+                                      { key: 'about_me', title: t('aboutMeTitle'), seq: 2 },
                                       { key: 'dreams', title: 'MY DREAMS', seq: 3 },
                                       { key: 'school_learning', title: 'MY SCHOOL', seq: 4 },
                                       { key: 'hobbies', title: 'MY HOBBIES', seq: 5 },

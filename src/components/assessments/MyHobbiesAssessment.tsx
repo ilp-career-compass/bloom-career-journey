@@ -766,40 +766,38 @@ export default function MyHobbiesAssessment() {
               <div>
                 <h3 className="font-semibold text-orange-800 mb-2">
                   {lang === 'kn'
-                    ? 'ಭಾಗ I: ಹವ್ಯಾಸ ಎಂದರೆ ಏನು?'
+                    ? 'ಭಾಗ I: ಹವ್ಯಾಸ (Hobby) ಎಂದರೆ ಏನು?'
                     : lang === 'ta'
-                      ? 'பகுதி I: பொழுதுபோக்கு என்றால் என்ன?'
+                      ? 'பகுதி I: பொழுதுபோக்கு (Hobby) என்றால் என்ன?'
                       : 'Section I: What is a hobby?'}
                 </h3>
                 <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
-                  <li>
-                    {lang === 'kn'
-                      ? 'ನಮ್ಮ ದೈನಂದಿನ ಕೆಲಸಗಳ ನಂತರ, ಮನರಂಜನೆಗಾಗಿ ನಾವು ಮಾಡುವ ಚಟುವಟಿಕೆ ಹವ್ಯಾಸ.'
-                      : lang === 'ta'
-                        ? 'நாம் தினசரி பணிகளை முடித்த பிறகு, மனநிறைவு மற்றும் மகிழ்ச்சிக்காக செய்வது ஒரு பொழுதுபோக்கு.'
-                        : 'It is an activity that we do for fun, after our daily chores.'}
-                  </li>
-                  <li>
-                    {lang === 'kn'
-                      ? 'ಸಮಯ ಕಳೆಯಲು ಅಥವಾ ಮನಸ್ಸಿಗೆ ಸಂತೋಷ ನೀಡಲು ಮಾಡುವ ಕೆಲಸ.'
-                      : lang === 'ta'
-                        ? 'நேரத்தை பயனுள்ளதாகக் கழிக்கவும் அல்லது மனதிற்கு இன்பம் தரவும் செய்வது ஒரு பொழுதுபோக்கு.'
-                        : 'Work done to pass the time or to give pleasure to the mind.'}
-                  </li>
-                  <li>
-                    {lang === 'kn'
-                      ? 'ಹವ್ಯಾಸವನ್ನು ಅಭ್ಯಾಸದ ಮೂಲಕ ಕಲಿತು, ನಿಧಾನವಾಗಿ ಅಭಿವೃದ್ಧಿಪಡಿಸಬಹುದು.'
-                      : lang === 'ta'
-                        ? 'பயிற்சியின் மூலம் காலத்திற்கும் காலம் வளர்த்துக்கொள்ளக்கூடிய ஒன்றுதான் பொழுதுபோக்கு.'
-                        : 'A hobby is something that can be learnt and developed over time.'}
-                  </li>
+                  {lang === 'kn' ? (
+                    <>
+                      <li>ನಾವು ನಮ್ಮ ಖುಷಿಗಾಗಿ, ನಮ್ಮ ದೈನಂದಿನ ಕೆಲಸಗಳ ಜೊತೆಗೆ ಮಾಡುವ ಚಟುವಟಿಕೆ.</li>
+                      <li>ಸಮಯ ಕಳೆಯಲು ಅಥವಾ ಮನಸ್ಸಿಗೆ ಸಂತೋಷ ನೀಡಲು ಮಾಡುವ ಕೆಲಸ.</li>
+                      <li>ಹವ್ಯಾಸ ಕಲಿತು ಬೆಳೆಯಬಹುದು.</li>
+                    </>
+                  ) : lang === 'ta' ? (
+                    <>
+                      <li>நமது மகிழ்ச்சிக்காக, தினசரி வேலைகளுடன் சேர்த்து செய்யப்படும் செயல்கள்.</li>
+                      <li>நேரத்தை பயனுள்ளதாக கழிக்க அல்லது மனதிற்கு மகிழ்ச்சி தர செய்யப்படும் செயல்கள்.</li>
+                      <li>பொழுதுபோக்கை கற்றுக்கொண்டு வளர்த்துக்கொள்ளலாம்.</li>
+                    </>
+                  ) : (
+                    <>
+                      <li>It is an activity that we do for fun, after our daily chores.</li>
+                      <li>Work done to pass the time or to give pleasure to the mind.</li>
+                      <li>A hobby is something that can be learnt and developed over time.</li>
+                    </>
+                  )}
                 </ul>
                 <p className="mt-2 text-gray-600">
                   <strong>
                     {lang === 'kn' ? 'ಉದಾಹರಣೆಗಳು:' : lang === 'ta' ? 'உதாரணங்கள்:' : 'Examples:'}
                   </strong>{' '}
                   {lang === 'kn'
-                    ? 'ಚಿತ್ರ ಬಿಡಿಸುವುದು, ಹಾಡುವುದು, ಓದು, ನೃತ್ಯ, ಪಕ್ಷಿಗಳನ್ನು ಗಮನಿಸುವುದು, ತೋಟಗಾರಿಕೆ ಇತ್ಯಾದಿ.'
+                    ? 'ಚಿತ್ರ ಬಿಡಿಸುವುದು, ಹಾಡು ಹಾಡುವುದು, ಓದು, ನೃತ್ಯ, ಟಿವಿಯನ್ನು ನೋಡುವುದು, ತೋಟಗಾರಿಕೆ ಇತ್ಯಾದಿ.'
                     : lang === 'ta'
                       ? 'வரைதல், பாடுதல், வாசித்தல், நடனம் ஆடுதல், பறவைகளைப் பார்ப்பது, தோட்டப் பணி செய்வது போன்றவை.'
                       : 'Drawing, singing, reading, dancing, bird watching, gardening, etc.'}
@@ -809,42 +807,40 @@ export default function MyHobbiesAssessment() {
               <div className="mt-4">
                 <h3 className="font-semibold text-orange-800 mb-2">
                   {lang === 'kn'
-                    ? 'ಭಾಗ II: திறமை ಎಂದರೆ ಏನು?'
+                    ? 'ಭಾಗ II: ಪ್ರತಿಭೆ (Talent) ಎಂದರೆ ಏನು?'
                     : lang === 'ta'
-                      ? 'பகுதி II: திறமை என்றால் என்ன?'
+                      ? 'பகுதி II: திறமை (Talent) என்றால் என்ன?'
                       : 'Section II: What is talent?'}
                 </h3>
                 <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
-                  <li>
-                    {lang === 'kn'
-                      ? 'ನಾವು ಜನ್ಮತಃ ಹೊಂದಿರುವ ಸಹಜ ಸಾಮರ್ಥ್ಯವನ್ನು ಪ್ರತಿಭೆ ಎಂದು ಕರೆಯುತ್ತಾರೆ.'
-                      : lang === 'ta'
-                        ? 'நாம் பிறந்ததிலிருந்து எங்களிடம் இருக்கும் இயல்பான திறனே திறமை.'
-                        : 'A natural ability that we are born with.'}
-                  </li>
-                  <li>
-                    {lang === 'kn'
-                      ? 'ಸ್ವಲ್ಪ ಅಭ್ಯಾಸದಲ್ಲೇ ಸುಲಭವಾಗಿ ಮಾಡಬಹುದಾದ ಕೌಶಲ್ಯ.'
-                      : lang === 'ta'
-                        ? 'குறைந்த பயிற்சியிலேயே எளிதாகச் செய்யக்கூடிய ஒரு திறன்.'
-                        : 'A skill that can be done easily without much practice.'}
-                  </li>
-                  <li>
-                    {lang === 'kn'
-                      ? 'ಹೆಚ್ಚು ಅಭ್ಯಾಸ ಮಾಡಿದರೆ, ಈ ಸಾಮರ್ಥ್ಯದಿಂದ ದೊಡ್ಡ ಸಾಧನೆ ಮಾಡಲು ಸಾಧ್ಯ.'
-                      : lang === 'ta'
-                        ? 'அதே திறனை தொடர்ந்து பயிற்சி செய்தால், மிகப் பெரிய சாதனைகளை அடையலாம்.'
-                        : 'This can lead to immense achievement with more practice.'}
-                  </li>
+                  {lang === 'kn' ? (
+                    <>
+                      <li>ಹುಟ್ಟಿನಿಂದಲೇ ನಮಗೆ ಇರುವ ಒಂದು ನೈಸರ್ಗಿಕ ಸಾಮರ್ಥ್ಯ.</li>
+                      <li>ಹೆಚ್ಚು ಅಭ್ಯಾಸ ಮಾಡದೆ ಸಹ ಸುಲಭವಾಗಿ ಮಾಡಬಹುದಾದ ಕೌಶಲ್ಯ.</li>
+                      <li>ಇದನ್ನು ಇನ್ನಷ್ಟು ಅಭ್ಯಾಸದಿಂದ ಅಪಾರ ಸಾಧನೆಗೆ ದಾರಿ ಮಾಡಬಹುದು.</li>
+                    </>
+                  ) : lang === 'ta' ? (
+                    <>
+                      <li>பிறப்பிலிருந்தே நமக்கு உள்ள இயற்கையான திறன்.</li>
+                      <li>அதிக பயிற்சி இல்லாமலேயே எளிதாக செய்யக்கூடிய திறமை.</li>
+                      <li>இதை மேலும் பயிற்சி செய்வதன் மூலம் பெரிய சாதனைகளை அடையலாம்.</li>
+                    </>
+                  ) : (
+                    <>
+                      <li>A natural ability that we are born with.</li>
+                      <li>A skill that can be done easily without much practice.</li>
+                      <li>This can lead to immense achievement with more practice.</li>
+                    </>
+                  )}
                 </ul>
                 <p className="mt-2 text-gray-600">
                   <strong>
                     {lang === 'kn' ? 'ಉದಾಹರಣೆಗಳು:' : lang === 'ta' ? 'உதாரணங்கள்:' : 'Examples:'}
                   </strong>{' '}
                   {lang === 'kn'
-                    ? 'ಸ್ವಾಭಾವಿಕವಾಗಿ ಹಾಡುವ ಸಾಮರ್ಥ್ಯ, ಸ್ಪಷ್ಟವಾಗಿ ಮಾತನಾಡುವ ಶಕ್ತಿ, ಗಣಿತ ಪ್ರಶ್ನೆಗಳಿಗೆ ಬೇಗ ಉತ್ತರಿಸುವುದು, ಬೇಗನೆ ಕಲಿಯುವ ಸಾಮರ್ಥ್ಯ ಇತ್ಯಾದಿ.'
+                    ? 'ಸುಲಭವಾಗಿ ಹಾಡುವಂತಹುದು, ಸ್ಪಷ್ಟವಾಗಿ ಭಾಷಣ ಮಾಡುವಂತಹುದು, ಗಣಿತದಲ್ಲಿ ವೇಗವಾಗಿ ಉತ್ತರ ನೀಡುವಂತಹುದು, ತ್ವರಿತವಾಗಿ ಕಲಿಯುವ ಸಾಮರ್ಥ್ಯ ಇತ್ಯಾದಿ.'
                     : lang === 'ta'
-                      ? 'இயல்பாக இனிமையாகப் பாடும் திறன், தெளிவாகப் பேசும் திறன், கணிதக் கேள்விகளுக்கு விரைவில் சரியான பதில் கூறும் திறன், வேகமாகக் கற்றுக்கொள்ளும் திறன் போன்றவை.'
+                      ? 'எளிதாக பாடும் திறன், தெளிவாக பேசும் திறன், கணிதத்தில் வேகமாக விடை அளிக்கும் திறன், விரைவாக கற்றுக்கொள்ளும் திறன் போன்றவை.'
                       : 'The ability to sing naturally, communicate clearly, answer questions quickly in math, learn quickly, etc.'}
                 </p>
               </div>

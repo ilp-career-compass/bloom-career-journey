@@ -260,30 +260,30 @@ export default function SummaryApprovalCard({
           } else if (assessmentTypeToUse === 'school_learning') {
             if (isTa) {
               setQuestionTitles({
-                q1: 'எனக்கு பிடித்த பாடங்கள்',
-                q2: 'எனக்கு பிடித்த பாடங்களில் இருந்து சாத்தியமான தொழில்கள்',
-                q3: 'எனக்கு பிடிக்காத பாடங்கள்',
-                q4: 'பிடிக்காத பாடங்களில் நான் மேம்பட்டால் சாத்தியமான தொழில்கள்',
-                q5: 'பள்ளியில் படிப்பைத் தவிர நான் நன்றாகச் செய்யும் செயல்கள்',
-                q6: 'இந்த திறன்களை மேம்படுத்துவது என் தொழிலுக்கு எப்படி உதவும்'
+                q1: 'நான் விரும்பும் பாடங்கள்',
+                q2: 'நான் விரும்பும் பாடங்களின் மூலம் நான் அடையக்கூடிய தொழில்கள்',
+                q3: 'நான் விரும்பாத பாடங்கள்',
+                q4: 'நான் விரும்பாத பாடங்களில் முன்னேற்றம் பெற்றால் நான் அடையக்கூடிய தொழில்கள்',
+                q5: 'பாடப்பிரிவுகளுடன் சேர்த்து, நான் சிறப்பாக சாதனை புரியும் பிற செயல்பாடுகள் / விஷயங்கள்',
+                q6: 'இந்த திறன்களில் நான் மேம்பட்டால், என் வேலை / தொழில் தேர்வுக்கு உதவியாக இருக்கும்.'
               });
             } else if (isKn) {
               setQuestionTitles({
-                q1: 'ನನಗೆ ಇಷ್ಟವಾದ ವಿಷಯಗಳು',
-                q2: 'ನನಗೆ ಇಷ್ಟವಾದ ವಿಷಯಗಳಿಂದ ಸಾಧ್ಯವಾದ ವೃತ್ತಿಗಳು',
-                q3: 'ನನಗೆ ಇಷ್ಟವಿಲ್ಲದ ವಿಷಯಗಳು',
-                q4: 'ಇಷ್ಟವಿಲ್ಲದ ವಿಷಯಗಳಲ್ಲಿ ನಾನು ಸುಧಾರಿಸಿದರೆ ಸಾಧ್ಯವಾದ ವೃತ್ತಿಗಳು',
-                q5: 'ಶಾಲೆಯಲ್ಲಿ ಅಧ್ಯಯನದ ಹೊರತಾಗಿ ನಾನು ಚೆನ್ನಾಗಿ ಮಾಡುವ ಕೆಲಸಗಳು',
-                q6: 'ಈ ಕೌಶಲ್ಯಗಳನ್ನು ಬೆಳೆಸುವುದು ನನ್ನ ವೃತ್ತಿಗೆ ಹೇಗೆ ಸಹಾಯ ಮಾಡುತ್ತದೆ'
+                q1: 'ನಾನು ಇಷ್ಟಪಡುವ ವಿಷಯಗಳು',
+                q2: 'ನಾನು ಇಷ್ಟಪಡುವ ವಿಷಯಗಳಿಂದ ನಾನು ಪಡೆಯಲು ಸಾಧ್ಯವಾದ ವೃತ್ತಿಗಳು',
+                q3: 'ನಾನು ಇಷ್ಟಪಡದ ವಿಷಯಗಳು',
+                q4: 'ನಾನು ಇಷ್ಟಪಡದ ವಿಷಯಗಳಲ್ಲಿ ನಾನು ಸುಧಾರಿಸಿಕೊಂಡರೆ ಪಡೆಯಲು ಸಾಧ್ಯವಾದ ವೃತ್ತಿಗಳು',
+                q5: 'ಪಠ್ಯ ವಿಷಯಗಳ ಜೊತೆಗೆ, ನಾನು ಉತ್ತಮ ಸಾಧನೆ ಮಾಡುತ್ತಿರುವ ಇತರ ಚಟುವಟಿಕೆಗಳು / ವಿಷಯಗಳು',
+                q6: 'ನಾನು ಈ ಕೌಶಲ್ಯಗಳಲ್ಲಿ ಸುಧಾರಿಸಿಕೊಂಡರೆ ನನ್ನ ಕೆಲಸ / ವೃತ್ತಿಯ ಆಯ್ಕೆಗೆ ಸಹಾಯವಾಗುತ್ತದೆ.'
               });
             } else {
               setQuestionTitles({
-                q1: defaultTitles.q1,
-                q2: defaultTitles.q2,
-                q3: defaultTitles.q3,
-                q4: defaultTitles.q4,
-                q5: defaultTitles.q5,
-                q6: defaultTitles.q6
+                q1: 'Subjects I like',
+                q2: 'Careers that are possible of the subjects that I like',
+                q3: "Subjects I don't like",
+                q4: "Careers that are possible if I improve in those subjects which I don't like",
+                q5: 'Things I am good at besides academics at school',
+                q6: 'How will improving these skills help me with my career'
               });
             }
           } else if (assessmentTypeToUse === 'hobbies') {
@@ -331,12 +331,12 @@ export default function SummaryApprovalCard({
             if (isTa) {
               setQuestionTitles(prev => ({
                 ...prev,
-                q1: 'தொழில் வழிகாட்டல் குறித்து உங்கள் முன்மாதிரி நபர்களிடம் கேட்க விரும்பும் 5 முதல் 10 கேள்விகளை எழுதுங்கள்.'
+                q1: 'உங்கள் முன்மாதிரி நபரிடம் உங்கள் தொழில் வழிகாட்டலுக்காக நீங்கள் கேட்க விரும்பும் 5 முதல் 10 கேள்விகளை எழுதுங்கள்.'
               }));
             } else if (isKn) {
               setQuestionTitles(prev => ({
                 ...prev,
-                q1: 'ನಿಮ್ಮ ಪಾತ್ರ ಮಾದರಿಗಳಿಂದ ವೃತ್ತಿ ಮಾರ್ಗದರ್ಶನದ ಕುரிತಾಗಿ ನೀವು ಕೇಳಲು ಬಯಸುವ 5 ರಿಂದ 10 ಪ್ರಶ್ನೆಗಳನ್ನು ಬರೆಯಿರಿ.'
+                q1: 'ನಿಮ್ಮ ಆದರ್ಶ ವ್ಯಕ್ತಿಯೊಂದಿಗೆ ನಿಮ್ಮ ವೃತ್ತಿ ಮಾರ್ಗದರ್ಶನಕ್ಕಾಗಿ ನೀವು ಕೇಳಲು ಬಯಸುವ 5 ರಿಂದ 10 ಪ್ರಶ್ನೆಗಳನ್ನು ಬರೆಯಿರಿ.'
               }));
             } else {
               setQuestionTitles(prev => ({
@@ -446,13 +446,13 @@ export default function SummaryApprovalCard({
           }
 
           // Get assessment title based on type
-          const assessmentTitles: Record<string, { en: string; kn: string }> = {
+          const assessmentTitles: Record<string, { en: string; kn: string; ta?: string }> = {
             'inspiration': { en: 'My Inspiration', kn: 'ನನ್ನ ಪ್ರೇರಣೆ' },
-            'about_me': { en: 'About Me', kn: 'ನನ್ನ ಬಗ್ಗೆ' },
+            'about_me': { en: 'About Me', kn: 'ನನ್ನ ಬಗ್ಗೆ', ta: 'என்னைப் பற்றி' },
             'dreams': { en: 'My Dreams', kn: 'ನನ್ನ ಕನಸುಗಳು' },
             'school_learning': { en: 'My School, My Learning and I', kn: 'ನನ್ನ ಶಾಲೆ, ನನ್ನ ಕಲಿಕೆ ಮತ್ತು ನಾನು' },
-            'hobbies': { en: 'My Talents and Hobbies', kn: 'ನನ್ನ ಪ್ರತಿಭೆಗಳು ಮತ್ತು ಹವ್ಯಾಸಗಳು' },
-            'role_models': { en: 'My Role Models', kn: 'ನನ್ನ ಆದರ್ಶ ವ್ಯಕ್ತಿಗಳು' }
+            'hobbies': { en: 'My Talents and Hobbies', kn: 'ನನ್ನ ಪ್ರತಿಭೆಗಳು ಮತ್ತು ಹವ್ಯಾಸಗಳು', ta: 'என் திறமைகள் மற்றும் பொழுதுபோக்குகள்' },
+            'role_models': { en: 'My Role Models', kn: 'ನನ್ನ ಆದರ್ಶ ವ್ಯಕ್ತಿ ಯಾರು?', ta: 'என் முன்மாதிரி நபர்' }
           };
 
           const titleMap = assessmentTitles[assessmentTypeToUse] || { en: 'Assessment', kn: 'ಮೌಲ್ಯಮಾಪನ' };

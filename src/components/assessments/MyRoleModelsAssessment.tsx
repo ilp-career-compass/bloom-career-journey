@@ -603,9 +603,9 @@ export default function MyRoleModelsAssessment() {
           </div>
           <h1 className="text-2xl md:text-3xl font-bold text-purple-800 mb-4">
             {lang === 'kn'
-              ? '🎯 6. ನನ್ನ ಆದರ್ಶ ವ್ಯಕ್ತಿಗಳು'
+              ? '🎯 6. ನನ್ನ ಆದರ್ಶ ವ್ಯಕ್ತಿ ಯಾರು?'
               : lang === 'ta'
-                ? '🎯 6. என் முன்மாதிரிகள்'
+                ? '🎯 6. என் முன்மாதிரி நபர்'
                 : '🎯 6. My Role Models'}
           </h1>
           <div className="text-left max-w-4xl mx-auto space-y-4 text-gray-700">

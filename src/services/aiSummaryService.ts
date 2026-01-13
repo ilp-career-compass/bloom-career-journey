@@ -2099,9 +2099,9 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
       (template[langKey] as SummaryTemplateLanguageBlock | undefined) ?? template.en;
 
     const questionsPrompt = isKannada
-      ? `Question 1: ನಿಮ್ಮ ಪಾತ್ರ ಮಾದರಿಗಳಿಂದ ವೃತ್ತಿ ಮಾರ್ಗದರ್ಶನದ ಕುರಿತಾಗಿ ನೀವು ಕೇಳಲು ಬಯಸುವ 5 ರಿಂದ 10 ಪ್ರಶ್ನೆಗಳನ್ನು ಬರೆಯಿರಿ.`
+      ? `Question 1: ನಿಮ್ಮ ಆದರ್ಶ ವ್ಯಕ್ತಿಯೊಂದಿಗೆ ನಿಮ್ಮ ವೃತ್ತಿ ಮಾರ್ಗದರ್ಶನಕ್ಕಾಗಿ ನೀವು ಕೇಳಲು ಬಯಸುವ 5 ರಿಂದ 10 ಪ್ರಶ್ನೆಗಳನ್ನು ಬರೆಯಿರಿ.`
       : isTamil
-        ? `Question 1: தொழில் வழிகாட்டல் குறித்து உங்கள் முன்மாதிரி நபர்களிடம் கேட்க விரும்பும் 5 முதல் 10 கேள்விகளை எழுதுங்கள்.`
+        ? `Question 1: உங்கள் முன்மாதிரி நபரிடம் உங்கள் தொழில் வழிகாட்டலுக்காக நீங்கள் கேட்க விரும்பும் 5 முதல் 10 கேள்விகளை எழுதுங்கள்.`
         : `Question 1: Write 5 to 10 questions you would like to ask your role model for career guidance.`;
 
     const coreInstructions =

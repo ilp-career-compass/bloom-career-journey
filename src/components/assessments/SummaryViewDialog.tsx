@@ -372,10 +372,10 @@ export default function SummaryViewDialog({
                         : 'Summary: My Dreams')
                     : assessmentType === 'school_learning'
                       ? (lang === 'kn'
-                        ? 'ನನ್ನ ಶಾಲೆ, ನನ್ನ ಕಲಿಕೆ ಮತ್ತು ನಾನು ಸಾರಾಂಶ'
+                        ? 'ಸಾರಾಂಶ: ನನ್ನ ಮುಂದಿನ ಯೋಜನೆ'
                         : lang === 'ta'
-                          ? 'சுருக்கம்: என் பள்ளி, என் படிப்பு மற்றும் நான்'
-                          : 'Summary: My School, My Learning and I')
+                          ? 'சுருக்கம்: என் எதிர்கால திட்டம்'
+                          : 'Summary: My future plan')
                       : assessmentType === 'hobbies'
                         ? (lang === 'kn'
                           ? 'ನನ್ನ ಪ್ರತಿಭೆಗಳು ಮತ್ತು ಹವ್ಯಾಸಗಳು ಸಾರಾಂಶ'
@@ -384,10 +384,10 @@ export default function SummaryViewDialog({
                             : 'Summary: My Talents and Hobbies')
                         : assessmentType === 'role_models'
                           ? (lang === 'kn'
-                            ? 'ನನ್ನ ಆದರ್ಶ ವ್ಯಕ್ತಿಗಳು ಸಾರಾಂಶ'
+                            ? 'ಸಾರಾಂಶ: ನನ್ನ ಮುಂದಿನ ಯೋಜನೆ'
                             : lang === 'ta'
-                              ? 'சுருக்கம்: என் முன்மாதிரிகள்'
-                              : 'Summary: My Role Models')
+                              ? 'சுருக்கம்: என் எதிர்கால திட்டம்'
+                              : 'Summary: My future plan')
                           : (lang === 'kn'
                             ? 'ನನ್ನನ್ನು ಪ್ರೇರೇಪಿಸಿದ ವಿಷಯಗಳು'
                             : lang === 'ta'
@@ -409,10 +409,10 @@ export default function SummaryViewDialog({
                         : 'Summary of your dreams and aspirations')
                     : assessmentType === 'school_learning'
                       ? (lang === 'kn'
-                        ? 'ನಿಮ್ಮ ಶಾಲೆ ಮತ್ತು ಕಲಿಕೆಯ ಬಗ್ಗೆ ಸಾರಾಂಶ'
+                        ? 'ನಿಮ್ಮ ಭವಿಷ್ಯದ ಯೋಜನೆಯನ್ನು ಸಂಕ್ಷಿಪ್ತವಾಗಿ ಬರೆಯಿರಿ.'
                         : lang === 'ta'
-                          ? 'உங்கள் பள்ளி அனுபவங்கள் மற்றும் கற்றல்களைச் சுருக்கமாகக் காட்டுகிறது.'
-                          : 'Summary of your school experience and learning')
+                          ? 'உங்கள் எதிர்கால திட்டத்தை சுருக்கமாக எழுதுங்கள்.'
+                          : 'Write a brief summary of your future plan.')
                       : assessmentType === 'hobbies'
                         ? (lang === 'kn'
                           ? 'ನಿಮ್ಮ ಪ್ರತಿಭೆಗಳು ಮತ್ತು ಹವ್ಯಾಸಗಳ ಬಗ್ಗೆ ಸಾರಾಂಶ'
@@ -423,8 +423,8 @@ export default function SummaryViewDialog({
                           ? (lang === 'kn'
                             ? 'ನಿಮ್ಮ ಆದರ್ಶ ವ್ಯಕ್ತಿಗಳ ಬಗ್ಗೆ ಸಾರಾಂಶ'
                             : lang === 'ta'
-                              ? 'உங்கள் முன்மாதிரி நபர்கள் மற்றும் அவர்களிடம் கேட்க விரும்பும் கேள்விகளின் சுருக்கம்.'
-                              : 'Summary of your role models')
+                              ? 'உங்கள் எதிர்கால படிப்பு, வேலை, தொழில் தேர்வு குறித்து சந்தேகமாக உள்ள கேள்விகளை நினைத்து எழுதுங்கள்.'
+                              : 'Think about questions related to your future studies, job, or career choice and write them.')
                           : (lang === 'kn'
                             ? 'ಪ್ರೇರಣಾದಾಯಕ ವೀಡಿಯೊಗಳು ಮತ್ತು ಅನುಭವಗಳ ಬಗ್ಗೆ ನಿಮ್ಮ ಪ್ರತಿಬಿಂಬ'
                             : lang === 'ta'
