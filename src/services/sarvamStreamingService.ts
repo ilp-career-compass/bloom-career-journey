@@ -3,7 +3,8 @@ export class SarvamStreamingService {
     private isConnected = false;
     private onTranscriptCallback: ((text: string, isFinal: boolean) => void) | null = null;
     private onErrorCallback: ((error: string) => void) | null = null;
-    private url = 'ws://127.0.0.1:8000/ws/stream'; // Use IP to avoid localhost IPv6 issues
+    // Use environment variable for production, fallback to localhost for dev
+    private url = import.meta.env.VITE_SARVAM_PROXY_URL || 'ws://127.0.0.1:8000/ws/stream';
 
     constructor() { }
 
