@@ -3,3 +3,4 @@ uvicorn
 websockets
 sarvamai
 python-dotenv
+gunicorn
