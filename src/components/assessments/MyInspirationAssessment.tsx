@@ -338,26 +338,29 @@ export default function MyInspirationAssessment() {
       setInspirationVideos(defaultVideos);
       setLoading(false);
 
-      // Initialize responses structure if not already done
-      if (Object.keys(responses).length === 0) {
-        const initialResponses: AssessmentResponse = {};
+      // Initialize responses structure
+      // Ensure all videos have corresponding response keys (merge with existing)
+      setResponses(prev => {
+        const next = { ...prev };
         defaultVideos.forEach((_, index) => {
           const videoKey = `video${index + 1}` as keyof AssessmentResponse;
-          initialResponses[videoKey] = {
-            question1: '',
-            question2: '',
-            question3: '',
-            question4: '',
-            question5: '',
-            question6: '',
-            question7: '',
-            question8: '',
-            question9: '',
-            question10: ''
-          };
+          if (!next[videoKey]) {
+            next[videoKey] = {
+              question1: '',
+              question2: '',
+              question3: '',
+              question4: '',
+              question5: '',
+              question6: '',
+              question7: '',
+              question8: '',
+              question9: '',
+              question10: ''
+            };
+          }
         });
-        setResponses(initialResponses);
-      }
+        return next;
+      });
 
       // Initialize video progress
       const initialProgress = defaultVideos.map(video => ({
