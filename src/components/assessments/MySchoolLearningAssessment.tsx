@@ -239,7 +239,8 @@ export default function MySchoolLearningAssessment() {
   const qLabel = (id: number, en: string): string => {
     // Dynamic fetching for all languages
     const q = questions.find(i => i.sequence_number === id);
-    return q?.question_text || en;
+    // Fixed: RPC returns 'text' not 'question_text'
+    return q?.text || en;
   };
 
   useEffect(() => {
