@@ -123,6 +123,74 @@ INSERT INTO content_translations (resource_type, resource_key, lang, text, updat
 ON CONFLICT (resource_type, resource_key, lang) 
 DO UPDATE SET text = EXCLUDED.text, updated_at = NOW();
 
+
+-- 4. Create/Update RPCs
+
+-- Get School Learning Questions I18N
+DROP FUNCTION IF EXISTS get_school_learning_questions_i18n(text);
+CREATE OR REPLACE FUNCTION get_school_learning_questions_i18n(p_lang text)
+RETURNS TABLE (
+    id UUID,
+    section TEXT,
+    key TEXT,
+    text TEXT,
+    help_text TEXT,
+    question_type TEXT,
+    sequence_number INTEGER
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        q.id,
+        q.section,
+        'question' || q.sequence_number as key,
+        COALESCE(t_q.text, q.question_text) as text,
+        COALESCE(t_h.text, q.help_text) as help_text,
+        q.question_type,
+        q.sequence_number
+    FROM school_learning_questions q
+    LEFT JOIN content_translations t_q ON t_q.resource_type = 'school_learning_question' AND t_q.resource_key = ('question' || q.sequence_number) AND t_q.lang = p_lang
+    LEFT JOIN content_translations t_h ON t_h.resource_type = 'school_learning_help' AND t_h.resource_key = ('question' || q.sequence_number) AND t_h.lang = p_lang
+    WHERE q.is_active = true
+    ORDER BY q.sequence_number;
+END $$;
+
+GRANT EXECUTE ON FUNCTION get_school_learning_questions_i18n(text) TO authenticated;
+
+
+-- Get School Learning Summary Questions I18N
+DROP FUNCTION IF EXISTS get_school_learning_summary_questions_i18n(text);
+CREATE OR REPLACE FUNCTION get_school_learning_summary_questions_i18n(p_lang text)
+RETURNS TABLE (
+    id UUID,
+    key TEXT,
+    text TEXT,
+    help_text TEXT,
+    sequence_number INTEGER
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        q.id,
+        'question' || q.sequence_number as key,
+        COALESCE(t_q.text, q.question_text) as text,
+        COALESCE(t_h.text, q.help_text) as help_text,
+        q.sequence_number
+    FROM school_learning_summary_questions q
+    LEFT JOIN content_translations t_q ON t_q.resource_type = 'school_learning_summary_question' AND t_q.resource_key = ('question' || q.sequence_number) AND t_q.lang = p_lang
+    LEFT JOIN content_translations t_h ON t_h.resource_type = 'school_learning_summary_help' AND t_h.resource_key = ('question' || q.sequence_number) AND t_h.lang = p_lang
+    WHERE q.is_active = true
+    ORDER BY q.sequence_number;
+END $$;
+
+GRANT EXECUTE ON FUNCTION get_school_learning_summary_questions_i18n(text) TO authenticated;
+
 -- Verification
 DO $$
 DECLARE
