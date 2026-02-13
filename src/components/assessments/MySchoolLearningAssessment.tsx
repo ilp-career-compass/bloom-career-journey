@@ -125,14 +125,40 @@ export default function MySchoolLearningAssessment() {
   const isReadOnly = isCompleted || readOnlyView;
   const [helpTranslations, setHelpTranslations] = useState<Record<string, string>>({});
 
-  // Load localized help text from content_translations (school_help)
-  // Load localized help text from content_translations (school_help)
-  // Load localized help text from content_translations (school_help)
+  const [dbTitle, setDbTitle] = useState<string>('');
+  const [dbIntro, setDbIntro] = useState<string>('');
+
+  // Fetch module content (title, intro)
+  useEffect(() => {
+    const fetchModuleContent = async () => {
+      try {
+        const { data } = await supabase
+          .from('content_translations')
+          .select('resource_key, text')
+          .eq('resource_type', 'school_learning_module')
+          .eq('lang', lang)
+          .in('resource_key', ['title', 'intro']);
+
+        if (data) {
+          const tTitle = data.find(i => i.resource_key === 'title')?.text;
+          const tIntro = data.find(i => i.resource_key === 'intro')?.text;
+          if (tTitle) setDbTitle(tTitle);
+          if (tIntro) setDbIntro(tIntro);
+        }
+      } catch (e) {
+        console.error('Error fetching module content:', e);
+      }
+    };
+    fetchModuleContent();
+  }, [lang]);
+
+  // Load localized help text from content_translations (school_learning_help)
   useEffect(() => {
     const loadHelpTranslations = async () => {
       try {
         const keys = Array.from({ length: 21 }, (_, i) => `question${i + 1}`);
-        const map = await fetchTranslations('school_help', keys, lang);
+        // Changed from 'school_help' to 'school_learning_help' to match DB
+        const map = await fetchTranslations('school_learning_help', keys, lang);
         setHelpTranslations(map);
       } catch (error) {
         console.warn('MySchoolLearningAssessment: failed to load help translations', error);
@@ -818,18 +844,18 @@ export default function MySchoolLearningAssessment() {
             </Button>
           </div>
           <h1 className="text-2xl md:text-3xl font-bold text-green-800 mb-2">
-            {lang === 'kn'
+            {dbTitle || (lang === 'kn'
               ? '🏫 ನನ್ನ ಶಾಲೆ, ನನ್ನ ಕಲಿಕೆ ಮತ್ತು ನಾನು'
               : lang === 'ta'
                 ? '🏫 என் பள்ளி, என் படிப்பு மற்றும் நான்'
-                : '🏫 My School, My Learning and I'}
+                : '🏫 My School, My Learning and I')}
           </h1>
-          <p className="text-gray-700 mt-4">
-            {lang === 'kn'
+          <p className="text-gray-700 mt-4 whitespace-pre-wrap">
+            {dbIntro || (lang === 'kn'
               ? 'ಶಾಲೆ, ಕಲಿಕೆ ಮತ್ತು ನಿಮ್ಮ ಅನುಭವಗಳ ಬಗ್ಗೆ ನಿಮ್ಮ ಆಲೋಚನೆಗಳನ್ನು ಹಂಚಿಕೊಳ್ಳಿ. ನಿಧಾನವಾಗಿ ಯೋಚಿಸಿ, ಸತ್ಯವಾಗಿ ಉತ್ತರಿಸಿ.'
               : lang === 'ta'
                 ? 'பள்ளி, படிப்பு மற்றும் உங்கள் அனுபவங்களைப் பற்றி உங்கள் எண்ணங்களை பகிருங்கள். மெதுவாக யோசித்து நேர்மையாக பதில் எழுதுங்கள்.'
-                : 'Share your thoughts about school, learning, and your experiences. Take your time and answer honestly.'}
+                : 'Share your thoughts about school, learning, and your experiences. Take your time and answer honestly.')}
           </p>
         </div>
 

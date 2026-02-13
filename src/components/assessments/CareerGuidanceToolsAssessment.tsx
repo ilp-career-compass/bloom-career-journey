@@ -89,12 +89,16 @@ export default function CareerGuidanceToolsAssessment() {
     checkUnlock();
   }, [userProfile, navigate, toast, lang]);
 
-  // Load questions from database
+  const [dbTitle, setDbTitle] = useState<string>('');
+  const [dbIntro, setDbIntro] = useState<string>('');
+
+  // Load questions from database with localization
   useEffect(() => {
     const loadQuestions = async () => {
       try {
         console.log('🔄 Loading Career Guidance Tools questions from database...');
-        const { data, error } = await supabase.rpc('get_career_guidance_tools_questions');
+        // Pass language to RPC
+        const { data, error } = await supabase.rpc('get_career_guidance_tools_questions', { p_lang: lang } as any);
         if (error) {
           console.error('Error loading Career Guidance Tools questions:', error);
           return;
@@ -103,6 +107,23 @@ export default function CareerGuidanceToolsAssessment() {
           console.log('✅ Database questions loaded:', data.length, 'questions');
           setQuestions(data as CareerGuidanceQuestion[]);
         }
+
+        // Fetch Module Content
+        const { data: moduleData } = await supabase
+          .from('content_translations')
+          .select('resource_key, text')
+          .eq('resource_type', 'career_guidance_tools_module')
+          .eq('lang', lang)
+          .in('resource_key', ['title', 'intro']);
+
+        if (moduleData) {
+          const tTitle = moduleData.find(i => i.resource_key === 'title')?.text;
+          const tIntro = moduleData.find(i => i.resource_key === 'intro')?.text;
+
+          if (tTitle) setDbTitle(tTitle);
+          if (tIntro) setDbIntro(tIntro);
+        }
+
       } catch (error) {
         console.error('Error loading Career Guidance Tools questions:', error);
       } finally {
@@ -110,7 +131,7 @@ export default function CareerGuidanceToolsAssessment() {
       }
     };
     loadQuestions();
-  }, []);
+  }, [lang]); // Re-run when language changes
 
   // Load existing response
   useEffect(() => {
@@ -431,13 +452,12 @@ export default function CareerGuidanceToolsAssessment() {
 
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-purple-800 mb-4">🌐 8. Exploring Career Guidance Tools</h1>
+          <h1 className="text-3xl font-bold text-purple-800 mb-4">🌐 {dbTitle || '8. Exploring Career Guidance Tools'}</h1>
           <div className="text-left max-w-4xl mx-auto space-y-4 text-gray-700">
-            <p className="text-base leading-relaxed">
-              (Career Guidance Chart, Career Planner, Website, Mobile App & WhatsApp Chatbot)
-            </p>
-            <p className="text-base leading-relaxed">
-              After your teacher guides you through the career chart, career guidance workbook, website and whatsapp chatbot, answer the following questions in this activity.
+            <p className="text-base leading-relaxed whitespace-pre-wrap">
+              {dbIntro || `(Career Guidance Chart, Career Planner, Website, Mobile App & WhatsApp Chatbot)
+
+After your teacher guides you through the career chart, career guidance workbook, website and whatsapp chatbot, answer the following questions in this activity.`}
             </p>
           </div>
         </div>

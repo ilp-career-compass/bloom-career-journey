@@ -170,6 +170,36 @@ export default function MyDreamsAssessment() {
     return sectionsList;
   }, [questionsBySection]);
 
+  const [dbTitle, setDbTitle] = useState<string>('');
+  const [dbQuote, setDbQuote] = useState<string>('');
+  const [dbIntro, setDbIntro] = useState<string>('');
+
+  // Fetch module content (title, quote, intro)
+  useEffect(() => {
+    const fetchModuleContent = async () => {
+      try {
+        const { data } = await supabase
+          .from('content_translations')
+          .select('resource_key, text')
+          .eq('resource_type', 'dreams_module')
+          .eq('lang', lang)
+          .in('resource_key', ['title', 'quote', 'intro']);
+
+        if (data) {
+          const tTitle = data.find(i => i.resource_key === 'title')?.text;
+          const tQuote = data.find(i => i.resource_key === 'quote')?.text;
+          const tIntro = data.find(i => i.resource_key === 'intro')?.text;
+          if (tTitle) setDbTitle(tTitle);
+          if (tQuote) setDbQuote(tQuote);
+          if (tIntro) setDbIntro(tIntro);
+        }
+      } catch (e) {
+        console.error('Error fetching module content:', e);
+      }
+    };
+    fetchModuleContent();
+  }, [lang]);
+
   // Load questions from database with i18n support
   useEffect(() => {
     const loadQuestions = async () => {
@@ -186,11 +216,27 @@ export default function MyDreamsAssessment() {
           let questionTranslations: Record<string, string> = {};
           let helpTranslations: Record<string, string> = {};
           try {
+            // 1. Try generic RPC
             const { data: i18nData } = await supabase.rpc('get_dreams_questions_i18n', { p_lang: lang } as any);
             if (i18nData && Array.isArray(i18nData)) {
               i18nData.forEach((item: any) => {
                 if (item?.key && item?.text) {
                   questionTranslations[item.key] = item.text;
+                }
+              });
+            }
+
+            // 2. Override with specific content_translations for questions
+            const { data: qData } = await supabase
+              .from('content_translations')
+              .select('resource_key, text')
+              .eq('resource_type', 'dreams_question')
+              .eq('lang', lang);
+
+            if (qData && Array.isArray(qData)) {
+              qData.forEach((item: any) => {
+                if (item?.resource_key && item?.text) {
+                  questionTranslations[item.resource_key] = item.text;
                 }
               });
             }
@@ -694,47 +740,47 @@ export default function MyDreamsAssessment() {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-2xl md:text-3xl font-bold text-blue-800 mb-4">
-            {lang === 'kn'
+            {dbTitle || (lang === 'kn'
               ? '🌟 ನನ್ನ ಕನಸುಗಳ ಮೌಲ್ಯಮಾಪನ'
               : lang === 'ta'
                 ? '🌟 என் கனவுகள் மதிப்பீடு'
-                : '🌟 My Dreams Assessment'}
+                : '🌟 My Dreams Assessment')}
           </h1>
 
           {/* Quote Box */}
           <div className="max-w-3xl mx-auto mb-6 p-4 md:p-6 border-2 border-gray-800 rounded-lg bg-white">
             <p className="text-lg font-bold text-gray-900 mb-2">
-              {lang === 'kn'
+              {dbQuote || (lang === 'kn'
                 ? '“ನೀವು ನಿದ್ರಿಸುವಾಗ ಕಾಣುವದನ್ನು ಅಲ್ಲ ಕನಸು, ನಿಮ್ಮನ್ನು ನಿದ್ರಿಸದಂತೆ 만드는 ಆಲೋಚನೆಯೇ ನಿಜವಾದ ಕನಸು.”'
                 : lang === 'ta'
                   ? '“நீங்கள் தூங்கும்போது காண்பது கனவு அல்ல; உங்களைத் தூங்க விடாமல் செய்யும் எண்ணங்களே உண்மையான கனவுகள்.”'
-                  : '“Dream is not that which you see while sleeping, it is something that does not let you sleep”.'}
+                  : '“Dream is not that which you see while sleeping, it is something that does not let you sleep”.')}
             </p>
-            <p className="text-gray-700 italic">
+            {!dbQuote && <p className="text-gray-700 italic">
               {lang === 'kn'
                 ? 'ಡಾ. ಎ. ಪಿ. ಜೇ. ಅಬ್ದುಲ್ ಕಲಾಂ'
                 : lang === 'ta'
                   ? 'டாக்டர் ஏ. பி. ஜே. அப்துல் கலாம்'
                   : 'By Dr. A. P. J. Abdul Kalam'}
-            </p>
+            </p>}
           </div>
 
           {/* Description Text */}
           <div className="max-w-3xl mx-auto space-y-3 text-gray-700">
-            <p className="text-base leading-relaxed">
-              {lang === 'kn'
+            <p className="text-base leading-relaxed whitespace-pre-wrap">
+              {dbIntro || (lang === 'kn'
                 ? 'ನಮ್ಮ ಭವಿಷ್ಯದ ಬಗ್ಗೆ ಪ್ರತಿಯೊಬ್ಬರಿಗೂ ಹಲವು ಕನಸುಗಳು ಇವೆ. ನಿಮ್ಮ ಕನಸುಗಳು ಯಾವುವು? ನಿಮಗೆ ಬಹಳ ಮುಖ್ಯವಾಗಿ ಅನಿಸುವ ಯಾವುದೇ ಗುರಿ ಅಥವಾ ಆಶೆ ಇದೆಯೇ?'
                 : lang === 'ta'
                   ? 'நாம் ஒவ்வொருவரும் எங்கள் எதிர்காலத்தைப் பற்றி பல கனவுகளை வைத்திருக்கிறோம். உங்கள் கனவுகள் என்ன? உங்களுக்கு மிகவும் நெருக்கமாக உணரப்படும் ஒரு இலக்கு அல்லது ஆசை இருக்கிறதா?'
-                  : 'We all hold dreams for our future. What are your dreams? Is there a particular goal or aspiration that resonates strongly with you?'}
+                  : 'We all hold dreams for our future. What are your dreams? Is there a particular goal or aspiration that resonates strongly with you?')}
             </p>
-            <p className="text-base leading-relaxed">
+            {!dbIntro && <p className="text-base leading-relaxed">
               {lang === 'kn'
-                ? 'ಈ பகுதಿಯಲ್ಲಿ, ನಿಮ್ಮ ಕನಸುಗಳು ಮತ್ತು ಆಶೆಗಳ ಪ್ರಪಂಚವನ್ನು ನಿಧಾನವಾಗಿ ಅನ್ವೇಷಿಸೋಣ.'
+                ? 'ಈ பகுತಿಯಲ್ಲಿ, ನಿಮ್ಮ ಕನಸುಗಳು ಮತ್ತು ಆಶೆಗಳ ಪ್ರಪಂಚವನ್ನು ನಿಧಾನವಾಗಿ ಅನ್ವೇಷಿಸೋಣ.'
                 : lang === 'ta'
                   ? 'இந்த ஆராய்ச்சி பகுதியின் மூலம், உங்கள் கனவுகள் மற்றும் ஆசைகளின் உலகத்தை மெதுவாக ஆராயப் போகிறோம்.'
                   : "In this exploratory section, we'll uncover your world of dreams and aspirations."}
-            </p>
+            </p>}
           </div>
         </div>
 

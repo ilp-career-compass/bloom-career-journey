@@ -152,6 +152,10 @@ export default function MyRoleModelsAssessment() {
     checkExistingResponse();
   }, []);
 
+  const [dbTitle, setDbTitle] = useState<string>('');
+  const [dbIntro, setDbIntro] = useState<string>('');
+  const [dbTabs, setDbTabs] = useState<Record<string, string>>({});
+
   useEffect(() => {
     const loadI18n = async () => {
       try {
@@ -164,6 +168,31 @@ export default function MyRoleModelsAssessment() {
         const hKeys = Array.from({ length: 13 }, (_, i) => `rm_help_q${i + 1}`);
         const hMap = await fetchTranslations('role_models_help', hKeys, lang);
         setHelpText(hMap);
+
+        // Fetch Module Content
+        const { data: moduleData } = await supabase
+          .from('content_translations')
+          .select('resource_key, text')
+          .eq('resource_type', 'role_models_module')
+          .eq('lang', lang)
+          .in('resource_key', ['title', 'intro', 'tab_rm1', 'tab_rm2', 'tab_rm3']);
+
+        if (moduleData) {
+          const tTitle = moduleData.find(i => i.resource_key === 'title')?.text;
+          const tIntro = moduleData.find(i => i.resource_key === 'intro')?.text;
+
+          if (tTitle) setDbTitle(tTitle);
+          if (tIntro) setDbIntro(tIntro);
+
+          const tabs: Record<string, string> = {};
+          moduleData.forEach(item => {
+            if (item.resource_key.startsWith('tab_')) {
+              tabs[item.resource_key] = item.text;
+            }
+          });
+          setDbTabs(tabs);
+        }
+
       } catch (error) {
         console.warn('Failed to load translations', error);
       }
@@ -602,48 +631,53 @@ export default function MyRoleModelsAssessment() {
             </Button>
           </div>
           <h1 className="text-2xl md:text-3xl font-bold text-purple-800 mb-4">
-            {lang === 'kn'
+            {dbTitle || (lang === 'kn'
               ? '🎯 6. ನನ್ನ ಆದರ್ಶ ವ್ಯಕ್ತಿ ಯಾರು?'
               : lang === 'ta'
                 ? '🎯 6. என் முன்மாதிரி நபர்'
-                : '🎯 6. My Role Models'}
+                : '🎯 6. My Role Models')}
           </h1>
           <div className="text-left max-w-4xl mx-auto space-y-4 text-gray-700">
-            <p className="text-base leading-relaxed">
-              {lang === 'kn'
+            <p className="text-base leading-relaxed whitespace-pre-wrap">
+              {dbIntro || (lang === 'kn'
                 ? 'ನಮ್ಮ ಜೀವನದಲ್ಲಿ, ನಾವು ಹಲವರಿಗೆ ಅವರ ಗುಣಗಳು ಮತ್ತು ವ್ಯಕ್ತಿತ್ವದ ಕಾರಣದಿಂದಾಗಿ ಆದರ್ಶ ವ್ಯಕ್ತಿಗಳೆಂದು ನೋಡುತ್ತೇವೆ. ಇಂತಹ ವ್ಯಕ್ತಿಗಳು – ಕುಟುಂಬದವರು, ಶಿಕ್ಷಕರು, ಅಥವಾ ಪ್ರೇರಣಾದಾಯಕ ವ್ಯಕ್ತಿಗಳು – ನಮ್ಮ ಸ್ವಭಾವ ಮತ್ತು ಆಲೋಚನೆಗಳನ್ನು ರೂಪಿಸುವಲ್ಲಿ ದೊಡ್ಡ ಪಾತ್ರವಹಿಸುತ್ತಾರೆ.'
                 : lang === 'ta'
                   ? 'நம் வாழ்க்கையில் சிலரை அவர்களின் குணநலன்களாலும் நடத்தைகளாலும் முன்னுதாரணமாக பார்க்கிறோம். குடும்பத்தினர், ஆசிரியர்கள், தெரிந்தவர்கள் அல்லது பிரபல நபர்கள் என்றாலும், அவர்கள் நம்முடைய சிந்தனை மற்றும் பண்புகளை உருவாக்க பெரும் தாக்கம் செலுத்துகிறார்கள்.'
-                  : 'In our lives, we often admire individuals for their personality traits, viewing them as role models. These individuals, be they influencers, inspiring figures, or those we know personally, contribute significantly to shaping our character.'}
+                  : 'In our lives, we often admire individuals for their personality traits, viewing them as role models. These individuals, be they influencers, inspiring figures, or those we know personally, contribute significantly to shaping our character.')}
             </p>
-            <p className="text-base leading-relaxed">
-              {lang === 'kn'
-                ? 'ಈ பகுதியಲ್ಲಿ, ನಿಮ್ಮ ವ್ಯಕ್ತಿತ್ವವನ್ನು ರೂಪಿಸಲು ಮಹತ್ವವಾದ ಪ್ರಭಾವ ಬೀರಿದ ವ್ಯಕ್ತಿಗಳ ಬಗ್ಗೆ ಆಲೋಚಿಸುತ್ತೀರಿ. ಇವರು ನಿಮ್ಮ ಬೆಳವಣಿಗೆಯ ಮೇಲೆ ತುಂಬಾ ಪ್ರಭಾವ ಬೀರಿದ್ದಾರೆ. ಅವರನ್ನು ನೀವು ಹತ್ತಿರದಿಂದ ನೋಡಲು ಸಾಧ್ಯವಾದರೆ ಇನ್ನೂ ಉತ್ತಮ; ಇಲ್ಲದಿದ್ದರೆ ಪ್ರೇರಣಾದಾಯಕ ವ್ಯಕ್ತಿಗಳು ಕೂಡ ನಿಮ್ಮ ಕಲಿಕೆಗೆ ಮಾದರಿಯಾಗಬಹುದು.'
-                : lang === 'ta'
-                  ? 'இந்த பகுதியில், உங்கள் வாழ்க்கை மற்றும் நற்பண்புகளைக் கட்டியெழுப்ப முக்கிய பங்கு வகித்த முன்மாதிரி நபர்களைப் பற்றி சிந்திக்கப் போகிறீர்கள். அவர்களின் பயணம், போராட்டங்கள் மற்றும் வெற்றிகள், உங்களுக்கும் ஒரு வழிகாட்டியாக இருக்கலாம்.'
-                  : 'In this segment of our reflection, we will delve into the influential figures who have played a significant role in shaping our personalities. These individuals have contributed immensely to our development. If you happen to know such people personally, it\'s advantageous as you can observe them closely. Alternatively, you can also consider inspirational personalities as a source of inspiration and learning.'}
-            </p>
-            <p className="text-purple-600 italic mt-4">
-              <strong>
-                {lang === 'kn'
-                  ? 'ಸೂಚನೆ:'
-                  : lang === 'ta'
-                    ? 'குறிப்பு:'
-                    : 'Suggestion:'}
-              </strong>{' '}
-              {lang === 'kn'
-                ? 'ನೀವು ಆಸಕ್ತಿ ಹೊಂದಿರುವ ವೃತ್ತಿಯನ್ನು ಅನುಸರಿಸಿದ ಆದರ್ಶ ವ್ಯಕ್ತಿಯನ್ನು ಆಯ್ಕೆ ಮಾಡಿದರೆ ಉತ್ತಮ. ಅವರ ಅನುಭವಗಳು ಮತ್ತು ಪ್ರಯಾಣ ನಿಮ್ಮ ಭವಿಷ್ಯಕ್ಕೆ ಮಾರ್ಗದರ್ಶನ ಮತ್ತು ಪ್ರೇರಣೆ ನೀಡಬಹುದು.'
-                : lang === 'ta'
-                  ? 'நீங்கள் விரும்பும் தொழிலை தொடர்ந்து சென்ற ஒருவர் உங்கள் முன்மாதிரியாக இருப்பது சிறந்தது. அவர்களின் பயணம், அனுபவங்கள் மற்றும் முடிவுகள், உங்கள் எதிர்காலத் தேர்வுகளுக்கு நல்ல வழிகாட்டியாக இருக்கும்.'
-                  : 'If possible, it might be beneficial to select a role model who has pursued the profession you\'re interested in. Their journey could provide valuable insights and inspiration for your own path.'}
-            </p>
-            <p className="text-gray-700 mt-3 font-medium">
-              {lang === 'kn'
-                ? 'ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸುವಾಗ, ಅವರ ಗುಣಗಳು, ವರ್ತನೆಗಳು ಮತ್ತು ಪ್ರತಿಭೆಗಳ ಮೇಲೆ ವಿಶೇಷವಾಗಿ ಗಮನ ನೀಡಿ.'
-                : lang === 'ta'
-                  ? 'கேள்விகளுக்குப் பதில் எழுதும்போது, அவர்கள் கொண்டிருக்கும் நல்ல குணங்கள், திறன்கள் மற்றும் முன்னுதாரணமான நடத்தைகளைப் பற்றி குறிப்பாக எழுதுங்கள்.'
-                  : 'When responding to the questions provided, focus on highlighting their qualities, traits, and talents.'}
-            </p>
+            {/* Show extra paragraphs only if dbIntro is NOT present, as dbIntro usually covers it all */}
+            {!dbIntro && (
+              <>
+                <p className="text-base leading-relaxed">
+                  {lang === 'kn'
+                    ? 'ಈ ಭಾಗದಲ್ಲಿ, ನಿಮ್ಮ ವ್ಯಕ್ತಿತ್ವವನ್ನು ರೂಪಿಸಲು ಮಹತ್ವವಾದ ಪ್ರಭಾವ ಬೀರಿದ ವ್ಯಕ್ತಿಗಳ ಬಗ್ಗೆ ಆಲೋಚಿಸುತ್ತೀರಿ. ಇವರು ನಿಮ್ಮ ಬೆಳವಣಿಗೆಯ ಮೇಲೆ ತುಂಬಾ ಪ್ರಭಾವ ಬೀರಿದ್ದಾರೆ. ಅವರನ್ನು ನೀವು ಹತ್ತಿರದಿಂದ ನೋಡಲು ಸಾಧ್ಯವಾದರೆ ಇನ್ನೂ ಉತ್ತಮ; ಇಲ್ಲದಿದ್ದರೆ ಪ್ರೇರಣಾದಾಯಕ ವ್ಯಕ್ತಿಗಳು ಕೂಡ ನಿಮ್ಮ ಕಲಿಕೆಗೆ ಮಾದರಿಯಾಗಬಹುದು.'
+                    : lang === 'ta'
+                      ? 'இந்த பகுதியில், உங்கள் வாழ்க்கை மற்றும் நற்பண்புகளைக் கட்டியெழுப்ப முக்கிய பங்கு வகித்த முன்மாதிரி நபர்களைப் பற்றி சிந்திக்கப் போகிறீர்கள். அவர்களின் பயணம், போராட்டங்கள் மற்றும் வெற்றிகள், உங்களுக்கும் ஒரு வழிகாட்டியாக இருக்கலாம்.'
+                      : 'In this segment of our reflection, we will delve into the influential figures who have played a significant role in shaping our personalities. These individuals have contributed immensely to our development. If you happen to know such people personally, it\'s advantageous as you can observe them closely. Alternatively, you can also consider inspirational personalities as a source of inspiration and learning.'}
+                </p>
+                <p className="text-purple-600 italic mt-4">
+                  <strong>
+                    {lang === 'kn'
+                      ? 'ಸೂಚನೆ:'
+                      : lang === 'ta'
+                        ? 'குறிப்பு:'
+                        : 'Suggestion:'}
+                  </strong>{' '}
+                  {lang === 'kn'
+                    ? 'ನೀವು ಆಸಕ್ತಿ ಹೊಂದಿರುವ ವೃತ್ತಿಯನ್ನು ಅನುಸರಿಸಿದ ಆದರ್ಶ ವ್ಯಕ್ತಿಯನ್ನು ಆಯ್ಕೆ ಮಾಡಿದರೆ ಉತ್ತಮ. ಅವರ ಅನುಭವಗಳು ಮತ್ತು ಪ್ರಯಾಣ ನಿಮ್ಮ ಭವಿಷ್ಯಕ್ಕೆ ಮಾರ್ಗದರ್ಶನ ಮತ್ತು ಪ್ರೇರಣೆ ನೀಡಬಹುದು.'
+                    : lang === 'ta'
+                      ? 'நீங்கள் விரும்பும் தொழிலை தொடர்ந்து சென்ற ஒருவர் உங்கள் முன்மாதிரியாக இருப்பது சிறந்தது. அவர்களின் பயணம், அனுபவங்கள் மற்றும் முடிவுகள், உங்கள் எதிர்காலத் தேர்வுகளுக்கு நல்ல வழிகாட்டியாக இருக்கும்.'
+                      : 'If possible, it might be beneficial to select a role model who has pursued the profession you\'re interested in. Their journey could provide valuable insights and inspiration for your own path.'}
+                </p>
+                <p className="text-gray-700 mt-3 font-medium">
+                  {lang === 'kn'
+                    ? 'ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸುವಾಗ, ಅವರ ಗುಣಗಳು, ವರ್ತನೆಗಳು ಮತ್ತು ಪ್ರತಿಭೆಗಳ ಮೇಲೆ ವಿಶೇಷವಾಗಿ ಗಮನ ನೀಡಿ.'
+                    : lang === 'ta'
+                      ? 'கேள்விகளுக்குப் பதில் எழுதும்போது, அவர்கள் கொண்டிருக்கும் நல்ல குணங்கள், திறன்கள் மற்றும் முன்னுதாரணமான நடத்தைகளைப் பற்றி குறிப்பாக எழுதுங்கள்.'
+                      : 'When responding to the questions provided, focus on highlighting their qualities, traits, and talents.'}
+                </p>
+              </>
+            )}
           </div>
         </div>
 
@@ -675,21 +709,21 @@ export default function MyRoleModelsAssessment() {
             onClick={() => setCurrentSection('roleModel1')}
             className={`border-purple-200 ${currentSection === 'roleModel1' ? 'bg-purple-600 hover:bg-purple-700' : 'text-purple-700 hover:bg-purple-50'}`}
           >
-            {lang === 'kn' ? 'ಮಾದರಿ ವ್ಯಕ್ತಿ 1' : lang === 'ta' ? 'முன்மாதிரி 1' : 'Role Model 1'}
+            {dbTabs['tab_rm1'] || (lang === 'kn' ? 'ಮಾದರಿ ವ್ಯಕ್ತಿ 1' : lang === 'ta' ? 'முன்மாதிரி 1' : 'Role Model 1')}
           </Button>
           <Button
             variant={currentSection === 'roleModel2' ? 'default' : 'outline'}
             onClick={() => setCurrentSection('roleModel2')}
             className={`border-purple-200 ${currentSection === 'roleModel2' ? 'bg-purple-600 hover:bg-purple-700' : 'text-purple-700 hover:bg-purple-50'}`}
           >
-            {lang === 'kn' ? 'ಮಾದರಿ ವ್ಯಕ್ತಿ 2' : lang === 'ta' ? 'முன்மாதிரி 2' : 'Role Model 2'}
+            {dbTabs['tab_rm2'] || (lang === 'kn' ? 'ಮಾದರಿ ವ್ಯಕ್ತಿ 2' : lang === 'ta' ? 'முன்மாதிரி 2' : 'Role Model 2')}
           </Button>
           <Button
             variant={currentSection === 'roleModel3' ? 'default' : 'outline'}
             onClick={() => setCurrentSection('roleModel3')}
             className={`border-purple-200 ${currentSection === 'roleModel3' ? 'bg-purple-600 hover:bg-purple-700' : 'text-purple-700 hover:bg-purple-50'}`}
           >
-            {lang === 'kn' ? 'ಮಾದರಿ ವ್ಯಕ್ತಿ 3' : lang === 'ta' ? 'முன்மாதிரி 3' : 'Role Model 3'}
+            {dbTabs['tab_rm3'] || (lang === 'kn' ? 'ಮಾದರಿ ವ್ಯಕ್ತಿ 3' : lang === 'ta' ? 'முன்மாதிரி 3' : 'Role Model 3')}
           </Button>
           <Button
             variant={currentSection === 'reflection' ? 'default' : 'outline'}
@@ -708,22 +742,22 @@ export default function MyRoleModelsAssessment() {
               <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50">
                 <CardTitle className="text-xl text-purple-800">
                   {currentTab === 'roleModel1'
-                    ? lang === 'kn'
+                    ? dbTabs['tab_rm1'] || (lang === 'kn'
                       ? 'ಮಾದರಿ ವ್ಯಕ್ತಿ -1 (ಹತ್ತಿರದಿಂದ ಪರಿಚಿತರಾದ ವ್ಯಕ್ತಿ)'
                       : lang === 'ta'
                         ? 'முன்மாதிரி -1 (அறிமுகமான / நெருக்கமாக அறிந்த நபர்)'
-                        : 'Role Model -1 (Preferably Closely Known Person)'
+                        : 'Role Model -1 (Preferably Closely Known Person)')
                     : currentTab === 'roleModel2'
-                      ? lang === 'kn'
+                      ? dbTabs['tab_rm2'] || (lang === 'kn'
                         ? 'ಮಾದರಿ ವ್ಯಕ್ತಿ -2 (ಪರಿಚಿತ ವ್ಯಕ್ತಿ)'
                         : lang === 'ta'
                           ? 'முன்மாதிரி -2 (நீங்கள் நன்கு அறிந்த நபர்)'
-                          : 'Role Model -2 (Known Person)'
-                      : lang === 'kn'
+                          : 'Role Model -2 (Known Person)')
+                      : dbTabs['tab_rm3'] || (lang === 'kn'
                         ? 'ಮಾದರಿ ವ್ಯಕ್ತಿ -3 (ಪರಿಚಿತ / ಪ್ರಸಿದ್ಧ ವ್ಯಕ್ತಿ)'
                         : lang === 'ta'
                           ? 'முன்மாதிரி -3 (நீங்கள் அறிந்த / பிரபலமான நபர்)'
-                          : 'Role Model -3 (Known/Famous Person)'}
+                          : 'Role Model -3 (Known/Famous Person)')}
                 </CardTitle>
                 <CardDescription className="text-purple-600">
                   {lang === 'kn'
@@ -732,6 +766,7 @@ export default function MyRoleModelsAssessment() {
                       ? 'இந்த முன்மாதிரி நபரைப் பற்றி உள்ள 11 கேள்விகளுக்கும் பதில் எழுதுங்கள்.'
                       : 'Answer all 11 questions for this role model'}
                 </CardDescription>
+
               </CardHeader>
               <CardContent className="p-6">
                 <div className="space-y-8">

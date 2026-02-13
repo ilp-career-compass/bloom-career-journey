@@ -68,6 +68,32 @@ export default function MyInspirationAssessment() {
   const [helpTexts, setHelpTexts] = useState<{ [key: string]: string }>({});
   const [questionTexts, setQuestionTexts] = useState<{ [key: string]: string }>({});
   const [questionCount, setQuestionCount] = useState(0); // Track number of questions from database
+  const [dbTitle, setDbTitle] = useState<string>('');
+  const [dbIntro, setDbIntro] = useState<string>('');
+
+  // Fetch module title and intro from database
+  useEffect(() => {
+    const fetchModuleTexts = async () => {
+      try {
+        const { data } = await supabase
+          .from('content_translations')
+          .select('resource_key, text')
+          .eq('resource_type', 'inspiration_module')
+          .eq('lang', lang)
+          .in('resource_key', ['title', 'intro']);
+
+        if (data) {
+          const titleText = data.find(item => item.resource_key === 'title')?.text;
+          const introText = data.find(item => item.resource_key === 'intro')?.text;
+          if (titleText) setDbTitle(titleText);
+          if (introText) setDbIntro(introText);
+        }
+      } catch (error) {
+        console.error('Error fetching module texts:', error);
+      }
+    };
+    fetchModuleTexts();
+  }, [lang]);
 
   // Load help texts from database using lang-aware RPC; fallback to base RPC
   useEffect(() => {
@@ -111,16 +137,45 @@ export default function MyInspirationAssessment() {
             console.warn('Could not load help text translations, using default:', e);
           }
 
+          // Fetch question text translations from content_translations (manual override to ensure latest migration applies)
+          let questionTranslations: Record<string, string> = {};
+          try {
+            const { data: qData } = await supabase
+              .from('content_translations')
+              .select('resource_key, text')
+              .eq('resource_type', 'inspiration_question')
+              .eq('lang', lang);
+
+            if (qData && Array.isArray(qData)) {
+              qData.forEach((item: any) => {
+                if (item?.resource_key && item?.text) {
+                  questionTranslations[item.resource_key] = item.text;
+                }
+              });
+            }
+          } catch (e) {
+            console.warn('Could not load question text translations:', e);
+          }
+
           const newHelpTexts: { [key: string]: string } = {};
           const newQuestionTexts: { [key: string]: string } = {};
           (list as any[]).forEach((row: any, index: number) => {
             const key = `question${index + 1}`;
             // Use translated help text if available, otherwise use default
             newHelpTexts[key] = helpTranslations[key] || row.help_text || '';
-            // Prefix number if not already included in DB text
+
+            // Use translated question text if available
             const prefix = `${index + 1}. `;
-            const text = row.question_text || '';
-            newQuestionTexts[key] = text?.startsWith(prefix) ? text : `${prefix}${text}`;
+            const baseText = row.question_text || '';
+            const translatedText = questionTranslations[key];
+            if (translatedText) {
+              // If translation already has a number prefix, don't double add it
+              newQuestionTexts[key] = (translatedText.startsWith(prefix) || translatedText.match(/^\d+\./))
+                ? translatedText
+                : `${prefix}${translatedText}`;
+            } else {
+              newQuestionTexts[key] = baseText.startsWith(prefix) ? baseText : `${prefix}${baseText}`;
+            }
           });
           setHelpTexts(newHelpTexts);
           setQuestionTexts(newQuestionTexts);
@@ -1428,8 +1483,8 @@ export default function MyInspirationAssessment() {
             </Button>
           </div>
           <div className="text-center flex-1 w-full md:w-auto">
-            <h1 className="text-2xl md:text-3xl font-bold text-blue-800 mb-2">{t('inspirationTitle')}</h1>
-            <p className="text-blue-600 text-sm md:text-lg">{t('inspirationIntro')}</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-blue-800 mb-2">{dbTitle || t('inspirationTitle')}</h1>
+            <p className="text-blue-600 text-sm md:text-lg">{dbIntro || t('inspirationIntro')}</p>
           </div>
           <div className="hidden md:block w-20"></div> {/* Spacer for centering */}
         </div>

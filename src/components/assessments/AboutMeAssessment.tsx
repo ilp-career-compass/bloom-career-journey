@@ -235,18 +235,37 @@ export default function AboutMeAssessment() {
   }, [lang]);
 
   // Load localized help text overrides from content_translations (about_me_help)
+  const [dbTitle, setDbTitle] = useState<string>('');
+  const [dbIntro, setDbIntro] = useState<string>('');
+
   useEffect(() => {
     const loadHelpTranslations = async () => {
       try {
-        if (!aboutMeFields.length) {
-          setHelpTranslations({});
-          return;
+        // Fetch help text
+        if (aboutMeFields.length) {
+          const keys = aboutMeFields.map(f => f.field_key);
+          const map = await fetchTranslations('about_me_help', keys, lang);
+          setHelpTranslations(map);
         }
-        const keys = aboutMeFields.map(f => f.field_key);
-        const map = await fetchTranslations('about_me_help', keys, lang);
-        setHelpTranslations(map);
+
+        // Fetch Module Content
+        const { data: moduleData } = await supabase
+          .from('content_translations')
+          .select('resource_key, text')
+          .eq('resource_type', 'about_me_module')
+          .eq('lang', lang)
+          .in('resource_key', ['title', 'intro']);
+
+        if (moduleData) {
+          const tTitle = moduleData.find(i => i.resource_key === 'title')?.text;
+          const tIntro = moduleData.find(i => i.resource_key === 'intro')?.text;
+
+          if (tTitle) setDbTitle(tTitle);
+          if (tIntro) setDbIntro(tIntro);
+        }
+
       } catch (error) {
-        console.warn('AboutMeAssessment: failed to load help translations', error);
+        console.warn('AboutMeAssessment: failed to load translations', error);
         setHelpTranslations({});
       }
     };
@@ -571,9 +590,9 @@ export default function AboutMeAssessment() {
               <ArrowLeft className="w-4 h-4 mr-2" />{t('backToDashboard')}
             </Button>
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-blue-800 mb-2">🧑 {t('aboutMeTitle')}</h1>
-          <p className="text-blue-600 text-sm md:text-lg">
-            {t('aboutMeIntro')}
+          <h1 className="text-2xl md:text-3xl font-bold text-blue-800 mb-2">🧑 {dbTitle || t('aboutMeTitle')}</h1>
+          <p className="text-blue-600 text-sm md:text-lg whitespace-pre-wrap">
+            {dbIntro || t('aboutMeIntro')}
           </p>
         </div>
 

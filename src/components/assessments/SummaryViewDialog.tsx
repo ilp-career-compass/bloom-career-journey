@@ -139,53 +139,85 @@ export default function SummaryViewDialog({
       if (!assessmentType) return;
 
       try {
+        // 1. Fetch from legacy/structure template
         const { data: template } = await supabase
           .from('assessment_summary_templates')
           .select('summary_questions')
           .eq('assessment_type', assessmentType)
           .maybeSingle();
 
+        let newTitles: { [key: string]: string } = {};
+
         if (template?.summary_questions) {
           const questions = template.summary_questions as any;
-          // Prefer exact language block (en | kn | ta), but always fall back to English if missing
           const preferredKey = lang === 'kn' ? 'kn' : lang === 'ta' ? 'ta' : 'en';
           const hasPreferred = questions[preferredKey];
           const langKey = hasPreferred ? preferredKey : 'en';
 
           if (questions[langKey]) {
-            // Simplify: Just take all keys from the template for the appropriate language
-            // This handles about_me (16 questions), school_learning (6-21), etc. automatically.
-            const newTitles: { [key: string]: string } = {};
-
-            // First populate from DB template
             Object.keys(questions[langKey]).forEach(key => {
-              // Convert question1 -> q1
               const shortKey = key.replace('question', 'q');
               newTitles[shortKey] = questions[langKey][key];
             });
-
-            // Apply special overrides if needed (e.g. Dreams hardcoded titles if not in DB)
-            if (assessmentType === 'dreams') {
-              newTitles.q1 = lang === 'kn' ? 'ಕನಸು ಪೋರ್ಟ್‌ಫೋಲಿಯೋ' : lang === 'ta' ? 'கனவு திட்டம்' : 'Dream Portfolio';
-            } else if (assessmentType === 'hobbies') {
-              newTitles.q1 = 'Hobbies';
-              newTitles.q6 = 'Talents';
-            } else if (assessmentType === 'role_models') {
-              newTitles.q1 = lang === 'kn' ? 'ನಿಮ್ಮ ಪಾತ್ರ ಮಾದರಿಗಳಿಂದ ವೃತ್ತಿ ಮಾರ್ಗದರ್ಶನದ ಕುರಿತಾಗಿ ನೀವು ಕೇಳಲು ಬಯಸುವ 5 ರಿಂದ 10 ಪ್ರಶ್ನೆಗಳನ್ನು ಬರೆಯಿರಿ.' : lang === 'ta' ? 'தொழில் வழிகாட்டல் குறித்து உங்கள் முன்மாதிரி நபர்களிடம் கேட்க விரும்பும் 5 முதல் 10 கேள்விகளை எழுதுங்கள்.' : 'Write 5 to 10 questions you would like to ask your role model for career guidance.';
-            }
-
-            // Ensure we have at least q1..q3 for basic assessments if the DB template was empty/partial
-            if (!newTitles.q1) newTitles.q1 = (lang === 'kn' ? '1. ಪ್ರಶ್ನೆ 1' : lang === 'ta' ? '1. கேள்வி 1' : '1. Question 1');
-            if (!newTitles.q2 && !['dreams', 'school_learning', 'hobbies', 'role_models'].includes(assessmentType)) {
-              newTitles.q2 = (lang === 'kn' ? '2. ಪ್ರಶ್ನೆ 2' : lang === 'ta' ? '2. கேள்வி 2' : '2. Question 2');
-            }
-            if (!newTitles.q3 && !['dreams', 'school_learning', 'hobbies', 'role_models'].includes(assessmentType)) {
-              newTitles.q3 = (lang === 'kn' ? '3. ಪ್ರಶ್ನೆ 3' : lang === 'ta' ? '3. கேள்வி 3' : '3. Question 3');
-            }
-
-            setQuestionTitles(newTitles);
           }
         }
+
+        // 2. Fetch specific translations from content_translations (overrides)
+        const { data: translations } = await supabase
+          .from('content_translations')
+          .select('resource_key, text')
+          .eq('resource_type', `${assessmentType}_summary_question`)
+          .eq('lang', lang);
+
+
+        if (assessmentType === 'dreams' && questionTitles.col_dream) {
+          // ... (handled in render)
+        }
+
+        // For School Learning, if we have dynamic summary title/subtitle (from 'title'/'subtitle' keys), 
+        // they are already in questionTitles if we allowed them.
+        // But fetchQuestionTitles currently filters for 'question' prefix.
+        // Let's update the fetch loop to allow 'title' and 'subtitle' keys.
+        if (translations && translations.length > 0) {
+          translations.forEach(t => {
+            if (t.resource_key.startsWith('question')) {
+              const shortKey = t.resource_key.replace('question', 'q');
+              newTitles[shortKey] = t.text;
+            } else if (t.resource_key === 'title') {
+              newTitles.title = t.text;
+            } else if (t.resource_key === 'subtitle') {
+              newTitles.subtitle = t.text;
+            } else {
+              // Allow other keys (like col_dream)
+              newTitles[t.resource_key] = t.text;
+            }
+          });
+        }
+
+        // ... rest of the function
+
+
+        // Apply special overrides if needed (e.g. Dreams hardcoded titles if not in DB)
+        if (assessmentType === 'dreams') {
+          newTitles.q1 = lang === 'kn' ? 'ಕನಸು ಪೋರ್ಟ್‌ಫೋಲಿಯೋ' : lang === 'ta' ? 'கனவு திட்டம்' : 'Dream Portfolio';
+        } else if (assessmentType === 'hobbies') {
+          newTitles.q1 = 'Hobbies';
+          newTitles.q6 = 'Talents';
+        } else if (assessmentType === 'role_models') {
+          newTitles.q1 = lang === 'kn' ? 'ನಿಮ್ಮ ಪಾತ್ರ ಮಾದರಿಗಳಿಂದ ವೃತ್ತಿ ಮಾರ್ಗದರ್ಶನದ ಕುರಿತಾಗಿ ನೀವು ಕೇಳಲು ಬಯಸುವ 5 ರಿಂದ 10 ಪ್ರಶ್ನೆಗಳನ್ನು ಬರೆಯಿರಿ.' : lang === 'ta' ? 'தொழில் வழிகாட்டல் குறித்து உங்கள் முன்மாதிரி நபர்களிடம் கேட்க விரும்பும் 5 முதல் 10 கேள்விகளை எழுதுங்கள்.' : 'Write 5 to 10 questions you would like to ask your role model for career guidance.';
+        }
+
+        // Ensure we have at least q1..q3 for basic assessments
+        if (!newTitles.q1) newTitles.q1 = (lang === 'kn' ? '1. ಪ್ರಶ್ನೆ 1' : lang === 'ta' ? '1. கேள்வி 1' : '1. Question 1');
+        if (!newTitles.q2 && !['dreams', 'school_learning', 'hobbies', 'role_models'].includes(assessmentType)) {
+          newTitles.q2 = (lang === 'kn' ? '2. ಪ್ರಶ್ನೆ 2' : lang === 'ta' ? '2. கேள்வி 2' : '2. Question 2');
+        }
+        if (!newTitles.q3 && !['dreams', 'school_learning', 'hobbies', 'role_models'].includes(assessmentType)) {
+          newTitles.q3 = (lang === 'kn' ? '3. ಪ್ರಶ್ನೆ 3' : lang === 'ta' ? '3. கேள்வி 3' : '3. Question 3');
+        }
+
+        setQuestionTitles(newTitles);
+
       } catch (error) {
         console.error('Error fetching question titles:', error);
       }
@@ -310,10 +342,13 @@ export default function SummaryViewDialog({
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" lang={lang} dir="auto">
-          <DialogHeader>
-            <DialogTitle>{lang === 'kn' ? 'ಪ್ರತಿಬಿಂಬ ಸಾರಾಂಶ' : 'Reflection Summary'}</DialogTitle>
-            <DialogDescription>
-              {lang === 'kn' ? 'ನಿಮ್ಮ ಪ್ರತಿಬಿಂಬ ಸಾರಾಂಶ ಇನ್ನೂ ಲಭ್ಯವಿಲ್ಲ.' : 'Your reflection summary is not yet available.'}
+          {/* Summary Header */}
+          <DialogHeader className="mb-4">
+            <DialogTitle className="text-2xl font-bold text-center text-blue-900">
+              {questionTitles.title || (lang === 'kn' ? 'ಸಾರಾಂಶ' : lang === 'ta' ? 'சுருக்கம்' : 'Summary')}
+            </DialogTitle>
+            <DialogDescription className="text-center text-gray-600">
+              {questionTitles.subtitle || (lang === 'kn' ? 'ನಿಮ್ಮ ಮೌಲ್ಯಮಾಪನ ಸಾರಾಂಶವನ್ನು ಪರಿಶೀಲಿಸಿ' : lang === 'ta' ? 'உங்கள் மதிப்பீட்டு சுருக்கத்தை மதிப்பாய்வு செய்யவும்' : 'Review your assessment summary')}
             </DialogDescription>
           </DialogHeader>
           <div className="p-8 text-center">
@@ -331,7 +366,7 @@ export default function SummaryViewDialog({
   const canEdit = canStudentEdit(summary);
   const isStudentEdited = summary.summary_type === 'student_edited';
 
-  const dreamColumnHeadings = {
+  const [dreamHeadings, setDreamHeadings] = useState({
     dream: lang === 'kn' ? 'ಕನಸು' : lang === 'ta' ? 'கனவு' : 'Dream',
     quality: lang === 'kn'
       ? 'ಕನಸನ್ನು ಸಾಧಿಸಲು\nಸಹಾಯ ಮಾಡುವ ಗುಣ,\nಮೌಲ್ಯ, ಶಕ್ತಿ'
@@ -348,7 +383,23 @@ export default function SummaryViewDialog({
       : lang === 'ta'
         ? 'இந்த கனவை அடைய\n10ம் பிறகு என்ன\nபடிக்க வேண்டும்\n(தேவையெனில்)'
         : 'What should you\nstudy after 10th\nto achieve this dream\n(if applicable)'
-  };
+  });
+
+  // Effect to update dreamHeadings from fetched titles (questionTitles is populated from content_translations)
+  useEffect(() => {
+    if (assessmentType === 'dreams' && questionTitles) {
+      setDreamHeadings(prev => {
+        const next = { ...prev };
+        if (questionTitles['col_dream']) next.dream = questionTitles['col_dream'];
+        if (questionTitles['col_quality']) next.quality = questionTitles['col_quality'];
+        if (questionTitles['col_prevent']) next.prevent = questionTitles['col_prevent'];
+        if (questionTitles['col_study']) next.study = questionTitles['col_study'];
+        return next;
+      });
+    }
+  }, [questionTitles, assessmentType]);
+
+  const dreamColumnHeadings = dreamHeadings;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
