@@ -1683,7 +1683,7 @@ export default function MyInspirationAssessment() {
                             initialTranscription={audioResponsesMap[`${getCurrentVideoKey()}_${questionKey}`]?.transcript ?? null}
                             initialConfidence={audioResponsesMap[`${getCurrentVideoKey()}_${questionKey}`]?.confidence ?? null}
 
-                            initialConfidence={audioResponsesMap[`${getCurrentVideoKey()}_${questionKey}`]?.confidence ?? null}
+
                             disabled={readOnlyView || isCompleted}
                             onStreamTranscript={(text) => handleStreamTranscript(getCurrentVideoKey(), questionKey, text)}
                             compact={true}
