@@ -1,3 +1,4 @@
+﻿import { logger } from '@/lib/logger';
 import { useState, useEffect } from 'react';
 import { fetchTranslations } from '@/services/translationService';
 import { useAuth } from '@/hooks/useAuth';
@@ -20,12 +21,14 @@ import {
   MessageCircle,
   Award,
   BookOpen,
-  Save
+  Save,
+  ArrowLeft,
+  Lock,
+  Sparkles
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLang } from '@/hooks/useLang';
-import { ArrowLeft } from 'lucide-react';
 
 import { KannadaKeyboard } from '@/components/ui/KannadaKeyboard';
 import { checkAssessmentUnlock } from '@/utils/assessmentUnlock';
@@ -50,6 +53,7 @@ interface RoleModelsAssessmentResponse {
   roleModel3: RoleModel;
   question12: string; // Similarities between personality traits
   question13: string; // How to cultivate and incorporate qualities
+  [key: string]: any; // Allow for dynamic summary questions like summary_1
 }
 
 export default function MyRoleModelsAssessment() {
@@ -107,7 +111,8 @@ export default function MyRoleModelsAssessment() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
-  const [currentSection, setCurrentSection] = useState<'roleModel1' | 'roleModel2' | 'roleModel3' | 'reflection'>('roleModel1');
+  const [currentSection, setCurrentSection] = useState<'roleModel1' | 'roleModel2' | 'roleModel3' | 'reflection' | 'summary'>('roleModel1');
+  const [summaryQuestions, setSummaryQuestions] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
   const [savedTabs, setSavedTabs] = useState<Partial<Record<keyof RoleModelsAssessmentResponse, string>>>({});
   const [q, setQ] = useState<Record<string, string>>({});
@@ -137,7 +142,7 @@ export default function MyRoleModelsAssessment() {
           description: lang === 'kn'
             ? `ದಯವಿಟ್ಟು ಮೊದಲು "${unlockResult.missingPrerequisites.join(', ')}" ಪೂರ್ಣಗೊಳಿಸಿ.`
             : lang === 'ta'
-              ? `"${unlockResult.missingPrerequisites.join(', ')}" செயல்களை முதலில் முடித்தால் இந்த பகுதி திறக்கும்.`
+              ? `"${unlockResult.missingPrerequisites.join(', ')}" செயல்களை முதலில் முடித்தால் ಈ பகுதி திறக்கும்.`
               : `Please complete "${unlockResult.missingPrerequisites.join(', ')}" first.`,
           variant: 'destructive',
         });
@@ -194,10 +199,33 @@ export default function MyRoleModelsAssessment() {
         }
 
       } catch (error) {
-        console.warn('Failed to load translations', error);
+        logger.warn('Failed to load translations', error);
       }
     };
+    const loadSummaryQuestions = async () => {
+      try {
+        const { data: summaryData, error: summaryError } = await supabase.rpc('get_role_models_summary_questions_i18n', { p_lang: lang });
+        if (!summaryError && summaryData) {
+          setSummaryQuestions(summaryData);
+          // Initialize summary responses if not present
+          setResponses(prev => {
+            const updated = { ...prev };
+            summaryData.forEach((sq: any) => {
+              const key = `summary_${sq.sequence_number}`;
+              if (updated[key] === undefined) {
+                updated[key] = '';
+              }
+            });
+            return updated;
+          });
+        }
+      } catch (e) {
+        logger.error('Error loading summary questions:', e);
+      }
+    };
+
     loadI18n();
+    loadSummaryQuestions();
   }, [lang]);
 
   // Keep URL ?lang in sync without re-rendering
@@ -274,7 +302,11 @@ export default function MyRoleModelsAssessment() {
           roleModel2: { ...responses.roleModel2, ...(loadedResponses.roleModel2 || {}) },
           roleModel3: { ...responses.roleModel3, ...(loadedResponses.roleModel3 || {}) },
           question12: loadedResponses.question12 || '',
-          question13: loadedResponses.question13 || ''
+          question13: loadedResponses.question13 || '',
+          // Load summary responses
+          ...Object.keys(loadedResponses)
+            .filter(key => key.startsWith('summary_'))
+            .reduce((obj, key) => ({ ...obj, [key]: loadedResponses[key] }), {})
         });
       }
     } catch (error) {
@@ -283,6 +315,8 @@ export default function MyRoleModelsAssessment() {
       setLoading(false);
     }
   };
+
+  const sections = ['roleModel1', 'roleModel2', 'roleModel3', 'reflection', 'summary'];
 
   const isRoleModelComplete = (key: keyof RoleModelsAssessmentResponse) => {
     if (key === 'question12' || key === 'question13') {
@@ -377,7 +411,16 @@ export default function MyRoleModelsAssessment() {
     if (responses.question12.trim() !== '') answeredQuestions++;
     if (responses.question13.trim() !== '') answeredQuestions++;
 
-    return totalQuestions > 0 ? (answeredQuestions / totalQuestions) * 100 : 0;
+    // Count summary questions
+    const summaryAnswered = summaryQuestions.filter(sq => {
+      const val = responses[`summary_${sq.sequence_number}`];
+      return val && typeof val === 'string' && val.trim() !== '';
+    }).length;
+
+    const totalWithSummary = totalQuestions + summaryQuestions.length;
+    const answeredWithSummary = answeredQuestions + summaryAnswered;
+
+    return totalWithSummary > 0 ? (answeredWithSummary / totalWithSummary) * 100 : 0;
   };
 
   const canSubmit = () => {
@@ -389,6 +432,25 @@ export default function MyRoleModelsAssessment() {
 
     // Check general questions are complete
     const generalQuestionsComplete = responses.question12.trim() !== '' && responses.question13.trim() !== '';
+
+    // Check summary questions are complete
+    const summaryComplete = summaryQuestions.every(sq => {
+      const val = responses[`summary_${sq.sequence_number}`];
+      return val && typeof val === 'string' && val.trim() !== '';
+    });
+
+    return allRoleModelsComplete && generalQuestionsComplete && summaryComplete;
+  };
+
+  const areCoreSectionsComplete = () => {
+    // Check all role models are complete
+    const allRoleModelsComplete = ['roleModel1', 'roleModel2', 'roleModel3'].every(key => {
+      const roleModel = responses[key as keyof RoleModelsAssessmentResponse] as RoleModel;
+      return Object.values(roleModel).every(v => v && v.trim() !== '');
+    });
+
+    // Check general questions are complete
+    const generalQuestionsComplete = (responses.question12 || '').trim() !== '' && (responses.question13 || '').trim() !== '';
 
     return allRoleModelsComplete && generalQuestionsComplete;
   };
@@ -453,7 +515,7 @@ export default function MyRoleModelsAssessment() {
         const summaryDatabaseService = (await import('@/services/summaryDatabaseService')).summaryDatabaseService;
 
         if (aiSummaryService.isConfigured() && assessmentData?.id) {
-          console.log('🤖 Generating AI summary for Role Models assessment:', assessmentData.id);
+          logger.log('🤖 Generating AI summary for Role Models assessment:', assessmentData.id);
           const summaryResult = await aiSummaryService.generateRoleModelsSummary(responses);
 
           if (summaryResult.success && summaryResult.summary) {
@@ -465,7 +527,7 @@ export default function MyRoleModelsAssessment() {
             );
 
             if (saveResult.success) {
-              console.log('✅ AI summary saved successfully:', saveResult.summaryId);
+              logger.log('✅ AI summary saved successfully:', saveResult.summaryId);
               toast({
                 title:
                   lang === 'kn'
@@ -505,11 +567,11 @@ export default function MyRoleModelsAssessment() {
                   }
                 }
               } catch (notifError) {
-                console.error('Error notifying teacher:', notifError);
+                logger.error('Error notifying teacher:', notifError);
                 // Don't fail the whole submission if notification fails
               }
             } else {
-              console.error('Failed to save summary:', saveResult.error);
+              logger.error('Failed to save summary:', saveResult.error);
               toast({
                 title: "Summary Generation Issue",
                 description: "Your assessment is saved, but summary generation needs attention.",
@@ -517,7 +579,7 @@ export default function MyRoleModelsAssessment() {
               });
             }
           } else {
-            console.error('Failed to generate summary:', summaryResult.error);
+            logger.error('Failed to generate summary:', summaryResult.error);
             toast({
               title: "Summary Generation Issue",
               description: "Your assessment is saved. Summary will be generated later.",
@@ -525,14 +587,14 @@ export default function MyRoleModelsAssessment() {
             });
           }
         } else {
-          console.warn('⚠️ Gemini API not configured, skipping summary generation');
+          logger.warn('⚠️ Gemini API not configured, skipping summary generation');
         }
       } catch (summaryError) {
-        console.error('Error in summary generation:', summaryError);
+        logger.error('Error in summary generation:', summaryError);
         // Don't fail the entire submission if summary generation fails
       }
     } catch (error) {
-      console.error('Error submitting assessment:', error);
+      logger.error('Error submitting assessment:', error);
       toast({
         title: "Error",
         description: "Failed to submit assessment. Please try again.",
@@ -645,7 +707,6 @@ export default function MyRoleModelsAssessment() {
                   ? 'நம் வாழ்க்கையில் சிலரை அவர்களின் குணநலன்களாலும் நடத்தைகளாலும் முன்னுதாரணமாக பார்க்கிறோம். குடும்பத்தினர், ஆசிரியர்கள், தெரிந்தவர்கள் அல்லது பிரபல நபர்கள் என்றாலும், அவர்கள் நம்முடைய சிந்தனை மற்றும் பண்புகளை உருவாக்க பெரும் தாக்கம் செலுத்துகிறார்கள்.'
                   : 'In our lives, we often admire individuals for their personality traits, viewing them as role models. These individuals, be they influencers, inspiring figures, or those we know personally, contribute significantly to shaping our character.')}
             </p>
-            {/* Show extra paragraphs only if dbIntro is NOT present, as dbIntro usually covers it all */}
             {!dbIntro && (
               <>
                 <p className="text-base leading-relaxed">
@@ -666,7 +727,7 @@ export default function MyRoleModelsAssessment() {
                   {lang === 'kn'
                     ? 'ನೀವು ಆಸಕ್ತಿ ಹೊಂದಿರುವ ವೃತ್ತಿಯನ್ನು ಅನುಸರಿಸಿದ ಆದರ್ಶ ವ್ಯಕ್ತಿಯನ್ನು ಆಯ್ಕೆ ಮಾಡಿದರೆ ಉತ್ತಮ. ಅವರ ಅನುಭವಗಳು ಮತ್ತು ಪ್ರಯಾಣ ನಿಮ್ಮ ಭವಿಷ್ಯಕ್ಕೆ ಮಾರ್ಗದರ್ಶನ ಮತ್ತು ಪ್ರೇರಣೆ ನೀಡಬಹುದು.'
                     : lang === 'ta'
-                      ? 'நீங்கள் விரும்பும் தொழிலை தொடர்ந்து சென்ற ஒருவர் உங்கள் முன்மாதிரியாக இருப்பது சிறந்தது. அவர்களின் பயணம், அனுபவங்கள் மற்றும் முடிவுகள், உங்கள் எதிர்காலத் தேர்வுகளுக்கு நல்ல வழிகாட்டியாக இருக்கும்.'
+                      ? 'நீங்கள் விரும்பும் தொழிலை தொடர்ந்து சென்ற ஒருவர் உங்கள் முன்மாதிரியாக இருப்பது சிறந்தது. அவர்களின் பயணம், அனுபவங்கள் ಮತ್ತು முடிவுகள், உங்கள் எதிர்காலத் தேர்வுகளுக்கு நல்ல வழிகாட்டியாக இருக்கும்.'
                       : 'If possible, it might be beneficial to select a role model who has pursued the profession you\'re interested in. Their journey could provide valuable insights and inspiration for your own path.'}
                 </p>
                 <p className="text-gray-700 mt-3 font-medium">
@@ -732,416 +793,311 @@ export default function MyRoleModelsAssessment() {
           >
             {lang === 'kn' ? 'ಪ್ರತಿಫಲನೆ' : lang === 'ta' ? 'பிரதிபலிப்பு' : 'Reflection'}
           </Button>
+          <Button
+            variant={currentSection === 'summary' ? 'default' : 'outline'}
+            onClick={() => {
+              if (areCoreSectionsComplete()) {
+                setCurrentSection('summary');
+              }
+            }}
+            disabled={!areCoreSectionsComplete() && currentSection !== 'summary'}
+            className={`border-purple-200 ${currentSection === 'summary'
+              ? 'bg-purple-600 hover:bg-purple-700'
+              : !areCoreSectionsComplete()
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-75'
+                : 'text-purple-700 hover:bg-purple-50'
+              }`}
+          >
+            {!areCoreSectionsComplete() ? (
+              <Lock className="w-4 h-4 mr-2" />
+            ) : (
+              <Sparkles className="w-4 h-4 mr-2 text-yellow-500" />
+            )}
+            {lang === 'kn' ? 'ಸಾರಾಂಶ' : lang === 'ta' ? 'சுருக்கம்' : 'Summary'}
+          </Button>
         </div>
 
-        {/* Role Model Sections */}
-        {currentSection !== 'reflection' && (() => {
-          const currentTab = currentSection as 'roleModel1' | 'roleModel2' | 'roleModel3';
-          return (
-            <Card className="border-0 shadow-lg">
-              <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50">
-                <CardTitle className="text-xl text-purple-800">
-                  {currentTab === 'roleModel1'
-                    ? dbTabs['tab_rm1'] || (lang === 'kn'
-                      ? 'ಮಾದರಿ ವ್ಯಕ್ತಿ -1 (ಹತ್ತಿರದಿಂದ ಪರಿಚಿತರಾದ ವ್ಯಕ್ತಿ)'
-                      : lang === 'ta'
-                        ? 'முன்மாதிரி -1 (அறிமுகமான / நெருக்கமாக அறிந்த நபர்)'
-                        : 'Role Model -1 (Preferably Closely Known Person)')
-                    : currentTab === 'roleModel2'
-                      ? dbTabs['tab_rm2'] || (lang === 'kn'
-                        ? 'ಮಾದರಿ ವ್ಯಕ್ತಿ -2 (ಪರಿಚಿತ ವ್ಯಕ್ತಿ)'
-                        : lang === 'ta'
-                          ? 'முன்மாதிரி -2 (நீங்கள் நன்கு அறிந்த நபர்)'
-                          : 'Role Model -2 (Known Person)')
-                      : dbTabs['tab_rm3'] || (lang === 'kn'
-                        ? 'ಮಾದರಿ ವ್ಯಕ್ತಿ -3 (ಪರಿಚಿತ / ಪ್ರಸಿದ್ಧ ವ್ಯಕ್ತಿ)'
-                        : lang === 'ta'
-                          ? 'முன்மாதிரி -3 (நீங்கள் அறிந்த / பிரபலமான நபர்)'
-                          : 'Role Model -3 (Known/Famous Person)')}
-                </CardTitle>
-                <CardDescription className="text-purple-600">
-                  {lang === 'kn'
-                    ? 'ಈ ಮಾದರಿ ವ್ಯಕ್ತಿ ಕುರಿತಾಗಿ ಎಲ್ಲಾ 11 ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ.'
-                    : lang === 'ta'
-                      ? 'இந்த முன்மாதிரி நபரைப் பற்றி உள்ள 11 கேள்விகளுக்கும் பதில் எழுதுங்கள்.'
-                      : 'Answer all 11 questions for this role model'}
-                </CardDescription>
-
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="space-y-8">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                        {q['rm_q1'] || '1. What is the name of your role model?'}
-                        <button
-                          type="button"
-                          aria-label="Help"
-                          className="text-purple-600 hover:text-purple-700 ml-2"
-                          onClick={() => toggleHelp('rm_q1')}
-                        >
-                          💬
-                        </button>
-                      </label>
-                      {helpOpen['rm_q1'] && (
-                        <div className="mb-2 p-3 rounded border bg-purple-50 border-purple-200 text-sm text-purple-800">
-                          {helpText['rm_help_q1'] || 'Write the full name of your role model.'}
-                        </div>
-                      )}
-                      <Input
-                        placeholder={helpText['rm_help_q1'] || 'Write the full name of your role model.'}
-                        value={responses[currentTab].name}
-                        onChange={(e) => handleRoleModelChange(currentTab, 'name', e.target.value)}
-                        className="border-purple-200 focus:border-purple-400"
-                      />
+        {/* Dynamic Section Content */}
+        {(() => {
+          if (['roleModel1', 'roleModel2', 'roleModel3'].includes(currentSection)) {
+            const currentTab = currentSection as 'roleModel1' | 'roleModel2' | 'roleModel3';
+            return (
+              <Card className="border-0 shadow-lg">
+                <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50">
+                  <CardTitle className="text-xl text-purple-800">
+                    {currentTab === 'roleModel1'
+                      ? dbTabs['tab_rm1'] || (lang === 'kn' ? 'ಮಾದರಿ ವ್ಯಕ್ತಿ - 1 (ಹತ್ತಿರದಿಂದ ಪರಿಚಿತರಾದ ವ್ಯಕ್ತಿ)' : lang === 'ta' ? 'முன்மாதிரி - 1 (அறிமுகமான / நெருக்கமாக அறிந்த நபர்)' : 'Role Model - 1 (Preferably Closely Known Person)')
+                      : currentTab === 'roleModel2'
+                        ? dbTabs['tab_rm2'] || (lang === 'kn' ? 'ಮಾದರಿ ವ್ಯಕ್ತಿ - 2 (ಪರಿಚಿತ ವ್ಯಕ್ತಿ)' : lang === 'ta' ? 'முன்மாதிரி - 2 (நீங்கள் நன்கு அறிந்த நபர்)' : 'Role Model - 2 (Known Person)')
+                        : dbTabs['tab_rm3'] || (lang === 'kn' ? 'ಮಾದರಿ ವ್ಯಕ್ತಿ - 3 (ಪರಿಚಿತ / ಪ್ರಸಿದ್ಧ ವ್ಯಕ್ತಿ)' : lang === 'ta' ? 'முன்மாதிரி - 3 (நீங்கள் அறிந்த / பிரபலமான நபர்)' : 'Role Model - 3 (Known/Famous Person)')}
+                  </CardTitle>
+                  <CardDescription className="text-purple-600">
+                    {lang === 'kn' ? 'ಈ ಮಾದರಿ ವ್ಯಕ್ತಿ ಕುರಿತಾಗಿ ಎಲ್ಲಾ 11 ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ.' : lang === 'ta' ? 'இந்த முன்மாதிரி நபரைப் பற்றி உள்ள 11 கேள்விகளுக்கும் பதில் எழுதுங்கள்.' : 'Answer all 11 questions for this role model'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="space-y-8">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                          {q['rm_q1'] || '1. What is the name of your role model?'}
+                          <button type="button" className="text-purple-600 hover:text-purple-700 ml-2" onClick={() => toggleHelp('rm_q1')}>💬</button>
+                        </label>
+                        {helpOpen['rm_q1'] && <div className="mb-2 p-3 rounded border bg-purple-50 border-purple-200 text-sm text-purple-800">{helpText['rm_help_q1']}</div>}
+                        <Input
+                          placeholder={helpText['rm_help_q1']}
+                          value={responses[currentTab].name}
+                          onChange={(e) => handleRoleModelChange(currentTab, 'name', e.target.value)}
+                          disabled={isReadOnly}
+                          className="border-purple-200 focus:border-purple-400"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                          {q['rm_q2'] || '2. Is the person a family member, relative, or someone you know?'}
+                          <button type="button" className="text-purple-600 hover:text-purple-700 ml-2" onClick={() => toggleHelp('rm_q2')}>💬</button>
+                        </label>
+                        {helpOpen['rm_q2'] && <div className="mb-2 p-3 rounded border bg-purple-50 border-purple-200 text-sm text-purple-800">{helpText['rm_help_q2']}</div>}
+                        <Input
+                          placeholder={helpText['rm_help_q2']}
+                          value={responses[currentTab].relationship}
+                          onChange={(e) => handleRoleModelChange(currentTab, 'relationship', e.target.value)}
+                          disabled={isReadOnly}
+                          className="border-purple-200 focus:border-purple-400"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                          {q['rm_q3'] || '3. What qualities do you like in your role model? Why are they special to you?'}
+                          <button type="button" className="text-purple-600 hover:text-purple-700 ml-2" onClick={() => toggleHelp('rm_q3')}>💬</button>
+                        </label>
+                        {helpOpen['rm_q3'] && <div className="mb-2 p-3 rounded border bg-purple-50 border-purple-200 text-sm text-purple-800">{helpText['rm_help_q3']}</div>}
+                        <Textarea
+                          placeholder={helpText['rm_help_q3']}
+                          value={responses[currentTab].admirationReasons}
+                          onChange={(e) => handleRoleModelChange(currentTab, 'admirationReasons', e.target.value)}
+                          disabled={isReadOnly}
+                          rows={3}
+                          className="border-purple-200 focus:border-purple-400"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                          {q['rm_q4'] || '4. What work or profession does the person do?'}
+                          <button type="button" className="text-purple-600 hover:text-purple-700 ml-2" onClick={() => toggleHelp('rm_q4')}>💬</button>
+                        </label>
+                        {helpOpen['rm_q4'] && <div className="mb-2 p-3 rounded border bg-purple-50 border-purple-200 text-sm text-purple-800">{helpText['rm_help_q4']}</div>}
+                        <Input
+                          placeholder={helpText['rm_help_q4']}
+                          value={responses[currentTab].profession}
+                          onChange={(e) => handleRoleModelChange(currentTab, 'profession', e.target.value)}
+                          disabled={isReadOnly}
+                          className="border-purple-200 focus:border-purple-400"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                          {q['rm_q5'] || '5. Which skill or talent of yours do you want to develop inspired by them?'}
+                          <button type="button" className="text-purple-600 hover:text-purple-700 ml-2" onClick={() => toggleHelp('rm_q5')}>💬</button>
+                        </label>
+                        {helpOpen['rm_q5'] && <div className="mb-2 p-3 rounded border bg-purple-50 border-purple-200 text-sm text-purple-800">{helpText['rm_help_q5']}</div>}
+                        <Input
+                          placeholder={helpText['rm_help_q5']}
+                          value={responses[currentTab].desiredQualities}
+                          onChange={(e) => handleRoleModelChange(currentTab, 'desiredQualities', e.target.value)}
+                          disabled={isReadOnly}
+                          className="border-purple-200 focus:border-purple-400"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                          {q['rm_q6'] || '6. Have you discussed your chosen career or job with your role model? What did you discuss?'}
+                          <button type="button" className="text-purple-600 hover:text-purple-700 ml-2" onClick={() => toggleHelp('rm_q6')}>💬</button>
+                        </label>
+                        {helpOpen['rm_q6'] && <div className="mb-2 p-3 rounded border bg-purple-50 border-purple-200 text-sm text-purple-800">{helpText['rm_help_q6']}</div>}
+                        <Textarea
+                          placeholder={helpText['rm_help_q6']}
+                          value={responses[currentTab].careerDiscussed}
+                          onChange={(e) => handleRoleModelChange(currentTab, 'careerDiscussed', e.target.value)}
+                          disabled={isReadOnly}
+                          rows={2}
+                          className="border-purple-200 focus:border-purple-400"
+                        />
+                      </div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                        {q['rm_q2'] || '2. Is the person a family member, relative, or someone you know?'}
-                        <button
-                          type="button"
-                          aria-label="Help"
-                          className="text-purple-600 hover:text-purple-700 ml-2"
-                          onClick={() => toggleHelp('rm_q2')}
-                        >
-                          💬
-                        </button>
+                        {q['rm_q7'] || '7. Have you taken advice or opinion from your role model about your dream plan?'}
+                        <button type="button" className="text-purple-600 hover:text-purple-700 ml-2" onClick={() => toggleHelp('rm_q7')}>💬</button>
                       </label>
-                      {helpOpen['rm_q2'] && (
-                        <div className="mb-2 p-3 rounded border bg-purple-50 border-purple-200 text-sm text-purple-800">
-                          {helpText['rm_help_q2'] || 'Mention how the person is related to you.'}
-                        </div>
-                      )}
-                      <Input
-                        placeholder={helpText['rm_help_q2'] || 'Mention how the person is related to you.'}
-                        value={responses[currentTab].relationship}
-                        onChange={(e) => handleRoleModelChange(currentTab, 'relationship', e.target.value)}
-                        className="border-purple-200 focus:border-purple-400"
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                        {q['rm_q3'] || '3. What qualities do you like in your role model? Why are they special to you?'}
-                        <button
-                          type="button"
-                          aria-label="Help"
-                          className="text-purple-600 hover:text-purple-700 ml-2"
-                          onClick={() => toggleHelp('rm_q3')}
-                        >
-                          💬
-                        </button>
-                      </label>
-                      {helpOpen['rm_q3'] && (
-                        <div className="mb-2 p-3 rounded border bg-purple-50 border-purple-200 text-sm text-purple-800">
-                          {helpText['rm_help_q3'] || 'Think about qualities like hard work, honesty, and courage.'}
-                        </div>
-                      )}
+                      {helpOpen['rm_q7'] && <div className="mb-2 p-3 rounded border bg-purple-50 border-purple-200 text-sm text-purple-800">{helpText['rm_help_q7']}</div>}
                       <Textarea
-                        placeholder={helpText['rm_help_q3'] || 'Think about qualities like hard work, honesty, and courage.'}
-                        value={responses[currentTab].admirationReasons}
-                        onChange={(e) => handleRoleModelChange(currentTab, 'admirationReasons', e.target.value)}
+                        placeholder={helpText['rm_help_q7']}
+                        value={responses[currentTab].opinion}
+                        onChange={(e) => handleRoleModelChange(currentTab, 'opinion', e.target.value)}
+                        disabled={isReadOnly}
                         rows={3}
                         className="border-purple-200 focus:border-purple-400"
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                        {q['rm_q4'] || '4. What work or profession does the person do?'}
-                        <button
-                          type="button"
-                          aria-label="Help"
-                          className="text-purple-600 hover:text-purple-700 ml-2"
-                          onClick={() => toggleHelp('rm_q4')}
-                        >
-                          💬
-                        </button>
+                        {q['rm_q8'] || '8. What does your role model say about your dream job or career?'}
+                        <button type="button" className="text-purple-600 hover:text-purple-700 ml-2" onClick={() => toggleHelp('rm_q8')}>💬</button>
                       </label>
-                      {helpOpen['rm_q4'] && (
-                        <div className="mb-2 p-3 rounded border bg-purple-50 border-purple-200 text-sm text-purple-800">
-                          {helpText['rm_help_q4'] || 'Write their job or profession simply.'}
-                        </div>
-                      )}
-                      <Input
-                        placeholder={helpText['rm_help_q4'] || 'Write their job or profession simply.'}
-                        value={responses[currentTab].profession}
-                        onChange={(e) => handleRoleModelChange(currentTab, 'profession', e.target.value)}
+                      {helpOpen['rm_q8'] && <div className="mb-2 p-3 rounded border bg-purple-50 border-purple-200 text-sm text-purple-800">{helpText['rm_help_q8']}</div>}
+                      <Textarea
+                        placeholder={helpText['rm_help_q8']}
+                        value={responses[currentTab].willingToHelp}
+                        onChange={(e) => handleRoleModelChange(currentTab, 'willingToHelp', e.target.value)}
+                        disabled={isReadOnly}
+                        rows={3}
                         className="border-purple-200 focus:border-purple-400"
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                        {q['rm_q5'] || '5. Which skill or talent of yours do you want to develop inspired by them?'}
-                        <button
-                          type="button"
-                          aria-label="Help"
-                          className="text-purple-600 hover:text-purple-700 ml-2"
-                          onClick={() => toggleHelp('rm_q5')}
-                        >
-                          💬
-                        </button>
+                        {q['rm_q9'] || '9. Has any role model helped you in choosing your dream career?'}
+                        <button type="button" className="text-purple-600 hover:text-purple-700 ml-2" onClick={() => toggleHelp('rm_q9')}>💬</button>
                       </label>
-                      {helpOpen['rm_q5'] && (
-                        <div className="mb-2 p-3 rounded border bg-purple-50 border-purple-200 text-sm text-purple-800">
-                          {helpText['rm_help_q5'] || 'Think about skills like studies, leadership, or communication.'}
-                        </div>
-                      )}
-                      <Input
-                        placeholder={helpText['rm_help_q5'] || 'Think about skills like studies, leadership, or communication.'}
-                        value={responses[currentTab].desiredQualities}
-                        onChange={(e) => handleRoleModelChange(currentTab, 'desiredQualities', e.target.value)}
-                        className="border-purple-200 focus:border-purple-400"
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                        {q['rm_q6'] || '6. Have you discussed your chosen career or job with your role model? What did you discuss?'}
-                        <button
-                          type="button"
-                          aria-label="Help"
-                          className="text-purple-600 hover:text-purple-700 ml-2"
-                          onClick={() => toggleHelp('rm_q6')}
-                        >
-                          💬
-                        </button>
-                      </label>
-                      {helpOpen['rm_q6'] && (
-                        <div className="mb-2 p-3 rounded border bg-purple-50 border-purple-200 text-sm text-purple-800">
-                          {helpText['rm_help_q6'] || 'Write if you discussed career choice, education path, or future plans.'}
-                        </div>
-                      )}
+                      {helpOpen['rm_q9'] && <div className="mb-2 p-3 rounded border bg-purple-50 border-purple-200 text-sm text-purple-800">{helpText['rm_help_q9']}</div>}
                       <Textarea
-                        placeholder={helpText['rm_help_q6'] || 'Write if you discussed career choice, education path, or future plans.'}
-                        value={responses[currentTab].careerDiscussed}
-                        onChange={(e) => handleRoleModelChange(currentTab, 'careerDiscussed', e.target.value)}
+                        placeholder={helpText['rm_help_q9']}
+                        value={responses[currentTab].helpLookingFor}
+                        onChange={(e) => handleRoleModelChange(currentTab, 'helpLookingFor', e.target.value)}
+                        disabled={isReadOnly}
                         rows={2}
                         className="border-purple-200 focus:border-purple-400"
                       />
                     </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                        {q['rm_q10'] || '10. If yes, what kind of help do you expect?'}
+                        <button type="button" className="text-purple-600 hover:text-purple-700 ml-2" onClick={() => toggleHelp('rm_q10')}>💬</button>
+                      </label>
+                      {helpOpen['rm_q10'] && <div className="mb-2 p-3 rounded border bg-purple-50 border-purple-200 text-sm text-purple-800">{helpText['rm_help_q10']}</div>}
+                      <Textarea
+                        placeholder={helpText['rm_help_q10']}
+                        value={responses[currentTab].similarities}
+                        onChange={(e) => handleRoleModelChange(currentTab, 'similarities', e.target.value)}
+                        disabled={isReadOnly}
+                        rows={3}
+                        className="border-purple-200 focus:border-purple-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                        {q['rm_q11'] || '11. Apart from the above questions, is there anything else you would like to say?'}
+                        <button type="button" className="text-purple-600 hover:text-purple-700 ml-2" onClick={() => toggleHelp('rm_q11')}>💬</button>
+                      </label>
+                      {helpOpen['rm_q11'] && <div className="mb-2 p-3 rounded border bg-purple-50 border-purple-200 text-sm text-purple-800">{helpText['rm_help_q11']}</div>}
+                      <Textarea
+                        placeholder={helpText['rm_help_q11']}
+                        value={responses[currentTab].incorporatePlan}
+                        onChange={(e) => handleRoleModelChange(currentTab, 'incorporatePlan', e.target.value)}
+                        disabled={isReadOnly}
+                        rows={3}
+                        className="border-purple-200 focus:border-purple-400"
+                      />
+                    </div>
                   </div>
-                  {/* Q7–Q11 for current tab */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                      {q['rm_q7'] || '7. Have you taken advice or opinion from your role model about your dream plan?'}
-                      <button
-                        type="button"
-                        aria-label="Help"
-                        className="text-purple-600 hover:text-purple-700 ml-2"
-                        onClick={() => toggleHelp('rm_q7')}
-                      >
-                        💬
-                      </button>
-                    </label>
-                    {helpOpen['rm_q7'] && (
-                      <div className="mb-2 p-3 rounded border bg-purple-50 border-purple-200 text-sm text-purple-800">
-                        {helpText['rm_help_q7'] || 'Write whether you discussed your dream or future plan with them.'}
+                </CardContent>
+              </Card>
+            );
+          } else if (currentSection === 'reflection') {
+            return (
+              <Card className="border-0 shadow-lg mb-8">
+                <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-100">
+                  <CardTitle className="text-xl text-purple-800 flex items-center gap-2">
+                    <Lightbulb className="w-5 h-5" />
+                    {lang === 'kn' ? 'ಪ್ರತಿಫಲನೆ ಮತ್ತು ಹೋಲಿಕೆ' : lang === 'ta' ? 'பிரதிபலிப்பு மற்றும் ஒப்பீடு' : 'Reflection & Comparison'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                        {q['rm_q12'] || '12. Have you noticed any similarity or comparison between your personality and that of the above role models?'}
+                        <button type="button" className="text-purple-600 hover:text-purple-700 ml-2" onClick={() => toggleHelp('rm_q12')}>💬</button>
+                      </label>
+                      {helpOpen['rm_q12'] && <div className="mb-2 p-3 rounded border bg-purple-50 border-purple-200 text-sm text-purple-800">{helpText['rm_help_q12']}</div>}
+                      <Textarea
+                        placeholder={helpText['rm_help_q12']}
+                        value={responses.question12}
+                        onChange={(e) => handleGeneralQuestionChange('question12', e.target.value)}
+                        disabled={isReadOnly}
+                        rows={5}
+                        className="border-purple-200 focus:border-purple-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                        {q['rm_q13'] || '13. How do you try to adopt the qualities of your role model in your life?'}
+                        <button type="button" className="text-purple-600 hover:text-purple-700 ml-2" onClick={() => toggleHelp('rm_q13')}>💬</button>
+                      </label>
+                      {helpOpen['rm_q13'] && <div className="mb-2 p-3 rounded border bg-purple-50 border-purple-200 text-sm text-purple-800">{helpText['rm_help_q13']}</div>}
+                      <Textarea
+                        placeholder={helpText['rm_help_q13']}
+                        value={responses.question13}
+                        onChange={(e) => handleGeneralQuestionChange('question13', e.target.value)}
+                        disabled={isReadOnly}
+                        rows={5}
+                        className="border-purple-200 focus:border-purple-400"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          } else if (currentSection === 'summary') {
+            return (
+              <Card className="border-0 shadow-lg mb-8">
+                <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-100">
+                  <CardTitle className="text-xl text-purple-800 flex items-center gap-2">
+                    <Target className="w-5 h-5" />
+                    {lang === 'kn' ? 'ಸಾರಾಂಶ' : lang === 'ta' ? 'சுருக்கம்' : 'Summary'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="space-y-6">
+                    {summaryQuestions.map((sq) => (
+                      <div key={sq.sequence_number}>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          {sq.question_text || sq.text}
+                        </label>
+                        <Textarea
+                          placeholder={lang === 'kn' ? 'ಇಲ್ಲಿ ಬರೆಯಿರಿ...' : lang === 'ta' ? 'இங்கே எழுதுங்கள்...' : 'Write here...'}
+                          value={responses[`summary_${sq.sequence_number}`] || ''}
+                          onChange={(e) => setResponses(prev => ({ ...prev, [`summary_${sq.sequence_number}`]: e.target.value }))}
+                          disabled={isReadOnly}
+                          rows={6}
+                          className="border-purple-200 focus:border-purple-400"
+                        />
                       </div>
-                    )}
-                    <Textarea
-                      placeholder={helpText['rm_help_q7'] || 'Write whether you discussed your dream or future plan with them.'}
-                      value={responses[currentTab].opinion}
-                      onChange={(e) => handleRoleModelChange(currentTab, 'opinion', e.target.value)}
-                      rows={3}
-                      className="border-purple-200 focus:border-purple-400"
-                    />
+                    ))}
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                      {q['rm_q8'] || '8. What does your role model say about your dream job or career?'}
-                      <button
-                        type="button"
-                        aria-label="Help"
-                        className="text-purple-600 hover:text-purple-700 ml-2"
-                        onClick={() => toggleHelp('rm_q8')}
-                      >
-                        💬
-                      </button>
-                    </label>
-                    {helpOpen['rm_q8'] && (
-                      <div className="mb-2 p-3 rounded border bg-purple-50 border-purple-200 text-sm text-purple-800">
-                        {helpText['rm_help_q8'] || 'Mention whether they encouraged you or gave advice.'}
-                      </div>
-                    )}
-                    <Textarea
-                      placeholder={helpText['rm_help_q8'] || 'Mention whether they encouraged you or gave advice.'}
-                      value={responses[currentTab].willingToHelp}
-                      onChange={(e) => handleRoleModelChange(currentTab, 'willingToHelp', e.target.value)}
-                      rows={3}
-                      className="border-purple-200 focus:border-purple-400"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                      {q['rm_q9'] || '9. Has any role model helped you in choosing your dream career?'}
-                      <button
-                        type="button"
-                        aria-label="Help"
-                        className="text-purple-600 hover:text-purple-700 ml-2"
-                        onClick={() => toggleHelp('rm_q9')}
-                      >
-                        💬
-                      </button>
-                    </label>
-                    {helpOpen['rm_q9'] && (
-                      <div className="mb-2 p-3 rounded border bg-purple-50 border-purple-200 text-sm text-purple-800">
-                        {helpText['rm_help_q9'] || 'Write who helped you and how they helped you.'}
-                      </div>
-                    )}
-                    <Textarea
-                      placeholder={helpText['rm_help_q9'] || 'Write who helped you and how they helped you.'}
-                      value={responses[currentTab].helpLookingFor}
-                      onChange={(e) => handleRoleModelChange(currentTab, 'helpLookingFor', e.target.value)}
-                      rows={2}
-                      className="border-purple-200 focus:border-purple-400"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                      {q['rm_q10'] || '10. If yes, what kind of help do you expect?'}
-                      <button
-                        type="button"
-                        aria-label="Help"
-                        className="text-purple-600 hover:text-purple-700 ml-2"
-                        onClick={() => toggleHelp('rm_q10')}
-                      >
-                        💬
-                      </button>
-                    </label>
-                    {helpOpen['rm_q10'] && (
-                      <div className="mb-2 p-3 rounded border bg-purple-50 border-purple-200 text-sm text-purple-800">
-                        {helpText['rm_help_q10'] || 'Think about help like education, training, or guidance.'}
-                      </div>
-                    )}
-                    <Textarea
-                      placeholder={helpText['rm_help_q10'] || 'Think about help like education, training, or guidance.'}
-                      value={responses[currentTab].similarities}
-                      onChange={(e) => handleRoleModelChange(currentTab, 'similarities', e.target.value)}
-                      rows={3}
-                      className="border-purple-200 focus:border-purple-400"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                      {q['rm_q11'] || '11. Apart from the above questions, is there anything else you would like to say?'}
-                      <button
-                        type="button"
-                        aria-label="Help"
-                        className="text-purple-600 hover:text-purple-700 ml-2"
-                        onClick={() => toggleHelp('rm_q11')}
-                      >
-                        💬
-                      </button>
-                    </label>
-                    {helpOpen['rm_q11'] && (
-                      <div className="mb-2 p-3 rounded border bg-purple-50 border-purple-200 text-sm text-purple-800">
-                        {helpText['rm_help_q11'] || 'You may write any additional thoughts or opinions.'}
-                      </div>
-                    )}
-                    <Textarea
-                      placeholder={helpText['rm_help_q11'] || 'You may write any additional thoughts or opinions.'}
-                      value={responses[currentTab].incorporatePlan}
-                      onChange={(e) => handleRoleModelChange(currentTab, 'incorporatePlan', e.target.value)}
-                      rows={3}
-                      className="border-purple-200 focus:border-purple-400"
-                    />
-                  </div>
-
-                </div>
-              </CardContent>
-            </Card>
-          );
+                </CardContent>
+              </Card>
+            );
+          }
+          return null;
         })()}
 
-        {currentSection === 'reflection' && (
-          <Card className="border-0 shadow-lg mb-8">
-            <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-100">
-              <div className="flex justify-between items-center">
-                <CardTitle className="text-xl text-purple-800 flex items-center gap-2">
-                  <Lightbulb className="w-5 h-5" />
-                  {lang === 'kn' ? 'ಪ್ರತಿಫಲನೆ ಮತ್ತು ಹೋಲಿಕೆ' : lang === 'ta' ? 'பிரதிபலிப்பு மற்றும் ஒப்பீடு' : 'Reflection & Comparison'}
-                </CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    {q['rm_q12'] || '12. Have you noticed any similarity or comparison between your personality and that of the above role models?'}
-                    <button
-                      type="button"
-                      aria-label="Help"
-                      className="text-purple-600 hover:text-purple-700 ml-2"
-                      onClick={() => toggleHelp('rm_q12')}
-                    >
-                      💬
-                    </button>
-                  </label>
-                  {helpOpen['rm_q12'] && (
-                    <div className="mb-2 p-3 rounded border bg-purple-50 border-purple-200 text-sm text-purple-800">
-                      {helpText['rm_help_q12'] || 'Think about common qualities, habits, or thoughts between you and your role model and write them.'}
-                    </div>
-                  )}
-                  <Textarea
-                    placeholder={helpText['rm_help_q12'] || 'Think about common qualities, habits, or thoughts between you and your role model and write them.'}
-                    value={responses.question12}
-                    onChange={(e) => handleGeneralQuestionChange('question12', e.target.value)}
-                    rows={5}
-                    className="border-purple-200 focus:border-purple-400"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    {q['rm_q13'] || '13. How do you try to adopt the qualities of your role model in your life?'}
-                    <button
-                      type="button"
-                      aria-label="Help"
-                      className="text-purple-600 hover:text-purple-700 ml-2"
-                      onClick={() => toggleHelp('rm_q13')}
-                    >
-                      💬
-                    </button>
-                  </label>
-                  {helpOpen['rm_q13'] && (
-                    <div className="mb-2 p-3 rounded border bg-purple-50 border-purple-200 text-sm text-purple-800">
-                      {helpText['rm_help_q13'] || 'Write how you follow your role model\'s good habits, discipline, and hard work in your life.'}
-                    </div>
-                  )}
-                  <Textarea
-                    placeholder={helpText['rm_help_q13'] || 'Write how you follow your role model\'s good habits, discipline, and hard work in your life.'}
-                    value={responses.question13}
-                    onChange={(e) => handleGeneralQuestionChange('question13', e.target.value)}
-                    rows={5}
-                    className="border-purple-200 focus:border-purple-400"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-
-
         {/* Navigation and Submit */}
-        {/* Footer Navigation */}
         <div className="flex flex-col-reverse sm:flex-row justify-between items-center mt-8 gap-4 sm:gap-0">
           <Button
             variant="outline"
             onClick={() => {
-              const sections = ['roleModel1', 'roleModel2', 'roleModel3', 'reflection'] as const;
               const idx = sections.indexOf(currentSection);
               if (idx > 0) {
-                setCurrentSection(sections[idx - 1]);
+                setCurrentSection(sections[idx - 1] as any);
                 window.scrollTo(0, 0);
               }
             }}
             disabled={currentSection === 'roleModel1'}
             className="w-full sm:w-auto border-purple-200 text-purple-700 hover:bg-purple-50"
           >
-            {lang === 'kn' ? 'ಹಿಂದಿನ ಭಾಗ' : lang === 'ta' ? 'முந்தைய பகுதி' : 'Previous Section'}
+            {lang === 'kn' ? 'ಹಿಂದಿನ ಭಾಗ' : lang === 'ta' ? 'ಮುந்தைய பகுதி' : 'Previous Section'}
           </Button>
 
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -1151,24 +1107,34 @@ export default function MyRoleModelsAssessment() {
               disabled={saving || isReadOnly}
               className="w-full sm:w-auto border-purple-200 text-purple-700 hover:bg-purple-50"
             >
-              {saving ? (
-                <>Saving...</>
-              ) : (
+              {saving ? 'Saving...' : (
                 <>
                   <Save className="w-4 h-4 mr-2" />
-                  {lang === 'kn' ? 'ಪ್ರಗತಿಯನ್ನು ಉಳಿಸಿ' : lang === 'ta' ? 'முன்னேற்றத்தைச் சேமி' : 'Save Progress'}
+                  {lang === 'kn' ? 'ಪ್ರಗತಿಯನ್ನು ಉಳಿಸಿ' : lang === 'ta' ? 'ಮುನ್ನೇற்றத்தைச் ಸೇಮಿ' : 'Save Progress'}
                 </>
               )}
             </Button>
 
-            {currentSection !== 'reflection' ? (
+            {currentSection !== 'summary' ? (
               <Button
                 variant="outline"
                 onClick={() => {
-                  const sections = ['roleModel1', 'roleModel2', 'roleModel3', 'reflection'] as const;
                   const idx = sections.indexOf(currentSection);
                   if (idx < sections.length - 1) {
-                    setCurrentSection(sections[idx + 1]);
+                    const nextSection = sections[idx + 1];
+                    if (nextSection === 'summary' && !areCoreSectionsComplete()) {
+                      toast({
+                        title: lang === 'kn' ? 'ಸಾರಾಂಶ ಲಾಕ್ ಆಗಿದೆ' : lang === 'ta' ? 'சுருக்கம் பூட்டப்பட்டுள்ளது' : 'Summary Locked',
+                        description: lang === 'kn'
+                          ? 'ಸಾರಾಂಶವನ್ನು ವೀಕ್ಷಿಸಲು ದಯವಿಟ್ಟು ಎಲ್ಲಾ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ.'
+                          : lang === 'ta'
+                            ? 'சுருக்கத்தைப் பார்க்க அனைத்துக் கேள்விகளுக்கும் பதில் அளிக்கவும்.'
+                            : 'Please answer all core questions to unlock the summary.',
+                        variant: 'destructive',
+                      });
+                      return;
+                    }
+                    setCurrentSection(nextSection as any);
                     window.scrollTo(0, 0);
                   }
                 }}
@@ -1197,7 +1163,6 @@ export default function MyRoleModelsAssessment() {
             )}
           </div>
         </div>
-
       </div>
       <KannadaKeyboard lang={lang} />
     </div>

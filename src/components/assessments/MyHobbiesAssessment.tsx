@@ -1,3 +1,4 @@
+﻿import { logger } from '@/lib/logger';
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,7 +24,9 @@ import {
   Code,
   CameraIcon,
   Award,
-  Users
+  Users,
+  Lock,
+  Sparkles
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -51,6 +54,7 @@ export default function MyHobbiesAssessment() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [hobbiesQuestions, setHobbiesQuestions] = useState<HobbyQuestion[]>([]);
+  const [summaryQuestions, setSummaryQuestions] = useState<any[]>([]);
   const [responses, setResponses] = useState<HobbiesAssessmentResponse>({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -116,6 +120,10 @@ export default function MyHobbiesAssessment() {
       const order: { [key: string]: number } = { 'section1': 1, 'section2': 2, 'section3': 3 };
       return (order[a] || 99) - (order[b] || 99);
     });
+    // Append the summary tab if there are questions loaded
+    if (sectionsList.length > 0) {
+      sectionsList.push('summary');
+    }
     return sectionsList;
   }, [questionsBySection]);
 
@@ -140,7 +148,7 @@ export default function MyHobbiesAssessment() {
           if (tIntro) setDbIntro(tIntro);
         }
       } catch (e) {
-        console.error('Error fetching module content:', e);
+        logger.error('Error fetching module content:', e);
       }
     };
     fetchModuleContent();
@@ -150,17 +158,17 @@ export default function MyHobbiesAssessment() {
   useEffect(() => {
     const loadQuestions = async () => {
       try {
-        console.log('🔄 Loading Hobbies questions from database...');
+        logger.log('🔄 Loading Hobbies questions from database...');
         // First, get the full question structure
         const { data, error } = await supabase.rpc('get_hobbies_questions');
         if (error) {
-          console.error('Error loading hobbies questions:', error);
+          logger.error('Error loading hobbies questions:', error);
           return;
         }
         if (data && Array.isArray(data) && data.length > 0) {
           // Try to get translations for questions and help text
-          let questionTranslations: Record<string, string> = {};
-          let helpTranslations: Record<string, string> = {};
+          const questionTranslations: Record<string, string> = {};
+          const helpTranslations: Record<string, string> = {};
           try {
             const { data: i18nData } = await supabase.rpc('get_hobbies_questions_i18n', { p_lang: lang } as any);
             if (i18nData && Array.isArray(i18nData)) {
@@ -186,7 +194,7 @@ export default function MyHobbiesAssessment() {
               });
             }
           } catch (e) {
-            console.warn('Could not load i18n translations, using default:', e);
+            logger.warn('Could not load i18n translations, using default:', e);
           }
 
           // Apply translations to questions and help text
@@ -202,21 +210,35 @@ export default function MyHobbiesAssessment() {
             };
           });
 
-          console.log('✅ Database questions loaded:', questionsWithTranslations.length, 'questions');
+          logger.log('✅ Database questions loaded:', questionsWithTranslations.length, 'questions');
           setHobbiesQuestions(questionsWithTranslations);
           // Initialize responses based on questions
           const initialResponses: HobbiesAssessmentResponse = {};
           questionsWithTranslations.forEach(q => {
             initialResponses[q.id] = '';
           });
-          setResponses(prev => ({ ...prev, ...initialResponses }));
+          // Load summary questions
+          const summaryInitialResponses: Record<string, string> = {};
+          try {
+            const { data: summaryData, error: summaryError } = await supabase.rpc('get_hobbies_summary_questions_i18n', { p_lang: lang } as any);
+            if (!summaryError && summaryData && Array.isArray(summaryData)) {
+              setSummaryQuestions(summaryData);
+              summaryData.forEach((sq: any) => {
+                summaryInitialResponses[`summary_${sq.sequence_number}`] = '';
+              });
+            }
+          } catch (e) {
+            logger.error('Error loading summary questions:', e);
+          }
+
+          setResponses(prev => ({ ...prev, ...initialResponses, ...summaryInitialResponses }));
 
           // Set initial section
           const firstSection = questionsWithTranslations[0]?.section || 'section1';
           setCurrentSection(firstSection);
         }
       } catch (error) {
-        console.error('Error loading hobbies questions:', error);
+        logger.error('Error loading hobbies questions:', error);
       }
     };
     loadQuestions();
@@ -239,7 +261,9 @@ export default function MyHobbiesAssessment() {
         const now = `${window.location.pathname}${window.location.search}${window.location.hash}`;
         if (next !== now) window.history.replaceState(window.history.state, '', next);
       }
-    } catch { }
+    } catch {
+      // Ignore URL parsing errors
+    }
   }, [lang]);
 
   // Save section function
@@ -258,7 +282,7 @@ export default function MyHobbiesAssessment() {
 
     setSavingSection(section);
     try {
-      console.log('💾 Saving section:', section, 'with responses:', responses);
+      logger.log('💾 Saving section:', section, 'with responses:', responses);
 
       // First, check if a record exists - get the most recent one
       const { data: existingRecords, error: fetchError } = await supabase
@@ -271,12 +295,12 @@ export default function MyHobbiesAssessment() {
         .limit(1);
 
       if (fetchError) {
-        console.error('❌ Error fetching existing record:', fetchError);
+        logger.error('❌ Error fetching existing record:', fetchError);
         throw fetchError;
       }
 
       const existing = existingRecords && existingRecords.length > 0 ? existingRecords[0] : null;
-      console.log('📋 Existing record:', existing);
+      logger.log('📋 Existing record:', existing);
 
       if (existing) {
         // Update existing record, merge responses
@@ -286,7 +310,7 @@ export default function MyHobbiesAssessment() {
           ...responses
         };
 
-        console.log('🔄 Merging responses:', { existing: existingResponses, current: responses, merged: mergedResponses });
+        logger.log('🔄 Merging responses:', { existing: existingResponses, current: responses, merged: mergedResponses });
 
         const { error } = await supabase
           .from('assessment_responses')
@@ -297,13 +321,13 @@ export default function MyHobbiesAssessment() {
           .eq('id', existing.id);
 
         if (error) {
-          console.error('❌ Error updating record:', error);
+          logger.error('❌ Error updating record:', error);
           throw error;
         }
-        console.log('✅ Successfully updated existing record');
+        logger.log('✅ Successfully updated existing record');
       } else {
         // Create new record
-        console.log('📝 Creating new record with responses:', responses);
+        logger.log('📝 Creating new record with responses:', responses);
         const { error } = await supabase
           .from('assessment_responses')
           .insert({
@@ -316,10 +340,10 @@ export default function MyHobbiesAssessment() {
           });
 
         if (error) {
-          console.error('❌ Error inserting new record:', error);
+          logger.error('❌ Error inserting new record:', error);
           throw error;
         }
-        console.log('✅ Successfully created new record');
+        logger.log('✅ Successfully created new record');
       }
 
       const sectionNumber = section.replace('section', '');
@@ -330,23 +354,25 @@ export default function MyHobbiesAssessment() {
       };
 
       const sectionDisplayName =
-        lang === 'kn'
-          ? sectionNumber === '1'
-            ? 'ಹವ್ಯಾಸಗಳು ಮತ್ತು ಆಸಕ್ತಿಗಳು'
-            : sectionNumber === '2'
-              ? 'ಸಾಮರ್ಥ್ಯಗಳು ಮತ್ತು ಅಭ್ಯಾಸ'
-              : sectionNumber === '3'
-                ? 'ಬೆಂಬಲ ಮತ್ತು ವೃತ್ತಿ ಸಂಪರ್ಕ'
-                : `ಭಾಗ ${sectionNumber}`
-          : lang === 'ta'
+        section === 'summary'
+          ? lang === 'kn' ? 'ಸಾರಾಂಶ' : lang === 'ta' ? 'சுருக்கம்' : 'Summary'
+          : lang === 'kn'
             ? sectionNumber === '1'
-              ? 'பொழுதுபோக்குகள் மற்றும் ஆர்வங்கள்'
+              ? 'ಹವ್ಯಾಸಗಳು ಮತ್ತು ಆಸಕ್ತಿಗಳು'
               : sectionNumber === '2'
-                ? 'திறமைகள் மற்றும் பயிற்சி'
+                ? 'ಸಾಮರ್ಥ್ಯಗಳು ಮತ್ತು ಅಭ್ಯಾಸ'
                 : sectionNumber === '3'
-                  ? 'ஆதரவு மற்றும் தொழில் இணைப்பு'
-                  : `பகுதி ${sectionNumber}`
-            : sectionNamesEn[sectionNumber] || section;
+                  ? 'ಬೆಂಬಲ ಮತ್ತು ವೃತ್ತಿ ಸಂಪರ್ಕ'
+                  : `ಭಾಗ ${sectionNumber}`
+            : lang === 'ta'
+              ? sectionNumber === '1'
+                ? 'பொழுதுபோக்குகள் மற்றும் ஆர்வங்கள்'
+                : sectionNumber === '2'
+                  ? 'திறமைகள் மற்றும் பயிற்சி'
+                  : sectionNumber === '3'
+                    ? 'ஆதரவு மற்றும் தொழில் இணைப்பு'
+                    : `பகுதி ${sectionNumber}`
+              : sectionNamesEn[sectionNumber] || section;
 
       toast({
         title:
@@ -363,7 +389,7 @@ export default function MyHobbiesAssessment() {
               : `Your ${sectionDisplayName} responses have been saved.`,
       });
     } catch (error) {
-      console.error('Error saving section:', error);
+      logger.error('Error saving section:', error);
       toast({
         title:
           lang === 'kn'
@@ -389,18 +415,7 @@ export default function MyHobbiesAssessment() {
       setLoading(false);
       return;
     }
-
-    // Resolve student_id from students table; do not fallback to users.id
-    let studentId = userProfile.studentProfile?.id as string | undefined;
-    if (!studentId) {
-      const { data: studentRow } = await supabase
-        .from('students')
-        .select('id')
-        .eq('user_id', userProfile.id)
-        .maybeSingle();
-      studentId = studentRow?.id;
-    }
-
+    const studentId = await getStudentId();
     if (!studentId) {
       setLoading(false);
       return;
@@ -426,6 +441,10 @@ export default function MyHobbiesAssessment() {
           hobbiesQuestions.forEach(q => {
             initialResponses[q.id] = savedResponses[q.id] || '';
           });
+          summaryQuestions.forEach(sq => {
+            const key = `summary_${sq.sequence_number}`;
+            initialResponses[key] = savedResponses[key] || '';
+          });
           setResponses(initialResponses);
 
           if (data.completed_at) {
@@ -449,9 +468,13 @@ export default function MyHobbiesAssessment() {
 
   const getProgressPercentage = () => {
     if (hobbiesQuestions.length === 0) return 0;
-    const totalQuestions = hobbiesQuestions.length;
-    const answeredQuestions = hobbiesQuestions.filter(q => {
+    const totalQuestions = hobbiesQuestions.length + summaryQuestions.length;
+    let answeredQuestions = hobbiesQuestions.filter(q => {
       const response = responses[q.id];
+      return response && response.trim() !== '';
+    }).length;
+    answeredQuestions += summaryQuestions.filter(sq => {
+      const response = responses[`summary_${sq.sequence_number}`];
       return response && response.trim() !== '';
     }).length;
     return totalQuestions > 0 ? (answeredQuestions / totalQuestions) * 100 : 0;
@@ -460,11 +483,25 @@ export default function MyHobbiesAssessment() {
   const canSubmit = () => {
     if (isReadOnly) return false;
     if (hobbiesQuestions.length === 0) return false;
+    const mainComplete = hobbiesQuestions.every(q => {
+      const response = responses[q.id];
+      return response && response.trim() !== '';
+    });
+    const summaryComplete = summaryQuestions.length === 0 || summaryQuestions.every(sq => {
+      const response = responses[`summary_${sq.sequence_number}`];
+      return response && response.trim() !== '';
+    });
+    return mainComplete && summaryComplete;
+  };
+
+  const areCoreSectionsComplete = () => {
+    if (hobbiesQuestions.length === 0) return false;
     return hobbiesQuestions.every(q => {
       const response = responses[q.id];
       return response && response.trim() !== '';
     });
   };
+
 
   const submitAssessment = async () => {
     if (isReadOnly) return;
@@ -510,7 +547,7 @@ export default function MyHobbiesAssessment() {
         .limit(1);
 
       if (fetchError) {
-        console.error('❌ Error fetching existing record:', fetchError);
+        logger.error('❌ Error fetching existing record:', fetchError);
         throw fetchError;
       }
 
@@ -574,7 +611,7 @@ export default function MyHobbiesAssessment() {
         const summaryDatabaseService = (await import('@/services/summaryDatabaseService')).summaryDatabaseService;
 
         if (aiSummaryService.isConfigured()) {
-          console.log('🤖 Generating AI summary for Hobbies assessment:', assessmentData.id);
+          logger.log('🤖 Generating AI summary for Hobbies assessment:', assessmentData.id);
           const summaryResult = await aiSummaryService.generateHobbiesSummary(responses);
 
           if (summaryResult.success && summaryResult.summary) {
@@ -586,7 +623,7 @@ export default function MyHobbiesAssessment() {
             );
 
             if (saveResult.success) {
-              console.log('✅ AI summary saved successfully:', saveResult.summaryId);
+              logger.log('✅ AI summary saved successfully:', saveResult.summaryId);
               toast({
                 title:
                   lang === 'kn'
@@ -627,11 +664,11 @@ export default function MyHobbiesAssessment() {
                   }
                 }
               } catch (notifError) {
-                console.error('Error notifying teacher:', notifError);
+                logger.error('Error notifying teacher:', notifError);
                 // Don't fail the whole submission if notification fails
               }
             } else {
-              console.error('Failed to save summary:', saveResult.error);
+              logger.error('Failed to save summary:', saveResult.error);
               toast({
                 title: "Summary Generation Issue",
                 description: "Your assessment is saved, but summary generation needs attention.",
@@ -639,7 +676,7 @@ export default function MyHobbiesAssessment() {
               });
             }
           } else {
-            console.error('Failed to generate summary:', summaryResult.error);
+            logger.error('Failed to generate summary:', summaryResult.error);
             toast({
               title: "Summary Generation Issue",
               description: "Your assessment is saved. Summary will be generated later.",
@@ -647,14 +684,14 @@ export default function MyHobbiesAssessment() {
             });
           }
         } else {
-          console.warn('⚠️ Gemini API not configured, skipping summary generation');
+          logger.warn('⚠️ Gemini API not configured, skipping summary generation');
         }
       } catch (summaryError) {
-        console.error('Error in summary generation:', summaryError);
+        logger.error('Error in summary generation:', summaryError);
         // Don't fail the entire submission if summary generation fails
       }
     } catch (error) {
-      console.error('Error submitting assessment:', error);
+      logger.error('Error submitting assessment:', error);
       toast({
         title: "Error",
         description: "Failed to submit assessment. Please try again.",
@@ -784,7 +821,6 @@ export default function MyHobbiesAssessment() {
                       : '"Hobbies bring out our talents and inspire us to pursue our dreams."'}
                 </p>
 
-                {/* Definitions Section */}
                 <div className="mt-6 space-y-4 text-left bg-orange-50 p-6 rounded-lg border border-orange-200">
                   <div>
                     <h3 className="font-semibold text-orange-800 mb-2">
@@ -797,21 +833,21 @@ export default function MyHobbiesAssessment() {
                     <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
                       {lang === 'kn' ? (
                         <>
-                          <li>ನಾವು ನಮ್ಮ ಖುಷಿಗಾಗಿ, ನಮ್ಮ ದೈನಂದಿನ ಕೆಲಸಗಳ ಜೊತೆಗೆ ಮಾಡುವ ಚಟುವಟಿಕೆ.</li>
-                          <li>ಸಮಯ ಕಳೆಯಲು ಅಥವಾ ಮನಸ್ಸಿಗೆ ಸಂತೋಷ ನೀಡಲು ಮಾಡುವ ಕೆಲಸ.</li>
-                          <li>ಹವ್ಯಾಸ ಕಲಿತು ಬೆಳೆಯಬಹುದು.</li>
+                          <li>ಕೇವಲ ಸಂತೋಷ ಮತ್ತು ವಿಶ್ರಾಂತಿಗಾಗಿ ಬಿಡುವಿನ ವೇಳೆಯಲ್ಲಿ ಮಾಡುವ ಚಟುವಟಿಕೆ.</li>
+                          <li>ಇದು ನಮಗೆ ಖುಷಿ ನೀಡುತ್ತದೆ ಮತ್ತು ಒತ್ತಡವನ್ನು ಕಡಿಮೆ ಮಾಡುತ್ತದೆ.</li>
+                          <li>ಹವ್ಯಾಸವನ್ನು ಸಮಯ ಕಳೆದಂತೆ ಕಲಿಯಬಹುದು ಮತ್ತು ಅಭಿವೃದ್ಧಿಪಡಿಸಬಹುದು.</li>
                         </>
                       ) : lang === 'ta' ? (
                         <>
-                          <li>நமது மகிழ்ச்சிக்காக, தினசரி வேலைகளுடன் சேர்த்து செய்யப்படும் செயல்கள்.</li>
-                          <li>நேரத்தை பயனுள்ளதாக கழிக்க அல்லது மனதிற்கு மகிழ்ச்சி தர செய்யப்படும் செயல்கள்.</li>
-                          <li>பொழுதுபோக்கை கற்றுக்கொண்டு வளர்த்துக்கொள்ளலாம்.</li>
+                          <li>மகிழ்ச்சிக்காகவும் ஓய்வுக்காகவும் ஓய்வு நேரத்தில் செய்யும் ஒரு செயல்பாடு.</li>
+                          <li>இது நமக்கு மகிழ்ச்சியைத் தருகிறது மற்றும் மன அழுத்தத்தைக் குறைக்கிறது.</li>
+                          <li>ஒரு பொழுதுபோக்கை காலப்போக்கில் கற்றுக் கொள்ளலாம் மற்றும் வளர்த்துக் கொள்ளலாம்.</li>
                         </>
                       ) : (
                         <>
-                          <li>It is an activity that we do for fun, after our daily chores.</li>
-                          <li>Work done to pass the time or to give pleasure to the mind.</li>
-                          <li>A hobby is something that can be learnt and developed over time.</li>
+                          <li>An activity done in leisure time for pleasure and relaxation.</li>
+                          <li>It brings us joy and reduces stress.</li>
+                          <li>A hobby is something that can be learnt and developed over time. </li>
                         </>
                       )}
                     </ul>
@@ -826,48 +862,47 @@ export default function MyHobbiesAssessment() {
                           : 'Drawing, Singing, Reading, Dancing, Watching TV, Gardening etc.'}
                     </p>
                   </div>
-                </div>
 
-
-                <div className="mt-4">
-                  <h3 className="font-semibold text-orange-800 mb-2">
-                    {lang === 'kn'
-                      ? 'ಭಾಗ II: ಪ್ರತಿಭೆ (Talent) ಎಂದರೆ ಏನು?'
-                      : lang === 'ta'
-                        ? 'பகுதி II: திறமை (Talent) என்றால் என்ன?'
-                        : 'Section II: What is talent?'}
-                  </h3>
-                  <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
-                    {lang === 'kn' ? (
-                      <>
-                        <li>ಹುಟ್ಟಿನಿಂದಲೇ ನಮಗೆ ಇರುವ ಒಂದು ನೈಸರ್ಗಿಕ ಸಾಮರ್ಥ್ಯ.</li>
-                        <li>ಹೆಚ್ಚು ಅಭ್ಯಾಸ ಮಾಡದೆ ಸಹ ಸುಲಭವಾಗಿ ಮಾಡಬಹುದಾದ ಕೌಶಲ್ಯ.</li>
-                        <li>ಇದನ್ನು ಇನ್ನಷ್ಟು ಅಭ್ಯಾಸದಿಂದ ಅಪಾರ ಸಾಧನೆಗೆ ದಾರಿ ಮಾಡಬಹುದು.</li>
-                      </>
-                    ) : lang === 'ta' ? (
-                      <>
-                        <li>பிறப்பிலிருந்தே நமக்கு உள்ள இயற்கையான திறன்.</li>
-                        <li>அதிக பயிற்சி இல்லாமலேயே எளிதாக செய்யக்கூடிய திறமை.</li>
-                        <li>இதை மேலும் பயிற்சி செய்வதன் மூலம் பெரிய சாதனைகளை அடையலாம்.</li>
-                      </>
-                    ) : (
-                      <>
-                        <li>A natural ability that we are born with.</li>
-                        <li>A skill that can be done easily without much practice.</li>
-                        <li>This can lead to immense achievement with more practice.</li>
-                      </>
-                    )}
-                  </ul>
-                  <p className="mt-2 text-gray-600">
-                    <strong>
-                      {lang === 'kn' ? 'ಉದಾಹರಣೆಗಳು:' : lang === 'ta' ? 'உதாரணங்கள்:' : 'Examples:'}
-                    </strong>{' '}
-                    {lang === 'kn'
-                      ? 'ಸುಲಭವಾಗಿ ಹಾಡುವಂತಹುದು, ಸ್ಪಷ್ಟವಾಗಿ ಭಾಷಣ ಮಾಡುವಂತಹುದು, ಗಣಿತದಲ್ಲಿ ವೇಗವಾಗಿ ಉತ್ತರ ನೀಡುವಂತಹುದು, ತ್ವರಿತವಾಗಿ ಕಲಿಯುವ ಸಾಮರ್ಥ್ಯ ಇತ್ಯಾದಿ.'
-                      : lang === 'ta'
-                        ? 'எளிதாக பாடும் திறன், தெளிவாக பேசும் திறன், கணிதத்தில் வேகமாக விடை அளிக்கும் திறன், விரைவாக கற்றுக்கொள்ளும் திறன் போன்றவை.'
-                        : 'The ability to sing naturally, communicate clearly, answer questions quickly in math, learn quickly, etc.'}
-                  </p>
+                  <div className="mt-4">
+                    <h3 className="font-semibold text-orange-800 mb-2">
+                      {lang === 'kn'
+                        ? 'ಭಾಗ II: ಪ್ರತಿಭೆ (Talent) ಎಂದರೆ ಏನು?'
+                        : lang === 'ta'
+                          ? 'பகுதி II: திறமை (Talent) என்றால் என்ன?'
+                          : 'Section II: What is talent?'}
+                    </h3>
+                    <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
+                      {lang === 'kn' ? (
+                        <>
+                          <li>ಹುಟ್ಟಿನಿಂದಲೇ ನಮಗೆ ಇರುವ ಒಂದು ನೈಸರ್ಗಿಕ ಸಾಮರ್ಥ್ಯ.</li>
+                          <li>ಹೆಚ್ಚು ಅಭ್ಯಾಸ ಮಾಡದೆ ಸಹ ಸುಲಭವಾಗಿ ಮಾಡಬಹುದಾದ ಕೌಶಲ್ಯ.</li>
+                          <li>ಇದನ್ನು ಇನ್ನಷ್ಟು ಅಭ್ಯಾಸದಿಂದ ಅಪಾರ ಸಾಧನೆಗೆ ದಾರಿ ಮಾಡಬಹುದು.</li>
+                        </>
+                      ) : lang === 'ta' ? (
+                        <>
+                          <li>பிறப்பிலிருந்தே நமக்கு உள்ள இயற்கையான திறன்.</li>
+                          <li>அதிக பயிற்சி இல்லாமலேயே எளிதாக செய்யக்கூடிய திறமை.</li>
+                          <li>இதை மேலும் பயிற்சி செய்வதன் மூலம் பெரிய சாதனைகளை அடையலாம்.</li>
+                        </>
+                      ) : (
+                        <>
+                          <li>A natural ability that we are born with.</li>
+                          <li>A skill that can be done easily without much practice.</li>
+                          <li>This can lead to immense achievement with more practice.</li>
+                        </>
+                      )}
+                    </ul>
+                    <p className="mt-2 text-gray-600">
+                      <strong>
+                        {lang === 'kn' ? 'ಉದಾಹರಣೆಗಳು:' : lang === 'ta' ? 'ಉದಾಹರಣೆಗಳು:' : 'Examples:'}
+                      </strong>{' '}
+                      {lang === 'kn'
+                        ? 'ಸುಲಭವಾಗಿ ಹಾಡುವಂತಹುದು, ಸ್ಪಷ್ಟವಾಗಿ ಭಾಷಣ ಮಾಡುವಂತಹುದು, ಗಣಿತದಲ್ಲಿ ವೇಗವಾಗಿ ಉತ್ತರ ನೀಡುವಂತಹುದು, ತ್ವರಿತವಾಗಿ ಕಲಿಯುವ ಸಾಮರ್ಥ್ಯ ಇತ್ಯಾದಿ.'
+                        : lang === 'ta'
+                          ? 'எளிதாக பாடும் திறன், தெளிவாக பேசும் திறன், கணிதத்தில் வேகமாக விடை அளிக்கும் திறன், விரைவாக கற்றுக்கொள்ளும் திறன் போன்றவை.'
+                          : 'The ability to sing naturally, communicate clearly, answer questions quickly in math, learn quickly, etc.'}
+                    </p>
+                  </div>
                 </div>
               </>
             )}
@@ -876,7 +911,7 @@ export default function MyHobbiesAssessment() {
 
 
         {/* Progress Bar */}
-        < Card className="mb-6 border-0 shadow-lg" >
+        <Card className="mb-6 border-0 shadow-lg">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-800">{t('yourProgress')}</h2>
@@ -891,279 +926,257 @@ export default function MyHobbiesAssessment() {
                     ? `பகுதி ${sections.indexOf(currentSection) + 1} / ${sections.length} • மொத்தம் ${hobbiesQuestions.length} கேள்விகள்`
                     : `Section ${sections.indexOf(currentSection) + 1} of ${sections.length} • ${hobbiesQuestions.length} Questions Total`}
               </span>
-              <span>{Math.round(getProgressPercentage())}% {t('completeSuffix')}</span>
             </div>
           </CardContent>
-        </Card >
+        </Card>
 
         {/* Section Navigation */}
-        < div className="flex justify-center mb-6" >
-          <div className="flex flex-col md:flex-row bg-white rounded-lg p-1 shadow-md w-full md:w-auto">
-            {sections.map((sectionKey, index) => {
-              const sectionNumber = index + 1;
+        <div className="mb-6 overflow-x-auto">
+          <div className="flex bg-white p-1 rounded-lg border border-orange-100 min-w-max">
+            {sections.map((sectionKey) => {
+              const sectionNumber = sections.indexOf(sectionKey) + 1;
               let sectionTitle = '';
               if (sectionKey === 'section1') {
-                sectionTitle =
-                  lang === 'kn'
-                    ? 'ಭಾಗ 1: ಹವ್ಯಾಸಗಳು ಮತ್ತು ಆಸಕ್ತಿಗಳು'
-                    : lang === 'ta'
-                      ? 'பகுதி 1: பொழுதுபோக்குகள் மற்றும் ஆர்வங்கள்'
-                      : 'Section 1: Hobbies & Interests';
+                sectionTitle = lang === 'kn' ? 'ಹವ್ಯಾಸಗಳು' : lang === 'ta' ? 'பொழுதுபோக்குகள்' : 'Hobbies';
               } else if (sectionKey === 'section2') {
-                sectionTitle =
-                  lang === 'kn'
-                    ? 'ಭಾಗ 2: ಸಾಮರ್ಥ್ಯಗಳು ಮತ್ತು ಅಭ್ಯಾಸ'
-                    : lang === 'ta'
-                      ? 'பகுதி 2: திறமைகள் மற்றும் பயிற்சி'
-                      : 'Section 2: Talents & Practice';
+                sectionTitle = lang === 'kn' ? 'ಸಾಮರ್ಥ್ಯಗಳು' : lang === 'ta' ? 'திறமைகள்' : 'Talents';
               } else if (sectionKey === 'section3') {
-                sectionTitle =
-                  lang === 'kn'
-                    ? 'ಭಾಗ 3: ಬೆಂಬಲ ಮತ್ತು ವೃತ್ತಿ ಸಂಪರ್ಕ'
-                    : lang === 'ta'
-                      ? 'பகுதி 3: ஆதரவு மற்றும் தொழில் இணைப்பு'
-                      : 'Section 3: Support & Career Connection';
+                sectionTitle = lang === 'kn' ? 'ಬೆಂಬಲ' : lang === 'ta' ? 'ஆதரவு' : 'Support';
+              } else if (sectionKey === 'summary') {
+                sectionTitle = lang === 'kn' ? 'ಸಾರಾಂಶ' : lang === 'ta' ? 'சுருக்கம்' : 'Summary';
               } else {
-                sectionTitle =
-                  lang === 'kn'
-                    ? `ಭಾಗ ${sectionNumber}`
-                    : lang === 'ta'
-                      ? `பகுதி ${sectionNumber}`
-                      : `Section ${sectionNumber}`;
+                sectionTitle = lang === 'kn' ? `ಭಾಗ ${sectionNumber}` : lang === 'ta' ? `பகுதி ${sectionNumber}` : `Section ${sectionNumber}`;
               }
+
+              const isSummary = sectionKey === 'summary';
+              const isLocked = isSummary && !areCoreSectionsComplete();
 
               return (
                 <button
                   key={sectionKey}
-                  onClick={() => setCurrentSection(sectionKey)}
-                  className={`px-6 py-2 rounded-md transition-all ${currentSection === sectionKey
+                  onClick={() => !isLocked && setCurrentSection(sectionKey)}
+                  disabled={isLocked && !isReadOnly}
+                  className={`px-6 py-2 rounded-md transition-all flex items-center gap-2 ${currentSection === sectionKey
                     ? 'bg-orange-600 text-white shadow-md'
-                    : 'text-gray-600 hover:text-orange-600'
+                    : isLocked ? 'text-gray-400 cursor-not-allowed' : 'text-gray-600 hover:text-orange-600'
                     }`}
                 >
+                  {isSummary && <Sparkles className={`w-3 h-3 ${isLocked ? 'text-gray-400' : 'text-yellow-500'}`} />}
                   {sectionTitle}
+                  {isSummary && isLocked && <Lock className="w-3 h-3 opacity-70" />}
                 </button>
               );
             })}
           </div>
-        </div >
+        </div>
 
         {/* Dynamically render sections from database */}
-        {
-          sections.map((sectionKey) => {
-            const sectionQuestions = questionsBySection[sectionKey] || [];
-            if (sectionQuestions.length === 0) return null;
+        {sections.map((sectionKey) => {
+          const sectionQuestions = sectionKey === 'summary' ? summaryQuestions : (questionsBySection[sectionKey] || []);
+          if (sectionQuestions.length === 0) return null;
 
-            const sectionNumber = sections.indexOf(sectionKey) + 1;
-            let sectionTitle = '';
-            let sectionDescription = '';
-            let headerColor = 'from-orange-50 to-pink-50';
-            let titleColor = 'text-orange-800';
-            let descColor = 'text-orange-600';
+          const sectionNumber = sections.indexOf(sectionKey) + 1;
+          let sectionTitle = '';
+          let sectionDescription = '';
+          let headerColor = 'from-orange-50 to-pink-50';
+          let titleColor = 'text-orange-800';
+          let descColor = 'text-orange-600';
 
-            if (sectionKey === 'section1') {
-              sectionTitle =
-                lang === 'kn'
-                  ? 'ಭಾಗ 1: ಹವ್ಯಾಸಗಳು ಮತ್ತು ಆಸಕ್ತಿಗಳು'
-                  : lang === 'ta'
-                    ? 'பகுதி 1: பொழுதுபோக்குகள் மற்றும் ஆர்வங்கள்'
-                    : 'Section 1: Hobbies & Interests';
-              sectionDescription =
-                lang === 'kn'
-                  ? 'ನಿಮ್ಮ ಹವ್ಯಾಸಗಳು ಮತ್ತು ಅವುಗಳಿಗೆ ಪ್ರೇರಣೆ ನೀಡುವ ವಿಷಯಗಳ ಬಗ್ಗೆ ಬರೆಯಿರಿ.'
-                  : lang === 'ta'
-                    ? 'உங்கள் பொழுதுபோக்குகள் மற்றும் அதற்கு உங்களை ஊக்கப்படுத்தும் விஷயங்களை பற்றி பகிருங்கள்.'
-                    : 'Share your thoughts about your hobbies and what inspires them';
-            } else if (sectionKey === 'section2') {
-              sectionTitle =
-                lang === 'kn'
-                  ? 'ಭಾಗ 2: ಸಾಮರ್ಥ್ಯಗಳು ಮತ್ತು ಅಭ್ಯಾಸ'
-                  : lang === 'ta'
-                    ? 'பகுதி 2: திறமைகள் மற்றும் பயிற்சி'
-                    : 'Section 2: Talents & Practice';
-              sectionDescription =
-                lang === 'kn'
-                  ? 'ನಿಮ್ಮ ಸಹಜ ಸಾಮರ್ಥ್ಯಗಳು ಯಾವುವು ಮತ್ತು ಅವನ್ನು ಹೇಗೆ ಅಭ್ಯಾಸ ಮಾಡುತ್ತೀರಿ ಎಂಬುದನ್ನು ಅನ್ವೇಷಿಸಿ.'
-                  : lang === 'ta'
-                    ? 'உங்களிடம் உள்ள இயல்பான திறமைகள் என்ன, அதை நீங்கள் எப்படி வளர்த்துக் கொள்கிறீர்கள் என்பதை எழுதுங்கள்.'
-                    : 'Explore your natural talents and how you develop them';
-              headerColor = 'from-pink-50 to-purple-50';
-              titleColor = 'text-pink-800';
-              descColor = 'text-pink-600';
-            } else if (sectionKey === 'section3') {
-              sectionTitle =
-                lang === 'kn'
-                  ? 'ಭಾಗ 3: ಬೆಂಬಲ ಮತ್ತು ವೃತ್ತಿ 연결'
-                  : lang === 'ta'
-                    ? 'பகுதி 3: ஆதரவு மற்றும் தொழில் இணைப்பு'
-                    : 'Section 3: Support & Career Connection';
-              sectionDescription =
-                lang === 'kn'
-                  ? 'ನಿಮ್ಮ ಹವ್ಯಾಸಗಳಿಗೆ ಕುಟುಂಬ/ಶಾಲೆಯಿಂದ ಸಿಗುವ ಬೆಂಬಲ ಮತ್ತು ಭವಿಷ್ಯದ ವೃತ್ತಿ ಅವಕಾಶಗಳ ಬಗ್ಗೆ ಚಿಂತಿಸಿ.'
-                  : lang === 'ta'
-                    ? 'உங்கள் பொழுதுபோக்குகளை வளர்க்க வீட்டிலும் பள்ளியிலும் கிடைக்கும் ஆதரவு மற்றும் அதிலிருந்து உருவாகும் தொழில் வாய்ப்புகளை பற்றி சிந்தியுங்கள்.'
-                    : 'Reflect on support systems and career possibilities from your hobbies';
-              headerColor = 'from-purple-50 to-indigo-50';
-              titleColor = 'text-purple-800';
-              descColor = 'text-purple-600';
-            } else {
-              sectionTitle =
-                lang === 'kn'
-                  ? `ಭಾಗ ${sectionNumber}`
-                  : lang === 'ta'
-                    ? `பகுதி ${sectionNumber}`
-                    : `Section ${sectionNumber}`;
-              sectionDescription =
-                lang === 'kn'
+          if (sectionKey === 'section1') {
+            sectionTitle =
+              lang === 'kn'
+                ? 'ಭಾಗ 1: ಹವ್ಯಾಸಗಳು ಮತ್ತು ಆಸಕ್ತಿಗಳು'
+                : lang === 'ta'
+                  ? 'பகுதி 1: பொழுதுபோக்குகள் மற்றும் ஆர்வங்கள்'
+                  : 'Section 1: Hobbies & Interests';
+            sectionDescription =
+              lang === 'kn'
+                ? 'ನಿಮ್ಮ ಹವ್ಯಾಸಗಳು ಮತ್ತು ಅವುಗಳಿಗೆ ಪ್ರೇರಣೆ ನೀಡುವ ವಿಷಯಗಳ ಬಗ್ಗೆ ಬರೆಯಿರಿ.'
+                : lang === 'ta'
+                  ? 'உங்கள் பொழுதுபோக்குகள் மற்றும் அதற்கு உங்களை ஊக்கப்படுத்தும் விஷயங்களை பற்றி பகிருங்கள்.'
+                  : 'Share your thoughts about your hobbies and what inspires them';
+          } else if (sectionKey === 'section2') {
+            sectionTitle =
+              lang === 'kn'
+                ? 'ಭಾಗ 2: ಸಾಮರ್ಥ್ಯಗಳು ಮತ್ತು ಅಭ್ಯಾಸ'
+                : lang === 'ta'
+                  ? 'பகுதி 2: திறமைகள் மற்றும் பயிற்சி'
+                  : 'Section 2: Talents & Practice';
+            sectionDescription =
+              lang === 'kn'
+                ? 'ನಿಮ್ಮ ಸಹಜ ಸಾಮರ್ಥ್ಯಗಳು ಯಾವುವು ಮತ್ತು ಅವನ್ನು ಹೇಗೆ ಅಭ್ಯಾಸ ಮಾಡುತ್ತೀರಿ ಎಂಬುದನ್ನು ಅನ್ವೇಷಿಸಿ.'
+                : lang === 'ta'
+                  ? 'உங்களிடம் உள்ள இயல்பான திறமைகள் என்ன, அதை நீங்கள் எப்படி வளர்த்துக் கொள்கிறீர்கள் என்பதை எழுதுங்கள்.'
+                  : 'Explore your natural talents and how you develop them';
+            headerColor = 'from-pink-50 to-purple-50';
+            titleColor = 'text-pink-800';
+            descColor = 'text-pink-600';
+          } else if (sectionKey === 'section3') {
+            sectionTitle =
+              lang === 'kn'
+                ? 'ಭಾಗ 3: ಬೆಂಬಲ ಮತ್ತು ವೃತ್ತಿ ಸಂಪರ್ಕ'
+                : lang === 'ta'
+                  ? 'பகுதி 3: ஆதரவு மற்றும் தொழில் இணைப்பு'
+                  : 'Section 3: Support & Career Connection';
+            sectionDescription =
+              lang === 'kn'
+                ? 'ನಿಮ್ಮ ಹವ್ಯಾಸಗಳಿಗೆ ಕುಟುಂಬ/ಶಾಲೆಯಿಂದ ಸಿಗುವ ಬೆಂಬಲ ಮತ್ತು ಭವಿಷ್ಯದ ವೃತ್ತಿ ಅವಕಾಶಗಳ ಬಗ್ಗೆ ಚಿಂತಿಸಿ.'
+                : lang === 'ta'
+                  ? 'உங்கள் பொழுதுபோக்குகளை வளர்க்க வீட்டிலும் பள்ளியிலும் கிடைக்கும் ஆதரவு மற்றும் அதிலிருந்து உருவாகும் தொழில் வாய்ப்புகளை பற்றி சிந்தியுங்கள்.'
+                  : 'Reflect on support systems and career possibilities from your hobbies';
+            headerColor = 'from-purple-50 to-indigo-50';
+            titleColor = 'text-purple-800';
+            descColor = 'text-purple-600';
+          } else if (sectionKey === 'summary') {
+            sectionTitle =
+              lang === 'kn'
+                ? 'ಸಾರಾಂಶ'
+                : lang === 'ta'
+                  ? 'சுருக்கம்'
+                  : 'Summary';
+            sectionDescription =
+              lang === 'kn'
+                ? 'ನಿಮ್ಮ ಉತ್ತರಗಳನ್ನು ಇಲ್ಲಿ ಸಾರಾಂಶ ಮಾಡಿ.'
+                : lang === 'ta'
+                  ? 'உங்கள் பதில்களை இங்கே ಕಾಣவும்.'
+                  : 'A summarized overview of your talents and hobbies responses.';
+            headerColor = 'from-orange-50 to-amber-50';
+            titleColor = 'text-orange-800';
+            descColor = 'text-orange-600';
+          } else {
+            sectionTitle =
+              lang === 'kn'
+                ? `ಭಾಗ ${sectionNumber}`
+                : lang === 'ta'
+                  ? `பகுதி ${sectionNumber}`
+                  : `Section ${sectionNumber}`;
+            sectionDescription =
+              lang === 'kn'
+                ? 'ಈ ಭಾಗದಲ್ಲಿರುವ ಪ್ರಶ್ನೆಗಳಿಗೆ ನಿಮ್ಮ ಆಲೋಚನೆಗಳನ್ನು ಬರೆಯಿರಿ.'
+                : lang === 'ta'
                   ? 'ಈ ಭಾಗದಲ್ಲಿರುವ ಪ್ರಶ್ನೆಗಳಿಗೆ ನಿಮ್ಮ ಆಲೋಚನೆಗಳನ್ನು ಬರೆಯಿರಿ.'
-                  : lang === 'ta'
-                    ? 'இந்த பகுதியில் உள்ள கேள்விகளுக்கு உங்கள் எண்ணங்களை எழுதுங்கள்.'
-                    : 'Answer the questions in this section';
-            }
+                  : 'Answer the questions in this section';
+          }
 
-            return (
-              <div key={sectionKey} style={{ display: currentSection === sectionKey ? 'block' : 'none' }}>
-                <Card className="border-0 shadow-lg">
-                  <CardHeader className={`bg-gradient-to-r ${headerColor}`}>
-                    <CardTitle className={`text-xl ${titleColor}`}>{sectionTitle}</CardTitle>
-                    <CardDescription className={descColor}>
-                      {sectionDescription}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <div className="space-y-6">
-                      {sectionQuestions.map((question, index) => {
-                        const questionNumber = index + 1;
-                        const questionValue = responses[question.id] || '';
-                        const helpKey = question.id;
-                        const isOpen = !!helpOpen[helpKey];
-                        const helpText = question.help_text || '';
+          return (
+            <div key={sectionKey} style={{ display: currentSection === sectionKey ? 'block' : 'none' }}>
+              <Card className="border-0 shadow-lg">
+                <CardHeader className={`bg-gradient-to-r ${headerColor}`}>
+                  <CardTitle className={`text-xl ${titleColor}`}>{sectionTitle}</CardTitle>
+                  <CardDescription className={descColor}>{sectionDescription}</CardDescription>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="space-y-8">
+                    {sectionQuestions.map((q: any) => (
+                      <div key={q.id} className="space-y-3">
+                        <div className="flex items-start justify-between gap-4">
+                          <label className="text-base font-medium text-gray-800 leading-relaxed">
+                            {sectionKey === 'summary' ? q.text : q.question_text}
+                          </label>
+                          {q.help_text && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleHelp(q.id)}
+                              className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 -mt-1 shrink-0"
+                            >
+                              <Lightbulb className="w-4 h-4 mr-1" />
+                              {lang === 'kn' ? 'ಸಹಾಯ' : lang === 'ta' ? 'உதவி' : 'Help'}
+                            </Button>
+                          )}
+                        </div>
 
-                        // Format label with number
-                        const hasNumber = /^\d+\.\s/.test(question.question_text || '');
-                        const label = hasNumber
-                          ? question.question_text
-                          : `${questionNumber}. ${question.question_text}`;
-
-                        // Get icon based on section
-                        const icons = [
-                          Palette, Heart, Star, TrendingUp, Lightbulb, Target, Award,
-                          Award, TrendingUp, BookOpen, Users, CheckCircle, Target, Award
-                        ];
-                        const IconComponent = icons[index % icons.length] || Palette;
-
-                        return (
-                          <div key={question.id} className="border-l-4 border-orange-400 pl-6">
-                            <label className="block text-base font-medium text-gray-800 mb-2 flex items-center gap-2">
-                              <IconComponent className="w-5 h-5 text-orange-500" />
-                              {label}
-                              <button
-                                type="button"
-                                aria-label="Help"
-                                className="text-orange-600 hover:text-orange-700"
-                                onClick={() => toggleHelp(helpKey)}
-                              >
-                                💬
-                              </button>
-                            </label>
-                            {isOpen && (
-                              <div className="mb-2 p-3 rounded border bg-orange-50 border-orange-200 text-sm text-orange-800">
-                                {helpText}
-                              </div>
-                            )}
-                            <Textarea
-                              placeholder={helpText || `Write your answer here...`}
-                              value={questionValue}
-                              onChange={(e) => handleResponseChange(question.id, e.target.value)}
-                              readOnly={isReadOnly || isCompleted}
-                              rows={4}
-                              className="text-base border-orange-200 focus:border-orange-400"
-                            />
+                        {helpOpen[q.id] && q.help_text && (
+                          <div className="bg-orange-50 p-4 rounded-md text-sm text-orange-800 border border-orange-100 animate-in fade-in slide-in-from-top-1">
+                            <p className="font-semibold mb-1">{lang === 'kn' ? 'ಸಲಹೆ:' : lang === 'ta' ? 'குறிப்பு:' : 'Tip:'}</p>
+                            <p>{q.help_text}</p>
                           </div>
-                        );
-                      })}
+                        )}
 
+                        <Textarea
+                          placeholder={lang === 'kn' ? 'ನಿಮ್ಮ ಉತ್ತರವನ್ನು ಇಲ್ಲಿ ಬರೆಯಿರಿ...' : lang === 'ta' ? 'உங்கள் பதிலை இங்கே எழுதுங்கள்...' : 'Type your answer here...'}
+                          className="min-h-[120px] text-base border-orange-100 focus:border-orange-300 focus:ring-orange-200"
+                          value={responses[sectionKey === 'summary' ? `summary_${q.sequence_number}` : q.id] || ''}
+                          onChange={(e) => handleResponseChange(sectionKey === 'summary' ? `summary_${q.sequence_number}` : q.id, e.target.value)}
+                          readOnly={isReadOnly}
+                        />
+                      </div>
+                    ))}
+                  </div>
 
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            );
-          })
-        }
+                  {/* Navigation Buttons */}
+                  <div className="mt-10 flex flex-col sm:flex-row justify-between items-center gap-4 border-t border-orange-100 pt-6">
+                    <Button
+                      variant="outline"
+                      onClick={() => saveSection(currentSection)}
+                      disabled={savingSection !== null || isReadOnly}
+                      className="w-full sm:w-auto border-orange-200 text-orange-700 hover:bg-orange-50"
+                    >
+                      {savingSection ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-600 mr-2"></div>
+                          {lang === 'kn' ? 'ಉಳಿಸುತ್ತಿದೆ...' : lang === 'ta' ? 'சேமித்து கொண்டிருக்கிறது...' : 'Saving...'}
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          {lang === 'kn' ? 'ಪ್ರಗತಿಯನ್ನು ಉಳಿಸಿ' : lang === 'ta' ? 'முன்னೇற்றத்தைச் சேಮಿ' : 'Save Progress'}
+                        </>
+                      )}
+                    </Button>
 
-        {/* Footer Navigation */}
-        <div className="flex flex-col-reverse sm:flex-row justify-between items-center mt-8 gap-4 sm:gap-0">
-          <Button
-            variant="outline"
-            onClick={() => {
-              const idx = sections.indexOf(currentSection);
-              if (idx > 0) {
-                setCurrentSection(sections[idx - 1]);
-                window.scrollTo(0, 0);
-              }
-            }}
-            disabled={sections.indexOf(currentSection) === 0}
-            className="w-full sm:w-auto border-orange-200 text-orange-700 hover:bg-orange-50"
-          >
-            {lang === 'kn' ? 'ಹಿಂದಿನ ಭಾಗ' : lang === 'ta' ? 'முந்தைய பகுதி' : 'Previous Section'}
-          </Button>
-
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            <Button
-              variant="outline"
-              onClick={() => saveSection(currentSection)}
-              disabled={savingSection !== null || isReadOnly}
-              className="w-full sm:w-auto border-orange-200 text-orange-700 hover:bg-orange-50"
-            >
-              {savingSection ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-600 mr-2"></div>
-                  {lang === 'kn' ? 'ಉಳಿಸುತ್ತಿದೆ...' : lang === 'ta' ? 'சேமித்து கொண்டிருக்கிறது...' : 'Saving...'}
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  {lang === 'kn' ? 'ಪ್ರಗತಿಯನ್ನು ಉಳಿಸಿ' : lang === 'ta' ? 'முன்னேற்றத்தைச் சேமி' : 'Save Progress'}
-                </>
-              )}
-            </Button>
-
-            {sections.indexOf(currentSection) < sections.length - 1 ? (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  const idx = sections.indexOf(currentSection);
-                  if (idx < sections.length - 1) {
-                    setCurrentSection(sections[idx + 1]);
-                    window.scrollTo(0, 0);
-                  }
-                }}
-                className="w-full sm:w-auto border-orange-200 text-orange-700 hover:bg-orange-50"
-              >
-                {lang === 'kn' ? 'ಮುಂದಿನ ಭಾಗ' : lang === 'ta' ? 'அடுத்த பகுதி' : 'Next Section'}
-              </Button>
-            ) : (
-              <Button
-                onClick={submitAssessment}
-                disabled={!canSubmit() || submitting || isReadOnly}
-                className="w-full sm:w-auto bg-orange-600 hover:bg-orange-700 text-white"
-              >
-                {submitting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    {t('submitting')}
-                  </>
-                ) : (
-                  <>
-                    <Palette className="w-4 h-4 mr-2" />
-                    {t('submitAssessment')}
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
-        </div>
+                    {sections.indexOf(currentSection) < sections.length - 1 ? (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          const idx = sections.indexOf(currentSection);
+                          if (idx < sections.length - 1) {
+                            const nextSection = sections[idx + 1];
+                            if (nextSection === 'summary' && !areCoreSectionsComplete()) {
+                              toast({
+                                title: lang === 'kn' ? 'ಸಾರಾಂಶ ಲಾಕ್ ಆಗಿದೆ' : lang === 'ta' ? 'சுருக்கம் பூட்டப்பட்டுள்ளது' : 'Summary Locked',
+                                description: lang === 'kn'
+                                  ? 'ಸಾರಾಂಶವನ್ನು ವೀಕ್ಷಿಸಲು ದಯವಿಟ್ಟು ಎಲ್ಲಾ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ.'
+                                  : lang === 'ta'
+                                    ? 'சுருக்கத்தைப் பார்க்க அனைத்துக் கேள்விகளுக்கும் பதில் அளிக்கவும்.'
+                                    : 'Please answer all core questions to unlock the summary.',
+                                variant: 'destructive',
+                              });
+                              return;
+                            }
+                            setCurrentSection(nextSection);
+                            window.scrollTo(0, 0);
+                          }
+                        }}
+                        className="w-full sm:w-auto border-orange-200 text-orange-700 hover:bg-orange-50"
+                      >
+                        {lang === 'kn' ? 'ಮುಂದಿನ ಭಾಗ' : lang === 'ta' ? 'அடுத்த பகுதி' : 'Next Section'}
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={submitAssessment}
+                        disabled={!canSubmit() || submitting || isReadOnly}
+                        className="w-full sm:w-auto bg-orange-600 hover:bg-orange-700 text-white"
+                      >
+                        {submitting ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            {t('submitting')}
+                          </>
+                        ) : (
+                          <>
+                            <Palette className="w-4 h-4 mr-2" />
+                            {t('submitAssessment')}
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          );
+        })}
 
         {/* Hobby Icons Inspiration */}
         <div className="mt-12 text-center">
@@ -1190,38 +1203,37 @@ export default function MyHobbiesAssessment() {
             <div className="flex flex-col items-center gap-2">
               <BookOpen className="w-8 h-8" />
               <span className="text-sm">
-                {lang === 'kn' ? 'ಓದು' : lang === 'ta' ? 'வாசிப்பு' : 'Reading'}
+                {lang === 'kn' ? 'ಓದು' : lang === 'ta' ? 'ವಾಸಿಪ್ಪು' : 'Reading'}
               </span>
             </div>
             <div className="flex flex-col items-center gap-2">
               <Gamepad2 className="w-8 h-8" />
               <span className="text-sm">
-                {lang === 'kn' ? 'ಗೇಮಿಂಗ್' : lang === 'ta' ? 'விளையாட்டு (கேமிங்)' : 'Gaming'}
+                {lang === 'kn' ? 'ಗೇಮಿಂಗ್' : lang === 'ta' ? 'ವಿளையாட்டு (கேಮಿಂಗ್)' : 'Gaming'}
               </span>
             </div>
             <div className="flex flex-col items-center gap-2">
               <Paintbrush className="w-8 h-8" />
               <span className="text-sm">
-                {lang === 'kn' ? 'ಕಲೆ' : lang === 'ta' ? 'கலை' : 'Art'}
+                {lang === 'kn' ? 'ಕಲೆ' : lang === 'ta' ? 'ಕಲೆ' : 'Art'}
               </span>
             </div>
             <div className="flex flex-col items-center gap-2">
               <Dumbbell className="w-8 h-8" />
               <span className="text-sm">
-                {lang === 'kn' ? 'ಕ್ರೀಡೆ' : lang === 'ta' ? 'விளையாட்டு' : 'Sports'}
+                {lang === 'kn' ? 'ಕ್ರೀಡೆ' : lang === 'ta' ? 'ವಿளையாட்டு' : 'Sports'}
               </span>
             </div>
             <div className="flex flex-col items-center gap-2">
               <Code className="w-8 h-8" />
               <span className="text-sm">
-                {lang === 'kn' ? 'ತಂತ್ರಜ್ಞಾನ' : lang === 'ta' ? 'தொழில்நுட்பம்' : 'Technology'}
+                {lang === 'kn' ? 'ತಂತ್ರಜ್ಞಾನ' : lang === 'ta' ? 'தொழಿಲ್நுட்பಂ' : 'Technology'}
               </span>
             </div>
           </div>
         </div>
-
-      </div >
+      </div>
       <KannadaKeyboard lang={lang} />
-    </div >
+    </div>
   );
 }

@@ -1,3 +1,4 @@
+﻿import { logger } from '@/lib/logger';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface AssessmentOption {
@@ -55,18 +56,18 @@ export class AssessmentService {
       });
 
       if (error) {
-        console.error('Error fetching assessment template:', error);
+        logger.error('Error fetching assessment template:', error);
         return null;
       }
 
       if (!data || data.length === 0) {
-        console.warn(`No assessment template found for type: ${assessmentType}`);
+        logger.warn(`No assessment template found for type: ${assessmentType}`);
         return null;
       }
 
       return data[0] as AssessmentTemplate;
     } catch (error) {
-      console.error('Error in getAssessmentTemplate:', error);
+      logger.error('Error in getAssessmentTemplate:', error);
       return null;
     }
   }
@@ -81,13 +82,13 @@ export class AssessmentService {
       });
 
       if (error) {
-        console.error('Error fetching media sources:', error);
+        logger.error('Error fetching media sources:', error);
         return [];
       }
 
       return data as MediaSource[];
     } catch (error) {
-      console.error('Error in getMediaSources:', error);
+      logger.error('Error in getMediaSources:', error);
       return [];
     }
   }
@@ -100,13 +101,13 @@ export class AssessmentService {
       const { data, error } = await supabase.rpc('get_all_assessment_templates');
 
       if (error) {
-        console.error('Error fetching all assessment templates:', error);
+        logger.error('Error fetching all assessment templates:', error);
         return [];
       }
 
       return data || [];
     } catch (error) {
-      console.error('Error in getAllAssessmentTemplates:', error);
+      logger.error('Error in getAllAssessmentTemplates:', error);
       return [];
     }
   }
@@ -133,13 +134,13 @@ export class AssessmentService {
       });
 
       if (error) {
-        console.error('Error updating assessment template:', error);
+        logger.error('Error updating assessment template:', error);
         return false;
       }
 
       return true;
     } catch (error) {
-      console.error('Error in updateAssessmentTemplate:', error);
+      logger.error('Error in updateAssessmentTemplate:', error);
       return false;
     }
   }
@@ -170,13 +171,13 @@ export class AssessmentService {
       });
 
       if (error) {
-        console.error('Error upserting media source:', error);
+        logger.error('Error upserting media source:', error);
         return null;
       }
 
       return data;
     } catch (error) {
-      console.error('Error in upsertMediaSource:', error);
+      logger.error('Error in upsertMediaSource:', error);
       return null;
     }
   }
@@ -239,7 +240,7 @@ export class AssessmentService {
         instructions: template.instructions
       };
     } catch (error) {
-      console.error('Error in getHollandCodeData:', error);
+      logger.error('Error in getHollandCodeData:', error);
       return null;
     }
   }
@@ -275,7 +276,7 @@ export class AssessmentService {
         helpTexts
       };
     } catch (error) {
-      console.error('Error in getInspirationAssessmentData:', error);
+      logger.error('Error in getInspirationAssessmentData:', error);
       return null;
     }
   }

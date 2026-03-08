@@ -1,3 +1,4 @@
+﻿import { logger } from '@/lib/logger';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './hooks/useAuth';
 import { LangProvider } from './hooks/useLang';
@@ -40,7 +41,7 @@ class ErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Error caught by boundary:', error, errorInfo);
+    logger.error('Error caught by boundary:', error, errorInfo);
   }
 
   render() {
@@ -70,8 +71,8 @@ class ErrorBoundary extends Component<
 
 function App() {
   useEffect(() => {
-    console.log('App component mounted');
-    console.log('Environment check:', {
+    logger.log('App component mounted');
+    logger.log('Environment check:', {
       NODE_ENV: import.meta.env.NODE_ENV,
       VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
       VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY,
@@ -81,15 +82,15 @@ function App() {
     
     // Check all VITE_ env vars
     const viteEnvVars = Object.keys(import.meta.env).filter(k => k.startsWith('VITE_'));
-    console.log('🔍 All VITE_ environment variables:', viteEnvVars);
+    logger.log('🔍 All VITE_ environment variables:', viteEnvVars);
     
     // Test if basic React rendering works
-    console.log('Basic React test - if you see this, React is working');
+    logger.log('Basic React test - if you see this, React is working');
     
     // Test if DOM is accessible
     if (typeof document !== 'undefined') {
-      console.log('DOM is accessible');
-      console.log('Document title:', document.title);
+      logger.log('DOM is accessible');
+      logger.log('Document title:', document.title);
     }
   }, []);
 

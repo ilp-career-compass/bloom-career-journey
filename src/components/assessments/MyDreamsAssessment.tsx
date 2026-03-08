@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,12 +20,15 @@ import {
   AlertTriangle,
   Play,
   ExternalLink,
-  Save
+  Save,
+  Lock,
+  Sparkles,
+  ArrowLeft
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLang } from '@/hooks/useLang';
-import { ArrowLeft } from 'lucide-react';
+
 
 import { KannadaKeyboard } from '@/components/ui/KannadaKeyboard';
 import { checkAssessmentUnlock } from '@/utils/assessmentUnlock';
@@ -61,6 +65,9 @@ export default function MyDreamsAssessment() {
   const toggleHelp = (k: string) => setHelpOpen(prev => ({ ...prev, [k]: !prev[k] }));
   const [saving, setSaving] = useState(false);
 
+  // Summary questions state
+  const [summaryQuestions, setSummaryQuestions] = useState<{ id: string, text: string }[]>([]);
+
   const saveProgress = async () => {
     if (isReadOnly) return;
     const studentId = await getStudentId();
@@ -86,7 +93,7 @@ export default function MyDreamsAssessment() {
         description: lang === 'kn' ? 'ನಿಮ್ಮ ಉತ್ತರಗಳನ್ನು ಉಳಿಸಲಾಗಿದೆ.' : lang === 'ta' ? 'உங்கள் பதில்கள் சேமிக்கப்பட்டன.' : 'Your answers have been saved.',
       });
     } catch (error) {
-      console.error('Error saving progress:', error);
+      logger.error('Error saving progress:', error);
       toast({
         title: "Error",
         description: "Failed to save progress.",
@@ -167,6 +174,8 @@ export default function MyDreamsAssessment() {
       const order: { [key: string]: number } = { 'section1': 1, 'section2': 2, 'section3': 3, 'part1': 1, 'part2': 2 };
       return (order[a] || 99) - (order[b] || 99);
     });
+    // Add Summary section at the end
+    sectionsList.push('Summary');
     return sectionsList;
   }, [questionsBySection]);
 
@@ -194,7 +203,7 @@ export default function MyDreamsAssessment() {
           if (tIntro) setDbIntro(tIntro);
         }
       } catch (e) {
-        console.error('Error fetching module content:', e);
+        logger.error('Error fetching module content:', e);
       }
     };
     fetchModuleContent();
@@ -204,11 +213,11 @@ export default function MyDreamsAssessment() {
   useEffect(() => {
     const loadQuestions = async () => {
       try {
-        console.log('🔄 Loading Dreams questions from database...');
+        logger.log('🔄 Loading Dreams questions from database...');
         // First, get the full question structure
         const { data, error } = await supabase.rpc('get_dreams_questions');
         if (error) {
-          console.error('Error loading dreams questions:', error);
+          logger.error('Error loading dreams questions:', error);
           return;
         }
         if (data && Array.isArray(data) && data.length > 0) {
@@ -255,8 +264,18 @@ export default function MyDreamsAssessment() {
                 }
               });
             }
+
+            // Fetch summary questions specifically via RPC
+            const { data: summaryData } = await supabase.rpc('get_dreams_summary_questions_i18n', { p_lang: lang } as any);
+            if (summaryData && Array.isArray(summaryData)) {
+              const formattedSummaryQuestions = summaryData.map((item: any, index: number) => ({
+                id: `summary_q${item.sequence_number || index + 1}`,
+                text: item.translated_text || item.question_text || ''
+              }));
+              setSummaryQuestions(formattedSummaryQuestions);
+            }
           } catch (e) {
-            console.warn('Could not load i18n translations, using default:', e);
+            logger.warn('Could not load i18n translations, using default:', e);
           }
 
           // Apply translations to questions and help text
@@ -272,7 +291,7 @@ export default function MyDreamsAssessment() {
             };
           });
 
-          console.log('✅ Database questions loaded:', questionsWithTranslations.length, 'questions');
+          logger.log('✅ Database questions loaded:', questionsWithTranslations.length, 'questions');
           setDreamsQuestions(questionsWithTranslations);
           // Initialize responses based on questions
           const initialResponses: DreamAssessmentResponse = {};
@@ -286,7 +305,7 @@ export default function MyDreamsAssessment() {
           setCurrentSection(firstSection);
         }
       } catch (error) {
-        console.error('Error loading dreams questions:', error);
+        logger.error('Error loading dreams questions:', error);
       }
     };
     loadQuestions();
@@ -376,7 +395,7 @@ export default function MyDreamsAssessment() {
           try {
             saved = JSON.parse(saved);
           } catch {
-            console.warn('⚠️ Failed to parse dreams responses JSON string, using raw value');
+            logger.warn('⚠️ Failed to parse dreams responses JSON string, using raw value');
           }
         }
         const initialResponses: DreamAssessmentResponse = {};
@@ -465,13 +484,17 @@ export default function MyDreamsAssessment() {
     return totalQuestions > 0 ? (answeredQuestions / totalQuestions) * 100 : 0;
   };
 
-  const canSubmit = () => {
-    if (isReadOnly) return false;
+  const areCoreSectionsComplete = () => {
     if (dreamsQuestions.length === 0) return false;
     return dreamsQuestions.every(q => {
       const response = responses[q.id];
       return response && response.trim() !== '';
     });
+  };
+
+  const canSubmit = () => {
+    if (isReadOnly) return false;
+    return areCoreSectionsComplete();
   };
 
   const submitAssessment = async () => {
@@ -546,7 +569,7 @@ export default function MyDreamsAssessment() {
         const summaryDatabaseService = (await import('@/services/summaryDatabaseService')).summaryDatabaseService;
 
         if (aiSummaryService.isConfigured()) {
-          console.log('🤖 Generating AI summary for Dreams assessment:', assessmentData.id);
+          logger.log('🤖 Generating AI summary for Dreams assessment:', assessmentData.id);
           const summaryResult = await aiSummaryService.generateDreamsSummary(responses);
 
           if (summaryResult.success && summaryResult.summary) {
@@ -558,7 +581,7 @@ export default function MyDreamsAssessment() {
             );
 
             if (saveResult.success) {
-              console.log('✅ AI summary saved successfully:', saveResult.summaryId);
+              logger.log('✅ AI summary saved successfully:', saveResult.summaryId);
               toast({
                 title:
                   lang === 'kn'
@@ -599,11 +622,11 @@ export default function MyDreamsAssessment() {
                   }
                 }
               } catch (notifError) {
-                console.error('Error notifying teacher:', notifError);
+                logger.error('Error notifying teacher:', notifError);
                 // Don't fail the whole submission if notification fails
               }
             } else {
-              console.error('Failed to save summary:', saveResult.error);
+              logger.error('Failed to save summary:', saveResult.error);
               toast({
                 title: "Summary Generation Issue",
                 description: "Your assessment is saved, but summary generation needs attention.",
@@ -611,7 +634,7 @@ export default function MyDreamsAssessment() {
               });
             }
           } else {
-            console.error('Failed to generate summary:', summaryResult.error);
+            logger.error('Failed to generate summary:', summaryResult.error);
             toast({
               title: "Summary Generation Issue",
               description: "Your assessment is saved. Summary will be generated later.",
@@ -619,14 +642,14 @@ export default function MyDreamsAssessment() {
             });
           }
         } else {
-          console.warn('⚠️ Gemini API not configured, skipping summary generation');
+          logger.warn('⚠️ Gemini API not configured, skipping summary generation');
         }
       } catch (summaryError) {
-        console.error('Error in summary generation:', summaryError);
+        logger.error('Error in summary generation:', summaryError);
         // Don't fail the entire submission if summary generation fails
       }
     } catch (error) {
-      console.error('Error submitting assessment:', error);
+      logger.error('Error submitting assessment:', error);
       toast({
         title: "Error",
         description: "Failed to submit assessment. Please try again.",
@@ -833,6 +856,13 @@ export default function MyDreamsAssessment() {
                     : lang === 'ta'
                       ? 'பகுதி 3: கனவுகளை நனவாக்குதல்'
                       : 'Section 3: Making Dreams Reality';
+              } else if (sectionKey === 'Summary') {
+                sectionTitle =
+                  lang === 'kn'
+                    ? 'ಸಾರಾಂಶ'
+                    : lang === 'ta'
+                      ? 'சுருக்கம்'
+                      : 'Summary';
               } else {
                 sectionTitle =
                   lang === 'kn'
@@ -842,16 +872,22 @@ export default function MyDreamsAssessment() {
                       : `Section ${sectionNumber}`;
               }
 
+              const isSummary = sectionKey === 'Summary';
+              const isLocked = isSummary && !areCoreSectionsComplete();
+
               return (
                 <button
                   key={sectionKey}
-                  onClick={() => setCurrentSection(sectionKey)}
-                  className={`px-6 py-2 rounded-md transition-all ${currentSection === sectionKey
+                  onClick={() => !isLocked && setCurrentSection(sectionKey)}
+                  disabled={isLocked && !isReadOnly}
+                  className={`px-6 py-2 rounded-md transition-all flex items-center gap-2 ${currentSection === sectionKey
                     ? 'bg-blue-600 text-white shadow-md'
-                    : 'text-gray-600 hover:text-blue-600'
+                    : isLocked ? 'text-gray-400 cursor-not-allowed' : 'text-gray-600 hover:text-blue-600'
                     }`}
                 >
+                  {isSummary && <Sparkles className={`w-3 h-3 ${isLocked ? 'text-gray-400' : 'text-yellow-500'}`} />}
                   {sectionTitle}
+                  {isSummary && isLocked && <Lock className="w-3 h-3 opacity-70" />}
                 </button>
               );
             })}
@@ -860,6 +896,45 @@ export default function MyDreamsAssessment() {
 
         {/* Dynamically render sections from database */}
         {sections.map((sectionKey) => {
+          if (sectionKey === 'Summary') {
+            return (
+              <div key={sectionKey} style={{ display: currentSection === sectionKey ? 'block' : 'none' }}>
+                <Card className="border-0 shadow-lg">
+                  <CardHeader className="bg-gradient-to-r from-teal-50 to-emerald-50">
+                    <CardTitle className="text-xl text-teal-800">
+                      {lang === 'kn' ? 'ಸಾರಾಂಶ' : lang === 'ta' ? 'சுருக்கம்' : 'Summary'}
+                    </CardTitle>
+                    <CardDescription className="text-teal-600">
+                      {lang === 'kn'
+                        ? 'ಮುಖ್ಯವಾದ ವಿಷಯಗಳನ್ನು ಸಂಕ್ಷಿಪ್ತವಾಗಿ ಬರೆಯಿರಿ'
+                        : lang === 'ta'
+                          ? 'முக்கியமான விஷயங்களை சுருக்கமாக எழுதுங்கள்'
+                          : 'Summarize your key points'}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <div className="space-y-6">
+                      {summaryQuestions.map((q) => (
+                        <div key={q.id}>
+                          <label className="block text-base font-medium text-gray-800 mb-2">
+                            {q.text}
+                          </label>
+                          <Textarea
+                            value={responses[q.id] || ''}
+                            onChange={(e) => handleResponseChange(q.id, e.target.value)}
+                            readOnly={isReadOnly}
+                            rows={4}
+                            className={`text-base border-teal-200 focus:border-teal-400 ${isReadOnly ? 'bg-gray-100 cursor-not-allowed opacity-80' : 'bg-white'}`}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            );
+          }
+
           const sectionQuestions = questionsBySection[sectionKey] || [];
           if (sectionQuestions.length === 0) return null;
 
@@ -1036,7 +1111,20 @@ export default function MyDreamsAssessment() {
               onClick={() => {
                 const currentIndex = sections.indexOf(currentSection);
                 if (currentIndex < sections.length - 1) {
-                  setCurrentSection(sections[currentIndex + 1]);
+                  const nextSection = sections[currentIndex + 1];
+                  if (nextSection === 'Summary' && !areCoreSectionsComplete()) {
+                    toast({
+                      title: lang === 'kn' ? 'ಸಾರಾಂಶ ಲಾಕ್ ಆಗಿದೆ' : lang === 'ta' ? 'சுருக்கம் பூட்டப்பட்டுள்ளது' : 'Summary Locked',
+                      description: lang === 'kn'
+                        ? 'ಸಾರಾಂಶವನ್ನು ವೀಕ್ಷಿಸಲು ದಯವಿಟ್ಟು ಎಲ್ಲಾ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ.'
+                        : lang === 'ta'
+                          ? 'சுருக்கத்தைப் பார்க்க அனைத்துக் கேள்விகளுக்கும் பதில் அளிக்கவும்.'
+                          : 'Please answer all core questions to unlock the summary.',
+                      variant: 'destructive',
+                    });
+                    return;
+                  }
+                  setCurrentSection(nextSection);
                 }
               }}
               disabled={sections.indexOf(currentSection) === sections.length - 1}

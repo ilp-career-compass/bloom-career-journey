@@ -1,3 +1,4 @@
+﻿import { logger } from '@/lib/logger';
 import React, { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -52,7 +53,7 @@ export function ResourceManager() {
       if (error) throw error;
       setResources((data as any) || []);
     } catch (err) {
-      console.error('Load resources error:', err);
+      logger.error('Load resources error:', err);
       setErrorMsg('Resources backend not yet set up or permission denied.');
     } finally {
       setLoading(false);
@@ -106,7 +107,7 @@ export function ResourceManager() {
       setNewRes({ title: '', url: '', type: '', desc: '', tags: [], active: 'true' });
       loadResources();
     } catch (err) {
-      console.error('Add resource error:', err);
+      logger.error('Add resource error:', err);
       setErrorMsg('Could not add resource.');
     }
   };
@@ -120,7 +121,7 @@ export function ResourceManager() {
       if (error) throw error;
       setResources(prev => prev.map(r => r.id === res.id ? { ...r, is_active: !r.is_active } : r));
     } catch (err) {
-      console.error('Toggle active error:', err);
+      logger.error('Toggle active error:', err);
     }
   };
 
@@ -134,7 +135,7 @@ export function ResourceManager() {
       if (error) throw error;
       setResources(prev => prev.filter(r => r.id !== res.id));
     } catch (err) {
-      console.error('Delete resource error:', err);
+      logger.error('Delete resource error:', err);
     }
   };
 

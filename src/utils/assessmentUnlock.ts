@@ -1,3 +1,5 @@
+﻿import { logger } from '@/lib/logger';
+
 // Assessment Unlock Utility
 // Checks if an assessment is unlocked based on prerequisite completion
 
@@ -143,7 +145,7 @@ export async function checkAssessmentUnlock(
         missingPrerequisites.push(getAssessmentTitle(prereq));
       }
     } catch (error) {
-      console.error(`Error checking prerequisite ${prereq}:`, error);
+      logger.error(`Error checking prerequisite ${prereq}:`, error);
       missingPrerequisites.push(getAssessmentTitle(prereq));
     }
   }

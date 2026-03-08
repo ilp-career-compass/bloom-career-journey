@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,7 +22,8 @@ import {
   ArrowLeft,
   Save,
   BookOpen,
-  Sparkles
+  Sparkles,
+  Lock
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -70,6 +72,7 @@ export default function MyInspirationAssessment() {
   const [questionCount, setQuestionCount] = useState(0); // Track number of questions from database
   const [dbTitle, setDbTitle] = useState<string>('');
   const [dbIntro, setDbIntro] = useState<string>('');
+  const [summaryQuestions, setSummaryQuestions] = useState<any[]>([]);
 
   // Fetch module title and intro from database
   useEffect(() => {
@@ -89,7 +92,7 @@ export default function MyInspirationAssessment() {
           if (introText) setDbIntro(introText);
         }
       } catch (error) {
-        console.error('Error fetching module texts:', error);
+        logger.error('Error fetching module texts:', error);
       }
     };
     fetchModuleTexts();
@@ -99,7 +102,7 @@ export default function MyInspirationAssessment() {
   useEffect(() => {
     const loadHelpTextsFromDatabase = async () => {
       try {
-        console.log('🔄 Loading help texts from database...');
+        logger.log('🔄 Loading help texts from database...');
         let list: any[] | null = null;
         try {
           const { data: i18nData } = await supabase.rpc('get_inspiration_questions_i18n', { p_lang: lang } as any);
@@ -115,7 +118,7 @@ export default function MyInspirationAssessment() {
         }
 
         if (validateApiResponse(list, 'InspirationAssessment - Help Texts')) {
-          console.log('✅ Database help texts loaded:', list);
+          logger.log('✅ Database help texts loaded:', list);
 
           // Fetch help text translations from content_translations
           let helpTranslations: Record<string, string> = {};
@@ -134,7 +137,7 @@ export default function MyInspirationAssessment() {
               });
             }
           } catch (e) {
-            console.warn('Could not load help text translations, using default:', e);
+            logger.warn('Could not load help text translations, using default:', e);
           }
 
           // Fetch question text translations from content_translations (manual override to ensure latest migration applies)
@@ -154,7 +157,7 @@ export default function MyInspirationAssessment() {
               });
             }
           } catch (e) {
-            console.warn('Could not load question text translations:', e);
+            logger.warn('Could not load question text translations:', e);
           }
 
           const newHelpTexts: { [key: string]: string } = {};
@@ -206,11 +209,11 @@ export default function MyInspirationAssessment() {
             return merged;
           });
         } else {
-          console.log('⚠️ No help texts found in database, using fallback');
+          logger.log('⚠️ No help texts found in database, using fallback');
         }
       } catch (error) {
         handleDatabaseError(error, 'InspirationAssessment - Help Texts');
-        console.log('🔄 Using hardcoded fallback help texts');
+        logger.log('🔄 Using hardcoded fallback help texts');
         // Keep default help texts if database fails
       }
     };
@@ -265,7 +268,7 @@ export default function MyInspirationAssessment() {
         .maybeSingle();
 
       if (error) {
-        console.error('Error resolving teacher user id:', error);
+        logger.error('Error resolving teacher user id:', error);
         return null;
       }
 
@@ -275,7 +278,7 @@ export default function MyInspirationAssessment() {
       }
       return resolvedTeacherUserId;
     } catch (err) {
-      console.error('Failed to resolve teacher user id:', err);
+      logger.error('Failed to resolve teacher user id:', err);
       return null;
     }
   }, [teacherUserId, userProfile?.id]);
@@ -317,15 +320,15 @@ export default function MyInspirationAssessment() {
         }
 
         if (validateApiResponse(data, 'InspirationAssessment - Videos')) {
-          console.log('✅ Database videos loaded:', data.length, 'videos');
-          console.log('📊 Raw database data:', data);
+          logger.log('✅ Database videos loaded:', data.length, 'videos');
+          logger.log('📊 Raw database data:', data);
 
           // Remove duplicates based on URL to prevent duplicate videos
           const uniqueVideos = data.filter((video: any, index: number, self: any[]) =>
             index === self.findIndex((v: any) => v.url === video.url)
           );
 
-          console.log('🔍 After deduplication:', uniqueVideos.length, 'unique videos');
+          logger.log('🔍 After deduplication:', uniqueVideos.length, 'unique videos');
 
           const videos: InspirationVideo[] = uniqueVideos.map((video: any, index: number) => ({
             id: index + 1,
@@ -333,15 +336,15 @@ export default function MyInspirationAssessment() {
             url: video.url,
             youtubeId: video.youtube_id || extractYouTubeId(video.url)
           }));
-          console.log('🔄 Setting default videos:', videos.length);
+          logger.log('🔄 Setting default videos:', videos.length);
           setDefaultVideos(videos);
         } else {
-          console.log('⚠️ No videos found in database, using fallback');
+          logger.log('⚠️ No videos found in database, using fallback');
           throw new Error('No videos found');
         }
       } catch (error) {
         handleDatabaseError(error, 'InspirationAssessment - Videos');
-        console.log('🔄 Using hardcoded fallback videos');
+        logger.log('🔄 Using hardcoded fallback videos');
         // Fallback to hardcoded videos if database fails (4 videos)
         // Fallback to hardcoded videos if database fails
         const kVideos = {
@@ -380,7 +383,7 @@ export default function MyInspirationAssessment() {
 
   useEffect(() => {
     if (defaultVideos.length > 0) {
-      console.log('🔄 Setting inspiration videos:', defaultVideos.length);
+      logger.log('🔄 Setting inspiration videos:', defaultVideos.length);
       setInspirationVideos(defaultVideos);
       setLoading(false);
 
@@ -405,6 +408,15 @@ export default function MyInspirationAssessment() {
             };
           }
         });
+
+        // Initialize summary responses
+        if (!next['summary']) {
+          next['summary'] = {
+            question1: '',
+            question2: '',
+            question3: ''
+          };
+        }
         return next;
       });
 
@@ -430,6 +442,39 @@ export default function MyInspirationAssessment() {
     }
   }, [defaultVideos]);
 
+  // Load summary questions from database
+  useEffect(() => {
+    const loadSummaryQuestions = async () => {
+      try {
+        const { data, error } = await supabase.rpc('get_inspiration_summary_questions_i18n', { p_lang: lang });
+        if (error) throw error;
+        if (data && Array.isArray(data)) {
+          setSummaryQuestions(data);
+          // If responses summary is empty or wrong size, initialize it
+          setResponses(prev => {
+            if (prev.summary) {
+              const summary: Record<string, string> = { ...prev.summary };
+              data.forEach((_, i) => {
+                if (summary[`question${i + 1}`] === undefined) {
+                  summary[`question${i + 1}`] = '';
+                }
+              });
+              return { ...prev, summary };
+            }
+            const summary: Record<string, string> = {};
+            data.forEach((_, i) => {
+              summary[`question${i + 1}`] = '';
+            });
+            return { ...prev, summary };
+          });
+        }
+      } catch (err) {
+        logger.error('Error loading inspiration summary questions:', err);
+      }
+    };
+    loadSummaryQuestions();
+  }, [lang]);
+
   // Ensure an assessment_responses row exists and capture its id for audio uploads
   useEffect(() => {
     let mounted = true;
@@ -450,7 +495,7 @@ export default function MyInspirationAssessment() {
 
       if (!mounted) return;
       if (!studentId) {
-        console.warn('⚠️ Could not resolve student ID for audio setup');
+        logger.warn('⚠️ Could not resolve student ID for audio setup');
         return;
       }
 
@@ -471,12 +516,12 @@ export default function MyInspirationAssessment() {
         if (!mounted) return;
 
         if (existing && !selectError) {
-          console.log('✅ Found existing assessment record:', existing.id);
+          logger.log('✅ Found existing assessment record:', existing.id);
           setAssessmentRecordId(existing.id);
           return;
         }
 
-        console.log('📝 Creating new assessment record for audio...');
+        logger.log('📝 Creating new assessment record for audio...');
         // Create a new placeholder record to attach audio responses
         const { data: inserted, error: insertError } = await supabase
           .from('assessment_responses')
@@ -494,10 +539,10 @@ export default function MyInspirationAssessment() {
         if (!mounted) return;
         if (insertError) throw insertError;
 
-        console.log('✅ Created new assessment record:', inserted.id);
+        logger.log('✅ Created new assessment record:', inserted.id);
         setAssessmentRecordId(inserted.id);
       } catch (e) {
-        console.error('❌ Failed to ensure assessment record for audio responses:', e);
+        logger.error('❌ Failed to ensure assessment record for audio responses:', e);
         toast({
           title: t('error'),
           description: lang === 'kn' ? "ಆಡಿಯೊ ರೆಕಾರ್ಡಿಂಗ್‌ಗಾಗಿ ಸಿದ್ಧಪಡಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ." : "Could not initialize audio recording system.",
@@ -545,7 +590,7 @@ export default function MyInspirationAssessment() {
   const checkExistingResponse = useCallback(async () => {
     if (!userProfile) return;
 
-    console.log('Loading existing response data...');
+    logger.log('Loading existing response data...');
     setDataLoading(true);
 
     // Resolve student_id from students table; do not fallback to users.id
@@ -560,14 +605,14 @@ export default function MyInspirationAssessment() {
     }
 
     if (!studentId) {
-      console.log('No student ID found');
+      logger.log('No student ID found');
       setDataLoading(false);
       return;
     }
 
     try {
-      console.log('Querying database with studentId:', studentId);
-      console.log('Query parameters:', {
+      logger.log('Querying database with studentId:', studentId);
+      logger.log('Query parameters:', {
         student_id: studentId,
         assessment_type: 'inspiration',
         assessment_title: 'My Inspiration'
@@ -583,10 +628,10 @@ export default function MyInspirationAssessment() {
         .limit(1)
         .maybeSingle();
 
-      console.log('Database query result:', { data, error });
+      logger.log('Database query result:', { data, error });
 
       if (data && !error) {
-        console.log('Found existing data:', data);
+        logger.log('Found existing data:', data);
         // Only set as completed if completed_at is not null
         setIsCompleted(!!data.completed_at);
         // Load audio_responses map and answered flags
@@ -618,7 +663,7 @@ export default function MyInspirationAssessment() {
             const videoKey = `video${v}` as keyof AssessmentResponse;
             (mergedResponses as any)[videoKey] = mergeVideo((savedResponses as any)[videoKey] || {});
           }
-          console.log('Loading saved responses:', mergedResponses);
+          logger.log('Loading saved responses:', mergedResponses);
           setResponses(mergedResponses);
 
           const updatedProgress = defaultVideos.map(video => {
@@ -633,7 +678,7 @@ export default function MyInspirationAssessment() {
               const qId = `${videoKey}_${q}`;
               return (typeof v === 'string' && v.trim() !== '') || !!answered[qId];
             });
-            console.log(`Video ${video.id}: hasContent=${hasContent}, isComplete=${isComplete}`);
+            logger.log(`Video ${video.id}: hasContent=${hasContent}, isComplete=${isComplete}`);
             return {
               videoId: video.id,
               responses: videoResponses,
@@ -642,10 +687,10 @@ export default function MyInspirationAssessment() {
             };
           });
           setVideoProgress(updatedProgress);
-          console.log('Updated video progress:', updatedProgress);
+          logger.log('Updated video progress:', updatedProgress);
         }
       } else {
-        console.log('No existing data found. Error:', error);
+        logger.log('No existing data found. Error:', error);
 
         // Let's also check if there are any records at all for this student
         const { data: allData, error: allError } = await supabase
@@ -653,17 +698,17 @@ export default function MyInspirationAssessment() {
           .select('*')
           .eq('student_id', studentId);
 
-        console.log('All assessment responses for this student:', { allData, allError });
+        logger.log('All assessment responses for this student:', { allData, allError });
 
         // If there are multiple records, clean them up by keeping only the most recent one
         if (allData && allData.length > 1) {
-          console.log(`Found ${allData.length} duplicate records, cleaning up...`);
+          logger.log(`Found ${allData.length} duplicate records, cleaning up...`);
           const sortedData = allData.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
           const keepRecord = sortedData[0];
           const deleteIds = sortedData.slice(1).map(record => record.id);
 
-          console.log('Keeping record:', keepRecord.id);
-          console.log('Deleting records:', deleteIds);
+          logger.log('Keeping record:', keepRecord.id);
+          logger.log('Deleting records:', deleteIds);
 
           if (deleteIds.length > 0) {
             const { error: deleteError } = await supabase
@@ -672,9 +717,9 @@ export default function MyInspirationAssessment() {
               .in('id', deleteIds);
 
             if (deleteError) {
-              console.error('Error cleaning up duplicate records:', deleteError);
+              logger.error('Error cleaning up duplicate records:', deleteError);
             } else {
-              console.log('Successfully cleaned up duplicate records');
+              logger.log('Successfully cleaned up duplicate records');
               // Now load the kept record
               setResponses(keepRecord.responses);
               setIsCompleted(!!keepRecord.completed_at);
@@ -710,7 +755,7 @@ export default function MyInspirationAssessment() {
       }
     } catch (error) {
       // No existing response found, which is fine
-      console.log('Error loading existing response:', error);
+      logger.log('Error loading existing response:', error);
     } finally {
       setDataLoading(false);
     }
@@ -719,7 +764,7 @@ export default function MyInspirationAssessment() {
   // Call checkExistingResponse when component mounts and userProfile is available
   useEffect(() => {
     if (userProfile && !loading) {
-      console.log('Component mounted, loading existing data...');
+      logger.log('Component mounted, loading existing data...');
       checkExistingResponse();
     }
   }, [userProfile, loading, checkExistingResponse]);
@@ -736,7 +781,7 @@ export default function MyInspirationAssessment() {
           .eq('assessment_id', assessmentRecordId);
 
         if (filesError) {
-          console.warn('audio_files fetch failed:', filesError);
+          logger.warn('audio_files fetch failed:', filesError);
           return;
         }
         let list = files || [];
@@ -799,7 +844,7 @@ export default function MyInspirationAssessment() {
           setResponses(nextResponses);
         }
       } catch (e) {
-        console.warn('Failed to load assessment audio summary:', e);
+        logger.warn('Failed to load assessment audio summary:', e);
       }
     };
 
@@ -846,10 +891,10 @@ export default function MyInspirationAssessment() {
   };
 
   // Handle audio responses
-  const handleAudioResponse = (videoKey: keyof AssessmentResponse, questionKey: string, audioBlob: Blob, transcription?: string) => {
+  const handleAudioResponse = (videoKey: string, questionKey: string, audioBlob: Blob, transcription?: string) => {
     if (readOnlyView) return;
 
-    console.log('🎤 handleAudioResponse called:', {
+    logger.log('🎤 handleAudioResponse called:', {
       videoKey,
       questionKey,
       hasTranscription: !!transcription,
@@ -874,7 +919,7 @@ export default function MyInspirationAssessment() {
           : 'Audio recorded — transcription unavailable.';
     const textToSet = (transcription && transcription.trim()) ? transcription : fallbackText;
 
-    console.log('📝 Setting text in textarea:', {
+    logger.log('📝 Setting text in textarea:', {
       questionKey,
       textLength: textToSet.length,
       textPreview: textToSet.substring(0, 50)
@@ -886,7 +931,7 @@ export default function MyInspirationAssessment() {
     if (transcription && transcription.trim() && transcription !== fallbackText) {
       setTranscribedPrefill(prev => ({
         ...prev,
-        [`${videoKey}_${questionKey}`]: true
+        [`${String(videoKey)}_${questionKey}`]: true
       }));
     }
 
@@ -898,42 +943,74 @@ export default function MyInspirationAssessment() {
   const getProgressPercentage = () => {
     const videosCount = inspirationVideos.length || 3;
     const questionsPerVideo = questionCount || 0;
-    const totalQuestions = videosCount * questionsPerVideo;
-    if (totalQuestions === 0) return 0;
+    const sCount = summaryQuestions.length > 0 ? summaryQuestions.length : 3;
 
-    const answeredQuestions = Object.entries(responses).reduce((total, [videoKey, video]) => {
-      if (!video || typeof video !== 'object') {
+    // Video questions
+    const videosTotal = videosCount * questionsPerVideo;
+    if (videosTotal === 0 && sCount === 0) return 0;
+
+    const answeredVideos = Object.entries(responses).reduce((total, [videoKey, video]) => {
+      if (!video || typeof video !== 'object' || videoKey === 'summary') {
         return total;
       }
 
       const answered = Object.entries(video as Record<string, string>).filter(([q, v]) => {
         const qId = `${videoKey}_${q}`;
+        // Only count if it's one of the expected questions
+        const qNum = parseInt(q.replace('question', ''));
+        if (isNaN(qNum) || qNum > questionsPerVideo) return false;
+
         return (v?.trim?.() ?? '') !== '' || !!audioAnswered[qId];
       }).length;
       return total + answered;
     }, 0);
-    return totalQuestions > 0 ? (answeredQuestions / totalQuestions) * 100 : 0;
+
+    // Summary questions
+    const summaryResponses = (responses['summary'] as any) || {};
+    let answeredSummary = 0;
+    if (summaryQuestions.length > 0) {
+      summaryQuestions.forEach((_, i) => {
+        if (summaryResponses[`question${i + 1}`]?.trim()) answeredSummary++;
+      });
+    } else {
+      ['question1', 'question2', 'question3'].forEach(q => {
+        if (summaryResponses[q]?.trim()) answeredSummary++;
+      });
+    }
+
+    const totalAnswered = answeredVideos + answeredSummary;
+    const finalTotal = videosTotal + sCount;
+
+    return finalTotal > 0 ? Math.round((totalAnswered / finalTotal) * 100) : 0;
   };
 
-  const canSubmit = () => {
-    const videoKeys = Object.keys(responses).filter(k => k.startsWith('video'));
+  const areAllVideosComplete = () => {
+    const videoKeys = inspirationVideos.map((_, i) => `video${i + 1}`);
     if (videoKeys.length === 0 || questionCount === 0) return false;
 
     return videoKeys.every((vk) => {
       const questions = responses[vk];
+      if (!questions || typeof questions !== 'object') return false;
 
-      if (!questions || typeof questions !== 'object') {
-        return false;
-      }
-
-      // Check if all expected questions are answered
       const expectedQuestions = Array.from({ length: questionCount }, (_, i) => `question${i + 1}`);
       return expectedQuestions.every(q => {
         const qId = `${vk}_${q}`;
-        const answer = questions[q] || '';
+        const answer = (questions as any)[q] || '';
         return answer.trim() !== '' || !!audioAnswered[qId];
       });
     });
+  };
+
+  const isSummaryComplete = () => {
+    const summary = (responses['summary'] as any) || {};
+    if (summaryQuestions.length > 0) {
+      return summaryQuestions.every((_, i) => (summary[`question${i + 1}`] || '').trim() !== '');
+    }
+    return ['question1', 'question2', 'question3'].every(q => (summary[q] || '').trim() !== '');
+  };
+
+  const canSubmit = () => {
+    return areAllVideosComplete() && isSummaryComplete();
   };
 
   const isVideoComplete = (videoIndex: number) => {
@@ -1027,8 +1104,8 @@ export default function MyInspirationAssessment() {
 
     setSaving(true);
     try {
-      console.log('Getting existing responses from database...');
-      console.log('Query parameters for existing data:', {
+      logger.log('Getting existing responses from database...');
+      logger.log('Query parameters for existing data:', {
         student_id: studentId,
         assessment_type: 'inspiration',
         assessment_title: 'My Inspiration'
@@ -1045,7 +1122,7 @@ export default function MyInspirationAssessment() {
         .limit(1)
         .maybeSingle();
 
-      console.log('Existing data query result:', { existingData, existingError });
+      logger.log('Existing data query result:', { existingData, existingError });
 
       // Merge only the specific video's responses with existing data
       const videoKey = `video${videoIndex + 1}` as keyof AssessmentResponse;
@@ -1069,7 +1146,7 @@ export default function MyInspirationAssessment() {
         (existingResponses as any)[vKey] = ensureShape((existingResponses as any)[vKey] || {});
       }
 
-      console.log('Existing responses from database:', existingResponses);
+      logger.log('Existing responses from database:', existingResponses);
 
       // Build a fully-typed AssessmentResponse object dynamically
       const updatedResponses: AssessmentResponse = {} as AssessmentResponse;
@@ -1080,9 +1157,9 @@ export default function MyInspirationAssessment() {
           : (existingResponses as any)[vKey];
       }
 
-      console.log('Saving video progress for video', videoIndex + 1);
-      console.log('Video responses to save:', responses[videoKey]);
-      console.log('Updated responses to save:', updatedResponses);
+      logger.log('Saving video progress for video', videoIndex + 1);
+      logger.log('Video responses to save:', responses[videoKey]);
+      logger.log('Updated responses to save:', updatedResponses);
 
       // First try to update existing record
       const { data: updateData, error: updateError } = await supabase
@@ -1096,13 +1173,13 @@ export default function MyInspirationAssessment() {
         .eq('assessment_title', 'My Inspiration')
         .select();
 
-      console.log('Update result:', { updateData, updateError });
+      logger.log('Update result:', { updateData, updateError });
 
       let error = updateError;
 
       // If no rows were updated (no existing record), insert a new one
       if (!updateError && (!updateData || updateData.length === 0)) {
-        console.log('No existing record found, inserting new one...');
+        logger.log('No existing record found, inserting new one...');
         const { error: insertError } = await supabase
           .from('assessment_responses')
           .insert({
@@ -1113,15 +1190,15 @@ export default function MyInspirationAssessment() {
             completed_at: null
           });
         error = insertError;
-        console.log('Insert result:', { insertError });
+        logger.log('Insert result:', { insertError });
       }
 
       if (error) {
-        console.error('Error saving to database:', error);
+        logger.error('Error saving to database:', error);
         throw error;
       }
 
-      console.log('Successfully saved to database');
+      logger.log('Successfully saved to database');
 
       // Update responses state with the merged data
       setResponses(updatedResponses);
@@ -1145,7 +1222,7 @@ export default function MyInspirationAssessment() {
         description: `Your responses for ${videoLabel} have been saved.`,
       });
     } catch (error) {
-      console.error('Error saving video progress:', error);
+      logger.error('Error saving video progress:', error);
       toast({
         title: t('errorSavingVideoProgress'),
         description: t('errorSavingVideoProgressDesc'),
@@ -1233,7 +1310,7 @@ export default function MyInspirationAssessment() {
           link: '/student'
         });
         if (!studentNotifResult.success) {
-          console.error('Failed to notify student:', studentNotifResult.error);
+          logger.error('Failed to notify student:', studentNotifResult.error);
         }
 
         // find teacher for this student
@@ -1247,20 +1324,25 @@ export default function MyInspirationAssessment() {
             link: '/teacher#reviews'
           });
           if (!teacherNotifResult.success) {
-            console.error('Failed to notify teacher:', teacherNotifResult.error);
+            logger.error('Failed to notify teacher:', teacherNotifResult.error);
           } else {
-            console.log('✅ Notification sent to teacher:', teacherUserId);
+            logger.log('✅ Notification sent to teacher:', teacherUserId);
           }
         }
       } catch (error) {
-        console.error('Error sending notifications:', error);
+        logger.error('Error sending notifications:', error);
       }
 
       // Generate AI summary in the background
       try {
         if (aiSummaryService.isConfigured()) {
-          console.log('🤖 Generating AI summary for assessment:', assessmentData.id);
-          const summaryResult = await aiSummaryService.generateInspirationSummary(responses);
+          logger.log('🤖 Generating AI summary for assessment:', assessmentData.id);
+
+          // Filter out summary tab data before generating AI summary
+          const videoResponsesOnly = { ...responses };
+          delete (videoResponsesOnly as any).summary;
+
+          const summaryResult = await aiSummaryService.generateInspirationSummary(videoResponsesOnly);
 
           if (summaryResult.success && summaryResult.summary) {
             // Save summary to database
@@ -1271,7 +1353,7 @@ export default function MyInspirationAssessment() {
             );
 
             if (saveResult.success) {
-              console.log('✅ AI summary saved successfully:', saveResult.summaryId);
+              logger.log('✅ AI summary saved successfully:', saveResult.summaryId);
               toast({
                 title:
                   lang === 'kn'
@@ -1302,17 +1384,17 @@ export default function MyInspirationAssessment() {
                     link: '/teacher/ai-summary-review'
                   });
                   if (!notifResult.success) {
-                    console.error('Failed to notify teacher:', notifResult.error);
+                    logger.error('Failed to notify teacher:', notifResult.error);
                   } else {
-                    console.log('✅ Notification sent to teacher for summary review:', teacherUserId);
+                    logger.log('✅ Notification sent to teacher for summary review:', teacherUserId);
                   }
                 }
               } catch (notifError) {
-                console.error('Error notifying teacher:', notifError);
+                logger.error('Error notifying teacher:', notifError);
                 // Don't fail the whole submission if notification fails
               }
             } else {
-              console.error('Failed to save summary:', saveResult.error);
+              logger.error('Failed to save summary:', saveResult.error);
               toast({
                 title: "Summary Generation Issue",
                 description: "Your assessment is saved, but summary generation needs attention.",
@@ -1320,7 +1402,7 @@ export default function MyInspirationAssessment() {
               });
             }
           } else {
-            console.error('Failed to generate summary:', summaryResult.error);
+            logger.error('Failed to generate summary:', summaryResult.error);
             toast({
               title: "Summary Generation Issue",
               description: "Your assessment is saved. Summary will be generated later.",
@@ -1328,14 +1410,14 @@ export default function MyInspirationAssessment() {
             });
           }
         } else {
-          console.warn('⚠️ Gemini API not configured, skipping summary generation');
+          logger.warn('⚠️ Gemini API not configured, skipping summary generation');
           toast({
             title: "Assessment Saved! ✨",
             description: "Your reflections have been captured successfully!",
           });
         }
       } catch (summaryError) {
-        console.error('Error in summary generation:', summaryError);
+        logger.error('Error in summary generation:', summaryError);
         // Don't fail the entire submission if summary generation fails
         toast({
           title: "Assessment Saved! ✨",
@@ -1345,7 +1427,7 @@ export default function MyInspirationAssessment() {
 
       setIsCompleted(true);
     } catch (error) {
-      console.error('Error submitting assessment:', error);
+      logger.error('Error submitting assessment:', error);
       toast({
         title: t('errorSavingVideoProgress'),
         description: lang === 'kn' ? "ಮೌಲ್ಯಮಾಪನವನ್ನು ಸಲ್ಲಿಸಲು ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ." : "Failed to submit assessment. Please try again.",
@@ -1357,7 +1439,19 @@ export default function MyInspirationAssessment() {
   };
 
   const nextVideo = () => {
-    if (currentVideoIndex < inspirationVideos.length - 1) {
+    if (currentVideoIndex < inspirationVideos.length) {
+      if (currentVideoIndex === inspirationVideos.length - 1 && !areAllVideosComplete()) {
+        toast({
+          title: lang === 'kn' ? 'ಸಾರಾಂಶ ಲಾಕ್ ಆಗಿದೆ' : lang === 'ta' ? 'சுருக்கம் பூட்டப்பட்டுள்ளது' : 'Summary Locked',
+          description: lang === 'kn'
+            ? 'ಸಾರಾಂಶವನ್ನು ವೀಕ್ಷಿಸಲು ದಯವಿಟ್ಟು ಎಲ್ಲಾ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ.'
+            : lang === 'ta'
+              ? 'சுருக்கத்தைப் பார்க்க அனைத்துக் கேள்விகளுக்கும் பதில் அளிக்கவும்.'
+              : 'Please answer all core questions to unlock the summary.',
+          variant: 'destructive',
+        });
+        return;
+      }
       setCurrentVideoIndex(currentVideoIndex + 1);
     }
   };
@@ -1368,8 +1462,9 @@ export default function MyInspirationAssessment() {
     }
   };
 
-  const getCurrentVideoKey = () => {
-    return `video${currentVideoIndex + 1}` as keyof AssessmentResponse;
+  const getCurrentVideoKey = (): string => {
+    if (currentVideoIndex === inspirationVideos.length) return 'summary';
+    return `video${currentVideoIndex + 1}`;
   };
 
   const getCurrentVideoResponses = () => {
@@ -1509,7 +1604,11 @@ export default function MyInspirationAssessment() {
             </div>
             <Progress value={getProgressPercentage()} className="h-3" />
             <div className="flex justify-between text-sm text-gray-600 mt-2">
-              <span>{t('videoCounter', '', currentVideoIndex + 1, inspirationVideos.length)}</span>
+              <span>
+                {currentVideoIndex === inspirationVideos.length
+                  ? t('summary')
+                  : t('videoCounter', '', currentVideoIndex + 1, inspirationVideos.length)}
+              </span>
               <span>{Math.round(getProgressPercentage())}% {t('completeSuffix')}</span>
             </div>
           </CardContent>
@@ -1542,6 +1641,22 @@ export default function MyInspirationAssessment() {
                   )}
                 </Button>
               ))}
+              <Button
+                onClick={() => setCurrentVideoIndex(inspirationVideos.length)}
+                variant={currentVideoIndex === inspirationVideos.length ? "default" : "outline"}
+                size="sm"
+                className={`${currentVideoIndex === inspirationVideos.length ? "bg-blue-600" : ""} border-blue-400`}
+                disabled={!areAllVideosComplete()}
+              >
+                <Sparkles className="w-3 h-3 text-yellow-500 mr-1" />
+                {t('summary')}
+                {isSummaryComplete() && (
+                  <CheckCircle className="w-3 h-3 ml-1 text-green-500" />
+                )}
+                {!areAllVideosComplete() && (
+                  <Lock className="w-3 h-3 ml-1 opacity-70" />
+                )}
+              </Button>
             </div>
 
           </CardContent>
@@ -1551,190 +1666,231 @@ export default function MyInspirationAssessment() {
         <Card className="mb-6 border-0 shadow-lg">
           <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
             <CardTitle className="text-xl text-blue-800">
-              {t('videoLabelN', '', currentVideoIndex + 1)}: {currentVideo.title}
+              {currentVideoIndex === inspirationVideos.length
+                ? t('summaryReflection')
+                : `${t('videoLabelN', '', currentVideoIndex + 1)}: ${currentVideo?.title}`}
             </CardTitle>
             <CardDescription className="text-blue-600">
-              {t('watchAndAnswer')}
+              {currentVideoIndex === inspirationVideos.length
+                ? lang === 'kn' ? 'ಸಾರಾಂಶದ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ' : lang === 'ta' ? 'சுருக்கமான கேள்விகளுக்கு பதிலளிக்கவும்' : 'Please answer these final summary questions'
+                : t('watchAndAnswer')}
             </CardDescription>
           </CardHeader>
           <CardContent className="p-6">
-            {/* Video Player */}
-            <div className="mb-6">
-              <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden mb-4">
-                <iframe
-                  src={`https://www.youtube.com/embed/${currentVideo.youtubeId}`}
-                  title={currentVideo.title}
-                  className="w-full h-full"
-                  allowFullScreen
-                />
+            {/* Video Player - Only show if not on summary tab */}
+            {currentVideoIndex < inspirationVideos.length && currentVideo && (
+              <div className="mb-6">
+                <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden mb-4">
+                  <iframe
+                    src={`https://www.youtube.com/embed/${currentVideo.youtubeId}`}
+                    title={currentVideo.title}
+                    className="w-full h-full"
+                    allowFullScreen
+                  />
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Youtube className="w-4 h-4 text-red-600" />
+                  <a
+                    href={currentVideo.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline flex items-center gap-1"
+                  >
+                    {t('openInYouTube')} <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Youtube className="w-4 h-4 text-red-600" />
-                <a
-                  href={currentVideo.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline flex items-center gap-1"
-                >
-                  {t('openInYouTube')} <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
-            </div>
-
-            {/* Questions */}
+            )}
 
             <div className="space-y-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">{t('reflectionQuestions')}</h3>
-                <div className="text-sm text-gray-600">
-                  {(() => {
-                    const status = getCurrentVideoCompletionStatus();
-                    return (
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${status.isComplete
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-yellow-100 text-yellow-700'
-                        }`}>
-                        {status.answered}/{status.total} questions answered
-                      </span>
-                    );
-                  })()}
-                </div>
-              </div>
-
-              {/* Recording Instructions */}
-              <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                      <span className="text-blue-600 text-lg">🎙️</span>
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-blue-800 mb-2">{t('audioRecordingInstructionsTitle')}</h3>
-                    <p className="text-sm text-blue-700 mb-2">
-                      {t('audioInstructionsLead')}
-                    </p>
-                    <div className="flex flex-wrap gap-2 text-xs text-blue-600">
-                      <span className="flex items-center gap-1">
-                        <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
-                        {t('audioInstructionsBullet1')}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
-                        {t('audioInstructionsBullet2')}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
-                        {t('audioInstructionsBullet3')}
-                      </span>
-                    </div>
+              {/* Questions Header */}
+              {currentVideoIndex < inspirationVideos.length && (
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-800">{t('reflectionQuestions')}</h3>
+                  <div className="text-sm text-gray-600">
+                    {(() => {
+                      const status = getCurrentVideoCompletionStatus();
+                      return (
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${status.isComplete
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-yellow-100 text-yellow-700'
+                          }`}>
+                          {status.answered}/{status.total} questions answered
+                        </span>
+                      );
+                    })()}
                   </div>
                 </div>
-              </div>
+              )}
 
-              {/* Dynamically render all questions from database */}
-              {Array.from({ length: questionCount }, (_, index) => {
-                const questionNum = index + 1;
-                const questionKey = `question${questionNum}`;
-                const questionText = questionTexts[questionKey] || '';
-                const helpText = helpTexts[questionKey] || '';
-                const questionValue = getCurrentVideoResponses()[questionKey] || '';
-                const isAnswered = questionValue.trim() !== '' || !!audioAnswered[`${getCurrentVideoKey()}_${questionKey}`];
-                const colors = getQuestionColor(index);
-                const IconComponent = colors.icon;
+              {/* Render Questions (Summary or Video) */}
+              {currentVideoIndex === inspirationVideos.length ? (
+                // Summary Questions
+                <div className="space-y-6">
+                  {summaryQuestions.length > 0 ? (
+                    summaryQuestions.map((sq, index) => {
+                      const qKey = `question${index + 1}`;
+                      const questionValue = (responses['summary'] as any)?.[qKey] || '';
+                      const isAnswered = questionValue.trim() !== '';
+                      const colors = getQuestionColor(index);
+                      const IconComponent = colors.icon;
 
-                return (
-                  <div key={questionKey} className={`border-l-4 pl-3 md:pl-6 ${isAnswered ? colors.border : 'border-red-400'}`}>
-                    <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-3 gap-3">
-                      <label className="block text-lg font-semibold text-gray-800 flex items-center gap-2">
-                        <IconComponent className={`w-5 h-5 ${colors.iconColor}`} />
-                        {questionText}
-                        <span className="text-red-500 text-sm">*</span>
-                        <button
-                          type="button"
-                          aria-label="Help"
-                          className={`ml-2 ${colors.text} ${colors.hover}`}
-                          onClick={() => toggleHelp(helpKey(questionKey))}
-                        >
-                          💬
-                        </button>
-                      </label>
-                      {helpOpen[helpKey(questionKey)] && (
-                        <div className={`mt-2 mb-2 p-3 rounded border ${colors.bg} ${colors.bgBorder} text-sm ${colors.bgText}`}>
-                          {helpText}
-                        </div>
-                      )}
-                      <div className="w-full md:w-auto md:ml-4 flex-shrink-0">
-                        {(resolvedStudentId && assessmentRecordId) ? (
-                          <AudioRecorder
-                            key={`${getCurrentVideoKey()}_${questionKey}`}
-                            questionId={`${getCurrentVideoKey()}_${questionKey}`}
-                            onRecordingComplete={(audioBlob, transcription) => {
-                              handleAudioResponse(getCurrentVideoKey(), questionKey, audioBlob, transcription);
-                            }}
-                            maxDuration={120000} // 2 minutes
-                            language={lang === 'kn' ? 'kn-IN' : lang === 'ta' ? 'ta-IN' : 'en-IN'}
-                            studentId={resolvedStudentId ?? userProfile.studentProfile.id}
-                            assessmentId={assessmentRecordId ?? 'inspiration-assessment'}
-                            assessmentType="inspiration"
-                            assessmentTitle="My Inspiration"
-                            initialSavedAt={audioResponsesMap[`${getCurrentVideoKey()}_${questionKey}`]?.savedAt ?? null}
-                            initialAudioUrl={audioResponsesMap[`${getCurrentVideoKey()}_${questionKey}`]?.url ?? null}
-                            initialTranscription={audioResponsesMap[`${getCurrentVideoKey()}_${questionKey}`]?.transcript ?? null}
-                            initialConfidence={audioResponsesMap[`${getCurrentVideoKey()}_${questionKey}`]?.confidence ?? null}
-
-
-                            disabled={readOnlyView || isCompleted}
-                            onStreamTranscript={(text) => handleStreamTranscript(getCurrentVideoKey(), questionKey, text)}
-                            compact={true}
-                            contextPhrases={[
-                              // Context 1: The question itself (crucial for answers that repeat part of the question)
-                              t(questionKey),
-                              // Context 2: Standard instructions students might read aloud
-                              'type or record your answer',
-                              'speak clearly',
-                              'up to 2 minutes',
-                              'up to two minutes', // Variant
-                              'record',
-                              'answer',
-                              // Context 3: Video related terms
-                              'video',
-                              'inspiration',
-                              'inspiring'
-                            ]}
+                      return (
+                        <div key={sq.id || qKey} className={`border-l-4 pl-3 md:pl-6 ${isAnswered ? colors.border : 'border-red-400'} mb-6`}>
+                          {sq.section_header && (
+                            <div className="mb-4 pb-2 border-b border-gray-100">
+                              <h4 className="text-md font-semibold text-blue-700">{sq.section_header}</h4>
+                            </div>
+                          )}
+                          <label className="block text-lg font-semibold text-gray-800 flex items-center gap-2 mb-3">
+                            <IconComponent className={`w-5 h-5 ${colors.iconColor}`} />
+                            {sq.question_text}
+                            <span className="text-red-500 text-sm">*</span>
+                          </label>
+                          <Textarea
+                            placeholder={t('typeYourAnswerHere', 'Type your answer here...')}
+                            value={questionValue}
+                            onChange={(e) => handleResponseChange('summary', qKey, e.target.value)}
+                            readOnly={readOnlyView}
+                            rows={4}
+                            className={`text-base ${isAnswered
+                              ? `${colors.inputBorder} ${colors.inputFocus}`
+                              : 'border-red-300 focus:border-red-400 bg-red-50'
+                              }`}
+                            required
                           />
-                        ) : (
-                          <div className="text-sm text-gray-500">Loading...</div>
-                        )}
+                        </div>
+                      );
+                    })
+                  ) : (
+                    // Fallback to t() keys if DB fetch fails or is pending
+                    ['question1', 'question2', 'question3'].map((questionKey, index) => {
+                      const questionLabelKey = `summaryQ${index + 1}`;
+                      const questionText = t(questionLabelKey);
+                      const questionValue = (responses['summary'] as any)?.[questionKey] || '';
+                      const isAnswered = questionValue.trim() !== '';
+                      const colors = getQuestionColor(index);
+                      const IconComponent = colors.icon;
+
+                      return (
+                        <div key={questionKey} className={`border-l-4 pl-3 md:pl-6 ${isAnswered ? colors.border : 'border-red-400'} mb-6`}>
+                          <label className="block text-lg font-semibold text-gray-800 flex items-center gap-2 mb-3">
+                            <IconComponent className={`w-5 h-5 ${colors.iconColor}`} />
+                            {questionText}
+                            <span className="text-red-500 text-sm">*</span>
+                          </label>
+                          <Textarea
+                            placeholder={t('typeYourAnswerHere', 'Type your answer here...')}
+                            value={questionValue}
+                            onChange={(e) => handleResponseChange('summary', questionKey, e.target.value)}
+                            readOnly={readOnlyView}
+                            rows={4}
+                            className={`text-base ${isAnswered
+                              ? `${colors.inputBorder} ${colors.inputFocus}`
+                              : 'border-red-300 focus:border-red-400 bg-red-50'
+                              }`}
+                            required
+                          />
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              ) : (
+                // Video Questions
+                <>
+                  {/* Recording Instructions for videos */}
+                  <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0">
+                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                          <span className="text-blue-600 text-lg">🎙️</span>
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-blue-800 mb-2">{t('audioRecordingInstructionsTitle')}</h3>
+                        <p className="text-sm text-blue-700 mb-2">{t('audioInstructionsLead')}</p>
+                        <div className="flex flex-wrap gap-2 text-xs text-blue-600">
+                          <span className="flex items-center gap-1"><span className="w-2 h-2 bg-blue-400 rounded-full"></span>{t('audioInstructionsBullet1')}</span>
+                          <span className="flex items-center gap-1"><span className="w-2 h-2 bg-blue-400 rounded-full"></span>{t('audioInstructionsBullet2')}</span>
+                          <span className="flex items-center gap-1"><span className="w-2 h-2 bg-blue-400 rounded-full"></span>{t('audioInstructionsBullet3')}</span>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 mb-1">
-                      {transcribedPrefill[`${getCurrentVideoKey()}_${questionKey}`] && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">Transcribed</span>
-                      )}
-                    </div>
-                    <Textarea
-                      placeholder={helpText}
-                      value={questionValue}
-                      onChange={(e) => handleResponseChange(getCurrentVideoKey(), questionKey, e.target.value)}
-                      readOnly={readOnlyView}
-                      rows={4}
-                      className={`text-base ${isAnswered
-                        ? `${colors.inputBorder} ${colors.inputFocus}`
-                        : 'border-red-300 focus:border-red-400 bg-red-50'
-                        }`}
-                      required
-                    />
-                    {!isAnswered && (
-                      <p className="text-red-500 text-sm mt-1">{t('questionRequired')}</p>
-                    )}
                   </div>
-                );
-              })}
+
+                  {Array.from({ length: questionCount }, (_, index) => {
+                    const questionNum = index + 1;
+                    const questionKey = `question${questionNum}`;
+                    const questionText = questionTexts[questionKey] || '';
+                    const helpText = helpTexts[questionKey] || '';
+                    const questionValue = getCurrentVideoResponses()[questionKey] || '';
+                    const isAnswered = questionValue.trim() !== '' || !!audioAnswered[`${getCurrentVideoKey()}_${questionKey}`];
+                    const colors = getQuestionColor(index);
+                    const IconComponent = colors.icon;
+
+                    return (
+                      <div key={questionKey} className={`border-l-4 pl-3 md:pl-6 ${isAnswered ? colors.border : 'border-red-400'} mb-6`}>
+                        <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-3 gap-3">
+                          <label className="block text-lg font-semibold text-gray-800 flex items-center gap-2">
+                            <IconComponent className={`w-5 h-5 ${colors.iconColor}`} />
+                            {questionText}
+                            <span className="text-red-500 text-sm">*</span>
+                            <button
+                              type="button"
+                              className={`ml-2 ${colors.text} ${colors.hover}`}
+                              onClick={() => toggleHelp(helpKey(questionKey))}
+                            >
+                              💬
+                            </button>
+                          </label>
+                          {helpOpen[helpKey(questionKey)] && (
+                            <div className={`mt-2 mb-2 p-3 rounded border ${colors.bg} ${colors.bgBorder} text-sm ${colors.bgText}`}>
+                              {helpText}
+                            </div>
+                          )}
+                          <div className="w-full md:w-auto md:ml-4 flex-shrink-0">
+                            {(resolvedStudentId && assessmentRecordId) ? (
+                              <AudioRecorder
+                                key={`${getCurrentVideoKey()}_${questionKey}`}
+                                questionId={`${getCurrentVideoKey()}_${questionKey}`}
+                                onRecordingComplete={(audioBlob, transcription) => {
+                                  handleAudioResponse(getCurrentVideoKey() as any, questionKey, audioBlob, transcription);
+                                }}
+                                maxDuration={120000}
+                                language={lang === 'kn' ? 'kn-IN' : lang === 'ta' ? 'ta-IN' : 'en-IN'}
+                                studentId={resolvedStudentId}
+                                assessmentId={assessmentRecordId}
+                                assessmentType="inspiration"
+                                assessmentTitle="My Inspiration"
+                                initialSavedAt={audioResponsesMap[`${getCurrentVideoKey()}_${questionKey}`]?.savedAt ?? null}
+                                initialAudioUrl={audioResponsesMap[`${getCurrentVideoKey()}_${questionKey}`]?.url ?? null}
+                                initialTranscription={audioResponsesMap[`${getCurrentVideoKey()}_${questionKey}`]?.transcript ?? null}
+                                initialConfidence={audioResponsesMap[`${getCurrentVideoKey()}_${questionKey}`]?.confidence ?? null}
+                                disabled={readOnlyView || isCompleted}
+                                onStreamTranscript={(text) => handleStreamTranscript(getCurrentVideoKey(), questionKey, text)}
+                                compact={true}
+                              />
+                            ) : (
+                              <div className="text-sm text-gray-500">Loading...</div>
+                            )}
+                          </div>
+                        </div>
+                        <Textarea
+                          placeholder={helpText}
+                          value={questionValue}
+                          onChange={(e) => handleResponseChange(getCurrentVideoKey(), questionKey, e.target.value)}
+                          readOnly={readOnlyView}
+                          rows={4}
+                          className={`text-base ${isAnswered ? `${colors.inputBorder} ${colors.inputFocus}` : 'border-red-300 focus:border-red-400 bg-red-50'}`}
+                          required
+                        />
+                      </div>
+                    );
+                  })}
+                </>
+              )}
             </div>
-
-
-
           </CardContent>
         </Card>
 
@@ -1774,7 +1930,7 @@ export default function MyInspirationAssessment() {
               )}
             </Button>
 
-            {currentVideoIndex < inspirationVideos.length - 1 ? (
+            {currentVideoIndex < inspirationVideos.length ? (
               <Button
                 variant="outline"
                 onClick={nextVideo}
@@ -1804,67 +1960,9 @@ export default function MyInspirationAssessment() {
           </div>
         </div>
 
-        {/* Video List */}
-        <div className="mt-12">
-          <Card className="border-0 shadow-lg">
-            <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100">
-              <CardTitle className="text-xl text-gray-800">{t('allVideosTitle')}</CardTitle>
-              <CardDescription className="text-gray-600">
-                {t('allVideosSubtitle')}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {inspirationVideos.map((video, index) => (
-                  <div
-                    key={video.id}
-                    className={`p-4 rounded-lg border-2 transition-all duration-200 ${currentVideoIndex === index
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300 cursor-pointer'
-                      }`}
-                    onClick={() => setCurrentVideoIndex(index)}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${currentVideoIndex === index
-                        ? 'bg-blue-500 text-white'
-                        : isVideoSaved(index)
-                          ? 'bg-green-500 text-white'
-                          : isVideoComplete(index)
-                            ? 'bg-yellow-500 text-white'
-                            : 'bg-gray-200 text-gray-600'
-                        }`}>
-                        {index + 1}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-medium text-gray-800">
-                            {t('videoLabelN', '', index + 1)}
-                          </h4>
-                          {isVideoSaved(index) && (
-                            <div className="flex items-center gap-1 text-green-600 text-xs">
-                              <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                              <span>{t('saved')}</span>
-                            </div>
-                          )}
-                          {!isVideoSaved(index) && isVideoComplete(index) && (
-                            <div className="flex items-center gap-1 text-yellow-600 text-xs">
-                              <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full"></div>
-                              <span>{t('complete')}</span>
-                            </div>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-500 truncate">{video.url}</p>
-                      </div>
-                      <Video className="w-5 h-5 text-gray-400" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+
       </div>
       <KannadaKeyboard lang={lang} />
-    </div>
+    </div >
   );
 }

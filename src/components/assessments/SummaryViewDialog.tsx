@@ -1,3 +1,5 @@
+﻿import { logger } from '@/lib/logger';
+
 // SummaryViewDialog - Student view and edit component for approved summaries
 
 import { useState, useEffect } from 'react';
@@ -7,18 +9,22 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Lightbulb,
+  Lightbulb, User,
+  Sparkles,
+  Building,
+  Briefcase,
+  GraduationCap,
   AlertCircle,
   Users,
   Edit3,
   Save,
   X,
   CheckCircle,
-  Sparkles
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useLang } from '@/hooks/useLang';
 import { KannadaKeyboard } from '@/components/ui/KannadaKeyboard';
+import { parseTalentsEntries, parseDreamEntries, parseHobbiesEntries, parseSchoolLearningEntries } from '../../utils/summaryParsers';
 import {
   AssessmentSummary,
   SummaryQuestions,
@@ -70,21 +76,30 @@ export default function SummaryViewDialog({
   const [dreamHeadings, setDreamHeadings] = useState({
     dream: lang === 'kn' ? 'ಕನಸು' : lang === 'ta' ? 'கனவு' : 'Dream',
     quality: lang === 'kn'
-      ? 'ಕನಸನ್ನು ಸಾಧಿಸಲು\nಸಹಾಯ ಮಾಡುವ ಗುಣ,\nಮೌಲ್ಯ, ಶಕ್ತಿ'
+      ? 'ನಿಮ್ಮಲ್ಲಿ ಈಗಾಗಲೇ ಕಂಡುಕೊಂಡಿರುವ ಯಾವ ಗುಣ/ ಮೌಲ್ಯ/ ಸಾರ್ಥ್ಯ ನಿಮ್ಮ ಕನಸನ್ನು ಸಾಧಿಸಲು ಸಹಾಯ ಮಾಡುತ್ತದೆ.'
       : lang === 'ta'
-        ? 'இந்த கனவை அடைய\nஉதவும் குணம்,\nமதிப்பு, பலம்'
-        : 'Which quality,\nvalue, strength will\nhelp you achieve\nyou dream',
+        ? 'உங்களிடம் ஏற்கனவே உள்ள எந்த குணம் / மதிப்பு / திறன் இந்த கனவை அடைய உங்களுக்கு உதவும்?'
+        : 'Which quality/ value/ ability that you already have will help you achieve your dream?',
     prevent: lang === 'kn'
-      ? 'ಕನಸು ವಿಫಲವಾಗದಂತೆ\nಮಾಡಲು ನೀನು ಏನು\nಮಾಡಬೇಕು'
+      ? 'ಕನಸು ವಿಫಲವಾಗುವುದಿಲ್ಲ ಎಂದು ಖಚಿತಪಡಿಸಿಕೊಳ್ಳಲು ನೀವು ಏನು ಮಾಡಬೇಕಾಗುತ್ತದೆ'
       : lang === 'ta'
-        ? 'கனவு தோல்வி\nஆகாமல் இருக்க\nநீ என்ன செய்ய வேண்டும்'
-        : 'What you will have\nto do to ensure that\nthe dream doesn’t\nfail',
+        ? 'இந்த கனவு தோல்வியடையாமல் இருக்க நீங்கள் என்ன செய்ய வேண்டும்?'
+        : 'What do you need to do to make sure this dream does not fail?',
     study: lang === 'kn'
-      ? 'ಈ ಕನಸನ್ನು ಸಾಧಿಸಲು\n10ನೇ ನಂತರ ಏನು\nಅಧ್ಯಯನ ಮಾಡಬೇಕು\n(ಬೇಕಿದ್ದರೆ)'
+      ? 'ಈ ಕನಸನ್ನುಸಾಧಿಸಲು ೧೦ನೇ ತರಗತಿಯ ನಂತರ ನೀವು ಏನು ಅಧ್ಯಯನ ಮಾಡಬೇಕು? (ಅನ್ವಯಿಸಿದರೆ)'
       : lang === 'ta'
-        ? 'இந்த கனவை அடைய\n10ம் பிறகு என்ன\nபடிக்க வேண்டும்\n(தேவையெனில்)'
-        : 'What should you\nstudy after 10th\nto achieve this dream\n(if applicable)'
+        ? 'இந்த கனவை அடைய 10ஆம் வகுப்பிற்குப் பிறகு நீங்கள் என்ன படிக்க வேண்டும்? (தேவையானால்)'
+        : 'To achieve this dream, what do you need to study after Class 10? (if applicable)'
   });
+
+  const schoolLearningColumnHeadings = {
+    q1: lang === 'kn' ? 'ನಾನು ಇಷ್ಟಪಡುವ ವಿಷಯಗಳು' : lang === 'ta' ? '1.நான் விரும்பும் பாடங்கள்' : 'Subjects I like',
+    q2: lang === 'kn' ? 'ನಾನು ಇಷ್ಟಪಡುವ ವಿಷಯಗಳಿಂದ ನಾನು ಪಡೆಯಲು ಸಾಧ್ಯವಾಗಬಹುದಾದ ವೃತ್ತಿಗಳು' : lang === 'ta' ? '2.நான் விரும்பும் பாடங்களின் மூலம் நான் அடையக்கூடிய தொழில்கள்' : 'Careers I can pursue based on the subjects I like',
+    q3: lang === 'kn' ? 'ನಾನು ಇಷ್ಟಪಡದ ವಿಷಯಗಳು' : lang === 'ta' ? '3.நான் விரும்பாத பாடங்கள்' : 'Subjects I do not like',
+    q4: lang === 'kn' ? 'ಇಷ್ಟಪಡದ ವಿಷಯಗಳಲ್ಲಿ ನಾನು ಸುಧಾರಿಸಿಕೊಂಡರೆ ಪಡೆಯಲು ಸಾಧ್ಯವಾಗಬಹುದಾದ ವೃತ್ತಿಗಳು' : lang === 'ta' ? '4.நான் விரும்பாத பாடங்களில் முன்னேற்றம் பெற்றால் ನಾನು அடையக்கூடிய தொழில்கள்' : 'Careers I can pursue if I make progress in the subjects I do not like',
+    q5: lang === 'kn' ? 'ಪಠ್ಯ ವಿಷಯಗಳ ಜೊತೆಗೆ, ನಾನು ಉತ್ತಮ ಸಾಧನೆ ಮಾಡುವ ಇತರ ಚಟುವಟಿಕೆಗಳು / ವಿಷಯಗಳು' : lang === 'ta' ? '5.பாடப்பிரிவுகளுடன் சேர்த்து, நான் சிறப்பாக சாதனை புரியும் பிற செயல்பாடுகள் / விஷயங்கள்' : 'Other activities / areas in which I perform well along with academic subjects',
+    q6: lang === 'kn' ? 'ನಾನು ಈ ಕೌಶಲ್ಯಗಳನ್ನು ಸುಧಾರಿಸಿಕೊಂಡರೆ ನನ್ನ ಕೆಲಸ / ವೃತ್ತಿಯ ಆಯ್ಕೆಗೆ ಸಹಾಯವಾಗುತ್ತದೆ.' : lang === 'ta' ? '6.இந்த திறன்களில் நான் மேம்பட்டால், என் வேலை / தொழில் தேர்வுக்கு உதவியாக இருக்கும்.' : 'If I improve these skills, it will help me in choosing my job / career.',
+  };
 
   // Effect to update dreamHeadings from fetched titles (questionTitles is populated from content_translations)
   useEffect(() => {
@@ -127,7 +142,7 @@ export default function SummaryViewDialog({
         }));
       }
     } catch (error) {
-      console.warn('Failed to parse dream portfolio:', error);
+      logger.warn('Failed to parse dream portfolio:', error);
     }
     return [];
   };
@@ -144,7 +159,7 @@ export default function SummaryViewDialog({
         }));
       }
     } catch (error) {
-      console.warn('Failed to parse hobbies portfolio:', error);
+      logger.warn('Failed to parse hobbies portfolio:', error);
     }
     return [];
   };
@@ -161,7 +176,7 @@ export default function SummaryViewDialog({
         }));
       }
     } catch (error) {
-      console.warn('Failed to parse talents portfolio:', error);
+      logger.warn('Failed to parse talents portfolio:', error);
     }
     return [];
   };
@@ -252,7 +267,7 @@ export default function SummaryViewDialog({
         setQuestionTitles(newTitles);
 
       } catch (error) {
-        console.error('Error fetching question titles:', error);
+        logger.error('Error fetching question titles:', error);
       }
     };
 
@@ -270,7 +285,7 @@ export default function SummaryViewDialog({
       const displaySummary = getDisplaySummary(summary);
       const newEditedSummary: any = { ...displaySummary };
       setEditedSummary(newEditedSummary);
-      console.log('📝 SummaryViewDialog: Loaded/Updated summary content because not in edit mode');
+      logger.log('📝 SummaryViewDialog: Loaded/Updated summary content because not in edit mode');
     }
   }, [summary, open, isEditing]);
 
@@ -355,7 +370,7 @@ export default function SummaryViewDialog({
         throw new Error(result.error || 'Failed to update summary');
       }
     } catch (error) {
-      console.error('Error saving summary:', error);
+      logger.error('Error saving summary:', error);
       toast({
         title: lang === 'kn' ? "ದೋಷ" : lang === 'ta' ? 'பிழை' : "Error",
         description:
@@ -715,79 +730,50 @@ export default function SummaryViewDialog({
             </Card>
           )}
 
-          {/* Questions 4, 5, 6 for School Learning Assessment */}
-          {isSchoolLearningAssessment && questionTitles.q4 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <AlertCircle className="h-5 w-5 text-orange-600" />
-                  {questionTitles.q4}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {isEditing ? (
-                  <Textarea
-                    lang={lang}
-                    value={editedSummary.question4 || ''}
-                    onChange={(e) => setEditedSummary({ ...editedSummary, question4: e.target.value })}
-                    placeholder={lang === 'kn' ? 'ನಿಮ್ಮ ಉತ್ತರವನ್ನು ಬರೆಯಿರಿ...' : 'Write your answer...'}
-                    className="min-h-[150px] text-base"
-                  />
-                ) : (
-                  <div className="prose prose-sm max-w-none">
-                    <p className="text-gray-700 whitespace-pre-wrap">{displaySummary.question4 || ''}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {isSchoolLearningAssessment && questionTitles.q5 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Sparkles className="h-5 w-5 text-purple-600" />
-                  {questionTitles.q5}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {isEditing ? (
-                  <Textarea
-                    lang={lang}
-                    value={editedSummary.question5 || ''}
-                    onChange={(e) => setEditedSummary({ ...editedSummary, question5: e.target.value })}
-                    placeholder={lang === 'kn' ? 'ನಿಮ್ಮ ಉತ್ತರವನ್ನು ಬರೆಯಿರಿ...' : 'Write your answer...'}
-                    className="min-h-[150px] text-base"
-                  />
-                ) : (
-                  <div className="prose prose-sm max-w-none">
-                    <p className="text-gray-700 whitespace-pre-wrap">{displaySummary.question5 || ''}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {isSchoolLearningAssessment && questionTitles.q6 && (
+          {/* General School Learning (Not nested) */}
+          {isSchoolLearningAssessment && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Lightbulb className="h-5 w-5 text-green-600" />
-                  {questionTitles.q6}
+                  {questionTitles.title || 'My future plan'}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 {isEditing ? (
                   <Textarea
                     lang={lang}
-                    value={editedSummary.question6 || ''}
-                    onChange={(e) => setEditedSummary({ ...editedSummary, question6: e.target.value })}
+                    value={editedSummary.question1}
+                    onChange={(e) => setEditedSummary({ ...editedSummary, question1: e.target.value })}
                     placeholder={lang === 'kn' ? 'ನಿಮ್ಮ ಉತ್ತರವನ್ನು ಬರೆಯಿರಿ...' : 'Write your answer...'}
                     className="min-h-[150px] text-base"
                   />
                 ) : (
                   <div className="prose prose-sm max-w-none">
-                    <p className="text-gray-700 whitespace-pre-wrap">{displaySummary.question6 || ''}</p>
+                    <table className="w-full text-sm border border-gray-200 rounded-md overflow-hidden">
+                      <thead className="bg-gray-100">
+                        <tr>
+                          <th className="text-left px-3 py-2 text-gray-700 whitespace-pre-line">{schoolLearningColumnHeadings.q1}</th>
+                          <th className="text-left px-3 py-2 text-gray-700 whitespace-pre-line">{schoolLearningColumnHeadings.q2}</th>
+                          <th className="text-left px-3 py-2 text-gray-700 whitespace-pre-line">{schoolLearningColumnHeadings.q3}</th>
+                          <th className="text-left px-3 py-2 text-gray-700 whitespace-pre-line">{schoolLearningColumnHeadings.q4}</th>
+                          <th className="text-left px-3 py-2 text-gray-700 whitespace-pre-line">{schoolLearningColumnHeadings.q5}</th>
+                          <th className="text-left px-3 py-2 text-gray-700 whitespace-pre-line">{schoolLearningColumnHeadings.q6}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {parseSchoolLearningEntries(displaySummary.question1 || '').map((row, index) => (
+                          <tr key={`sl-${index}`} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                            <td className="px-3 py-2 text-gray-700 align-top">{row.liked_subjects}</td>
+                            <td className="px-3 py-2 text-gray-700 align-top">{row.liked_careers}</td>
+                            <td className="px-3 py-2 text-gray-700 align-top">{row.disliked_subjects}</td>
+                            <td className="px-3 py-2 text-gray-700 align-top">{row.disliked_careers}</td>
+                            <td className="px-3 py-2 text-gray-700 align-top">{row.other_activities}</td>
+                            <td className="px-3 py-2 text-gray-700 align-top">{row.skills_improvement}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </CardContent>

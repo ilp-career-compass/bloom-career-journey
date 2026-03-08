@@ -1,3 +1,5 @@
+﻿import { logger } from '@/lib/logger';
+
 // Summary Database Service - Handles database operations for assessment summaries
 
 import { supabase } from '@/integrations/supabase/client';
@@ -25,13 +27,13 @@ class SummaryDatabaseService {
       });
 
       if (error) {
-        console.error('Error creating AI summary:', error);
+        logger.error('Error creating AI summary:', error);
         return { success: false, error: error.message };
       }
 
       return { success: true, summaryId: data };
     } catch (error) {
-      console.error('Exception creating AI summary:', error);
+      logger.error('Exception creating AI summary:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -47,7 +49,7 @@ class SummaryDatabaseService {
     teacherUserId: string
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      console.log('✅ Approving summary:', {
+      logger.log('✅ Approving summary:', {
         summaryId,
         teacherUserId
       });
@@ -58,11 +60,11 @@ class SummaryDatabaseService {
       });
 
       if (error) {
-        console.error('❌ Error approving summary:', error);
+        logger.error('❌ Error approving summary:', error);
         return { success: false, error: error.message };
       }
 
-      console.log('✅ Summary approval RPC completed successfully');
+      logger.log('✅ Summary approval RPC completed successfully');
 
       // Verify the approval by fetching the updated summary
       const { data: verifyData, error: verifyError } = await supabase
@@ -72,9 +74,9 @@ class SummaryDatabaseService {
         .maybeSingle();
 
       if (verifyError) {
-        console.error('❌ Error verifying approval:', verifyError);
+        logger.error('❌ Error verifying approval:', verifyError);
       } else if (verifyData) {
-        console.log('📊 Verification - Summary status after approval:', {
+        logger.log('📊 Verification - Summary status after approval:', {
           id: verifyData.id,
           approval_status: verifyData.approval_status,
           approved_at: verifyData.approved_at,
@@ -82,7 +84,7 @@ class SummaryDatabaseService {
         });
 
         if (verifyData.approval_status !== 'approved') {
-          console.error('❌ Approval failed - status is still:', verifyData.approval_status);
+          logger.error('❌ Approval failed - status is still:', verifyData.approval_status);
           return { 
             success: false, 
             error: `Approval failed - status is still ${verifyData.approval_status}` 
@@ -92,7 +94,7 @@ class SummaryDatabaseService {
 
       return { success: true };
     } catch (error) {
-      console.error('❌ Exception approving summary:', error);
+      logger.error('❌ Exception approving summary:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -116,13 +118,13 @@ class SummaryDatabaseService {
       });
 
       if (error) {
-        console.error('Error rejecting summary:', error);
+        logger.error('Error rejecting summary:', error);
         return { success: false, error: error.message };
       }
 
       return { success: true };
     } catch (error) {
-      console.error('Exception rejecting summary:', error);
+      logger.error('Exception rejecting summary:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -146,13 +148,13 @@ class SummaryDatabaseService {
       });
 
       if (error) {
-        console.error('Error updating teacher summary:', error);
+        logger.error('Error updating teacher summary:', error);
         return { success: false, error: error.message };
       }
 
       return { success: true };
     } catch (error) {
-      console.error('Exception updating teacher summary:', error);
+      logger.error('Exception updating teacher summary:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -176,13 +178,13 @@ class SummaryDatabaseService {
       });
 
       if (error) {
-        console.error('Error updating student summary:', error);
+        logger.error('Error updating student summary:', error);
         return { success: false, error: error.message };
       }
 
       return { success: true };
     } catch (error) {
-      console.error('Exception updating student summary:', error);
+      logger.error('Exception updating student summary:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -198,7 +200,7 @@ class SummaryDatabaseService {
     userId: string
   ): Promise<{ success: boolean; summary?: AssessmentSummary; error?: string }> {
     try {
-      console.log('🔍 Calling get_summary_by_assessment RPC:', {
+      logger.log('🔍 Calling get_summary_by_assessment RPC:', {
         assessmentResponseId,
         userId
       });
@@ -209,7 +211,7 @@ class SummaryDatabaseService {
       });
 
       if (error) {
-        console.error('❌ RPC Error getting summary:', {
+        logger.error('❌ RPC Error getting summary:', {
           error: error.message,
           code: error.code,
           details: error.details,
@@ -218,13 +220,13 @@ class SummaryDatabaseService {
         return { success: false, error: error.message };
       }
 
-      console.log('📊 RPC Response:', {
+      logger.log('📊 RPC Response:', {
         dataLength: data?.length || 0,
         data: data
       });
 
       if (!data || data.length === 0) {
-        console.warn('⚠️ No summary found for assessment:', {
+        logger.warn('⚠️ No summary found for assessment:', {
           assessmentResponseId,
           userId,
           data: data
@@ -237,7 +239,7 @@ class SummaryDatabaseService {
           .eq('assessment_response_id', assessmentResponseId)
           .maybeSingle();
         
-        console.log('🔍 Direct query result:', {
+        logger.log('🔍 Direct query result:', {
           directData,
           directError: directError?.message
         });
@@ -246,7 +248,7 @@ class SummaryDatabaseService {
       }
 
       const summary = data[0] as AssessmentSummary;
-      console.log('📊 Summary fetched:', {
+      logger.log('📊 Summary fetched:', {
         id: summary.id,
         assessment_response_id: summary.assessment_response_id,
         approval_status: summary.approval_status,
@@ -257,7 +259,7 @@ class SummaryDatabaseService {
 
       return { success: true, summary };
     } catch (error) {
-      console.error('Exception getting summary:', error);
+      logger.error('Exception getting summary:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -277,13 +279,13 @@ class SummaryDatabaseService {
       });
 
       if (error) {
-        console.error('Error getting pending summaries:', error);
+        logger.error('Error getting pending summaries:', error);
         return { success: false, error: error.message };
       }
 
       return { success: true, summaries: data as PendingSummaryForTeacher[] };
     } catch (error) {
-      console.error('Exception getting pending summaries:', error);
+      logger.error('Exception getting pending summaries:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -303,7 +305,7 @@ class SummaryDatabaseService {
       });
 
       if (error) {
-        console.error('Error getting summary overview:', error);
+        logger.error('Error getting summary overview:', error);
         return { success: false, error: error.message };
       }
 
@@ -322,7 +324,7 @@ class SummaryDatabaseService {
 
       return { success: true, overview: data[0] as TeacherSummaryOverview };
     } catch (error) {
-      console.error('Exception getting summary overview:', error);
+      logger.error('Exception getting summary overview:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -343,7 +345,7 @@ class SummaryDatabaseService {
 
       return !error && !!data;
     } catch (error) {
-      console.error('Error checking summary existence:', error);
+      logger.error('Error checking summary existence:', error);
       return false;
     }
   }

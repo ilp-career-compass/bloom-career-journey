@@ -1,3 +1,5 @@
+﻿import { logger } from '@/lib/logger';
+
 // Supabase Resumable Upload Service
 // Handles chunked uploads for poor rural connectivity
 // Supports offline queuing and retry logic
@@ -193,7 +195,7 @@ class SupabaseUploadService {
 
           } catch (error) {
             retryCount++;
-            console.warn(`Chunk ${i} upload failed (attempt ${retryCount}):`, error);
+            logger.warn(`Chunk ${i} upload failed (attempt ${retryCount}):`, error);
             
             if (retryCount >= maxRetries) {
               throw new Error(`Failed to upload chunk ${i} after ${maxRetries} attempts`);
@@ -278,7 +280,7 @@ class SupabaseUploadService {
       .remove(chunkPaths);
 
     if (error) {
-      console.warn('Failed to cleanup chunk files:', error);
+      logger.warn('Failed to cleanup chunk files:', error);
     }
   }
 

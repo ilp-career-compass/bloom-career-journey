@@ -1,3 +1,4 @@
+﻿import { logger } from '@/lib/logger';
 import { useAuth } from '@/hooks/useAuth';
 import { Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -43,8 +44,8 @@ const Index = () => {
   const t = (k: string) => strings[lang][k] || strings.en[k] || k;
 
   useEffect(() => {
-    console.log('Index component mounted');
-    console.log('Auth state:', { user, userProfile, loading });
+    logger.log('Index component mounted');
+    logger.log('Auth state:', { user, userProfile, loading });
   }, [user, userProfile, loading]);
 
   // Redirect authenticated users to their appropriate dashboard
@@ -52,12 +53,12 @@ const Index = () => {
     const redirectPath = userProfile.role === 'admin' ? '/admin'
       : userProfile.role === 'teacher' ? '/teacher'
         : `/student?lang=${userProfile.preferred_language || 'en'}`;
-    console.log('Redirecting to:', redirectPath);
+    logger.log('Redirecting to:', redirectPath);
     return <Navigate to={redirectPath} replace />;
   }
 
   if (loading) {
-    console.log('Showing loading state');
+    logger.log('Showing loading state');
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -65,7 +66,7 @@ const Index = () => {
     );
   }
 
-  console.log('Rendering Index component content');
+  logger.log('Rendering Index component content');
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10">
       {/* Hero Section */}

@@ -1,3 +1,5 @@
+﻿import { logger } from '@/lib/logger';
+
 // Speech-to-Text Service for Audio Responses
 // Supports Google Cloud Speech-to-Text with Azure fallback
 // Optimized for Indian accents and rural pronunciation
@@ -48,8 +50,8 @@ class SpeechToTextService {
       const azureKey = (import.meta.env as any).VITE_AZURE_SPEECH_KEY;
 
       // Log immediately when constructor runs
-      console.log('🔑 [SpeechToText] Constructor called - Loading API keys from environment');
-      console.log('🔑 [SpeechToText] Environment check:', {
+      logger.log('🔑 [SpeechToText] Constructor called - Loading API keys from environment');
+      logger.log('🔑 [SpeechToText] Environment check:', {
         googleApiKey: googleApiKey ? `${String(googleApiKey).substring(0, 15)}...` : '❌ NOT SET',
         googleApiKeyLength: googleApiKey?.length || 0,
         azureKey: azureKey ? 'SET' : 'NOT SET',
@@ -68,7 +70,7 @@ class SpeechToTextService {
       // Load Gemini key for fallback
       this.geminiKey = (import.meta.env as any).VITE_GEMINI_API_KEY;
 
-      console.log('🔑 [SpeechToText] Config initialized:', {
+      logger.log('🔑 [SpeechToText] Config initialized:', {
         hasGoogleKey: !!this.config.googleApiKey,
         googleKeyLength: this.config.googleApiKey?.length || 0,
         hasAzureKey: !!this.config.azureKey,
@@ -109,7 +111,7 @@ class SpeechToTextService {
     audioBlob: Blob,
     options: TranscriptionOptions
   ): Promise<TranscriptionResult> {
-    console.log('🎤 [transcribeWithGoogle] Starting transcription:', {
+    logger.log('🎤 [transcribeWithGoogle] Starting transcription:', {
       blobSize: audioBlob.size,
       blobType: audioBlob.type,
       language: options.language,
@@ -118,8 +120,8 @@ class SpeechToTextService {
     });
 
     if (!this.isGoogleConfigured()) {
-      console.error('❌ [transcribeWithGoogle] Google API key not configured');
-      console.error('📝 Current config:', {
+      logger.error('❌ [transcribeWithGoogle] Google API key not configured');
+      logger.error('📝 Current config:', {
         hasKey: !!this.config.googleApiKey,
         keyLength: this.config.googleApiKey?.length || 0,
         envVar: import.meta.env.VITE_GOOGLE_SPEECH_API_KEY ? 'SET' : 'NOT SET',
@@ -130,11 +132,11 @@ class SpeechToTextService {
 
     // Additional validation - check if key looks valid
     if (this.config.googleApiKey && this.config.googleApiKey.length < 20) {
-      console.warn('⚠️ [transcribeWithGoogle] API key seems too short. Expected ~39 characters for Google API key.');
+      logger.warn('⚠️ [transcribeWithGoogle] API key seems too short. Expected ~39 characters for Google API key.');
     }
 
     if (!this.isOnline) {
-      console.warn('⚠️ [transcribeWithGoogle] Offline mode - transcription not available');
+      logger.warn('⚠️ [transcribeWithGoogle] Offline mode - transcription not available');
       throw new Error('Offline mode - transcription not available');
     }
 
@@ -145,9 +147,9 @@ class SpeechToTextService {
 
     try {
       // Convert blob to base64
-      console.log('🔄 [transcribeWithGoogle] Converting blob to base64...');
+      logger.log('🔄 [transcribeWithGoogle] Converting blob to base64...');
       const base64Audio = await this.blobToBase64(audioBlob);
-      console.log('✅ [transcribeWithGoogle] Blob converted, base64 length:', base64Audio.length);
+      logger.log('✅ [transcribeWithGoogle] Blob converted, base64 length:', base64Audio.length);
 
       // Prepare request for Google Speech-to-Text API (v1 compatible payload)
       // Add domain phrase hints to improve recognition for assessment context
@@ -230,7 +232,7 @@ class SpeechToTextService {
         },
       };
 
-      console.log('📤 [transcribeWithGoogle] Sending request to Google Speech API...');
+      logger.log('📤 [transcribeWithGoogle] Sending request to Google Speech API...');
       const response = await fetch(
         `https://speech.googleapis.com/v1/speech:recognize?key=${this.config.googleApiKey}`,
         {
@@ -242,7 +244,7 @@ class SpeechToTextService {
         }
       );
 
-      console.log('📥 [transcribeWithGoogle] Received response:', {
+      logger.log('📥 [transcribeWithGoogle] Received response:', {
         status: response.status,
         statusText: response.statusText,
         ok: response.ok
@@ -256,12 +258,12 @@ class SpeechToTextService {
           const errorText = await response.text();
           errorData = { error: { message: errorText } };
         }
-        console.error('❌ [transcribeWithGoogle] API error response:', errorData);
+        logger.error('❌ [transcribeWithGoogle] API error response:', errorData);
         throw new Error(`Google Speech API error: ${errorData.error?.message || 'Unknown error'}`);
       }
 
       const data = await response.json();
-      console.log('✅ [transcribeWithGoogle] API response received:', {
+      logger.log('✅ [transcribeWithGoogle] API response received:', {
         hasResults: !!data.results,
         resultsCount: data.results?.length || 0
       });
@@ -302,7 +304,7 @@ class SpeechToTextService {
       };
 
     } catch (error) {
-      console.error('Google Speech-to-Text error:', error);
+      logger.error('Google Speech-to-Text error:', error);
       throw error;
     }
   }
@@ -506,7 +508,7 @@ class SpeechToTextService {
       };
 
     } catch (error) {
-      console.error('Azure Speech-to-Text error:', error);
+      logger.error('Azure Speech-to-Text error:', error);
       throw error;
     }
   }
@@ -523,7 +525,7 @@ class SpeechToTextService {
       throw new Error('Gemini API key not configured');
     }
 
-    console.log('✨ [transcribeWithGemini] Starting Gemini transcription fallback...');
+    logger.log('✨ [transcribeWithGemini] Starting Gemini transcription fallback...');
 
     // Convert blob to base64
     const base64Audio = await this.blobToBase64(audioBlob);
@@ -578,7 +580,7 @@ class SpeechToTextService {
         throw new Error('Gemini returned empty transcription');
       }
 
-      console.log('✨ [transcribeWithGemini] Success:', text.substring(0, 50) + '...');
+      logger.log('✨ [transcribeWithGemini] Success:', text.substring(0, 50) + '...');
 
       return {
         transcript: text.trim(),
@@ -587,7 +589,7 @@ class SpeechToTextService {
       };
 
     } catch (error) {
-      console.error('Gemini Transcription error:', error);
+      logger.error('Gemini Transcription error:', error);
       throw error;
     }
   }
@@ -615,14 +617,14 @@ class SpeechToTextService {
     try {
       return await this.transcribeWithGoogle(audioBlob, finalOptions);
     } catch (googleError) {
-      console.warn('Google transcription failed, trying Azure/Gemini:', googleError);
+      logger.warn('Google transcription failed, trying Azure/Gemini:', googleError);
 
       // Try Azure if enabled
       if (this.config.fallbackEnabled && this.config.azureKey && this.config.azureRegion) {
         try {
           return await this.transcribeWithAzure(audioBlob, finalOptions);
         } catch (azureError) {
-          console.warn('Azure transcription failed, proceeding to Gemini fallback:', azureError);
+          logger.warn('Azure transcription failed, proceeding to Gemini fallback:', azureError);
           // Fall through to Gemini
         }
       }
@@ -632,7 +634,7 @@ class SpeechToTextService {
         try {
           return await this.transcribeWithGemini(audioBlob, finalOptions);
         } catch (geminiError) {
-          console.error('All transcription services failed (Google, Azure, Gemini):', geminiError);
+          logger.error('All transcription services failed (Google, Azure, Gemini):', geminiError);
           throw new Error('Transcription failed on all services');
         }
       }
@@ -943,7 +945,7 @@ class SpeechToTextService {
       return hindiResult.confidence > englishResult.confidence ? 'hi-IN' : 'en-IN';
 
     } catch (error) {
-      console.warn('Language detection failed, defaulting to English:', error);
+      logger.warn('Language detection failed, defaulting to English:', error);
       return 'en-IN';
     }
   }

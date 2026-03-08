@@ -1,3 +1,5 @@
+﻿import { logger } from '@/lib/logger';
+
 // SummaryApprovalCard - Teacher component to review and approve AI-generated summaries
 
 import { useState, useEffect } from 'react';
@@ -49,6 +51,7 @@ import { summaryDatabaseService } from '@/services/summaryDatabaseService';
 import { notificationService } from '@/services/notificationService';
 import { aiSummaryService } from '@/services/aiSummaryService';
 import { supabase } from '@/integrations/supabase/client';
+import { parseDreamEntries, parseHobbiesEntries, parseTalentsEntries, parseSchoolLearningEntries } from '../../utils/summaryParsers';
 
 interface SummaryApprovalCardProps {
   summary: AssessmentSummary;
@@ -86,11 +89,12 @@ export default function SummaryApprovalCard({
     question2: '',
     question3: ''
   });
-  const isAboutMeAssessment = assessmentType === 'about_me';
-  const isDreamsAssessment = assessmentType === 'dreams';
-  const isSchoolLearningAssessment = assessmentType === 'school_learning';
-  const isHobbiesAssessment = assessmentType === 'hobbies';
-  const isRoleModelsAssessment = assessmentType === 'role_models';
+
+  const isAboutMeAssessment = assessmentType === 'about_me' || summary.summary_type === 'about_me_edited';
+  const isHobbiesAssessment = assessmentType === 'hobbies' || summary.summary_type === 'hobbies_edited';
+  const isDreamsAssessment = assessmentType === 'dreams' || summary.summary_type === 'dreams_edited';
+  const isSchoolLearningAssessment = assessmentType === 'school_learning' || summary.summary_type === 'school_learning_edited';
+  const isRoleModelsAssessment = assessmentType === 'role_models' || summary.summary_type === 'role_models_edited';
 
   const detectLangKeyFromSummary = (): 'en' | 'ta' | 'kn' => {
     try {
@@ -118,56 +122,7 @@ export default function SummaryApprovalCard({
       .filter(item => item.category || item.detail);
   };
 
-  const parseDreamEntries = (content: string) => {
-    try {
-      const parsed = JSON.parse(content);
-      if (Array.isArray(parsed)) {
-        return parsed.map((entry) => ({
-          dream: entry?.dream ?? '',
-          quality_value_strength: entry?.quality_value_strength ?? '',
-          prevent_failure: entry?.prevent_failure ?? '',
-          study_path: entry?.study_path ?? ''
-        }));
-      }
-    } catch (error) {
-      console.warn('Failed to parse dream portfolio:', error);
-    }
-    return [];
-  };
 
-  const parseHobbiesEntries = (content: string) => {
-    try {
-      const parsed = JSON.parse(content);
-      if (Array.isArray(parsed)) {
-        return parsed.map((entry) => ({
-          hobby: entry?.hobby ?? '',
-          want_career: entry?.want_career ?? '',
-          compatible_careers: entry?.compatible_careers ?? '',
-          people_examples: entry?.people_examples ?? ''
-        }));
-      }
-    } catch (error) {
-      console.warn('Failed to parse hobbies portfolio:', error);
-    }
-    return [];
-  };
-
-  const parseTalentsEntries = (content: string) => {
-    try {
-      const parsed = JSON.parse(content);
-      if (Array.isArray(parsed)) {
-        return parsed.map((entry) => ({
-          talent: entry?.talent ?? '',
-          want_career: entry?.want_career ?? '',
-          matching_careers: entry?.matching_careers ?? '',
-          people_examples: entry?.people_examples ?? ''
-        }));
-      }
-    } catch (error) {
-      console.warn('Failed to parse talents portfolio:', error);
-    }
-    return [];
-  };
 
   // Load summary content when it changes
   useEffect(() => {
@@ -372,7 +327,7 @@ export default function SummaryApprovalCard({
           }
         }
       } catch (error) {
-        console.error('Error fetching question titles:', error);
+        logger.error('Error fetching question titles:', error);
         // Keep default titles on error
       }
     };
@@ -391,10 +346,10 @@ export default function SummaryApprovalCard({
               field_key: f.field_key,
               question_text: f.question_text
             })));
-            console.log('✅ Loaded About Me fields for labels:', data.length);
+            logger.log('✅ Loaded About Me fields for labels:', data.length);
           }
         } catch (err) {
-          console.warn('Could not load About Me fields:', err);
+          logger.warn('Could not load About Me fields:', err);
         }
       };
       loadAboutMeFields();
@@ -414,7 +369,7 @@ export default function SummaryApprovalCard({
       }
 
       // Approve the summary
-      console.log('🔄 Calling approveSummary:', {
+      logger.log('🔄 Calling approveSummary:', {
         summaryId: summary.id,
         teacherUserId,
         currentStatus: summary.approval_status
@@ -425,7 +380,7 @@ export default function SummaryApprovalCard({
         teacherUserId
       );
 
-      console.log('📊 Approval result:', result);
+      logger.log('📊 Approval result:', result);
 
       if (result.success) {
         toast({
@@ -468,14 +423,14 @@ export default function SummaryApprovalCard({
               .maybeSingle();
 
             if (studentLookupError) {
-              console.error('Failed to resolve student user id for notification:', studentLookupError);
+              logger.error('Failed to resolve student user id for notification:', studentLookupError);
             }
 
             targetStudentUserId = (studentLookup as any)?.students?.user_id || null;
           }
 
           if (!targetStudentUserId) {
-            console.warn('Unable to send approval notification: student_user_id is missing');
+            logger.warn('Unable to send approval notification: student_user_id is missing');
           } else {
             const notifResult = await notificationService.create({
               userId: targetStudentUserId,
@@ -486,13 +441,13 @@ export default function SummaryApprovalCard({
             });
 
             if (!notifResult.success) {
-              console.error('Failed to create notification:', notifResult.error);
+              logger.error('Failed to create notification:', notifResult.error);
             } else {
-              console.log('✅ Notification sent to student:', targetStudentUserId);
+              logger.log('✅ Notification sent to student:', targetStudentUserId);
             }
           }
         } catch (error) {
-          console.error('Error creating notification:', error);
+          logger.error('Error creating notification:', error);
         }
         setIsEditing(false);
         onSummaryUpdated?.();
@@ -500,7 +455,7 @@ export default function SummaryApprovalCard({
         throw new Error(result.error || 'Failed to approve summary');
       }
     } catch (error) {
-      console.error('Error approving summary:', error);
+      logger.error('Error approving summary:', error);
       toast({
         title: "Error",
         description: "Failed to approve summary. Please try again.",
@@ -546,7 +501,7 @@ export default function SummaryApprovalCard({
 
     setSaving(true);
     try {
-      console.log('🔄 Rejecting summary:', {
+      logger.log('🔄 Rejecting summary:', {
         summaryId: summary.id,
         teacherUserId,
         reasonLength: trimmedReason.length
@@ -562,7 +517,7 @@ export default function SummaryApprovalCard({
         throw new Error(result.error || 'Failed to reject summary');
       }
 
-      console.log('✅ Summary rejected successfully, triggering regeneration...');
+      logger.log('✅ Summary rejected successfully, triggering regeneration...');
 
       toast({
         title: "Summary Rejected",
@@ -577,7 +532,7 @@ export default function SummaryApprovalCard({
       // Refresh the summary after regeneration
       onSummaryUpdated?.();
     } catch (error) {
-      console.error('❌ Error rejecting summary:', error);
+      logger.error('❌ Error rejecting summary:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to reject summary. Please try again.",
@@ -632,7 +587,7 @@ export default function SummaryApprovalCard({
           .maybeSingle();
 
         if (error) {
-          console.error('Error fetching assessment type:', error);
+          logger.error('Error fetching assessment type:', error);
           throw new Error(`Failed to fetch assessment type: ${error.message}`);
         }
 
@@ -643,8 +598,8 @@ export default function SummaryApprovalCard({
         assessmentTypeToUse = assessmentResponse.assessment_type || 'inspiration';
       }
 
-      console.log('🔄 Regenerating summary for assessment type:', assessmentTypeToUse);
-      console.log('📊 Student responses:', studentResponses);
+      logger.log('🔄 Regenerating summary for assessment type:', assessmentTypeToUse);
+      logger.log('📊 Student responses:', studentResponses);
 
       // Determine which summary generator to use based on assessment type
       let summaryResult;
@@ -667,12 +622,12 @@ export default function SummaryApprovalCard({
         throw new Error(summaryResult.error || 'Failed to regenerate summary');
       }
 
-      console.log('✅ AI summary generated successfully');
+      logger.log('✅ AI summary generated successfully');
 
       // Get student_user_id - use from summary if available, otherwise fetch it
       let studentUserId = summary.student_user_id;
 
-      console.log('🔍 Looking for student_user_id:', {
+      logger.log('🔍 Looking for student_user_id:', {
         fromSummary: studentUserId,
         assessmentResponseId: summary.assessment_response_id
       });
@@ -700,11 +655,11 @@ export default function SummaryApprovalCard({
             }
 
             if (studentUserId) {
-              console.log('✅ Found student_user_id via assessment_responses join');
+              logger.log('✅ Found student_user_id via assessment_responses join');
             }
           }
         } catch (err) {
-          console.warn('⚠️ Approach 1 failed, trying alternative:', err);
+          logger.warn('⚠️ Approach 1 failed, trying alternative:', err);
         }
 
         // Approach 2: If still not found, get student_id first, then query students table
@@ -726,27 +681,27 @@ export default function SummaryApprovalCard({
               if (!studentError && studentData) {
                 studentUserId = studentData.user_id || null;
                 if (studentUserId) {
-                  console.log('✅ Found student_user_id via students table');
+                  logger.log('✅ Found student_user_id via students table');
                 }
               }
             }
           } catch (err) {
-            console.warn('⚠️ Approach 2 failed:', err);
+            logger.warn('⚠️ Approach 2 failed:', err);
           }
         }
 
         if (!studentUserId) {
-          console.error('❌ Could not find student_user_id after all attempts', {
+          logger.error('❌ Could not find student_user_id after all attempts', {
             assessmentResponseId: summary.assessment_response_id,
             summaryId: summary.id
           });
           throw new Error('Assessment response not found. The assessment may have been deleted or the summary data is corrupted. Please contact support.');
         }
       } else {
-        console.log('✅ Using student_user_id from summary object');
+        logger.log('✅ Using student_user_id from summary object');
       }
 
-      console.log('💾 Saving regenerated summary with student_user_id:', studentUserId);
+      logger.log('💾 Saving regenerated summary with student_user_id:', studentUserId);
 
       // Save the regenerated summary
       const saveResult = await summaryDatabaseService.createAISummary(
@@ -759,7 +714,7 @@ export default function SummaryApprovalCard({
         throw new Error(saveResult.error || 'Failed to save regenerated summary');
       }
 
-      console.log('✅ Summary saved successfully');
+      logger.log('✅ Summary saved successfully');
 
       toast({
         title: "Summary Regenerated! 🔄",
@@ -768,7 +723,7 @@ export default function SummaryApprovalCard({
 
       onSummaryUpdated?.();
     } catch (error) {
-      console.error('❌ Error regenerating summary:', error);
+      logger.error('❌ Error regenerating summary:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to regenerate summary. Please try again.",
@@ -810,7 +765,7 @@ export default function SummaryApprovalCard({
         throw new Error(result.error || 'Failed to save edits');
       }
     } catch (error) {
-      console.error('Error saving edits:', error);
+      logger.error('Error saving edits:', error);
       toast({
         title: "Error",
         description: "Failed to save edits. Please try again.",
@@ -853,7 +808,7 @@ export default function SummaryApprovalCard({
         .maybeSingle();
 
       if (error) {
-        console.error('❌ Error checking database status:', error);
+        logger.error('❌ Error checking database status:', error);
         toast({
           title: "Error",
           description: `Failed to check database status: ${error.message}`,
@@ -863,7 +818,7 @@ export default function SummaryApprovalCard({
       }
 
       if (data) {
-        console.log('📊 Database Status:', {
+        logger.log('📊 Database Status:', {
           id: data.id,
           approval_status: data.approval_status,
           approved_at: data.approved_at,
@@ -878,11 +833,11 @@ export default function SummaryApprovalCard({
 
         // If database shows approved but UI shows pending, refresh
         if (data.approval_status === 'approved' && summary.approval_status !== 'approved') {
-          console.log('🔄 Status mismatch detected - refreshing summary...');
+          logger.log('🔄 Status mismatch detected - refreshing summary...');
           onSummaryUpdated?.();
         }
       } else {
-        console.warn('⚠️ Summary not found in database');
+        logger.warn('⚠️ Summary not found in database');
         toast({
           title: "Warning",
           description: "Summary not found in database",
@@ -890,7 +845,7 @@ export default function SummaryApprovalCard({
         });
       }
     } catch (error) {
-      console.error('❌ Exception checking database status:', error);
+      logger.error('❌ Exception checking database status:', error);
       toast({
         title: "Error",
         description: "Failed to check database status",
@@ -902,30 +857,22 @@ export default function SummaryApprovalCard({
   const summaryLangKey = detectLangKeyFromSummary();
 
   const dreamColumnHeadings = {
-    dream:
-      summaryLangKey === 'ta'
-        ? 'கனவு'
-        : summaryLangKey === 'kn'
-          ? 'ಕನಸು'
-          : 'Dream',
-    quality:
-      summaryLangKey === 'ta'
-        ? 'இந்தக் கனவை அடைய\nஉங்களுக்கு உதவும்\nதிறன் / மதிப்பு /\nவலிமை என்ன?'
-        : summaryLangKey === 'kn'
-          ? 'ಈ ಕನಸನ್ನು ಸಾಧಿಸಲು\nಸಹಾಯ ಮಾಡುವ ಗುಣ,\nಮೂಲ್ಯ ಅಥವಾ ಸಾಮರ್ಥ್ಯ\nಯಾವುದು?'
-          : 'Which quality,\nvalue, strength will\nhelp you achieve\nyou dream',
-    prevent:
-      summaryLangKey === 'ta'
-        ? 'இந்த கனவு தோல்வியடையாமல்\nஇருக்க நீங்கள் என்ன\nசெய்ய வேண்டும்?'
-        : summaryLangKey === 'kn'
-          ? 'ಈ ಕನಸು ವಿಫಲವಾಗದಂತೆ\nನೀವು ಏನು ಮಾಡಬೇಕು?'
-          : 'What you will have\nto do to ensure that\nthe dream doesn’t\nfail',
-    study:
-      summaryLangKey === 'ta'
-        ? 'இந்தக் கனவை அடைய\n10ஆம் வகுப்புக்குப் பிறகு\n(தேவையெனில்) நீங்கள் என்ன\nபடிக்க வேண்டும்?'
-        : summaryLangKey === 'kn'
-          ? 'ಈ ಕನಸನ್ನು ಸಾಧಿಸಲು\n10ನೇ ತರಗತಿಯ ನಂತರ\n(ಅಗತ್ಯವಿದ್ದರೆ) ನೀವು\nಏನು ಓದಬೇಕು?'
-          : 'What should you\nstudy after 10th\nto achieve this dream\n(if applicable)'
+    dream: summaryLangKey === 'kn' ? 'ಕನಸು' : summaryLangKey === 'ta' ? 'கனவு' : 'Dream',
+    quality: summaryLangKey === 'kn'
+      ? 'ನಿಮ್ಮಲ್ಲಿ ಈಗಾಗಲೇ ಕಂಡುಕೊಂಡಿರುವ ಯಾವ ಗುಣ/ ಮೌಲ್ಯ/ ಸಾರ್ಥ್ಯ ನಿಮ್ಮ ಕನಸನ್ನು ಸಾಧಿಸಲು ಸಹಾಯ ಮಾಡುತ್ತದೆ.'
+      : summaryLangKey === 'ta'
+        ? 'உங்களிடம் ஏற்கனவே உள்ள எந்த குணம் / மதிப்பு / திறன் இந்த கனவை அடைய உங்களுக்கு உதவும்?'
+        : 'Which quality/ value/ ability that you already have will help you achieve your dream?',
+    prevent: summaryLangKey === 'kn'
+      ? 'ಕನಸು ವಿಫಲವಾಗುವುದಿಲ್ಲ ಎಂದು ಖಚಿತಪಡಿಸಿಕೊಳ್ಳಲು ನೀವು ಏನು ಮಾಡಬೇಕಾಗುತ್ತದೆ'
+      : summaryLangKey === 'ta'
+        ? 'இந்த கனவு தோல்வியடையாமல் இருக்க நீங்கள் என்ன செய்ய வேண்டும்?'
+        : 'What do you need to do to make sure this dream does not fail?',
+    study: summaryLangKey === 'kn'
+      ? 'ಈ ಕನಸನ್ನುಸಾಧಿಸಲು ೧೦ನೇ ತರಗತಿಯ ನಂತರ ನೀವು ಏನು ಅಧ್ಯಯನ ಮಾಡಬೇಕು? (ಅನ್ವಯಿಸಿದರೆ)'
+      : summaryLangKey === 'ta'
+        ? 'இந்த கனவை அடைய 10ஆம் வகுப்பிற்குப் பிறகு நீங்கள் என்ன படிக்க வேண்டும்? (தேவையானால்)'
+        : 'To achieve this dream, what do you need to study after Class 10? (if applicable)'
   };
 
   return (
@@ -960,10 +907,10 @@ export default function SummaryApprovalCard({
             Check DB
           </Button>
         </div>
-      </div>
+      </div >
 
       {/* Student Responses (Collapsible) */}
-      <Collapsible>
+      < Collapsible >
         <Card>
           <CardHeader>
             <CollapsibleTrigger asChild>
@@ -1267,10 +1214,10 @@ export default function SummaryApprovalCard({
             </CardContent>
           </CollapsibleContent>
         </Card>
-      </Collapsible>
+      </Collapsible >
 
       {/* Summary Questions */}
-      <Card>
+      < Card >
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Lightbulb className="h-5 w-5 text-yellow-600" />
@@ -1336,213 +1283,227 @@ export default function SummaryApprovalCard({
             </div>
           )}
         </CardContent>
-      </Card>
+      </Card >
 
       {/* Dynamic About Me Questions (Questions 2-16) */}
-      {isAboutMeAssessment && Object.keys(questionTitles)
-        .filter(key => key !== 'q1' && key.startsWith('q'))
-        .sort((a, b) => parseInt(a.substring(1)) - parseInt(b.substring(1)))
-        .map((key) => {
-          const qNum = parseInt(key.substring(1));
-          const summaryKey = `question${qNum}` as keyof SummaryQuestions;
-          const title = questionTitles[key];
+      {
+        isAboutMeAssessment && Object.keys(questionTitles)
+          .filter(key => key !== 'q1' && key.startsWith('q'))
+          .sort((a, b) => parseInt(a.substring(1)) - parseInt(b.substring(1)))
+          .map((key) => {
+            const qNum = parseInt(key.substring(1));
+            const summaryKey = `question${qNum}` as keyof SummaryQuestions;
+            const title = questionTitles[key];
 
-          return (
-            <Card key={key}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Lightbulb className="h-5 w-5 text-indigo-600" />
-                  {title}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {isEditing && (summary.approval_status as string) !== 'approved' ? (
-                  <Textarea
-                    value={editedSummary[summaryKey] || ''}
-                    onChange={(e) => setEditedSummary({ ...editedSummary, [summaryKey]: e.target.value })}
-                    className="min-h-[120px]"
-                    disabled={(summary.approval_status as string) === 'approved'}
-                  />
-                ) : (
-                  <div className="prose prose-sm max-w-none">
-                    <p className="text-gray-700 whitespace-pre-wrap">{displaySummary[summaryKey] || ''}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
+            return (
+              <Card key={key}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Lightbulb className="h-5 w-5 text-indigo-600" />
+                    {title}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {isEditing && (summary.approval_status as string) !== 'approved' ? (
+                    <Textarea
+                      value={editedSummary[summaryKey] || ''}
+                      onChange={(e) => setEditedSummary({ ...editedSummary, [summaryKey]: e.target.value })}
+                      className="min-h-[120px]"
+                      disabled={(summary.approval_status as string) === 'approved'}
+                    />
+                  ) : (
+                    <div className="prose prose-sm max-w-none">
+                      <p className="text-gray-700 whitespace-pre-wrap">{displaySummary[summaryKey] || ''}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })
+      }
 
       {/* Talents Portfolio for Hobbies Assessment */}
-      {isHobbiesAssessment && questionTitles.q6 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Lightbulb className="h-5 w-5 text-purple-600" />
-              {questionTitles.q6}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isEditing && (summary.approval_status as string) !== 'approved' ? (
-              <Textarea
-                value={editedSummary.question6 || ''}
-                onChange={(e) => setEditedSummary({ ...editedSummary, question6: e.target.value })}
-                className="min-h-[120px]"
-                disabled={(summary.approval_status as string) === 'approved'}
-              />
-            ) : (
-              <div className="prose prose-sm max-w-none">
-                <table className="w-full text-sm border border-gray-200 rounded-md overflow-hidden">
-                  <thead className="bg-gray-100">
-                    <tr>
-                      <th className="text-left px-3 py-2 text-gray-700 whitespace-pre-line">{questionTitles.q7}</th>
-                      <th className="text-left px-3 py-2 text-gray-700 whitespace-pre-line">{questionTitles.q8}</th>
-                      <th className="text-left px-3 py-2 text-gray-700 whitespace-pre-line">{questionTitles.q9}</th>
-                      <th className="text-left px-3 py-2 text-gray-700 whitespace-pre-line">{questionTitles.q10}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {parseTalentsEntries(displaySummary.question6 || '').map((row, index) => (
-                      <tr key={`${row.talent}-${index}`} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                        <td className="px-3 py-2 text-gray-700 align-top">{row.talent}</td>
-                        <td className="px-3 py-2 text-gray-700 align-top">{row.want_career}</td>
-                        <td className="px-3 py-2 text-gray-700 align-top">{row.matching_careers}</td>
-                        <td className="px-3 py-2 text-gray-700 align-top">{row.people_examples}</td>
+      {
+        isHobbiesAssessment && questionTitles.q6 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Lightbulb className="h-5 w-5 text-purple-600" />
+                {questionTitles.q6}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isEditing && (summary.approval_status as string) !== 'approved' ? (
+                <Textarea
+                  value={editedSummary.question6 || ''}
+                  onChange={(e) => setEditedSummary({ ...editedSummary, question6: e.target.value })}
+                  className="min-h-[120px]"
+                  disabled={(summary.approval_status as string) === 'approved'}
+                />
+              ) : (
+                <div className="prose prose-sm max-w-none">
+                  <table className="w-full text-sm border border-gray-200 rounded-md overflow-hidden">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="text-left px-3 py-2 text-gray-700 whitespace-pre-line">{questionTitles.q7}</th>
+                        <th className="text-left px-3 py-2 text-gray-700 whitespace-pre-line">{questionTitles.q8}</th>
+                        <th className="text-left px-3 py-2 text-gray-700 whitespace-pre-line">{questionTitles.q9}</th>
+                        <th className="text-left px-3 py-2 text-gray-700 whitespace-pre-line">{questionTitles.q10}</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+                    </thead>
+                    <tbody>
+                      {parseTalentsEntries(displaySummary.question6 || '').map((row, index) => (
+                        <tr key={`${row.talent}-${index}`} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                          <td className="px-3 py-2 text-gray-700 align-top">{row.talent}</td>
+                          <td className="px-3 py-2 text-gray-700 align-top">{row.want_career}</td>
+                          <td className="px-3 py-2 text-gray-700 align-top">{row.matching_careers}</td>
+                          <td className="px-3 py-2 text-gray-700 align-top">{row.people_examples}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )
+      }
 
-      {!isDreamsAssessment && !isHobbiesAssessment && !isRoleModelsAssessment && !isAboutMeAssessment && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-red-600" />
-              {questionTitles.q2}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isEditing && (summary.approval_status as string) !== 'approved' ? (
-              <Textarea
-                value={editedSummary.question2}
-                onChange={(e) => setEditedSummary({ ...editedSummary, question2: e.target.value })}
-                className="min-h-[120px]"
-                disabled={(summary.approval_status as string) === 'approved'}
-              />
-            ) : (
-              <div className="prose prose-sm max-w-none">
-                <p className="text-gray-700 whitespace-pre-wrap">{displaySummary.question2}</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+      {
+        !isDreamsAssessment && !isHobbiesAssessment && !isRoleModelsAssessment && !isAboutMeAssessment && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-red-600" />
+                {questionTitles.q2}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isEditing && (summary.approval_status as string) !== 'approved' ? (
+                <Textarea
+                  value={editedSummary.question2}
+                  onChange={(e) => setEditedSummary({ ...editedSummary, question2: e.target.value })}
+                  className="min-h-[120px]"
+                  disabled={(summary.approval_status as string) === 'approved'}
+                />
+              ) : (
+                <div className="prose prose-sm max-w-none">
+                  <p className="text-gray-700 whitespace-pre-wrap">{displaySummary.question2}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )
+      }
 
-      {!isDreamsAssessment && !isHobbiesAssessment && !isRoleModelsAssessment && !isAboutMeAssessment && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-blue-600" />
-              {questionTitles.q3}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isEditing && (summary.approval_status as string) !== 'approved' ? (
-              <Textarea
-                value={editedSummary.question3}
-                onChange={(e) => setEditedSummary({ ...editedSummary, question3: e.target.value })}
-                className="min-h-[120px]"
-                disabled={(summary.approval_status as string) === 'approved'}
-              />
-            ) : (
-              <div className="prose prose-sm max-w-none">
-                <p className="text-gray-700 whitespace-pre-wrap">{displaySummary.question3}</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+      {
+        !isDreamsAssessment && !isHobbiesAssessment && !isRoleModelsAssessment && !isAboutMeAssessment && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-blue-600" />
+                {questionTitles.q3}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isEditing && (summary.approval_status as string) !== 'approved' ? (
+                <Textarea
+                  value={editedSummary.question3}
+                  onChange={(e) => setEditedSummary({ ...editedSummary, question3: e.target.value })}
+                  className="min-h-[120px]"
+                  disabled={(summary.approval_status as string) === 'approved'}
+                />
+              ) : (
+                <div className="prose prose-sm max-w-none">
+                  <p className="text-gray-700 whitespace-pre-wrap">{displaySummary.question3}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )
+      }
 
       {/* Questions 4, 5, 6 for School Learning Assessment */}
-      {isSchoolLearningAssessment && questionTitles.q4 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-orange-600" />
-              {questionTitles.q4}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isEditing && (summary.approval_status as string) !== 'approved' ? (
-              <Textarea
-                value={editedSummary.question4 || ''}
-                onChange={(e) => setEditedSummary({ ...editedSummary, question4: e.target.value })}
-                className="min-h-[120px]"
-                disabled={(summary.approval_status as string) === 'approved'}
-              />
-            ) : (
-              <div className="prose prose-sm max-w-none">
-                <p className="text-gray-700 whitespace-pre-wrap">{displaySummary.question4 || ''}</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+      {
+        isSchoolLearningAssessment && questionTitles.q4 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-orange-600" />
+                {questionTitles.q4}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isEditing && (summary.approval_status as string) !== 'approved' ? (
+                <Textarea
+                  value={editedSummary.question4 || ''}
+                  onChange={(e) => setEditedSummary({ ...editedSummary, question4: e.target.value })}
+                  className="min-h-[120px]"
+                  disabled={(summary.approval_status as string) === 'approved'}
+                />
+              ) : (
+                <div className="prose prose-sm max-w-none">
+                  <p className="text-gray-700 whitespace-pre-wrap">{displaySummary.question4 || ''}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )
+      }
 
-      {isSchoolLearningAssessment && questionTitles.q5 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-purple-600" />
-              {questionTitles.q5}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isEditing && (summary.approval_status as string) !== 'approved' ? (
-              <Textarea
-                value={editedSummary.question5 || ''}
-                onChange={(e) => setEditedSummary({ ...editedSummary, question5: e.target.value })}
-                className="min-h-[120px]"
-                disabled={(summary.approval_status as string) === 'approved'}
-              />
-            ) : (
-              <div className="prose prose-sm max-w-none">
-                <p className="text-gray-700 whitespace-pre-wrap">{displaySummary.question5 || ''}</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+      {
+        isSchoolLearningAssessment && questionTitles.q5 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-purple-600" />
+                {questionTitles.q5}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isEditing && (summary.approval_status as string) !== 'approved' ? (
+                <Textarea
+                  value={editedSummary.question5 || ''}
+                  onChange={(e) => setEditedSummary({ ...editedSummary, question5: e.target.value })}
+                  className="min-h-[120px]"
+                  disabled={(summary.approval_status as string) === 'approved'}
+                />
+              ) : (
+                <div className="prose prose-sm max-w-none">
+                  <p className="text-gray-700 whitespace-pre-wrap">{displaySummary.question5 || ''}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )
+      }
 
-      {isSchoolLearningAssessment && questionTitles.q6 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Lightbulb className="h-5 w-5 text-green-600" />
-              {questionTitles.q6}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isEditing && (summary.approval_status as string) !== 'approved' ? (
-              <Textarea
-                value={editedSummary.question6 || ''}
-                onChange={(e) => setEditedSummary({ ...editedSummary, question6: e.target.value })}
-                className="min-h-[120px]"
-                disabled={(summary.approval_status as string) === 'approved'}
-              />
-            ) : (
-              <div className="prose prose-sm max-w-none">
-                <p className="text-gray-700 whitespace-pre-wrap">{displaySummary.question6 || ''}</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+      {
+        isSchoolLearningAssessment && questionTitles.q6 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Lightbulb className="h-5 w-5 text-green-600" />
+                {questionTitles.q6}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isEditing && (summary.approval_status as string) !== 'approved' ? (
+                <Textarea
+                  value={editedSummary.question6 || ''}
+                  onChange={(e) => setEditedSummary({ ...editedSummary, question6: e.target.value })}
+                  className="min-h-[120px]"
+                  disabled={(summary.approval_status as string) === 'approved'}
+                />
+              ) : (
+                <div className="prose prose-sm max-w-none">
+                  <p className="text-gray-700 whitespace-pre-wrap">{displaySummary.question6 || ''}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )
+      }
 
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row items-center justify-between pt-4 border-t gap-4 pb-20 sm:pb-0">
@@ -1660,7 +1621,7 @@ export default function SummaryApprovalCard({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </div >
   );
 }
 

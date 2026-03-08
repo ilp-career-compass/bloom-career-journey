@@ -1,3 +1,4 @@
+﻿import { logger } from '@/lib/logger';
 import { useState, useEffect } from 'react';
 import { MessageSquare, X, Send, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -106,7 +107,7 @@ export default function ChatBubble({ role, isOpen: controlledIsOpen, onOpenChang
 
       setStudents(studentsData || []);
     } catch (error) {
-      console.error('Error loading students:', error);
+      logger.error('Error loading students:', error);
     }
   };
 
@@ -179,7 +180,7 @@ export default function ChatBubble({ role, isOpen: controlledIsOpen, onOpenChang
         await markAsRead(channelData.id, 'teacher');
       }
     } catch (error) {
-      console.error('Error initializing channel:', error);
+      logger.error('Error initializing channel:', error);
       toast({
         title: lang === 'kn' ? "ದೋಷ" : lang === 'ta' ? "பிழை" : "Error",
         description: lang === 'kn'
@@ -212,7 +213,7 @@ export default function ChatBubble({ role, isOpen: controlledIsOpen, onOpenChang
       if (error) throw error;
       setMessages((data as any) || []);
     } catch (error) {
-      console.error('Error loading messages:', error);
+      logger.error('Error loading messages:', error);
     }
   };
 
@@ -227,7 +228,7 @@ export default function ChatBubble({ role, isOpen: controlledIsOpen, onOpenChang
 
       setUnreadCount(0);
     } catch (error) {
-      console.error('Error marking as read:', error);
+      logger.error('Error marking as read:', error);
     }
   };
 
@@ -256,7 +257,7 @@ export default function ChatBubble({ role, isOpen: controlledIsOpen, onOpenChang
       setNewMessage('');
       await loadMessages(channelId);
     } catch (error) {
-      console.error('Error sending message:', error);
+      logger.error('Error sending message:', error);
       toast({
         title: lang === 'kn' ? "ದೋಷ" : lang === 'ta' ? "பிழை" : "Error",
         description: lang === 'kn'
@@ -338,7 +339,7 @@ export default function ChatBubble({ role, isOpen: controlledIsOpen, onOpenChang
         setUnreadCount(totalUnread);
       }
     } catch (error) {
-      console.error('Error loading unread count:', error);
+      logger.error('Error loading unread count:', error);
     }
   };
 

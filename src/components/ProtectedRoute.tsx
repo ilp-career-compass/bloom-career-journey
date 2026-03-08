@@ -1,3 +1,4 @@
+﻿import { logger } from '@/lib/logger';
 import { useAuth } from '@/hooks/useAuth';
 import { Navigate, useLocation } from 'react-router-dom';
 import { LoaderCircle } from 'lucide-react';
@@ -12,7 +13,7 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
   const location = useLocation();
 
   // Debug logging
-  console.log('🔒 ProtectedRoute check:', {
+  logger.log('🔒 ProtectedRoute check:', {
     loading,
     hasUser: !!user,
     hasUserProfile: !!userProfile,
@@ -33,7 +34,7 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
   });
 
   if (loading) {
-    console.log('🔒 ProtectedRoute: Still loading...');
+    logger.log('🔒 ProtectedRoute: Still loading...');
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <LoaderCircle className="w-8 h-8 animate-spin text-primary" />
@@ -42,23 +43,23 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
   }
 
   if (!user || !userProfile) {
-    console.log('🔒 ProtectedRoute: Missing user or userProfile, redirecting to auth');
-    console.log('🔒 User:', user);
-    console.log('🔒 UserProfile:', userProfile);
-    console.log('🔒 Loading state:', loading);
-    console.log('🔒 Current path:', location.pathname);
-    console.log('🔒 Allowed roles:', allowedRoles);
+    logger.log('🔒 ProtectedRoute: Missing user or userProfile, redirecting to auth');
+    logger.log('🔒 User:', user);
+    logger.log('🔒 UserProfile:', userProfile);
+    logger.log('🔒 Loading state:', loading);
+    logger.log('🔒 Current path:', location.pathname);
+    logger.log('🔒 Allowed roles:', allowedRoles);
     
     // Add a small delay to prevent rapid redirects
     setTimeout(() => {
-      console.log('🔒 Redirecting to auth after delay');
+      logger.log('🔒 Redirecting to auth after delay');
     }, 100);
     
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
   if (allowedRoles && !allowedRoles.includes(userProfile.role)) {
-    console.log('🔒 ProtectedRoute: Role mismatch, redirecting to appropriate dashboard');
+    logger.log('🔒 ProtectedRoute: Role mismatch, redirecting to appropriate dashboard');
     // Redirect to appropriate dashboard based on role
     const redirectPath = userProfile.role === 'admin' ? '/admin' 
                         : userProfile.role === 'teacher' ? '/teacher'
@@ -66,6 +67,6 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
     return <Navigate to={redirectPath} replace />;
   }
 
-  console.log('🔒 ProtectedRoute: Access granted');
+  logger.log('🔒 ProtectedRoute: Access granted');
   return <>{children}</>;
 }

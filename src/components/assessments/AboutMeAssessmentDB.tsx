@@ -1,3 +1,4 @@
+﻿import { logger } from '@/lib/logger';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useLang } from '@/hooks/useLang';
@@ -50,7 +51,7 @@ export default function AboutMeAssessmentDB() {
     const loadAssessmentData = async () => {
       try {
         setLoading(true);
-        console.log('🔄 Loading About Me questions from database...');
+        logger.log('🔄 Loading About Me questions from database...');
 
         // Use get_about_me_fields to get section information
         const { data, error } = await supabase.rpc('get_about_me_fields');
@@ -61,7 +62,7 @@ export default function AboutMeAssessmentDB() {
         }
 
         if (validateApiResponse(data, 'AboutMeAssessment')) {
-          console.log('✅ Database fields loaded:', data.length, 'fields');
+          logger.log('✅ Database fields loaded:', data.length, 'fields');
 
           // Group fields by section
           const fieldsBySection: Record<string, any[]> = {};
@@ -134,10 +135,10 @@ export default function AboutMeAssessmentDB() {
           });
           setResponses(initialResponses);
         } else {
-          console.log('⚠️ No questions found in database, using fallback');
+          logger.log('⚠️ No questions found in database, using fallback');
         }
       } catch (error) {
-        console.error('Error loading assessment data:', error);
+        logger.error('Error loading assessment data:', error);
         toast({
           title: "Error",
           description: "Failed to load assessment data. Please try again.",
@@ -188,7 +189,7 @@ export default function AboutMeAssessmentDB() {
           }
         }
       } catch (error) {
-        console.error('Error checking existing response:', error);
+        logger.error('Error checking existing response:', error);
       }
     };
 
@@ -263,7 +264,7 @@ export default function AboutMeAssessmentDB() {
         description: "Your About Me assessment has been submitted successfully.",
       });
     } catch (error) {
-      console.error('Error submitting assessment:', error);
+      logger.error('Error submitting assessment:', error);
       toast({
         title: "Error",
         description: "Failed to submit assessment. Please try again.",

@@ -1,0 +1,17 @@
+﻿src/components/assessments/MyRoleModelsAssessment.tsx(1,24): error TS2307: Cannot find module '@/lib/logger' or its corresponding type declarations.
+src/components/assessments/MyRoleModelsAssessment.tsx(3,35): error TS2307: Cannot find module '@/services/translationService' or its corresponding type declarations.
+src/components/assessments/MyRoleModelsAssessment.tsx(4,25): error TS2307: Cannot find module '@/hooks/useAuth' or its corresponding type declarations.
+src/components/assessments/MyRoleModelsAssessment.tsx(5,26): error TS2307: Cannot find module '@/integrations/supabase/client' or its corresponding type declarations.
+src/components/assessments/MyRoleModelsAssessment.tsx(6,24): error TS2307: Cannot find module '@/components/ui/button' or its corresponding type declarations.
+src/components/assessments/MyRoleModelsAssessment.tsx(7,75): error TS2307: Cannot find module '@/components/ui/card' or its corresponding type declarations.
+src/components/assessments/MyRoleModelsAssessment.tsx(8,26): error TS2307: Cannot find module '@/components/ui/textarea' or its corresponding type declarations.
+src/components/assessments/MyRoleModelsAssessment.tsx(9,23): error TS2307: Cannot find module '@/components/ui/badge' or its corresponding type declarations.
+src/components/assessments/MyRoleModelsAssessment.tsx(10,26): error TS2307: Cannot find module '@/components/ui/progress' or its corresponding type declarations.
+src/components/assessments/MyRoleModelsAssessment.tsx(11,23): error TS2307: Cannot find module '@/components/ui/input' or its corresponding type declarations.
+src/components/assessments/MyRoleModelsAssessment.tsx(29,26): error TS2307: Cannot find module '@/hooks/use-toast' or its corresponding type declarations.
+src/components/assessments/MyRoleModelsAssessment.tsx(31,25): error TS2307: Cannot find module '@/hooks/useLang' or its corresponding type declarations.
+src/components/assessments/MyRoleModelsAssessment.tsx(33,33): error TS2307: Cannot find module '@/components/ui/KannadaKeyboard' or its corresponding type declarations.
+src/components/assessments/MyRoleModelsAssessment.tsx(34,39): error TS2307: Cannot find module '@/utils/assessmentUnlock' or its corresponding type declarations.
+src/components/assessments/MyRoleModelsAssessment.tsx(514,51): error TS2307: Cannot find module '@/services/aiSummaryService' or its corresponding type declarations.
+src/components/assessments/MyRoleModelsAssessment.tsx(515,54): error TS2307: Cannot find module '@/services/summaryDatabaseService' or its corresponding type declarations.
+src/components/assessments/MyRoleModelsAssessment.tsx(548,62): error TS2307: Cannot find module '@/services/notificationService' or its corresponding type declarations.

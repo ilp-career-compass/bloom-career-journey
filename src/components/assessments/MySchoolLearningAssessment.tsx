@@ -1,3 +1,4 @@
+﻿import { logger } from '@/lib/logger';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
-import { School, Save, CheckCircle, ArrowLeft } from 'lucide-react';
+import { School, Save, CheckCircle, ArrowLeft, Lock, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLang } from '@/hooks/useLang';
@@ -58,6 +59,14 @@ interface SchoolLearningAssessmentResponse {
     question20: string;
     question21: string;
   };
+  section6: {
+    question1: string;
+    question2: string;
+    question3: string;
+    question4: string;
+    question5: string;
+    question6: string;
+  };
 }
 
 export default function MySchoolLearningAssessment() {
@@ -105,10 +114,19 @@ export default function MySchoolLearningAssessment() {
       question19: '',
       question20: '',
       question21: ''
+    },
+    section6: {
+      question1: '',
+      question2: '',
+      question3: '',
+      question4: '',
+      question5: '',
+      question6: ''
     }
   });
   const [loading, setLoading] = useState(true);
   const [questions, setQuestions] = useState<any[]>([]);
+  const [summaryQuestions, setSummaryQuestions] = useState<any[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [savingSection, setSavingSection] = useState<string | null>(null);
   const [helpOpen, setHelpOpen] = useState<Record<string, boolean>>({});
@@ -117,7 +135,7 @@ export default function MySchoolLearningAssessment() {
     setHelpOpen(prev => ({ ...prev, [key]: !prev[key] }));
   };
   const [isCompleted, setIsCompleted] = useState(false);
-  const [currentSection, setCurrentSection] = useState<'section1' | 'section2' | 'section3' | 'section4' | 'section5'>('section1');
+  const [currentSection, setCurrentSection] = useState<'section1' | 'section2' | 'section3' | 'section4' | 'section5' | 'section6'>('section1');
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const viewParam = (searchParams.get('readonly') || searchParams.get('view') || '').toLowerCase();
@@ -146,7 +164,7 @@ export default function MySchoolLearningAssessment() {
           if (tIntro) setDbIntro(tIntro);
         }
       } catch (e) {
-        console.error('Error fetching module content:', e);
+        logger.error('Error fetching module content:', e);
       }
     };
     fetchModuleContent();
@@ -161,7 +179,7 @@ export default function MySchoolLearningAssessment() {
         const map = await fetchTranslations('school_learning_help', keys, lang);
         setHelpTranslations(map);
       } catch (error) {
-        console.warn('MySchoolLearningAssessment: failed to load help translations', error);
+        logger.warn('MySchoolLearningAssessment: failed to load help translations', error);
         setHelpTranslations({});
       }
     };
@@ -172,7 +190,7 @@ export default function MySchoolLearningAssessment() {
           .rpc('get_school_learning_questions_i18n', { p_lang: lang });
 
         if (error) {
-          console.error('Error fetching questions:', error);
+          logger.error('Error fetching questions:', error);
           return;
         }
 
@@ -180,12 +198,31 @@ export default function MySchoolLearningAssessment() {
           setQuestions(data);
         }
       } catch (error) {
-        console.error('Error in fetchQuestions:', error);
+        logger.error('Error in fetchQuestions:', error);
+      }
+    };
+
+    const fetchSummaryQuestions = async () => {
+      try {
+        const { data, error } = await supabase
+          .rpc('get_school_learning_summary_questions_i18n', { p_lang: lang });
+
+        if (error) {
+          logger.error('Error fetching summary questions:', error);
+          return;
+        }
+
+        if (data) {
+          setSummaryQuestions(data);
+        }
+      } catch (error) {
+        logger.error('Error in fetchSummaryQuestions:', error);
       }
     };
 
     loadHelpTranslations();
     fetchQuestions();
+    fetchSummaryQuestions();
   }, [lang]);
 
   const getHelpText = (id: number, fallback: string) => {
@@ -306,7 +343,7 @@ export default function MySchoolLearningAssessment() {
         .limit(1);
 
       const data = records && records.length > 0 ? records[0] : null;
-      console.log('📥 Loading existing response:', { data, error, recordsCount: records?.length });
+      logger.log('📥 Loading existing response:', { data, error, recordsCount: records?.length });
 
       if (data && !error && data.responses) {
         // Only set completed if completed_at exists
@@ -315,7 +352,7 @@ export default function MySchoolLearningAssessment() {
         }
         // Merge saved responses with current structure
         const savedResponses = data.responses as any;
-        console.log('📋 Saved responses:', savedResponses);
+        logger.log('📋 Saved responses:', savedResponses);
 
         const mergedResponses: SchoolLearningAssessmentResponse = {
           section1: {
@@ -358,16 +395,24 @@ export default function MySchoolLearningAssessment() {
             question19: savedResponses.section5?.question19 || '',
             question20: savedResponses.section5?.question20 || '',
             question21: savedResponses.section5?.question21 || ''
+          },
+          section6: {
+            question1: savedResponses.section6?.question1 || '',
+            question2: savedResponses.section6?.question2 || '',
+            question3: savedResponses.section6?.question3 || '',
+            question4: savedResponses.section6?.question4 || '',
+            question5: savedResponses.section6?.question5 || '',
+            question6: savedResponses.section6?.question6 || ''
           }
         };
 
-        console.log('✅ Merged responses:', mergedResponses);
+        logger.log('✅ Merged responses:', mergedResponses);
         setResponses(mergedResponses);
       } else {
-        console.log('ℹ️ No existing response found');
+        logger.log('ℹ️ No existing response found');
       }
     } catch (error) {
-      console.error('❌ Error loading existing response:', error);
+      logger.error('❌ Error loading existing response:', error);
     } finally {
       setLoading(false);
     }
@@ -397,7 +442,7 @@ export default function MySchoolLearningAssessment() {
     }));
   };
 
-  const saveSection = async (section: 'section1' | 'section2' | 'section3' | 'section4' | 'section5') => {
+  const saveSection = async (section: 'section1' | 'section2' | 'section3' | 'section4' | 'section5' | 'section6') => {
     if (!userProfile || isReadOnly) return;
     let studentId = userProfile.studentProfile?.id as string | undefined;
     if (!studentId) {
@@ -412,7 +457,7 @@ export default function MySchoolLearningAssessment() {
 
     setSavingSection(section);
     try {
-      console.log('💾 Saving section:', section, 'with responses:', responses);
+      logger.log('💾 Saving section:', section, 'with responses:', responses);
 
       // First, check if a record exists - get the most recent one
       const { data: existingRecords, error: fetchError } = await supabase
@@ -425,12 +470,12 @@ export default function MySchoolLearningAssessment() {
         .limit(1);
 
       if (fetchError) {
-        console.error('❌ Error fetching existing record:', fetchError);
+        logger.error('❌ Error fetching existing record:', fetchError);
         throw fetchError;
       }
 
       const existing = existingRecords && existingRecords.length > 0 ? existingRecords[0] : null;
-      console.log('📋 Existing record:', existing);
+      logger.log('📋 Existing record:', existing);
 
       if (existing) {
         // Update existing record, merge responses
@@ -440,7 +485,7 @@ export default function MySchoolLearningAssessment() {
           ...responses
         };
 
-        console.log('🔄 Merging responses:', { existing: existingResponses, current: responses, merged: mergedResponses });
+        logger.log('🔄 Merging responses:', { existing: existingResponses, current: responses, merged: mergedResponses });
 
         const { error } = await supabase
           .from('assessment_responses')
@@ -451,13 +496,13 @@ export default function MySchoolLearningAssessment() {
           .eq('id', existing.id);
 
         if (error) {
-          console.error('❌ Error updating record:', error);
+          logger.error('❌ Error updating record:', error);
           throw error;
         }
-        console.log('✅ Successfully updated existing record');
+        logger.log('✅ Successfully updated existing record');
       } else {
         // Create new record
-        console.log('📝 Creating new record with responses:', responses);
+        logger.log('📝 Creating new record with responses:', responses);
         const { error } = await supabase
           .from('assessment_responses')
           .insert({
@@ -470,10 +515,10 @@ export default function MySchoolLearningAssessment() {
           });
 
         if (error) {
-          console.error('❌ Error inserting new record:', error);
+          logger.error('❌ Error inserting new record:', error);
           throw error;
         }
-        console.log('✅ Successfully created new record');
+        logger.log('✅ Successfully created new record');
       }
 
       toast({
@@ -491,7 +536,7 @@ export default function MySchoolLearningAssessment() {
               : `Your ${section.replace('section', 'Section ')} responses have been saved.`,
       });
     } catch (error) {
-      console.error('Error saving section:', error);
+      logger.error('Error saving section:', error);
       toast({
         title:
           lang === 'kn'
@@ -512,8 +557,53 @@ export default function MySchoolLearningAssessment() {
     }
   };
 
+  const areCoreSectionsComplete = () => {
+    // Helper to safely check if a question is answered
+    const isAnswered = (value: any): boolean => {
+      if (value === null || value === undefined) return false;
+      if (typeof value === 'string') return value.trim() !== '';
+      return false;
+    };
+
+    const section1Complete =
+      isAnswered(responses.section1.question1) &&
+      isAnswered(responses.section1.question2) &&
+      isAnswered(responses.section1.question3) &&
+      isAnswered(responses.section1.question4);
+
+    const section2Complete =
+      isAnswered(responses.section2.question5) &&
+      isAnswered(responses.section2.question6) &&
+      isAnswered(responses.section2.question7) &&
+      isAnswered(responses.section2.question8);
+
+    const section3Q11Complete = Object.values(responses.section3.question11).some(val =>
+      val === true || (typeof val === 'string' && val.trim() !== '')
+    );
+    const section3Complete =
+      isAnswered(responses.section3.question9) &&
+      isAnswered(responses.section3.question10) &&
+      section3Q11Complete &&
+      isAnswered(responses.section3.question12);
+
+    const section4Complete =
+      isAnswered(responses.section4.question13) &&
+      isAnswered(responses.section4.question14) &&
+      isAnswered(responses.section4.question15) &&
+      isAnswered(responses.section4.question16);
+
+    const section5Complete =
+      isAnswered(responses.section5.question17) &&
+      isAnswered(responses.section5.question18) &&
+      isAnswered(responses.section5.question19) &&
+      isAnswered(responses.section5.question20) &&
+      isAnswered(responses.section5.question21);
+
+    return section1Complete && section2Complete && section3Complete && section4Complete && section5Complete;
+  };
+
   const getProgressPercentage = () => {
-    const totalQuestions = 21;
+    const totalQuestions = 27; // Updated from 21 to 27 (+6 for Summary)
     let answeredQuestions = 0;
     Object.values(responses.section1).forEach(v => { if (typeof v === 'string' && v.trim()) answeredQuestions++; });
     Object.values(responses.section2).forEach(v => { if (typeof v === 'string' && v.trim()) answeredQuestions++; });
@@ -525,6 +615,7 @@ export default function MySchoolLearningAssessment() {
     });
     Object.values(responses.section4).forEach(v => { if (typeof v === 'string' && v.trim()) answeredQuestions++; });
     Object.values(responses.section5).forEach(v => { if (typeof v === 'string' && v.trim()) answeredQuestions++; });
+    Object.values(responses.section6).forEach(v => { if (typeof v === 'string' && v.trim()) answeredQuestions++; });
     return totalQuestions > 0 ? (answeredQuestions / totalQuestions) * 100 : 0;
   };
 
@@ -577,10 +668,19 @@ export default function MySchoolLearningAssessment() {
       isAnswered(responses.section5.question20) &&
       isAnswered(responses.section5.question21);
 
-    const allSectionsComplete = section1Complete && section2Complete && section3Complete && section4Complete && section5Complete;
+    // Check section 6 (6 questions)
+    const section6Complete =
+      isAnswered(responses.section6.question1) &&
+      isAnswered(responses.section6.question2) &&
+      isAnswered(responses.section6.question3) &&
+      isAnswered(responses.section6.question4) &&
+      isAnswered(responses.section6.question5) &&
+      isAnswered(responses.section6.question6);
+
+    const allSectionsComplete = section1Complete && section2Complete && section3Complete && section4Complete && section5Complete && section6Complete;
 
     if (!allSectionsComplete) {
-      console.log('📋 Submission check:', {
+      logger.log('📋 Submission check:', {
         section1: section1Complete,
         section1Details: {
           q1: isAnswered(responses.section1.question1),
@@ -619,7 +719,7 @@ export default function MySchoolLearningAssessment() {
         }
       });
     } else {
-      console.log('✅ All sections complete! Submit button should be enabled.');
+      logger.log('✅ All sections complete! Submit button should be enabled.');
     }
 
     return allSectionsComplete;
@@ -684,7 +784,7 @@ export default function MySchoolLearningAssessment() {
         const summaryDatabaseService = (await import('@/services/summaryDatabaseService')).summaryDatabaseService;
 
         if (aiSummaryService.isConfigured() && assessmentData?.id) {
-          console.log('🤖 Generating AI summary for School Learning assessment:', assessmentData.id);
+          logger.log('🤖 Generating AI summary for School Learning assessment:', assessmentData.id);
           const summaryResult = await aiSummaryService.generateSchoolLearningSummary(responses);
 
           if (summaryResult.success && summaryResult.summary) {
@@ -695,13 +795,13 @@ export default function MySchoolLearningAssessment() {
             );
 
             if (saveResult.success) {
-              console.log('✅ AI summary saved successfully:', saveResult.summaryId);
+              logger.log('✅ AI summary saved successfully:', saveResult.summaryId);
               toast({
                 title:
                   lang === 'kn'
                     ? 'ಸಾರಾಂಶ ಸಿದ್ಧವಾಗಿದೆ! 📝'
                     : lang === 'ta'
-                      ? 'சுருக்கம் உருவாக்கப்பட்டது! 📝'
+                      ? 'ಸುருக்கம் உருவாக்கப்பட்டது! 📝'
                       : 'Summary Generated! 📝',
                 description:
                   lang === 'kn'
@@ -732,16 +832,16 @@ export default function MySchoolLearningAssessment() {
                   }
                 }
               } catch (notifError) {
-                console.error('Error notifying teacher:', notifError);
+                logger.error('Error notifying teacher:', notifError);
               }
             }
           }
         }
       } catch (summaryError) {
-        console.error('Error in summary generation:', summaryError);
+        logger.error('Error in summary generation:', summaryError);
       }
     } catch (error) {
-      console.error('Error submitting assessment:', error);
+      logger.error('Error submitting assessment:', error);
       toast({
         title: "Error",
         description: "Failed to submit assessment. Please try again.",
@@ -806,7 +906,7 @@ export default function MySchoolLearningAssessment() {
                     {lang === 'kn'
                       ? 'ನನ್ನ ಉತ್ತರಗಳನ್ನು ನೋಡಿ'
                       : lang === 'ta'
-                        ? 'என் பதில்களை காண'
+                        ? 'என் பதில்களை ಕಾಣ'
                         : 'View My Answers'}
                   </Button>
                   <Button onClick={() => navigate('/student')} className="bg-green-600 hover:bg-green-700">
@@ -825,13 +925,14 @@ export default function MySchoolLearningAssessment() {
     );
   }
 
-  const sectionOrder = ['section1', 'section2', 'section3', 'section4', 'section5'] as const;
+  const sectionOrder = ['section1', 'section2', 'section3', 'section4', 'section5', 'section6'] as const;
   const sectionNames = {
     section1: 'School Experience',
     section2: 'Subjects & Learning Preferences',
     section3: 'Academic Performance & Learning Methods',
     section4: 'School Relationships & Experiences',
-    section5: 'Future & Reflection'
+    section5: 'Future & Reflection',
+    section6: 'Summary'
   };
 
   return (
@@ -873,24 +974,36 @@ export default function MySchoolLearningAssessment() {
         </Card>
 
         <div className="flex justify-center mb-6 gap-2 flex-wrap flex-col sm:flex-row">
-          {(['section1', 'section2', 'section3', 'section4', 'section5'] as const).map((section) => {
+          {(['section1', 'section2', 'section3', 'section4', 'section5', 'section6'] as const).map((section) => {
             const sectionNumber = Number(section.replace('section', ''));
-            const label =
-              lang === 'kn'
-                ? `ಭಾಗ ${sectionNumber}`
-                : lang === 'ta'
-                  ? `பகுதி ${sectionNumber}`
-                  : `Section ${sectionNumber}`;
+
+            let label = '';
+            if (sectionNumber === 6) {
+              label = lang === 'kn' ? 'ಸಾರಾಂಶ' : lang === 'ta' ? 'சுருக்கம்' : 'Summary';
+            } else {
+              label =
+                lang === 'kn'
+                  ? `ಭಾಗ ${sectionNumber}`
+                  : lang === 'ta'
+                    ? `பகுதி ${sectionNumber}`
+                    : `Section ${sectionNumber}`;
+            }
+            const isSummary = sectionNumber === 6;
+            const isLocked = isSummary && !areCoreSectionsComplete();
+
             return (
               <button
                 key={section}
-                onClick={() => setCurrentSection(section)}
-                className={`px-4 py-2 rounded-md transition-all text-sm w-full sm:w-auto ${currentSection === section
+                onClick={() => !isLocked && setCurrentSection(section)}
+                disabled={isLocked && !isReadOnly}
+                className={`px-4 py-2 rounded-md transition-all text-sm w-full sm:w-auto flex items-center justify-center gap-2 ${currentSection === section
                   ? 'bg-green-600 text-white shadow-md'
-                  : 'bg-white text-gray-600 hover:text-green-600 border border-gray-200'
+                  : isLocked ? 'bg-gray-50 text-gray-400 cursor-not-allowed border border-gray-100' : 'bg-white text-gray-600 hover:text-green-600 border border-gray-200'
                   }`}
               >
+                {isSummary && <Sparkles className={`w-3 h-3 ${isLocked ? 'text-gray-400' : 'text-yellow-500'}`} />}
                 {label}
+                {isSummary && isLocked && <Lock className="w-3 h-3 opacity-70" />}
               </button>
             );
           })}
@@ -1608,6 +1721,63 @@ export default function MySchoolLearningAssessment() {
           </Card>
         )}
 
+        {currentSection === 'section6' && (
+          <Card className="border-0 shadow-lg mb-4">
+            <CardHeader className="bg-gradient-to-r from-gray-50 to-slate-50">
+              <CardTitle className="text-xl text-gray-800">
+                {lang === 'kn'
+                  ? 'ಭಾಗ 6: ಸಾರಾಂಶ'
+                  : lang === 'ta'
+                    ? 'பகுதி 6: சுருக்கம்'
+                    : 'Section 6: Summary'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-6">
+              {[1, 2, 3, 4, 5, 6].map((qNum) => {
+                const qKey = `question${qNum}` as keyof typeof responses.section6;
+                const sq = summaryQuestions.find(q => q.sequence_number === qNum);
+
+                // Use translated fields from DB RPC, fallback to English defaults
+                const defaultHeaders = [
+                  "My future plan",
+                  null, null, null, null, null
+                ];
+                const defaultQuestions = [
+                  "Subjects I like",
+                  "Careers I can pursue based on the subjects I like",
+                  "Subjects I do not like",
+                  "Careers I can pursue if I make progress in the subjects I do not like",
+                  "Other activities / areas in which I perform well along with academic subjects",
+                  "If I improve these skills, it will help me in choosing my job / career."
+                ];
+
+                const header = sq?.translated_header || sq?.section_header || defaultHeaders[qNum - 1];
+                const questionText = sq?.translated_text || defaultQuestions[qNum - 1];
+
+                return (
+                  <div key={qKey} className="mb-6">
+                    {header && (
+                      <h3 className="text-lg font-bold text-gray-800 mb-3 bg-gray-100 p-2 rounded">
+                        {header}
+                      </h3>
+                    )}
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {questionText}
+                    </label>
+                    <Textarea
+                      value={responses.section6[qKey]}
+                      onChange={(e) => handleResponseChange('section6', qKey, e.target.value)}
+                      rows={3}
+                      readOnly={isReadOnly}
+                      className="border-gray-200 focus:border-gray-400"
+                    />
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Unified Navigation Footer */}
         <div className="flex flex-col-reverse sm:flex-row justify-between items-center mt-8 gap-4 sm:gap-0">
           <Button
@@ -1656,7 +1826,20 @@ export default function MySchoolLearningAssessment() {
                 onClick={() => {
                   const currentIndex = sectionOrder.indexOf(currentSection);
                   if (currentIndex < sectionOrder.length - 1) {
-                    setCurrentSection(sectionOrder[currentIndex + 1]);
+                    const nextSection = sectionOrder[currentIndex + 1];
+                    if (nextSection === 'section6' && !areCoreSectionsComplete()) {
+                      toast({
+                        title: lang === 'kn' ? 'ಸಾರಾಂಶ ಲಾಕ್ ಆಗಿದೆ' : lang === 'ta' ? 'சுருக்கம் பூட்டப்பட்டுள்ளது' : 'Summary Locked',
+                        description: lang === 'kn'
+                          ? 'ಸಾರಾಂಶವನ್ನು ವೀಕ್ಷಿಸಲು ದಯವಿಟ್ಟು ಎಲ್ಲಾ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ.'
+                          : lang === 'ta'
+                            ? 'சுருக்கத்தைப் பார்க்க அனைத்துக் கேள்விகளுக்கும் பதில் அளிக்கவும்.'
+                            : 'Please answer all core questions to unlock the summary.',
+                        variant: 'destructive',
+                      });
+                      return;
+                    }
+                    setCurrentSection(nextSection);
                     window.scrollTo(0, 0);
                   }
                 }}

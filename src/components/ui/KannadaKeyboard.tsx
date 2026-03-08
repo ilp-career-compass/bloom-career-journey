@@ -1,3 +1,4 @@
+﻿import { logger } from '@/lib/logger';
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import type React from 'react';
@@ -235,7 +236,7 @@ export function KannadaKeyboard({ targetInputId, targetElement, onInput, lang = 
   const insertChar = (char: string) => {
     const element = findTargetInput();
     if (!element) {
-      console.warn('⚠️ Keyboard: No input element found');
+      logger.warn('⚠️ Keyboard: No input element found');
       return;
     }
 
@@ -427,7 +428,7 @@ export function KannadaKeyboard({ targetInputId, targetElement, onInput, lang = 
 
         // Auto-open if configured (some users might prefer manual, but here we auto-open)
         setIsOpen(true);
-        console.log('✅ Keyboard: Element focused and keyboard shown:', target.tagName, target.id || target.className);
+        logger.log('✅ Keyboard: Element focused and keyboard shown:', target.tagName, target.id || target.className);
       }
     };
 
@@ -451,7 +452,7 @@ export function KannadaKeyboard({ targetInputId, targetElement, onInput, lang = 
         );
 
         if (isClickInsideKeyboard || (isTargetTextInput && targetHasLang)) {
-          console.log('✅ Keyboard: Keeping open (internal interaction or new supported input)');
+          logger.log('✅ Keyboard: Keeping open (internal interaction or new supported input)');
           if (isTargetTextInput && targetHasLang) {
             lastFocusedElementRef.current = activeElement as HTMLInputElement | HTMLTextAreaElement;
           }
@@ -465,7 +466,7 @@ export function KannadaKeyboard({ targetInputId, targetElement, onInput, lang = 
           return;
         }
 
-        console.log('🔒 Keyboard: Closing - focus moved to non-supported element:', activeElement.tagName);
+        logger.log('🔒 Keyboard: Closing - focus moved to non-supported element:', activeElement.tagName);
         setIsOpen(false);
       }, 200);
 

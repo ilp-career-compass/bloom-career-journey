@@ -1,3 +1,4 @@
+﻿import { logger } from '@/lib/logger';
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -96,15 +97,15 @@ export default function CareerGuidanceToolsAssessment() {
   useEffect(() => {
     const loadQuestions = async () => {
       try {
-        console.log('🔄 Loading Career Guidance Tools questions from database...');
+        logger.log('🔄 Loading Career Guidance Tools questions from database...');
         // Pass language to RPC
         const { data, error } = await supabase.rpc('get_career_guidance_tools_questions', { p_lang: lang } as any);
         if (error) {
-          console.error('Error loading Career Guidance Tools questions:', error);
+          logger.error('Error loading Career Guidance Tools questions:', error);
           return;
         }
         if (data && Array.isArray(data) && data.length > 0) {
-          console.log('✅ Database questions loaded:', data.length, 'questions');
+          logger.log('✅ Database questions loaded:', data.length, 'questions');
           setQuestions(data as CareerGuidanceQuestion[]);
         }
 
@@ -125,7 +126,7 @@ export default function CareerGuidanceToolsAssessment() {
         }
 
       } catch (error) {
-        console.error('Error loading Career Guidance Tools questions:', error);
+        logger.error('Error loading Career Guidance Tools questions:', error);
       } finally {
         setLoading(false);
       }
@@ -171,7 +172,7 @@ export default function CareerGuidanceToolsAssessment() {
           }
         }
       } catch (error) {
-        console.error('Error loading existing response:', error);
+        logger.error('Error loading existing response:', error);
       }
     };
 
@@ -307,7 +308,7 @@ export default function CareerGuidanceToolsAssessment() {
 
       setIsCompleted(true);
     } catch (error) {
-      console.error('Error submitting assessment:', error);
+      logger.error('Error submitting assessment:', error);
       toast({
         title: "Error",
         description: "Failed to submit assessment. Please try again.",

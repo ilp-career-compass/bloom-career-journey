@@ -1,3 +1,4 @@
+﻿import { logger } from '@/lib/logger';
 
 import { supabase } from '@/integrations/supabase/client';
 
@@ -91,13 +92,13 @@ Your name is "Vidya Saathi".
       try {
         return await this.callApi(this.endpoint, requestBody);
       } catch (error) {
-        console.warn('Primary model failed, trying fallback 1...', error);
+        logger.warn('Primary model failed, trying fallback 1...', error);
         
         // Attempt 2: Fallback Endpoint
         try {
             return await this.callApi(this.fallbackEndpoint, requestBody);
         } catch (error2) {
-            console.warn('Fallback 1 failed, trying backup...', error2);
+            logger.warn('Fallback 1 failed, trying backup...', error2);
             
             // Attempt 3: Backup Endpoint
             return await this.callApi(this.backupEndpoint, requestBody);
@@ -105,7 +106,7 @@ Your name is "Vidya Saathi".
       }
 
     } catch (error: any) {
-      console.error('AIChatService Error:', error);
+      logger.error('AIChatService Error:', error);
       return {
         success: false,
         error: error.message || 'Failed to connect to AI service.'

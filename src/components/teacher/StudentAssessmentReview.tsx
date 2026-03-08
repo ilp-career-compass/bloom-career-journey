@@ -1,3 +1,4 @@
+﻿import { logger } from '@/lib/logger';
 import { useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useAuth } from '@/hooks/useAuth';
@@ -68,13 +69,13 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
     try {
       const { data, error } = await supabase.rpc('get_inspiration_questions');
       if (error) {
-        console.error('Error fetching inspiration questions:', error);
+        logger.error('Error fetching inspiration questions:', error);
         return;
       }
-      console.log('✅ Loaded inspiration questions:', data);
+      logger.log('✅ Loaded inspiration questions:', data);
       setInspirationQuestions(data || []);
     } catch (error) {
-      console.error('Error loading inspiration questions:', error);
+      logger.error('Error loading inspiration questions:', error);
     }
   };
 
@@ -82,11 +83,11 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
     try {
       const { data, error } = await supabase.rpc('get_dreams_questions');
       if (error) {
-        console.error('Error fetching dreams questions:', error);
+        logger.error('Error fetching dreams questions:', error);
         return;
       }
       const baseQuestions = Array.isArray(data) ? data : [];
-      console.log('✅ Loaded dreams questions:', baseQuestions);
+      logger.log('✅ Loaded dreams questions:', baseQuestions);
       setDreamsQuestions(baseQuestions);
 
       // Build language-specific question text maps so teacher sees questions in student's answer language
@@ -117,22 +118,22 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
               langMap[row.key] = row.text;
             }
           });
-          console.log(`✅ Loaded Dreams i18n for ${lang}:`, Object.keys(langMap).length);
+          logger.log(`✅ Loaded Dreams i18n for ${lang}:`, Object.keys(langMap).length);
           textByLang[lang] = langMap;
         } catch (i18nError) {
-          console.warn(`⚠️ Error loading Dreams i18n for lang=${lang}:`, i18nError);
+          logger.warn(`⚠️ Error loading Dreams i18n for lang=${lang}:`, i18nError);
         }
       }
 
       setDreamsQuestionTextByLang(textByLang);
     } catch (error) {
-      console.error('Error loading dreams questions:', error);
+      logger.error('Error loading dreams questions:', error);
     }
   };
 
   const fetchAboutMeFields = async () => {
     try {
-      console.log('📥 Fetching About Me fields for all languages...');
+      logger.log('📥 Fetching About Me fields for all languages...');
       const langs: Array<'en' | 'ta' | 'kn'> = ['en', 'ta', 'kn'];
       const fieldsByLang: Record<string, any[]> = {};
 
@@ -148,26 +149,26 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
               if (Array.isArray(maybe)) rows = maybe;
             }
           } catch (err) {
-            console.warn(`About Me: get_about_me_fields_i18n failed for lang=${lang}`, err);
+            logger.warn(`About Me: get_about_me_fields_i18n failed for lang=${lang}`, err);
           }
 
           if (!rows && lang === 'en') {
             const { data, error } = await supabase.rpc('get_about_me_fields');
             if (error) {
-              console.error('Error fetching about me fields (fallback en):', error);
+              logger.error('Error fetching about me fields (fallback en):', error);
               continue;
             }
             rows = data as any[];
           }
 
           if (rows && Array.isArray(rows)) {
-            console.log(`✅ Loaded About Me fields for ${lang}:`, rows.length);
+            logger.log(`✅ Loaded About Me fields for ${lang}:`, rows.length);
             fieldsByLang[lang] = rows;
           } else {
-            console.warn(`⚠️ No About Me fields returned for lang=${lang}`);
+            logger.warn(`⚠️ No About Me fields returned for lang=${lang}`);
           }
         } catch (innerError) {
-          console.error(`Error loading about me fields for lang=${lang}:`, innerError);
+          logger.error(`Error loading about me fields for lang=${lang}:`, innerError);
         }
       }
 
@@ -185,7 +186,7 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
       }
       setAboutMeFieldsByLang(fieldsByLang);
     } catch (error) {
-      console.error('Error loading about me fields:', error);
+      logger.error('Error loading about me fields:', error);
     }
   };
 
@@ -193,11 +194,11 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
     try {
       const { data, error } = await supabase.rpc('get_school_learning_questions');
       if (error) {
-        console.error('Error fetching school learning questions:', error);
+        logger.error('Error fetching school learning questions:', error);
         return;
       }
       const baseQuestions = Array.isArray(data) ? data : [];
-      console.log('✅ Loaded school learning questions:', baseQuestions);
+      logger.log('✅ Loaded school learning questions:', baseQuestions);
       setSchoolLearningQuestions(baseQuestions);
 
       // Build language-specific maps for question text (en from base, ta/kn from i18n RPC)
@@ -226,16 +227,16 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
               langMap[row.key] = row.text;
             }
           });
-          console.log(`✅ Loaded School Learning i18n for ${lang}:`, Object.keys(langMap).length);
+          logger.log(`✅ Loaded School Learning i18n for ${lang}:`, Object.keys(langMap).length);
           textByLang[lang] = langMap;
         } catch (i18nError) {
-          console.warn(`⚠️ Error loading School Learning i18n for lang=${lang}:`, i18nError);
+          logger.warn(`⚠️ Error loading School Learning i18n for lang=${lang}:`, i18nError);
         }
       }
 
       setSchoolQuestionTextByLang(textByLang);
     } catch (error) {
-      console.error('Error loading school learning questions:', error);
+      logger.error('Error loading school learning questions:', error);
     }
   };
 
@@ -243,11 +244,11 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
     try {
       const { data, error } = await supabase.rpc('get_hobbies_questions');
       if (error) {
-        console.error('Error fetching hobbies questions:', error);
+        logger.error('Error fetching hobbies questions:', error);
         return;
       }
       const baseQuestions = Array.isArray(data) ? data : [];
-      console.log('✅ Loaded hobbies questions:', baseQuestions);
+      logger.log('✅ Loaded hobbies questions:', baseQuestions);
       setHobbiesQuestions(baseQuestions);
 
       const textByLang: Record<string, Record<string, string>> = {};
@@ -275,16 +276,16 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
               langMap[row.key] = row.text;
             }
           });
-          console.log(`✅ Loaded Hobbies i18n for ${lang}:`, Object.keys(langMap).length);
+          logger.log(`✅ Loaded Hobbies i18n for ${lang}:`, Object.keys(langMap).length);
           textByLang[lang] = langMap;
         } catch (i18nError) {
-          console.warn(`⚠️ Error loading Hobbies i18n for lang=${lang}:`, i18nError);
+          logger.warn(`⚠️ Error loading Hobbies i18n for lang=${lang}:`, i18nError);
         }
       }
 
       setHobbiesQuestionTextByLang(textByLang);
     } catch (error) {
-      console.error('Error loading hobbies questions:', error);
+      logger.error('Error loading hobbies questions:', error);
     }
   };
 
@@ -292,11 +293,11 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
     try {
       const { data, error } = await supabase.rpc('get_role_models_questions');
       if (error) {
-        console.error('Error fetching role models questions:', error);
+        logger.error('Error fetching role models questions:', error);
         return;
       }
       const baseQuestions = Array.isArray(data) ? data : [];
-      console.log('✅ Loaded role models questions:', baseQuestions);
+      logger.log('✅ Loaded role models questions:', baseQuestions);
       setRoleModelsQuestions(baseQuestions || []);
 
       const textByLang: Record<string, Record<string, string>> = {};
@@ -327,16 +328,16 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
               langMap[row.key] = row.text;
             }
           });
-          console.log(`✅ Loaded Role Models i18n for ${lang}:`, Object.keys(langMap).length);
+          logger.log(`✅ Loaded Role Models i18n for ${lang}:`, Object.keys(langMap).length);
           textByLang[lang] = langMap;
         } catch (i18nError) {
-          console.warn(`⚠️ Error loading Role Models i18n for lang=${lang}:`, i18nError);
+          logger.warn(`⚠️ Error loading Role Models i18n for lang=${lang}:`, i18nError);
         }
       }
 
       setRoleModelsQuestionTextByLang(textByLang);
     } catch (error) {
-      console.error('Error loading role models questions:', error);
+      logger.error('Error loading role models questions:', error);
     }
   };
 
@@ -344,20 +345,20 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
     try {
       const { data, error } = await supabase.rpc('get_holland_code_questions');
       if (error) {
-        console.error('Error fetching Holland Code questions:', error);
+        logger.error('Error fetching Holland Code questions:', error);
         return;
       }
       if (data && Array.isArray(data)) {
         const sorted = [...data].sort(
           (a: any, b: any) => (a.sequence_number || 0) - (b.sequence_number || 0)
         );
-        console.log('✅ Loaded Holland Code questions:', sorted.length);
+        logger.log('✅ Loaded Holland Code questions:', sorted.length);
         setHollandQuestions(sorted);
       } else {
         setHollandQuestions([]);
       }
     } catch (error) {
-      console.error('Error loading Holland Code questions:', error);
+      logger.error('Error loading Holland Code questions:', error);
       setHollandQuestions([]);
     }
   };
@@ -393,7 +394,7 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
         onReviewUpdate();
       }
     } catch (error) {
-      console.error('❌ Error updating review status:', error);
+      logger.error('❌ Error updating review status:', error);
       toast({
         title: "Error",
         description: "Failed to update review status",
@@ -409,7 +410,7 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
 
     try {
       setLoading(true);
-      console.log('📡 Fetching students...');
+      logger.log('📡 Fetching students...');
 
       // Get teacher ID
       const { data: teacherData, error: teacherError } = await supabase
@@ -419,7 +420,7 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
         .maybeSingle();
 
       if (teacherError || !teacherData) {
-        console.warn('Teacher profile not found');
+        logger.warn('Teacher profile not found');
         setStudents([]);
         return;
       }
@@ -459,10 +460,10 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
         })
       );
 
-      console.log('✅ Fetched students:', studentsWithCounts);
+      logger.log('✅ Fetched students:', studentsWithCounts);
       setStudents(studentsWithCounts);
     } catch (error: any) {
-      console.error('❌ Error fetching students:', error);
+      logger.error('❌ Error fetching students:', error);
       toast({
         title: 'Error',
         description: `Failed to load students: ${error.message}`,
@@ -476,7 +477,7 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
   const fetchAssessments = async (studentId: string) => {
     try {
       setLoadingAssessments(true);
-      console.log('📡 Fetching assessments for student:', studentId);
+      logger.log('📡 Fetching assessments for student:', studentId);
 
       const { data, error } = await supabase
         .from('assessment_responses')
@@ -486,7 +487,7 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
 
       if (error) throw error;
 
-      console.log('✅ Fetched all assessments:', data);
+      logger.log('✅ Fetched all assessments:', data);
 
       // Get only the LATEST submission for each unique assessment (type + title).
       // Prefer completed submissions over drafts, and then use timestamp comparison.
@@ -525,8 +526,8 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
       // Convert to array
       const sortedAssessments = Object.values(latestByKey);
 
-      console.log('✅ Unique assessments (latest only):', sortedAssessments);
-      console.log('📅 Assessment dates:', sortedAssessments.map((a: any) => ({
+      logger.log('✅ Unique assessments (latest only):', sortedAssessments);
+      logger.log('📅 Assessment dates:', sortedAssessments.map((a: any) => ({
         type: a.assessment_type,
         completed_at: a.completed_at,
         updated_at: a.updated_at,
@@ -534,7 +535,7 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
       })));
       setAssessments(sortedAssessments);
     } catch (error: any) {
-      console.error('❌ Error fetching assessments:', error);
+      logger.error('❌ Error fetching assessments:', error);
       toast({
         title: 'Error',
         description: `Failed to load assessments: ${error.message}`,
@@ -613,20 +614,20 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
   const renderAssessmentResponses = (assessment: Assessment) => {
     const responses = assessment.responses;
 
-    console.log('🔍 Rendering assessment:', assessment.assessment_type);
-    console.log('📊 Responses data:', responses);
-    console.log('📊 Responses JSON:', JSON.stringify(responses, null, 2));
-    console.log('📋 Inspiration questions:', inspirationQuestions);
+    logger.log('🔍 Rendering assessment:', assessment.assessment_type);
+    logger.log('📊 Responses data:', responses);
+    logger.log('📊 Responses JSON:', JSON.stringify(responses, null, 2));
+    logger.log('📋 Inspiration questions:', inspirationQuestions);
 
     // Check if it's the Inspiration assessment (has video structure)
     if (assessment.assessment_type === 'inspiration' && responses) {
       // Inspiration assessment has structure: { video1: {...}, video2: {...}, ... }
       const videoKeys = Object.keys(responses).filter(key => key.startsWith('video'));
 
-      console.log('🎥 Video keys found:', videoKeys);
+      logger.log('🎥 Video keys found:', videoKeys);
 
       if (videoKeys.length === 0) {
-        console.warn('⚠️ No video keys found in responses');
+        logger.warn('⚠️ No video keys found in responses');
         return (
           <div className="text-sm text-gray-500">No responses recorded</div>
         );
@@ -637,12 +638,12 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
           {videoKeys.map((videoKey, index) => {
             const videoData = responses[videoKey];
 
-            console.log(`🎬 Processing ${videoKey}:`, videoData);
-            console.log(`   Keys in ${videoKey}:`, Object.keys(videoData));
-            console.log(`   Full ${videoKey} structure:`, JSON.stringify(videoData, null, 2));
+            logger.log(`🎬 Processing ${videoKey}:`, videoData);
+            logger.log(`   Keys in ${videoKey}:`, Object.keys(videoData));
+            logger.log(`   Full ${videoKey} structure:`, JSON.stringify(videoData, null, 2));
 
             if (!videoData) {
-              console.warn(`⚠️ No data for ${videoKey}`);
+              logger.warn(`⚠️ No data for ${videoKey}`);
               return null;
             }
 
@@ -702,7 +703,7 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
                         ? videoData[`${questionKey}_audio`]
                         : null; // Check if audio URL is stored in responses
 
-                      console.log(`  Q${questionNum}: questionKey="${questionKey}", videoKey="${videoKey}", hasText=${!!responseText}, responseLength=${responseText.length}, audioUrl=${!!audioUrl}`);
+                      logger.log(`  Q${questionNum}: questionKey="${questionKey}", videoKey="${videoKey}", hasText=${!!responseText}, responseLength=${responseText.length}, audioUrl=${!!audioUrl}`);
 
                       // Show ALL questions for ALL videos (1-9)
                       // Display answers from database if they exist
@@ -758,11 +759,11 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
 
     // Check if it's the Dreams assessment (has part structure)
     if (assessment.assessment_type === 'dreams' && responses) {
-      console.log('💭 Rendering Dreams assessment responses');
-      console.log('📊 Dreams responses structure:', responses);
-      console.log('📊 Dreams responses keys:', Object.keys(responses || {}));
-      console.log('📋 Dreams questions:', dreamsQuestions);
-      console.log('📋 Dreams questions count:', dreamsQuestions.length);
+      logger.log('💭 Rendering Dreams assessment responses');
+      logger.log('📊 Dreams responses structure:', responses);
+      logger.log('📊 Dreams responses keys:', Object.keys(responses || {}));
+      logger.log('📋 Dreams questions:', dreamsQuestions);
+      logger.log('📋 Dreams questions count:', dreamsQuestions.length);
 
       // Dreams responses can have two structures:
       // 1. Old structure: { questionId1: "answer", questionId2: "answer", ... }
@@ -799,7 +800,7 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
 
         // If questions are not loaded, render from response structure
         if (dreamsQuestions.length === 0) {
-          console.log('⚠️ Dreams questions not loaded, rendering from response structure');
+          logger.log('⚠️ Dreams questions not loaded, rendering from response structure');
           return (
             <div className="space-y-6">
               {parts.map((partKey) => {
@@ -907,7 +908,7 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
                         // regardless of underlying global sequence_number to keep things easy to read.
                         const displayQuestionNum = questionIndex + 1;
 
-                        console.log(`  Part ${partKey}, Seq ${question.sequence_number}, Q${questionIndex + 1}: questionKey="${questionKey}", hasResponse=${!!responseText}, responseLength=${displayText.length}`);
+                        logger.log(`  Part ${partKey}, Seq ${question.sequence_number}, Q${questionIndex + 1}: questionKey="${questionKey}", hasResponse=${!!responseText}, responseLength=${displayText.length}`);
 
                         const seqNum = question.sequence_number || questionIndex + 1;
                         const translationKey = `question${seqNum}`;
@@ -1060,11 +1061,11 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
       assessment.assessment_title === 'About Me' &&
       responses
     ) {
-      console.log('👤 Rendering About Me assessment responses');
-      console.log('📊 About Me responses:', responses);
-      console.log('📊 About Me responses keys:', Object.keys(responses || {}));
-      console.log('📋 About Me fields (default):', aboutMeFields);
-      console.log('📋 About Me fields count:', aboutMeFields.length);
+      logger.log('👤 Rendering About Me assessment responses');
+      logger.log('📊 About Me responses:', responses);
+      logger.log('📊 About Me responses keys:', Object.keys(responses || {}));
+      logger.log('📋 About Me fields (default):', aboutMeFields);
+      logger.log('📋 About Me fields count:', aboutMeFields.length);
 
       // Detect language of the student's answers so we can show questions in same language
       const langKey = detectLangKeyFromResponses(responses);
@@ -1073,7 +1074,7 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
           ? aboutMeFieldsByLang[langKey]
           : aboutMeFields;
 
-      console.log('🌐 Using About Me fields for lang:', langKey, 'count:', localizedFields.length);
+      logger.log('🌐 Using About Me fields for lang:', langKey, 'count:', localizedFields.length);
 
       // About Me responses are stored as { question1: "...", question2: "...", ... }
       // Sort fields by sequence_number
@@ -1083,7 +1084,7 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
 
       // If fields are not loaded yet, try to render from response keys directly
       if (sortedFields.length === 0) {
-        console.log('⚠️ About Me fields not loaded, rendering from response keys');
+        logger.log('⚠️ About Me fields not loaded, rendering from response keys');
         const responseKeys = Object.keys(responses).filter(key =>
           key.startsWith('question') || /^question\d+$/.test(key)
         ).sort((a, b) => {
@@ -1147,7 +1148,7 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
               Array.isArray(responseText) ? responseText.join(', ') :
                 String(responseText || '');
 
-            console.log(`  Seq ${questionNum}, Q${questionNum}: questionKey="${questionKey}", fieldKey="${field.field_key}", hasResponse=${!!responseText}, responseLength=${displayText.length}, questionText="${field.question_text?.substring(0, 50)}..."`);
+            logger.log(`  Seq ${questionNum}, Q${questionNum}: questionKey="${questionKey}", fieldKey="${field.field_key}", hasResponse=${!!responseText}, responseLength=${displayText.length}, questionText="${field.question_text?.substring(0, 50)}..."`);
 
             return (
               <div key={field.field_key || questionNum} className="border-l-4 border-blue-500 pl-4">
@@ -1184,9 +1185,9 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
 
     // Check if it's School Learning assessment
     if (assessment.assessment_type === 'school_learning' && responses) {
-      console.log('📚 Rendering School Learning assessment responses (normalized)');
-      console.log('📊 Raw School Learning responses:', responses);
-      console.log('📋 School Learning questions:', schoolLearningQuestions);
+      logger.log('📚 Rendering School Learning assessment responses (normalized)');
+      logger.log('📊 Raw School Learning responses:', responses);
+      logger.log('📋 School Learning questions:', schoolLearningQuestions);
 
       // Normalize responses into the same structure used by MySchoolLearningAssessment
       const raw = responses as any;
@@ -1319,9 +1320,9 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
 
     // Check if it's Hobbies assessment
     if (assessment.assessment_type === 'hobbies' && responses) {
-      console.log('🎨 Rendering Hobbies assessment responses');
-      console.log('📊 Hobbies responses:', responses);
-      console.log('📋 Hobbies questions:', hobbiesQuestions);
+      logger.log('🎨 Rendering Hobbies assessment responses');
+      logger.log('📊 Hobbies responses:', responses);
+      logger.log('📋 Hobbies questions:', hobbiesQuestions);
 
       // In the new Hobbies assessment, responses are stored by question ID (UUID),
       // e.g. { "<questionId1>": "answer", "<questionId2>": "answer", ... }.
@@ -1382,9 +1383,9 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
 
     // Check if it's Role Models assessment
     if (assessment.assessment_type === 'role_models' && responses) {
-      console.log('👥 Rendering Role Models assessment responses');
-      console.log('📊 Role Models responses:', responses);
-      console.log('📋 Role Models questions:', roleModelsQuestions);
+      logger.log('👥 Rendering Role Models assessment responses');
+      logger.log('📊 Role Models responses:', responses);
+      logger.log('📋 Role Models questions:', roleModelsQuestions);
 
       // Role Models responses in the new assessment are stored as:
       // {
@@ -1524,9 +1525,9 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
       assessment.assessment_title === 'Holland Code (RIASEC) Test' &&
       responses
     ) {
-      console.log('🧭 Rendering Holland Code assessment responses');
-      console.log('📊 Holland responses:', responses);
-      console.log('📋 Holland questions:', hollandQuestions);
+      logger.log('🧭 Rendering Holland Code assessment responses');
+      logger.log('📊 Holland responses:', responses);
+      logger.log('📋 Holland questions:', hollandQuestions);
 
       const sortedQuestions = [...hollandQuestions].sort(
         (a: any, b: any) => (a.sequence_number || 0) - (b.sequence_number || 0)

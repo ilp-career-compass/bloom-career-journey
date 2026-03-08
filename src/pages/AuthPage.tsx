@@ -1,3 +1,4 @@
+﻿import { logger } from '@/lib/logger';
 import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -13,7 +14,7 @@ import { StateInfo, SchoolClass } from '@/integrations/supabase/types';
 import { useLocation } from 'react-router-dom';
 
 export default function AuthPage() {
-  console.log('AuthPage: Component rendering');
+  logger.log('AuthPage: Component rendering');
 
   const { user, userProfile, signIn, signUp } = useAuth();
   const location = useLocation();
@@ -57,7 +58,7 @@ export default function AuthPage() {
 
   // Load states on component mount
   useEffect(() => {
-    console.log('AuthPage: useEffect triggered, calling loadStates');
+    logger.log('AuthPage: useEffect triggered, calling loadStates');
     loadStates();
   }, []);
 
@@ -72,7 +73,7 @@ export default function AuthPage() {
 
   // Load states from database
   const loadStates = async () => {
-    console.log('Loading states...');
+    logger.log('Loading states...');
     setLoadingStates(true);
     try {
       // Attempt 1: Full query with organization data
@@ -81,7 +82,7 @@ export default function AuthPage() {
         .select('id, state_name, state_code, org_id, orgs(name)')
         .order('state_name');
       if (error) {
-        console.warn('Full state query failed, retrying with basic fields:', error);
+        logger.warn('Full state query failed, retrying with basic fields:', error);
         // Attempt 2: Basic fields only
         const retry = await supabase
           .from('states')
@@ -91,8 +92,8 @@ export default function AuthPage() {
         error = retry.error as any;
       }
       if (error) {
-        console.error('State query failed after retry:', error);
-        console.log('🔄 States table may not exist, using fallback data');
+        logger.error('State query failed after retry:', error);
+        logger.log('🔄 States table may not exist, using fallback data');
         // As a final fallback, populate a comprehensive list so the page works
         setStates([
           { state_id: 'fallback-1', state_name: 'ILP-Tamil Nadu', state_code: 'ILP-TN', org_name: 'ILP Foundation' },
@@ -102,9 +103,9 @@ export default function AuthPage() {
         ]);
         return;
       }
-      console.log('Raw states data received:', data);
+      logger.log('Raw states data received:', data);
       const rawStates = (data || []).filter((s: any) => s && s.id && s.state_name);
-      console.log('Filtered states:', rawStates);
+      logger.log('Filtered states:', rawStates);
       const uniqueStates = Array.from(new Map(rawStates.map((s: any) => [s.id, s])).values());
       const statesData = uniqueStates.map((state: any) => ({
         state_id: String(state.id),
@@ -112,10 +113,10 @@ export default function AuthPage() {
         state_code: String((state as any).state_code || ''),
         org_name: String((state as any).orgs?.name || '')
       }));
-      console.log('Final states data:', statesData);
+      logger.log('Final states data:', statesData);
       setStates(statesData);
     } catch (error) {
-      console.error('Error loading states:', error);
+      logger.error('Error loading states:', error);
       setStates([]);
     } finally {
       setLoadingStates(false);
@@ -125,11 +126,11 @@ export default function AuthPage() {
   // Load classes for selected state
   const loadClasses = async (stateId: string) => {
     try {
-      console.log('Loading classes for state:', stateId);
+      logger.log('Loading classes for state:', stateId);
 
       // Check if it's a fallback state
       if (stateId.startsWith('fallback-')) {
-        console.log('🔄 Using fallback classes for fallback state');
+        logger.log('🔄 Using fallback classes for fallback state');
         const fallbackClasses = [
           { class_id: 'fallback-class-1', class_name: 'Class 8' },
           { class_id: 'fallback-class-2', class_name: 'Class 9' },
@@ -148,12 +149,12 @@ export default function AuthPage() {
         .order('name');
 
       if (error) {
-        console.error('Error loading classes:', error);
+        logger.error('Error loading classes:', error);
         setClasses([]);
         return;
       }
 
-      console.log('Classes data received:', data);
+      logger.log('Classes data received:', data);
       const rawClasses = (data || []).filter((r: any) => r && r.id && r.name);
       const uniqueClasses = Array.from(new Map(rawClasses.map((r: any) => [r.id, r])).values());
       const classesData = uniqueClasses.map((row: any) => ({
@@ -161,10 +162,10 @@ export default function AuthPage() {
         class_name: String(row.name),
       }));
 
-      console.log('Processed classes data:', classesData);
+      logger.log('Processed classes data:', classesData);
       setClasses(classesData);
     } catch (error) {
-      console.error('Error loading classes:', error);
+      logger.error('Error loading classes:', error);
       setClasses([]);
     }
   };
@@ -172,7 +173,7 @@ export default function AuthPage() {
   // Redirect if already authenticated
   useEffect(() => {
     if (user && userProfile) {
-      console.log('AuthPage: User and profile available, redirecting...', {
+      logger.log('AuthPage: User and profile available, redirecting...', {
         role: userProfile.role,
         userId: user.id
       });
@@ -184,7 +185,7 @@ export default function AuthPage() {
     const redirectPath = userProfile.role === 'admin' ? '/admin'
       : userProfile.role === 'teacher' ? '/teacher'
         : `/student?lang=${userProfile.preferred_language || 'en'}`;
-    console.log('AuthPage: Redirecting to:', redirectPath);
+    logger.log('AuthPage: Redirecting to:', redirectPath);
     return <Navigate to={redirectPath} replace />;
   }
 
@@ -194,7 +195,7 @@ export default function AuthPage() {
     const { error } = await signIn(signInForm.identifier, signInForm.password);
     setLoading(false);
     if (error) {
-      console.error('Sign in error:', error);
+      logger.error('Sign in error:', error);
     }
   };
 
@@ -204,13 +205,13 @@ export default function AuthPage() {
 
     // Validate required fields based on role
     if (!signUpForm.stateId) {
-      console.error('State selection is required');
+      logger.error('State selection is required');
       setLoading(false);
       return;
     }
 
     if (signUpForm.role === 'student' && !signUpForm.classId) {
-      console.error('Class selection is required for students');
+      logger.error('Class selection is required for students');
       setLoading(false);
       return;
     }
@@ -232,7 +233,7 @@ export default function AuthPage() {
     );
     setLoading(false);
     if (error) {
-      console.error('Sign up error:', error);
+      logger.error('Sign up error:', error);
     }
   };
 

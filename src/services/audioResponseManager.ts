@@ -1,3 +1,5 @@
+﻿import { logger } from '@/lib/logger';
+
 // Audio Response Manager
 // Integrates audio recording, transcription, and storage
 // Handles offline queuing and sync for rural students
@@ -123,7 +125,7 @@ class AudioResponseManager {
           if (audioData.duration > 60000) {
             try {
               // Use the public URL we just uploaded
-              console.log('🎤 Starting long-running transcription for audio > 60s:', {
+              logger.log('🎤 Starting long-running transcription for audio > 60s:', {
                 url: uploadResult.url,
                 duration: audioData.duration,
                 language: transcriptionLanguage
@@ -136,7 +138,7 @@ class AudioResponseManager {
                 }
               );
             } catch (longRunError) {
-              console.warn('⚠️ Long-running transcription failed, attempting Gemini fallback:', longRunError);
+              logger.warn('⚠️ Long-running transcription failed, attempting Gemini fallback:', longRunError);
               // Fallback to Gemini directly, which handles larger context/files well
               transcriptionResult = await speechToTextService.transcribeWithGemini(
                 audioData.audioBlob,
@@ -152,7 +154,7 @@ class AudioResponseManager {
               );
             }
           } else {
-            console.log('🎤 Starting standard transcription:', {
+            logger.log('🎤 Starting standard transcription:', {
               blobSize: audioData.audioBlob.size,
               blobType: audioData.audioBlob.type,
               duration: audioData.duration,
@@ -167,7 +169,7 @@ class AudioResponseManager {
             );
           }
 
-          console.log('✅ Transcription completed:', {
+          logger.log('✅ Transcription completed:', {
             transcriptLength: transcriptionResult.transcript?.length || 0,
             confidence: transcriptionResult.confidence,
             languageCode: transcriptionResult.languageCode,
@@ -189,30 +191,30 @@ class AudioResponseManager {
 
           onProgress?.(80);
         } catch (error) {
-          console.error('❌ Transcription failed:', error);
+          logger.error('❌ Transcription failed:', error);
 
           // Log helpful error message for missing API keys
           if (error instanceof Error) {
             if (error.message.includes('Google API key not configured')) {
-              console.error('❌ Transcription Error: Google Speech-to-Text API key is not configured.');
-              console.error('📝 To enable transcription, set VITE_GOOGLE_SPEECH_API_KEY in your .env file.');
-              console.error('🔗 Get your API key from: https://console.cloud.google.com/apis/credentials');
+              logger.error('❌ Transcription Error: Google Speech-to-Text API key is not configured.');
+              logger.error('📝 To enable transcription, set VITE_GOOGLE_SPEECH_API_KEY in your .env file.');
+              logger.error('🔗 Get your API key from: https://console.cloud.google.com/apis/credentials');
             } else if (error.message.includes('Azure Speech Services not configured')) {
-              console.error('❌ Transcription Error: Azure Speech Services is not configured.');
-              console.error('📝 To enable transcription fallback, set VITE_AZURE_SPEECH_KEY and VITE_AZURE_SPEECH_REGION in your .env file.');
+              logger.error('❌ Transcription Error: Azure Speech Services is not configured.');
+              logger.error('📝 To enable transcription fallback, set VITE_AZURE_SPEECH_KEY and VITE_AZURE_SPEECH_REGION in your .env file.');
             } else if (error.message.includes('Transcription failed on all services')) {
-              console.error('❌ Transcription Error: Both Google and Azure transcription services failed.');
-              console.error('📝 Please configure at least one transcription service (Google or Azure) in your .env file.');
+              logger.error('❌ Transcription Error: Both Google and Azure transcription services failed.');
+              logger.error('📝 Please configure at least one transcription service (Google or Azure) in your .env file.');
             } else {
               // Log other transcription errors with full details
-              console.error('❌ Transcription Error Details:', {
+              logger.error('❌ Transcription Error Details:', {
                 message: error.message,
                 stack: error.stack,
                 name: error.name
               });
             }
           } else {
-            console.error('❌ Unknown transcription error:', error);
+            logger.error('❌ Unknown transcription error:', error);
           }
 
           // Continue without transcription - don't fail the entire audio save process
@@ -232,10 +234,10 @@ class AudioResponseManager {
       });
 
       if (!dbResult.success) {
-        console.warn('Database save failed, but continuing:', dbResult.error);
+        logger.warn('Database save failed, but continuing:', dbResult.error);
         // Don't throw error for RLS policy issues, just log it
         if (dbResult.error?.includes('row-level security policy')) {
-          console.log('RLS policy error ignored - continuing without database save');
+          logger.log('RLS policy error ignored - continuing without database save');
         } else if (this.config!.studentId !== 'test-student-123') {
           throw new Error(dbResult.error || 'Database save failed');
         }
@@ -299,7 +301,7 @@ class AudioResponseManager {
         maxRetries: 3,
         onProgress,
         onError: (error) => {
-          console.error('Upload error:', error);
+          logger.error('Upload error:', error);
         },
       });
 
@@ -326,9 +328,9 @@ class AudioResponseManager {
   }): Promise<{ success: boolean; error?: string }> {
     try {
       // For testing, skip database save if using test data
-      console.log('saveAudioResponse called with studentId:', this.config!.studentId);
+      logger.log('saveAudioResponse called with studentId:', this.config!.studentId);
       if (this.config!.studentId === 'test-student-123') {
-        console.log('Test mode: Skipping database save for audio file');
+        logger.log('Test mode: Skipping database save for audio file');
         return { success: true };
       }
 
@@ -370,7 +372,7 @@ class AudioResponseManager {
 
         // For testing, skip assessment_responses update if using test data
         if (this.config!.assessmentId === 'test-assessment-456') {
-          console.log('Test mode: Skipping assessment_responses update');
+          logger.log('Test mode: Skipping assessment_responses update');
           return { success: true };
         }
 
@@ -383,7 +385,7 @@ class AudioResponseManager {
 
         // If column missing, skip gracefully
         if (fetchError && (fetchError.code === '42703' || (fetchError.message || '').includes('audio_responses'))) {
-          console.warn('audio_responses column missing, skipping column update');
+          logger.warn('audio_responses column missing, skipping column update');
           return { success: true };
         }
 
@@ -407,7 +409,7 @@ class AudioResponseManager {
 
         // If column missing on update, skip gracefully
         if (updateError && (updateError.code === '42703' || (updateError.message || '').includes('audio_responses'))) {
-          console.warn('audio_responses column missing on update, skipping');
+          logger.warn('audio_responses column missing on update, skipping');
         } else if (updateError) {
           throw updateError;
         }
@@ -416,7 +418,7 @@ class AudioResponseManager {
         if (!(colError?.code === '42703' || (colError?.message || '').includes('audio_responses'))) {
           throw colError;
         }
-        console.warn('Skipping audio_responses update due to column error:', colError);
+        logger.warn('Skipping audio_responses update due to column error:', colError);
       }
 
       return { success: true };
@@ -454,7 +456,7 @@ class AudioResponseManager {
         this.offlineQueue = JSON.parse(stored);
       }
     } catch (error) {
-      console.error('Failed to load offline queue:', error);
+      logger.error('Failed to load offline queue:', error);
       this.offlineQueue = [];
     }
   }
@@ -467,7 +469,7 @@ class AudioResponseManager {
       return;
     }
 
-    console.log(`Syncing ${this.offlineQueue.length} offline audio responses...`);
+    logger.log(`Syncing ${this.offlineQueue.length} offline audio responses...`);
 
     const queue = [...this.offlineQueue];
     this.offlineQueue = [];
@@ -475,9 +477,9 @@ class AudioResponseManager {
     for (const audioData of queue) {
       try {
         await this.processAudioResponse(audioData);
-        console.log(`Synced audio response: ${audioData.questionId}`);
+        logger.log(`Synced audio response: ${audioData.questionId}`);
       } catch (error) {
-        console.error(`Failed to sync audio response ${audioData.questionId}:`, error);
+        logger.error(`Failed to sync audio response ${audioData.questionId}:`, error);
         // Re-queue failed items
         this.offlineQueue.push(audioData);
       }
@@ -540,7 +542,7 @@ class AudioResponseManager {
         upload_success_rate: 0,
       };
     } catch (error) {
-      console.error('Failed to get audio response stats:', error);
+      logger.error('Failed to get audio response stats:', error);
       return null;
     }
   }
@@ -573,7 +575,7 @@ class AudioResponseManager {
         languageDetected: item.language_detected,
       }));
     } catch (error) {
-      console.error('Failed to get assessment audio summary:', error);
+      logger.error('Failed to get assessment audio summary:', error);
       return null;
     }
   }

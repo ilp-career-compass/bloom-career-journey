@@ -1,3 +1,4 @@
+﻿import { logger } from '@/lib/logger';
 import React, { useMemo, useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,7 +32,7 @@ export default function HollandCodeTestDB({ onCompleted }: { onCompleted?: (code
           setHollandData(data);
         }
       } catch (error) {
-        console.error('Error loading Holland Code data:', error);
+        logger.error('Error loading Holland Code data:', error);
       } finally {
         setLoading(false);
       }
@@ -96,7 +97,7 @@ export default function HollandCodeTestDB({ onCompleted }: { onCompleted?: (code
       setResult(hollandCode);
       onCompleted?.(hollandCode);
     } catch (error) {
-      console.error('Error submitting Holland Code test:', error);
+      logger.error('Error submitting Holland Code test:', error);
     } finally {
       setSubmitting(false);
     }

@@ -1,3 +1,4 @@
+﻿import { logger } from '@/lib/logger';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,44 +16,44 @@ export default function AssessmentTestPage() {
         const results: any = {};
 
         // Test 1: Get Inspiration Assessment Template
-        console.log('Testing Inspiration Assessment Template...');
+        logger.log('Testing Inspiration Assessment Template...');
         const inspirationTemplate = await AssessmentService.getAssessmentTemplate('inspiration');
         results.inspirationTemplate = inspirationTemplate ? 'SUCCESS' : 'FAILED';
-        console.log('Inspiration Template:', inspirationTemplate);
+        logger.log('Inspiration Template:', inspirationTemplate);
 
         // Test 2: Get Inspiration Media Sources
-        console.log('Testing Inspiration Media Sources...');
+        logger.log('Testing Inspiration Media Sources...');
         const inspirationMedia = await AssessmentService.getMediaSources('inspiration');
         results.inspirationMedia = inspirationMedia.length > 0 ? 'SUCCESS' : 'FAILED';
-        console.log('Inspiration Media:', inspirationMedia);
+        logger.log('Inspiration Media:', inspirationMedia);
 
         // Test 3: Get Holland Code Data
-        console.log('Testing Holland Code Data...');
+        logger.log('Testing Holland Code Data...');
         const hollandData = await AssessmentService.getHollandCodeData();
         results.hollandData = hollandData ? 'SUCCESS' : 'FAILED';
-        console.log('Holland Code Data:', hollandData);
+        logger.log('Holland Code Data:', hollandData);
 
         // Test 4: Get Dreams Assessment Template
-        console.log('Testing Dreams Assessment Template...');
+        logger.log('Testing Dreams Assessment Template...');
         const dreamsTemplate = await AssessmentService.getAssessmentTemplate('dreams');
         results.dreamsTemplate = dreamsTemplate ? 'SUCCESS' : 'FAILED';
-        console.log('Dreams Template:', dreamsTemplate);
+        logger.log('Dreams Template:', dreamsTemplate);
 
         // Test 5: Get School Learning Assessment Template
-        console.log('Testing School Learning Assessment Template...');
+        logger.log('Testing School Learning Assessment Template...');
         const schoolTemplate = await AssessmentService.getAssessmentTemplate('school_learning');
         results.schoolTemplate = schoolTemplate ? 'SUCCESS' : 'FAILED';
-        console.log('School Template:', schoolTemplate);
+        logger.log('School Template:', schoolTemplate);
 
         // Test 6: Get All Assessment Templates
-        console.log('Testing All Assessment Templates...');
+        logger.log('Testing All Assessment Templates...');
         const allTemplates = await AssessmentService.getAllAssessmentTemplates();
         results.allTemplates = allTemplates.length > 0 ? 'SUCCESS' : 'FAILED';
-        console.log('All Templates:', allTemplates);
+        logger.log('All Templates:', allTemplates);
 
         setTestResults(results);
       } catch (error) {
-        console.error('Test error:', error);
+        logger.error('Test error:', error);
         setTestResults({ error: 'Test failed with error' });
       } finally {
         setLoading(false);

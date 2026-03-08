@@ -1,3 +1,5 @@
+﻿import { logger } from '@/lib/logger';
+
 // Error handling utilities for assessment components
 
 export const safeObjectEntries = (obj: any): [string, any][] => {
@@ -53,30 +55,30 @@ export const safeNumber = (value: any, defaultValue: number = 0): number => {
 
 // Database error handling
 export const handleDatabaseError = (error: any, context: string): void => {
-  console.error(`❌ Database error in ${context}:`, error);
+  logger.error(`❌ Database error in ${context}:`, error);
   
   if (error?.message) {
-    console.error(`Error message: ${error.message}`);
+    logger.error(`Error message: ${error.message}`);
   }
   
   if (error?.details) {
-    console.error(`Error details: ${error.details}`);
+    logger.error(`Error details: ${error.details}`);
   }
   
   if (error?.hint) {
-    console.error(`Error hint: ${error.hint}`);
+    logger.error(`Error hint: ${error.hint}`);
   }
 };
 
 // API response validation
 export const validateApiResponse = (data: any, context: string): boolean => {
   if (!data) {
-    console.warn(`⚠️ No data received in ${context}`);
+    logger.warn(`⚠️ No data received in ${context}`);
     return false;
   }
   
   if (Array.isArray(data) && data.length === 0) {
-    console.warn(`⚠️ Empty array received in ${context}`);
+    logger.warn(`⚠️ Empty array received in ${context}`);
     return false;
   }
   

@@ -1,4 +1,5 @@
-﻿import { useState, useEffect, useCallback, useMemo } from 'react';
+﻿import { logger } from '@/lib/logger';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -121,7 +122,7 @@ export default function MyInspirationAssessmentDB() {
           setVideoProgress(initialProgress);
         }
       } catch (error) {
-        console.error('Error loading assessment data:', error);
+        logger.error('Error loading assessment data:', error);
         toast({
           title: "Error",
           description: "Failed to load assessment data. Please try again.",
@@ -199,7 +200,7 @@ export default function MyInspirationAssessmentDB() {
         if (insertError) throw insertError;
         setAssessmentRecordId(inserted.id);
       } catch (e) {
-        console.error('Failed to ensure assessment record for audio responses:', e);
+        logger.error('Failed to ensure assessment record for audio responses:', e);
       }
     };
 
@@ -271,7 +272,7 @@ export default function MyInspirationAssessmentDB() {
           }
         }
       } catch (error) {
-        console.error('Error checking existing response:', error);
+        logger.error('Error checking existing response:', error);
       }
     };
 
@@ -337,7 +338,7 @@ export default function MyInspirationAssessmentDB() {
         description: "Your audio response has been saved successfully.",
       });
     } catch (error) {
-      console.error('Error saving audio response:', error);
+      logger.error('Error saving audio response:', error);
       toast({
         title: "Error",
         description: "Failed to save audio response. Please try again.",
@@ -413,7 +414,7 @@ export default function MyInspirationAssessmentDB() {
                       : 'Your teacher will review your reflection summary.',
               });
             } else {
-              console.error('Failed to save summary:', saveResult.error);
+              logger.error('Failed to save summary:', saveResult.error);
               toast({
                 title: "Summary Generation Issue",
                 description: "Your assessment is saved, but summary generation needs attention.",
@@ -421,7 +422,7 @@ export default function MyInspirationAssessmentDB() {
               });
             }
           } else {
-            console.error('Failed to generate summary:', summaryResult.error);
+            logger.error('Failed to generate summary:', summaryResult.error);
             toast({
               title: "Summary Generation Issue",
               description: "Your assessment is saved. Summary will be generated later.",
@@ -429,16 +430,16 @@ export default function MyInspirationAssessmentDB() {
             });
           }
         } else {
-          console.warn('Gemini API not configured, skipping summary generation');
+          logger.warn('Gemini API not configured, skipping summary generation');
         }
       } catch (summaryError) {
-        console.error('Error in summary generation:', summaryError);
+        logger.error('Error in summary generation:', summaryError);
         // Don't fail the entire submission if summary generation fails
       }
 
       setIsCompleted(true);
     } catch (error) {
-      console.error('Error submitting assessment:', error);
+      logger.error('Error submitting assessment:', error);
       toast({
         title: "Error",
         description: "Failed to submit assessment. Please try again.",

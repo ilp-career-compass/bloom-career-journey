@@ -1,3 +1,4 @@
+﻿import { logger } from '@/lib/logger';
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -105,20 +106,20 @@ export default function HollandCodeAssessment() {
           setInstructions(template.instructions || '');
         }
 
-        console.log('🔄 Loading Holland Code questions from database...');
+        logger.log('🔄 Loading Holland Code questions from database...');
         const { data, error } = await supabase.rpc('get_holland_code_questions');
         if (error) {
-          console.error('Error loading Holland Code questions:', error);
+          logger.error('Error loading Holland Code questions:', error);
           return;
         }
         if (data && Array.isArray(data) && data.length > 0) {
-          console.log('✅ Database questions loaded:', data.length, 'questions');
+          logger.log('✅ Database questions loaded:', data.length, 'questions');
           // Sort by sequence_number to ensure correct order
           const sorted = (data as HollandQuestion[]).sort((a, b) => a.sequence_number - b.sequence_number);
           setQuestions(sorted);
         }
       } catch (error) {
-        console.error('Error loading Holland Code data:', error);
+        logger.error('Error loading Holland Code data:', error);
       } finally {
         setLoading(false);
       }
@@ -160,7 +161,7 @@ export default function HollandCodeAssessment() {
             try {
               responses = JSON.parse(responses);
             } catch {
-              console.warn('⚠️ Failed to parse Holland responses JSON string, using raw value');
+              logger.warn('⚠️ Failed to parse Holland responses JSON string, using raw value');
             }
           }
 
@@ -183,7 +184,7 @@ export default function HollandCodeAssessment() {
           }
         }
       } catch (error) {
-        console.error('Error loading existing response:', error);
+        logger.error('Error loading existing response:', error);
       }
     };
 
@@ -345,7 +346,7 @@ export default function HollandCodeAssessment() {
         // If navigation fails for any reason, stay on the completion screen
       }
     } catch (error) {
-      console.error('Error submitting assessment:', error);
+      logger.error('Error submitting assessment:', error);
       toast({
         title: "Error",
         description: "Failed to submit assessment. Please try again.",

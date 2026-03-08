@@ -1,3 +1,5 @@
+﻿import { logger } from '@/lib/logger';
+
 export class SarvamStreamingService {
     private ws: WebSocket | null = null;
     private isConnected = false;
@@ -22,11 +24,11 @@ export class SarvamStreamingService {
 
             try {
                 const socketUrl = `${this.url}?language_code=${languageCode}`;
-                console.log('🔌 [SarvamService] Connecting to:', socketUrl);
+                logger.log('🔌 [SarvamService] Connecting to:', socketUrl);
                 this.ws = new WebSocket(socketUrl);
 
                 this.ws.onopen = () => {
-                    console.log('✅ [SarvamService] Connected');
+                    logger.log('✅ [SarvamService] Connected');
                     this.isConnected = true;
                     resolve();
                 };
@@ -36,19 +38,19 @@ export class SarvamStreamingService {
                         const data = JSON.parse(event.data);
                         this.handleMessage(data);
                     } catch (e) {
-                        console.warn('⚠️ [SarvamService] Failed to parse message:', event.data);
+                        logger.warn('⚠️ [SarvamService] Failed to parse message:', event.data);
                     }
                 };
 
                 this.ws.onerror = (event) => {
-                    console.error('❌ [SarvamService] WebSocket Error:', event);
+                    logger.error('❌ [SarvamService] WebSocket Error:', event);
                     this.isConnected = false;
                     if (this.onErrorCallback) this.onErrorCallback('Connection error');
                     reject(new Error('WebSocket connection failed'));
                 };
 
                 this.ws.onclose = (event) => {
-                    console.log('🔌 [SarvamService] Disconnected:', event.code, event.reason);
+                    logger.log('🔌 [SarvamService] Disconnected:', event.code, event.reason);
                     this.isConnected = false;
                 };
 
@@ -63,10 +65,10 @@ export class SarvamStreamingService {
      */
     sendAudioChunk(base64Audio: string) {
         if (this.ws && this.isConnected && this.ws.readyState === WebSocket.OPEN) {
-            console.log(`📤 Sending ${base64Audio.length} chars to Proxy`);
+            logger.log(`📤 Sending ${base64Audio.length} chars to Proxy`);
             this.ws.send(base64Audio);
         } else {
-            console.warn('⚠️ Cannot send audio: WebSocket NOT OPEN', this.ws?.readyState);
+            logger.warn('⚠️ Cannot send audio: WebSocket NOT OPEN', this.ws?.readyState);
         }
     }
 
@@ -74,7 +76,7 @@ export class SarvamStreamingService {
      * Handle incoming messages from Sarvam (via Proxy)
      */
     private handleMessage(data: any) {
-        console.log('📩 [SarvamService] RAW Message:', JSON.stringify(data));
+        logger.log('📩 [SarvamService] RAW Message:', JSON.stringify(data));
 
         // Extract transcript text from various possible formats
         let transcriptText = "";
@@ -99,7 +101,7 @@ export class SarvamStreamingService {
         if (transcriptText) {
             // Handle "Hello" vs "Hello." duplicates? 
             // Ideally we just pass what we get. The UI appends it.
-            console.log('📝 Extracted Transcript:', transcriptText);
+            logger.log('📝 Extracted Transcript:', transcriptText);
             if (this.onTranscriptCallback) {
                 this.onTranscriptCallback(transcriptText, true);
             }
@@ -107,26 +109,26 @@ export class SarvamStreamingService {
 
         // Handle events
         if (data.type === 'speech_start' || (data.type === 'events' && data.data?.signal_type === 'START_SPEECH')) {
-            console.log('🎤 [SarvamService] Speech Started');
+            logger.log('🎤 [SarvamService] Speech Started');
         } else if (data.type === 'speech_end' || (data.type === 'events' && data.data?.signal_type === 'END_SPEECH')) {
-            console.log('mb [SarvamService] Speech Ended');
+            logger.log('mb [SarvamService] Speech Ended');
         }
     }
 
     disconnect() {
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-            console.log('🛑 [SarvamService] Sending STOP command...');
+            logger.log('🛑 [SarvamService] Sending STOP command...');
             try {
                 this.ws.send('STOP'); // Signal backend to flush buffer
             } catch (e) {
-                console.error('⚠️ [SarvamService] Failed to send STOP:', e);
+                logger.error('⚠️ [SarvamService] Failed to send STOP:', e);
             }
 
             // Wait for flush response before closing
             // Increased to 2500ms to allow round-trip time for final transcript
             setTimeout(() => {
                 if (this.ws) {
-                    console.log('🔌 [SarvamService] Closing connection now (timeout reached).');
+                    logger.log('🔌 [SarvamService] Closing connection now (timeout reached).');
                     this.ws.close();
                     this.ws = null;
                 }

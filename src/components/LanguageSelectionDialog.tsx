@@ -1,3 +1,4 @@
+﻿import { logger } from '@/lib/logger';
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -43,7 +44,7 @@ export default function LanguageSelectionDialog({ open, onOpenChange }: Props) {
             await refreshUserProfile();
             onOpenChange(false);
         } catch (err) {
-            console.error('Failed to save language selection:', err);
+            logger.error('Failed to save language selection:', err);
         } finally {
             setSaving(false);
         }

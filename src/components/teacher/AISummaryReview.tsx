@@ -1,3 +1,4 @@
+﻿import { logger } from '@/lib/logger';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -77,7 +78,7 @@ export default function AISummaryReview({ selectedStudentId }: AISummaryReviewPr
 
     try {
       setLoading(true);
-      console.log('📡 Fetching students for AI summaries...');
+      logger.log('📡 Fetching students for AI summaries...');
 
       // Get teacher ID
       const { data: teacherData, error: teacherError } = await supabase
@@ -87,7 +88,7 @@ export default function AISummaryReview({ selectedStudentId }: AISummaryReviewPr
         .maybeSingle();
 
       if (teacherError || !teacherData) {
-        console.warn('Teacher profile not found');
+        logger.warn('Teacher profile not found');
         setStudents([]);
         return;
       }
@@ -166,10 +167,10 @@ export default function AISummaryReview({ selectedStudentId }: AISummaryReviewPr
         })
       );
 
-      console.log('✅ Fetched students:', studentsWithCounts);
+      logger.log('✅ Fetched students:', studentsWithCounts);
       setStudents(studentsWithCounts);
     } catch (error: any) {
-      console.error('❌ Error fetching students:', error);
+      logger.error('❌ Error fetching students:', error);
       toast({
         title: 'Error',
         description: `Failed to load students: ${error.message}`,
@@ -185,7 +186,7 @@ export default function AISummaryReview({ selectedStudentId }: AISummaryReviewPr
 
     try {
       setLoading(true);
-      console.log('📡 Fetching AI summaries for student:', studentId);
+      logger.log('📡 Fetching AI summaries for student:', studentId);
 
       // Get all assessment responses for this student
       const { data: assessmentResponses, error: arError } = await supabase
@@ -251,7 +252,7 @@ export default function AISummaryReview({ selectedStudentId }: AISummaryReviewPr
         .order('generated_at', { ascending: false });
 
       if (summariesError) {
-        console.error('❌ Error fetching summaries:', summariesError);
+        logger.error('❌ Error fetching summaries:', summariesError);
         throw summariesError;
       }
 
@@ -262,10 +263,10 @@ export default function AISummaryReview({ selectedStudentId }: AISummaryReviewPr
         .eq('id', studentId)
         .maybeSingle();
 
-      console.log('🔍 Debug student fetch:', { studentId, studentData });
+      logger.log('🔍 Debug student fetch:', { studentId, studentData });
 
       if (!studentData?.user_id) {
-        console.error('❌ Student user_id missing for:', studentId, studentData);
+        logger.error('❌ Student user_id missing for:', studentId, studentData);
         toast({
           title: 'Student Data Warning',
           description: 'Could not find user ID for this student. Summary generation may fail.',
@@ -296,7 +297,7 @@ export default function AISummaryReview({ selectedStudentId }: AISummaryReviewPr
         // Filter out any nulls and any non-supported assessment types just in case
         .filter((s: any) => s && SUMMARY_SUPPORTED_TYPES.includes(s.assessment_type));
 
-      console.log('✅ Fetched AI summaries:', enrichedSummaries);
+      logger.log('✅ Fetched AI summaries:', enrichedSummaries);
       setSummaries(enrichedSummaries);
 
       // Find assessments without summaries
@@ -310,10 +311,10 @@ export default function AISummaryReview({ selectedStudentId }: AISummaryReviewPr
           student_user_id: studentData?.user_id || null
         }));
 
-      console.log('⚠️ Assessments without summaries:', assessmentsNeedingSummaries.length);
+      logger.log('⚠️ Assessments without summaries:', assessmentsNeedingSummaries.length);
       setAssessmentsWithoutSummaries(assessmentsNeedingSummaries);
     } catch (error: any) {
-      console.error('❌ Error fetching summaries:', error);
+      logger.error('❌ Error fetching summaries:', error);
       toast({
         title: 'Error',
         description: `Failed to load AI summaries: ${error.message}`,
@@ -357,12 +358,12 @@ export default function AISummaryReview({ selectedStudentId }: AISummaryReviewPr
         try {
           // Validate student_user_id before attempting generation
           if (!assessment.student_user_id) {
-            console.error(`❌ Missing student_user_id for ${assessment.student_name}. Skipping.`);
+            logger.error(`❌ Missing student_user_id for ${assessment.student_name}. Skipping.`);
             failCount++;
             continue;
           }
 
-          console.log(`🤖 Generating summary for ${assessment.student_name} (${assessment.assessment_type})...`);
+          logger.log(`🤖 Generating summary for ${assessment.student_name} (${assessment.assessment_type})...`);
 
           // Determine which summary generator to use based on assessment type
           let summaryResult;
@@ -391,18 +392,18 @@ export default function AISummaryReview({ selectedStudentId }: AISummaryReviewPr
 
             if (saveResult.success) {
               successCount++;
-              console.log(`✅ Generated summary for ${assessment.student_name}`);
+              logger.log(`✅ Generated summary for ${assessment.student_name}`);
             } else {
               failCount++;
-              console.error(`❌ Failed to save summary for ${assessment.student_name}:`, saveResult.error);
+              logger.error(`❌ Failed to save summary for ${assessment.student_name}:`, saveResult.error);
             }
           } else {
             failCount++;
-            console.error(`❌ Failed to generate summary for ${assessment.student_name}:`, summaryResult.error);
+            logger.error(`❌ Failed to generate summary for ${assessment.student_name}:`, summaryResult.error);
           }
         } catch (error) {
           failCount++;
-          console.error(`❌ Exception for ${assessment.student_name}:`, error);
+          logger.error(`❌ Exception for ${assessment.student_name}:`, error);
         }
       }
 

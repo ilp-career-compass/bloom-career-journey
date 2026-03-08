@@ -1,3 +1,4 @@
+﻿import { logger } from '@/lib/logger';
 import { supabase } from '@/integrations/supabase/client';
 
 export async function fetchTranslations(
@@ -13,7 +14,7 @@ export async function fetchTranslations(
     .eq('lang', lang)
     .in('resource_key', keys);
   if (error) {
-    console.warn('fetchTranslations error:', error);
+    logger.warn('fetchTranslations error:', error);
     return {};
   }
   const map: Record<string, string> = {};

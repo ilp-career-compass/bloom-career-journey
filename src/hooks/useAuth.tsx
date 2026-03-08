@@ -1,3 +1,4 @@
+﻿import { logger } from '@/lib/logger';
 import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
@@ -51,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Use a ref to store the subscription so we can unsubscribe when we have auth
   const authSubscriptionRef = useRef<any>(null);
 
-  console.log('AuthProvider initialized');
+  logger.log('AuthProvider initialized');
 
   // Restore custom auth state from localStorage
   useEffect(() => {
@@ -60,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const savedProfile = localStorage.getItem('customProfile');
 
     if (savedCustomAuth === 'true' && savedUser && savedProfile) {
-      console.log('🔄 Restoring custom auth state from localStorage');
+      logger.log('🔄 Restoring custom auth state from localStorage');
       try {
         const parsedUser = JSON.parse(savedUser);
         const parsedProfile = JSON.parse(savedProfile);
@@ -80,9 +81,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(mockSession);
 
         setLoading(false);
-        console.log('✅ Custom auth state restored successfully');
+        logger.log('✅ Custom auth state restored successfully');
       } catch (error) {
-        console.error('❌ Failed to restore custom auth state:', error);
+        logger.error('❌ Failed to restore custom auth state:', error);
         // Clear invalid data
         localStorage.removeItem('customAuth');
         localStorage.removeItem('customUser');
@@ -93,21 +94,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Monitor userProfile changes for debugging and update hasAuthStateRef
   useEffect(() => {
-    console.log('🔄 userProfile state changed:', userProfile);
-    console.log('🔄 Current user state:', user);
-    console.log('🔄 Loading state:', loading);
-    console.log('🔄 Custom auth state:', isCustomAuth);
+    logger.log('🔄 userProfile state changed:', userProfile);
+    logger.log('🔄 Current user state:', user);
+    logger.log('🔄 Loading state:', loading);
+    logger.log('🔄 Custom auth state:', isCustomAuth);
 
     // Update the ref to track if we have valid auth state
     const hasValidAuth = user !== null && userProfile !== null;
     const wasAuthenticated = hasAuthStateRef.current;
     hasAuthStateRef.current = hasValidAuth;
-    console.log('🔄 hasAuthStateRef updated to:', hasValidAuth);
+    logger.log('🔄 hasAuthStateRef updated to:', hasValidAuth);
 
     // CRITICAL: Unsubscribe from auth listener once we have valid auth
     // This prevents Supabase from interfering with our authenticated state
     if (hasValidAuth && !wasAuthenticated && authSubscriptionRef.current) {
-      console.log('🔒 UNSUBSCRIBING from Supabase auth listener - we have valid auth');
+      logger.log('🔒 UNSUBSCRIBING from Supabase auth listener - we have valid auth');
       authSubscriptionRef.current.unsubscribe();
       authSubscriptionRef.current = null;
     }
@@ -116,7 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Test database connection and migration
   const testDatabase = async () => {
     try {
-      console.log('Testing database connection...');
+      logger.log('Testing database connection...');
 
       // Test basic connection
       const { data: basicTest, error: basicError } = await supabase
@@ -125,11 +126,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .limit(1);
 
       if (basicError) {
-        console.error('Basic database test failed:', basicError);
+        logger.error('Basic database test failed:', basicError);
         return false;
       }
 
-      console.log('Basic database connection successful');
+      logger.log('Basic database connection successful');
 
       // Test if email column exists
       const { data: emailTest, error: emailError } = await supabase
@@ -138,12 +139,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .limit(1);
 
       if (emailError) {
-        console.error('Email column test failed:', emailError);
-        console.log('This suggests the migration has not been applied');
+        logger.error('Email column test failed:', emailError);
+        logger.log('This suggests the migration has not been applied');
         return false;
       }
 
-      console.log('Email column exists - migration appears to be applied');
+      logger.log('Email column exists - migration appears to be applied');
 
       // Test if mobile column allows nulls
       const { data: mobileTest, error: mobileError } = await supabase
@@ -152,15 +153,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .limit(1);
 
       if (mobileError) {
-        console.error('Mobile column test failed:', mobileError);
+        logger.error('Mobile column test failed:', mobileError);
         return false;
       }
 
-      console.log('Mobile column test successful');
-      console.log('Database connection and migration test successful');
+      logger.log('Mobile column test successful');
+      logger.log('Database connection and migration test successful');
       return true;
     } catch (error) {
-      console.error('Database test error:', error);
+      logger.error('Database test error:', error);
       return false;
     }
   };
@@ -168,16 +169,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Create user profile with robust retries and diagnostics
   const createUserProfile = async (userData: any) => {
     try {
-      console.log('Attempting to create user profile with data:', userData);
+      logger.log('Attempting to create user profile with data:', userData);
 
       // 1) First attempt: full insert
       let { error: insertError } = await supabase.from('users').insert(userData);
       if (!insertError) {
-        console.log('User profile created successfully via direct insert');
+        logger.log('User profile created successfully via direct insert');
         return { success: true, error: null };
       }
 
-      console.warn('Direct insert failed:', {
+      logger.warn('Direct insert failed:', {
         code: (insertError as any)?.code,
         message: (insertError as any)?.message,
         details: (insertError as any)?.details,
@@ -190,12 +191,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       let minimalPayload = { ...userData } as any;
 
       if (code === '23503' && message.includes('state_id')) {
-        console.warn('Retrying insert without state_id due to FK violation');
+        logger.warn('Retrying insert without state_id due to FK violation');
         /* remove state_id for retry */
         delete minimalPayload.state_id;
         const retry = await supabase.from('users').insert(minimalPayload);
         if (!retry.error) {
-          console.log('User profile created successfully on retry without state_id');
+          logger.log('User profile created successfully on retry without state_id');
           return { success: true, error: null };
         }
         insertError = retry.error;
@@ -203,7 +204,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // 3) If NOT NULL violation (23502) for optional fields, strip down to minimal payload
       if (code === '23502') {
-        console.warn('Retrying insert with minimal payload due to NOT NULL violation');
+        logger.warn('Retrying insert with minimal payload due to NOT NULL violation');
         minimalPayload = {
           id: userData.id,
           password_hash: userData.password_hash || 'handled_by_auth',
@@ -215,14 +216,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         };
         const retry = await supabase.from('users').insert(minimalPayload);
         if (!retry.error) {
-          console.log('User profile created successfully with minimal payload');
+          logger.log('User profile created successfully with minimal payload');
           return { success: true, error: null };
         }
         insertError = retry.error;
       }
 
       // 4) As a last resort, upsert on conflict id (in case row was partially created elsewhere)
-      console.warn('Final attempt: upsert on id');
+      logger.warn('Final attempt: upsert on id');
       const upsert = await supabase
         .from('users')
         .upsert(
@@ -240,11 +241,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           { onConflict: 'id' }
         );
       if (!upsert.error) {
-        console.log('User profile upserted successfully');
+        logger.log('User profile upserted successfully');
         return { success: true, error: null };
       }
 
-      console.error('All attempts to create user profile failed:', {
+      logger.error('All attempts to create user profile failed:', {
         code: (upsert.error as any)?.code || code,
         message: (upsert.error as any)?.message || message,
         details: (upsert.error as any)?.details,
@@ -252,18 +253,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       return { success: false, error: upsert.error || insertError };
     } catch (error) {
-      console.error('Error in createUserProfile:', error);
+      logger.error('Error in createUserProfile:', error);
       return { success: false, error };
     }
   };
 
   useEffect(() => {
-    console.log('AuthProvider useEffect running');
+    logger.log('AuthProvider useEffect running');
 
     // Check if we already restored custom auth from localStorage
     const hasCustomAuth = localStorage.getItem('customAuth') === 'true';
     if (hasCustomAuth) {
-      console.log('⏭️ Skipping Supabase auth setup - custom auth already restored');
+      logger.log('⏭️ Skipping Supabase auth setup - custom auth already restored');
       return;
     }
 
@@ -279,53 +280,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       (event, session) => {
         const now = Date.now();
 
-        console.log('🔔 Auth event:', event, '| hasAuthStateRef:', hasAuthStateRef.current);
+        logger.log('🔔 Auth event:', event, '| hasAuthStateRef:', hasAuthStateRef.current);
 
         // CRITICAL: If we already have valid auth, ignore ALL events except explicit SIGNED_OUT
         if (hasAuthStateRef.current && event !== 'SIGNED_OUT') {
-          console.log(`🛑 Already authenticated - ignoring ${event} event completely`);
+          logger.log(`🛑 Already authenticated - ignoring ${event} event completely`);
           return;
         }
 
         // Ignore duplicate events within 100ms
         if (event === lastEventType && (now - lastEventTime) < 100) {
-          console.log(`⏭️ Ignoring duplicate ${event} event within 100ms`);
+          logger.log(`⏭️ Ignoring duplicate ${event} event within 100ms`);
           return;
         }
 
         lastEventTime = now;
         lastEventType = event;
 
-        console.log('Auth state change:', event, session?.user?.id);
+        logger.log('Auth state change:', event, session?.user?.id);
 
         // Don't interfere with custom authentication
         if (isCustomAuth) {
-          console.log('🔄 Ignoring auth state change - custom auth in progress');
+          logger.log('🔄 Ignoring auth state change - custom auth in progress');
           return;
         }
 
         // Also check if we have a custom session
         if (session?.user?.user_metadata?.role === 'student' && !session?.user?.email?.includes('@')) {
-          console.log('🔄 Ignoring auth state change - custom student session detected');
+          logger.log('🔄 Ignoring auth state change - custom student session detected');
           return;
         }
 
         // Don't process SIGNED_OUT events if we have custom auth
         if (event === 'SIGNED_OUT' && isCustomAuth) {
-          console.log('🔄 Ignoring SIGNED_OUT event - custom auth should stay active');
+          logger.log('🔄 Ignoring SIGNED_OUT event - custom auth should stay active');
           return;
         }
 
         // For TOKEN_REFRESHED events, do ABSOLUTELY NOTHING if we already have user and profile
         if (event === 'TOKEN_REFRESHED') {
-          console.log('🔄 Token refreshed event received');
+          logger.log('🔄 Token refreshed event received');
           // Check if we already have a valid authenticated state using ref (not closure)
           if (hasAuthStateRef.current) {
-            console.log('✅ Already authenticated (hasAuthStateRef=true), ignoring TOKEN_REFRESHED completely');
+            logger.log('✅ Already authenticated (hasAuthStateRef=true), ignoring TOKEN_REFRESHED completely');
             return;
           }
           // Only process if we don't have auth state yet
-          console.log('⚠️ No auth state yet, updating session from TOKEN_REFRESHED');
+          logger.log('⚠️ No auth state yet, updating session from TOKEN_REFRESHED');
           if (session) {
             setSession(session);
             if (session.user) {
@@ -337,7 +338,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // For all other events, only process SIGNED_IN
         if (event === 'SIGNED_IN') {
-          console.log('✅ SIGNED_IN event, setting up auth state');
+          logger.log('✅ SIGNED_IN event, setting up auth state');
           setSession(session);
           setUser(session?.user as AuthUser || null);
 
@@ -348,30 +349,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
           setLoading(false);
         } else if (event === 'SIGNED_OUT') {
-          console.log('❌ SIGNED_OUT event, clearing auth state');
+          logger.log('❌ SIGNED_OUT event, clearing auth state');
           setSession(null);
           setUser(null);
           setUserProfile(null);
           setLoading(false);
         } else {
-          console.log(`⏭️ Ignoring ${event} event - not SIGNED_IN or SIGNED_OUT`);
+          logger.log(`⏭️ Ignoring ${event} event - not SIGNED_IN or SIGNED_OUT`);
         }
       }
     );
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Initial session check:', session?.user?.id);
+      logger.log('Initial session check:', session?.user?.id);
 
       // Don't interfere with custom authentication
       if (isCustomAuth) {
-        console.log('🔄 Ignoring initial session check - custom auth in progress');
+        logger.log('🔄 Ignoring initial session check - custom auth in progress');
         return;
       }
 
       // Also check if we have a custom session
       if (session?.user?.user_metadata?.role === 'student' && !session?.user?.email?.includes('@')) {
-        console.log('🔄 Ignoring initial session check - custom student session detected');
+        logger.log('🔄 Ignoring initial session check - custom student session detected');
         return;
       }
 
@@ -386,27 +387,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Store subscription in ref so we can unsubscribe it later
     authSubscriptionRef.current = subscription;
-    console.log('📡 Auth subscription created and stored in ref');
+    logger.log('📡 Auth subscription created and stored in ref');
 
     return () => {
-      console.log('🧹 Cleaning up auth subscription');
+      logger.log('🧹 Cleaning up auth subscription');
       subscription.unsubscribe();
     };
   }, []); // Remove isCustomAuth dependency to prevent recreation
 
   const fetchUserProfile = async (userId: string, userOverride?: AuthUser) => {
     try {
-      console.log('🔍 Fetching user profile for:', userId);
+      logger.log('🔍 Fetching user profile for:', userId);
 
       // If we're already fetching this profile, don't fetch again
       if (fetchingProfileRef.current === userId) {
-        console.log('⏭️ Already fetching profile for this user, skipping duplicate fetch');
+        logger.log('⏭️ Already fetching profile for this user, skipping duplicate fetch');
         return;
       }
 
       // If we already have a profile for this user, don't fetch again
       if (userProfile && userProfile.id === userId) {
-        console.log('✅ Profile already exists for this user, skipping refetch');
+        logger.log('✅ Profile already exists for this user, skipping refetch');
         return;
       }
 
@@ -414,12 +415,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       fetchingProfileRef.current = userId;
 
       const currentUser = userOverride || user;
-      console.log('Current user state:', currentUser);
-      console.log('User metadata:', currentUser?.user_metadata);
+      logger.log('Current user state:', currentUser);
+      logger.log('User metadata:', currentUser?.user_metadata);
 
       // For custom authenticated students, prioritize the auth metadata
       if (currentUser && currentUser.user_metadata?.role === 'student') {
-        console.log('🎓 Custom student authentication detected, using auth metadata');
+        logger.log('🎓 Custom student authentication detected, using auth metadata');
 
         const baseProfile: any = {
           id: userId,
@@ -435,11 +436,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         };
 
         setUserProfile(baseProfile);
-        console.log('✅ Student profile set from auth metadata:', baseProfile);
+        logger.log('✅ Student profile set from auth metadata:', baseProfile);
 
         // Save profile to localStorage for persistence
         localStorage.setItem('customProfile', JSON.stringify(baseProfile));
-        console.log('💾 Saved profile to localStorage');
+        logger.log('💾 Saved profile to localStorage');
 
         // Try to fetch student-specific data without blocking
         try {
@@ -480,21 +481,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             };
             setUserProfile(finalProfile);
             localStorage.setItem('customProfile', JSON.stringify(finalProfile));
-            console.log('✅ Student profile updated with database data (including avatar URL if present):', finalProfile);
-            console.log('💾 Saved updated profile to localStorage');
+            logger.log('✅ Student profile updated with database data (including avatar URL if present):', finalProfile);
+            logger.log('💾 Saved updated profile to localStorage');
           }
         } catch (error) {
-          console.warn('Could not fetch student-specific data:', error);
+          logger.warn('Could not fetch student-specific data:', error);
         }
 
         // Ensure the profile is set before continuing
-        console.log('🎓 Custom student profile setup complete');
+        logger.log('🎓 Custom student profile setup complete');
         fetchingProfileRef.current = null; // Clear the fetching flag
         return;
       }
 
       // For regular Supabase Auth users (teachers/admins), fetch from users table
-      console.log('🔄 Fetching fresh profile data from database...');
+      logger.log('🔄 Fetching fresh profile data from database...');
       const { data: freshProfile, error: dbError } = await supabase
         .from('users')
         .select('*')
@@ -502,14 +503,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .single();
 
       if (!dbError && freshProfile) {
-        console.log('✅ Fresh profile data loaded from database:', freshProfile);
+        logger.log('✅ Fresh profile data loaded from database:', freshProfile);
         setUserProfile(freshProfile);
         fetchingProfileRef.current = null; // Clear the fetching flag
         return;
       }
 
       // Fallback to auth data only if database fetch fails
-      console.log('⚠️ Database fetch failed, falling back to auth data');
+      logger.log('⚠️ Database fetch failed, falling back to auth data');
 
       // General fallback: derive role from auth metadata for all roles
       if (currentUser && currentUser.user_metadata?.role) {
@@ -524,7 +525,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         };
 
         setUserProfile(baseProfile);
-        console.log('✅ Profile set from auth metadata:', baseProfile);
+        logger.log('✅ Profile set from auth metadata:', baseProfile);
 
         // Try to fetch role-specific records without blocking routing
         try {
@@ -549,7 +550,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       // Original logic for Supabase Auth users (teachers/admins)
-      console.log('🔍 Fetching profile for Supabase Auth user (database query)');
+      logger.log('🔍 Fetching profile for Supabase Auth user (database query)');
 
       // Retry a few times because profile insert may race with auth state change
       let attempts = 0;
@@ -563,7 +564,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .maybeSingle();
         userData = data;
         userError = error;
-        console.log(`Attempt ${attempts + 1}:`, { data, error });
+        logger.log(`Attempt ${attempts + 1}:`, { data, error });
         if (userData) break;
         // If no row (PGRST116 / 406), wait and retry
         const code = (userError as any)?.code;
@@ -575,21 +576,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         break;
       }
       if (userError && !userData) {
-        console.error('All attempts failed, throwing error:', userError);
+        logger.error('All attempts failed, throwing error:', userError);
         throw userError;
       }
 
       if (userData) {
-        console.log('User data fetched successfully:', userData);
+        logger.log('User data fetched successfully:', userData);
 
         // Set basic user profile first
         setUserProfile(userData);
-        console.log('Basic userProfile set:', userData);
+        logger.log('Basic userProfile set:', userData);
 
         // Fetch role-specific data (optional - don't fail if tables don't exist)
         try {
           if (userData.role === 'student') {
-            console.log('Fetching student profile data for user:', userId);
+            logger.log('Fetching student profile data for user:', userId);
             const { data: studentData, error: studentError } = await supabase
               .from('students')
               .select('*')
@@ -597,19 +598,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               .single();
 
             if (studentError) {
-              console.warn('Could not fetch student data:', studentError);
+              logger.warn('Could not fetch student data:', studentError);
               // Set userProfile with empty studentProfile to avoid undefined errors
               const finalProfile = { ...userData, role: 'student', studentProfile: null };
               setUserProfile(finalProfile);
-              console.log('Final userProfile set (student, no profile):', finalProfile);
+              logger.log('Final userProfile set (student, no profile):', finalProfile);
             } else {
-              console.log('Student data fetched successfully:', studentData);
+              logger.log('Student data fetched successfully:', studentData);
               const finalProfile = { ...userData, role: 'student', studentProfile: studentData };
               setUserProfile(finalProfile);
-              console.log('Final userProfile set (student, with profile):', finalProfile);
+              logger.log('Final userProfile set (student, with profile):', finalProfile);
             }
           } else if (userData.role === 'teacher') {
-            console.log('Fetching teacher profile data for user:', userId);
+            logger.log('Fetching teacher profile data for user:', userId);
             const { data: teacherData, error: teacherError } = await supabase
               .from('teachers')
               .select('*')
@@ -617,47 +618,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               .single();
 
             if (teacherError) {
-              console.warn('Could not fetch teacher data:', teacherError);
+              logger.warn('Could not fetch teacher data:', teacherError);
               // Set userProfile with empty teacherProfile to avoid undefined errors
               const finalProfile = { ...userData, role: 'teacher', teacherProfile: null };
               setUserProfile(finalProfile);
-              console.log('Final userProfile set (teacher, no profile):', finalProfile);
+              logger.log('Final userProfile set (teacher, no profile):', finalProfile);
             } else {
-              console.log('Teacher data fetched successfully:', teacherData);
+              logger.log('Teacher data fetched successfully:', teacherData);
               const finalProfile = { ...userData, role: 'teacher', teacherProfile: teacherData };
               setUserProfile(finalProfile);
-              console.log('Final userProfile set (teacher, with profile):', finalProfile);
+              logger.log('Final userProfile set (teacher, with profile):', finalProfile);
             }
           } else {
             // For other roles, just set the basic user profile
             setUserProfile(userData);
-            console.log('Final userProfile set (other role):', userData);
+            logger.log('Final userProfile set (other role):', userData);
           }
         } catch (roleDataError) {
-          console.warn('Error fetching role-specific data:', roleDataError);
+          logger.warn('Error fetching role-specific data:', roleDataError);
           // Set userProfile with empty role-specific profile to avoid undefined errors
           if (userData.role === 'student') {
             const finalProfile = { ...userData, role: 'student', studentProfile: null };
             setUserProfile(finalProfile);
-            console.log('Final userProfile set (student, error fallback):', finalProfile);
+            logger.log('Final userProfile set (student, error fallback):', finalProfile);
           } else if (userData.role === 'teacher') {
             const finalProfile = { ...userData, role: 'teacher', teacherProfile: null };
             setUserProfile(finalProfile);
-            console.log('Final userProfile set (teacher, error fallback):', finalProfile);
+            logger.log('Final userProfile set (teacher, error fallback):', finalProfile);
           } else {
             setUserProfile(userData);
-            console.log('Final userProfile set (other role, error fallback):', userData);
+            logger.log('Final userProfile set (other role, error fallback):', userData);
           }
         }
       } else {
-        console.error('No user data found after all attempts');
+        logger.error('No user data found after all attempts');
       }
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      logger.error('Error fetching user profile:', error);
       // Set a minimal userProfile to prevent undefined errors
       const fallbackProfile = { id: userId, role: 'unknown' };
       setUserProfile(fallbackProfile);
-      console.log('Fallback userProfile set due to error:', fallbackProfile);
+      logger.log('Fallback userProfile set due to error:', fallbackProfile);
     } finally {
       // Clear the fetching flag
       fetchingProfileRef.current = null;
@@ -666,11 +667,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (identifier: string, password: string) => {
     try {
-      console.log('🔐 Sign in attempt for:', identifier);
+      logger.log('🔐 Sign in attempt for:', identifier);
 
       // 1) Try custom student authentication first (email or mobile)
       try {
-        console.log('🔄 Attempting custom student authentication...');
+        logger.log('🔄 Attempting custom student authentication...');
         const idTrim = identifier.trim();
         const idForAuth = idTrim.includes('@') ? idTrim.toLowerCase() : idTrim;
         const pwd = password.trim();
@@ -707,7 +708,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return { error: null };
         }
       } catch (customErr) {
-        console.log('Custom auth not applicable or failed:', customErr);
+        logger.log('Custom auth not applicable or failed:', customErr);
       }
 
       // 2) Fallback to Supabase Auth (teachers/admins or students registered via email/password)
@@ -723,7 +724,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .eq('mobile', identifier)
           .maybeSingle();
         if (userByMobileError) {
-          console.error('Error looking up user by mobile:', userByMobileError);
+          logger.error('Error looking up user by mobile:', userByMobileError);
           emailForAuth = `${identifier}@internal.app`;
         } else if (userByMobile && userByMobile.email) {
           emailForAuth = userByMobile.email;
@@ -732,14 +733,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      console.log('🔐 Attempting Supabase Auth sign in with email:', emailForAuth);
+      logger.log('🔐 Attempting Supabase Auth sign in with email:', emailForAuth);
       const { data: signInData, error } = await supabase.auth.signInWithPassword({
         email: emailForAuth,
         password,
       });
 
       if (error) {
-        console.error('❌ Sign in error:', error);
+        logger.error('❌ Sign in error:', error);
         toast({
           title: "Sign in failed",
           description: error.message || "Invalid email/mobile or password",
@@ -749,7 +750,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (signInData?.user) {
-        console.log('✅ Supabase Auth successful:', signInData.user);
+        logger.log('✅ Supabase Auth successful:', signInData.user);
         setUser(signInData.user);
         await fetchUserProfile(signInData.user.id, signInData.user as AuthUser);
         toast({ title: "Sign in successful! ✨", description: "Welcome back!" });
@@ -758,7 +759,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       return { error: new Error('Sign in failed') };
     } catch (error) {
-      console.error('❌ Sign in error:', error);
+      logger.error('❌ Sign in error:', error);
       toast({
         title: "Sign in failed",
         description: "An unexpected error occurred. Please try again.",
@@ -779,12 +780,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     preferredLanguage: 'en' | 'kn' | 'ta' = 'en'
   ) => {
     try {
-      console.log('Starting signUp process:', { mobile, email, fullName, role, stateId, classId, preferredLanguage });
+      logger.log('Starting signUp process:', { mobile, email, fullName, role, stateId, classId, preferredLanguage });
 
       // Enforce class selection for students at the API layer too
       if (role === 'student' && !classId) {
         const err = { message: 'Class selection is required for student registration' } as any;
-        console.error('SignUp blocked:', err);
+        logger.error('SignUp blocked:', err);
         return { error: err };
       }
 
@@ -795,15 +796,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!email && mobile) {
         // If only mobile is provided, generate an email for Supabase auth
         finalEmail = `${mobile}@internal.app`;
-        console.log('Generated email for mobile:', finalEmail);
+        logger.log('Generated email for mobile:', finalEmail);
       } else if (!mobile && email) {
         // If only email is provided, mobile is null
         finalMobile = null;
-        console.log('Using provided email:', finalEmail);
+        logger.log('Using provided email:', finalEmail);
       }
 
       // Check if email already exists
-      console.log('Checking if email exists:', finalEmail);
+      logger.log('Checking if email exists:', finalEmail);
       const { data: existingUserByEmail, error: emailCheckError } = await supabase
         .from('users')
         .select('id')
@@ -811,18 +812,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
 
       if (emailCheckError) {
-        console.error('Error checking email:', emailCheckError);
+        logger.error('Error checking email:', emailCheckError);
         return { error: { message: 'Failed to check email availability' } };
       }
 
       if (existingUserByEmail) {
-        console.log('Email already exists:', finalEmail);
+        logger.log('Email already exists:', finalEmail);
         return { error: { message: 'Email address already registered' } };
       }
 
       // Check if mobile already exists (if provided)
       if (finalMobile) {
-        console.log('Checking if mobile exists:', finalMobile);
+        logger.log('Checking if mobile exists:', finalMobile);
         const { data: existingUserByMobile, error: mobileCheckError } = await supabase
           .from('users')
           .select('id')
@@ -830,18 +831,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .maybeSingle();
 
         if (mobileCheckError) {
-          console.error('Error checking mobile:', mobileCheckError);
+          logger.error('Error checking mobile:', mobileCheckError);
           return { error: { message: 'Failed to check mobile availability' } };
         }
 
         if (existingUserByMobile) {
-          console.log('Mobile already exists:', finalMobile);
+          logger.log('Mobile already exists:', finalMobile);
           return { error: { message: 'Mobile number already registered' } };
         }
       }
 
       // Create Supabase auth user
-      console.log('Creating Supabase auth user with email:', finalEmail);
+      logger.log('Creating Supabase auth user with email:', finalEmail);
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: finalEmail,
         password,
@@ -858,7 +859,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (authError) {
-        console.error('Supabase auth error:', authError);
+        logger.error('Supabase auth error:', authError);
         const lang = preferredLanguage === 'kn' || preferredLanguage === 'ta' ? preferredLanguage : 'en';
         toast({
           title:
@@ -873,11 +874,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: authError };
       }
 
-      console.log('Supabase auth user created:', authData.user?.id);
+      logger.log('Supabase auth user created:', authData.user?.id);
 
       if (authData.user) {
         // Insert into custom users table
-        console.log('Inserting user profile into database');
+        logger.log('Inserting user profile into database');
         const userProfileData: any = {
           id: authData.user.id,
           password_hash: 'handled_by_auth',
@@ -901,10 +902,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { success, error: userInsertError } = await createUserProfile(userProfileData);
 
         if (!success) {
-          console.error('Error creating user profile:', userInsertError);
+          logger.error('Error creating user profile:', userInsertError);
           // Verify if the profile was actually created despite the error
 
-          console.log('Verifying if user profile exists despite error...');
+          logger.log('Verifying if user profile exists despite error...');
           const { data: existingProfile, error: checkError } = await supabase
             .from('users')
             .select('id')
@@ -912,11 +913,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             .maybeSingle();
 
           if (existingProfile) {
-            console.log('✅ User profile exists despite error - continuing with registration');
+            logger.log('✅ User profile exists despite error - continuing with registration');
             // Profile exists, so we can continue
           } else {
             // Profile truly doesn't exist
-            console.error('❌ User profile truly does not exist');
+            logger.error('❌ User profile truly does not exist');
             const lang = preferredLanguage === 'kn' || preferredLanguage === 'ta' ? preferredLanguage : 'en';
             toast({
               title:
@@ -939,7 +940,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 
 
-        console.log('User profile created successfully');
+        logger.log('User profile created successfully');
 
         // Create role-specific profile (teacher or student)
         try {
@@ -955,7 +956,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               });
 
             if (teacherError) {
-              console.error('Error creating teacher profile:', teacherError);
+              logger.error('Error creating teacher profile:', teacherError);
               const lang = preferredLanguage === 'kn' || preferredLanguage === 'ta' ? preferredLanguage : 'en';
               toast({
                 title:
@@ -986,7 +987,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               });
 
             if (studentError) {
-              console.error('Error creating student profile:', studentError);
+              logger.error('Error creating student profile:', studentError);
               const lang = preferredLanguage === 'kn' || preferredLanguage === 'ta' ? preferredLanguage : 'en';
               toast({
                 title:
@@ -1006,13 +1007,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
           }
         } catch (profileError) {
-          console.error('Error creating role profile:', profileError);
+          logger.error('Error creating role profile:', profileError);
           // Don't fail registration for profile creation errors
         }
 
         // For Phase 1: Bypass email confirmation and sign in immediately
         try {
-          console.log('Attempting auto sign-in');
+          logger.log('Attempting auto sign-in');
           // Wait a moment for the user profile to be fully created
           await new Promise(resolve => setTimeout(resolve, 1000));
 
@@ -1022,7 +1023,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           });
 
           if (signInError) {
-            console.error('Auto sign-in failed:', signInError);
+            logger.error('Auto sign-in failed:', signInError);
             // Even if auto sign-in fails, registration was successful
             const lang = preferredLanguage === 'kn' || preferredLanguage === 'ta' ? preferredLanguage : 'en';
             toast({
@@ -1040,13 +1041,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     : `Welcome to CareerCompass, ${fullName}! Please sign in manually.`,
             });
           } else {
-            console.log('Auto sign-in successful');
+            logger.log('Auto sign-in successful');
 
             // CRITICAL: Manually fetch user profile since our auth listener might be blocked
             // Get the current session to fetch the user
             const { data: sessionData } = await supabase.auth.getSession();
             if (sessionData.session?.user) {
-              console.log('📥 Manually fetching user profile after registration');
+              logger.log('📥 Manually fetching user profile after registration');
 
               // Ensure user state is set
               const authUser = sessionData.session.user as AuthUser;
@@ -1078,7 +1079,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             });
           }
         } catch (signInError) {
-          console.error('Auto sign-in error:', signInError);
+          logger.error('Auto sign-in error:', signInError);
           const lang = preferredLanguage === 'kn' || preferredLanguage === 'ta' ? preferredLanguage : 'en';
           toast({
             title:
@@ -1099,7 +1100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       return { error: null };
     } catch (error) {
-      console.error('SignUp error:', error);
+      logger.error('SignUp error:', error);
       return { error };
     }
   };
@@ -1136,13 +1137,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshUserProfile = async () => {
     if (user?.id) {
-      console.log('🔄 Refreshing user profile from database...');
+      logger.log('🔄 Refreshing user profile from database...');
       try {
         // Use the same fetchUserProfile function to ensure consistency
         await fetchUserProfile(user.id);
-        console.log('✅ User profile refreshed successfully');
+        logger.log('✅ User profile refreshed successfully');
       } catch (error) {
-        console.error('Error refreshing user profile:', error);
+        logger.error('Error refreshing user profile:', error);
       }
     }
   };
@@ -1158,7 +1159,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshUserProfile,
   };
 
-  console.log('AuthProvider rendering with value:', {
+  logger.log('AuthProvider rendering with value:', {
     user: !!user,
     loading,
     userProfile: userProfile ? {

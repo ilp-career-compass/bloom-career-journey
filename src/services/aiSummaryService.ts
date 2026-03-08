@@ -1,3 +1,5 @@
+﻿import { logger } from '@/lib/logger';
+
 // AI Summary Service - Generates reflective summaries using Gemini API
 
 import { SummaryQuestions } from '@/types/assessmentSummary';
@@ -199,12 +201,12 @@ class AISummaryService {
       });
 
       if (error) {
-        console.error('Error fetching summary template:', error);
+        logger.error('Error fetching summary template:', error);
         return null;
       }
 
       if (!data || data.length === 0) {
-        console.warn(`No summary template found for assessment type: ${assessmentType}`);
+        logger.warn(`No summary template found for assessment type: ${assessmentType}`);
         return null;
       }
 
@@ -215,7 +217,7 @@ class AISummaryService {
 
       return template;
     } catch (error) {
-      console.error('Exception fetching summary template:', error);
+      logger.error('Exception fetching summary template:', error);
       return null;
     }
   }
@@ -233,7 +235,7 @@ class AISummaryService {
     const template = await this.getSummaryTemplate('inspiration');
 
     if (!template) {
-      console.error('Failed to fetch summary template, falling back to default');
+      logger.error('Failed to fetch summary template, falling back to default');
       // Fallback to a basic prompt if database fetch fails
       return this.buildFallbackPrompt(responses, language);
     }
@@ -432,7 +434,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
       // Parse JSON
       const parsed = JSON.parse(cleanedText);
 
-      console.log('📋 Parsed JSON structure:', Object.keys(parsed));
+      logger.log('📋 Parsed JSON structure:', Object.keys(parsed));
 
       // Handle dream portfolio structure
       if (Array.isArray(parsed.entries)) {
@@ -455,7 +457,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
 
       // Handle Role Models assessment (only question1)
       if (parsed.question1 && !parsed.question2) {
-        console.log('✅ Role Models format detected (question1 only)');
+        logger.log('✅ Role Models format detected (question1 only)');
         return {
           question1: parsed.question1,
           question2: '',
@@ -489,11 +491,11 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
         };
       }
 
-      console.error('❌ Invalid JSON structure - missing question1 or question2:', parsed);
+      logger.error('❌ Invalid JSON structure - missing question1 or question2:', parsed);
       return null;
     } catch (error) {
-      console.error('❌ Failed to parse Gemini response:', error);
-      console.error('📄 Raw response text (first 500 chars):', responseText.substring(0, 500));
+      logger.error('❌ Failed to parse Gemini response:', error);
+      logger.error('📄 Raw response text (first 500 chars):', responseText.substring(0, 500));
       return null;
     }
   }
@@ -523,7 +525,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
     try {
       // Detect language from student responses
       const detectedLanguage = this.detectLanguage(responses, preferredLanguage);
-      console.log(`🌐 Detected language from student responses: ${detectedLanguage}`);
+      logger.log(`🌐 Detected language from student responses: ${detectedLanguage}`);
 
       const prompt = await this.buildPrompt(responses, detectedLanguage);
 
@@ -538,9 +540,9 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
         ]
       };
 
-      console.log('📡 Calling Gemini API:', this.endpoint);
-      console.log('🔑 API Key configured:', !!this.apiKey);
-      console.log('📝 Request body:', JSON.stringify(requestBody));
+      logger.log('📡 Calling Gemini API:', this.endpoint);
+      logger.log('🔑 API Key configured:', !!this.apiKey);
+      logger.log('📝 Request body:', JSON.stringify(requestBody));
 
       // Try primary endpoint (gemini-1.5-flash-latest)
       let response = await fetch(`${this.endpoint}?key=${this.apiKey}`, {
@@ -553,7 +555,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
 
       // If 404, try fallback endpoint (gemini-1.5-pro-latest)
       if (!response.ok && response.status === 404) {
-        console.warn('⚠️ Primary model not found, trying fallback:', this.fallbackEndpoint);
+        logger.warn('⚠️ Primary model not found, trying fallback:', this.fallbackEndpoint);
 
         response = await fetch(`${this.fallbackEndpoint}?key=${this.apiKey}`, {
           method: 'POST',
@@ -566,22 +568,22 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.error('❌ Gemini API error (Full Response):', errorData);
-        console.error('❌ Status:', response.status);
-        console.error('❌ Status Text:', response.statusText);
-        console.error('❌ Response Headers:', Object.fromEntries(response.headers.entries()));
+        logger.error('❌ Gemini API error (Full Response):', errorData);
+        logger.error('❌ Status:', response.status);
+        logger.error('❌ Status Text:', response.statusText);
+        logger.error('❌ Response Headers:', Object.fromEntries(response.headers.entries()));
 
         // Try to parse error for more details
         try {
           const errorJson = JSON.parse(errorData);
-          console.error('❌ Parsed Error:', JSON.stringify(errorJson, null, 2));
+          logger.error('❌ Parsed Error:', JSON.stringify(errorJson, null, 2));
 
           // Log suggested models if available
           if (errorJson.error?.message) {
-            console.error('❌ Error Message:', errorJson.error.message);
+            logger.error('❌ Error Message:', errorJson.error.message);
           }
         } catch (e) {
-          console.error('❌ Could not parse error as JSON');
+          logger.error('❌ Could not parse error as JSON');
         }
 
         return {
@@ -591,8 +593,8 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
       }
 
       const data = await response.json();
-      console.log('✅ Gemini API response received');
-      console.log('📊 Response structure:', {
+      logger.log('✅ Gemini API response received');
+      logger.log('📊 Response structure:', {
         hasCandidates: !!data?.candidates,
         candidatesCount: data?.candidates?.length || 0,
         hasContent: !!data?.candidates?.[0]?.content
@@ -601,14 +603,14 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
       const generatedText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
       if (!generatedText) {
-        console.error('❌ No text in response:', JSON.stringify(data, null, 2));
+        logger.error('❌ No text in response:', JSON.stringify(data, null, 2));
         return {
           success: false,
           error: 'No content generated by AI'
         };
       }
 
-      console.log('✅ Successfully generated summary, length:', generatedText.length);
+      logger.log('✅ Successfully generated summary, length:', generatedText.length);
 
       const summary = this.parseGeminiResponse(generatedText);
 
@@ -625,7 +627,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
       };
 
     } catch (error) {
-      console.error('Error generating summary:', error);
+      logger.error('Error generating summary:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error occurred'
@@ -685,7 +687,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
     const template = await this.getSummaryTemplate('dreams');
 
     if (!template) {
-      console.error('Failed to fetch Dreams summary template, falling back to default');
+      logger.error('Failed to fetch Dreams summary template, falling back to default');
       return this.buildDreamsFallbackPrompt(responses, language);
     }
 
@@ -804,22 +806,22 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
       ? `Create a dream portfolio with 3 dream entries. For each entry, fill in:
 
 Entry Column 1: ಕನಸು
-Entry Column 2: ನಿಮ್ಮ ಕನಸನ್ನು ಸಾಧಿಸಲು ನಿಮಗೆ ಸಹಾಯ ಮಾಡುವ ಯಾವ ಗುಣ, ಮೌಲ್ಯ, ಶಕ್ತಿ
-Entry Column 3: ಕನಸು ವಿಫಲವಾಗದಂತೆ ಮಾಡಲು ನೀವು ಏನು ಮಾಡಬೇಕು
-Entry Column 4: ಈ ಕನಸನ್ನು ಸಾಧಿಸಲು ನೀವು 10 ನೇ ತರಗತಿಯ ನಂತರ ಏನು ಅಧ್ಯಯನ ಮಾಡಬೇಕು (ಬೇಕಿದ್ದರೆ)`
+Entry Column 2: ನಿಮ್ಮಲ್ಲಿ ಈಗಾಗಲೇ ಕಂಡುಕೊಂಡಿರುವ ಯಾವ ಗುಣ/ ಮೌಲ್ಯ/ ಸಾರ್ಥ್ಯ ನಿಮ್ಮ ಕನಸನ್ನು ಸಾಧಿಸಲು ಸಹಾಯ ಮಾಡುತ್ತದೆ.
+Entry Column 3: ಕನಸು ವಿಫಲವಾಗುವುದಿಲ್ಲ ಎಂದು ಖಚಿತಪಡಿಸಿಕೊಳ್ಳಲು ನೀವು ಏನು ಮಾಡಬೇಕಾಗುತ್ತದೆ
+Entry Column 4: ಈ ಕನಸನ್ನುಸಾಧಿಸಲು ೧೦ನೇ ತರಗತಿಯ ನಂತರ ನೀವು ಏನು ಅಧ್ಯಯನ ಮಾಡಬೇಕು? (ಅನ್ವಯಿಸಿದರೆ)`
       : isTamil
         ? `Create a dream portfolio with 3 dream entries. For each entry, fill in:
 
 Entry Column 1: கனவு
-Entry Column 2: இந்த கனவை அடைய உங்களுக்கு உதவும் குணம் / மதிப்பு / திறன் என்ன
-Entry Column 3: இந்த கனவு தோல்வி அடையாமல் இருக்க நீங்கள் 무엇 செய்ய வேண்டும்
-Entry Column 4: இந்த கனவை அடைய 10ம் வகுப்பிற்குப் பிறகு என்ன படிக்க வேண்டும் (தேவையானால்)`
+Entry Column 2: உங்களிடம் ஏற்கனவே உள்ள எந்த குணம் / மதிப்பு / திறன் இந்த கனவை அடைய உங்களுக்கு உதவும்?
+Entry Column 3: இந்த கனவு தோல்வியடையாமல் இருக்க நீங்கள் என்ன செய்ய வேண்டும்?
+Entry Column 4: இந்த கனவை அடைய 10ஆம் வகுப்பிற்குப் பிறகு நீங்கள் என்ன படிக்க வேண்டும்? (தேவையானால்)`
         : `Create a dream portfolio with 3 dream entries. For each entry, fill in:
 
 Entry Column 1: Dream
-Entry Column 2: Which quality, value, strength will help you achieve your dream
-Entry Column 3: What you will have to do to ensure that the dream doesn't fail
-Entry Column 4: What should you study after 10th to achieve this dream (if applicable)`;
+Entry Column 2: Which quality/ value/ ability that you already have will help you achieve your dream?
+Entry Column 3: What do you need to do to make sure this dream does not fail?
+Entry Column 4: To achieve this dream, what do you need to study after Class 10? (if applicable)`;
 
     const coreInstructions =
       'You are a career guidance counsellor for rural students in India.\n' +
@@ -907,7 +909,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
     try {
       // Detect language from student responses
       const detectedLanguage = this.detectLanguage({ part1: responses }, preferredLanguage);
-      console.log(`🌐 Detected language from student responses: ${detectedLanguage}`);
+      logger.log(`🌐 Detected language from student responses: ${detectedLanguage}`);
 
       const prompt = await this.buildDreamsPrompt(responses, detectedLanguage);
 
@@ -921,7 +923,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
         ]
       };
 
-      console.log('📡 Calling Gemini API for Dreams summary:', this.endpoint);
+      logger.log('📡 Calling Gemini API for Dreams summary:', this.endpoint);
 
       // Try primary endpoint
       let response = await fetch(`${this.endpoint}?key=${this.apiKey}`, {
@@ -934,7 +936,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
 
       // If 404, try fallback endpoint
       if (!response.ok && response.status === 404) {
-        console.warn('⚠️ Primary model not found, trying fallback:', this.fallbackEndpoint);
+        logger.warn('⚠️ Primary model not found, trying fallback:', this.fallbackEndpoint);
 
         response = await fetch(`${this.fallbackEndpoint}?key=${this.apiKey}`, {
           method: 'POST',
@@ -947,7 +949,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.error('❌ Gemini API error:', errorData);
+        logger.error('❌ Gemini API error:', errorData);
         return {
           success: false,
           error: `API request failed: ${response.status} - ${response.statusText}`
@@ -955,19 +957,19 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
       }
 
       const data = await response.json();
-      console.log('✅ Gemini API response received for Dreams summary');
+      logger.log('✅ Gemini API response received for Dreams summary');
 
       const generatedText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
       if (!generatedText) {
-        console.error('❌ No text in response:', JSON.stringify(data, null, 2));
+        logger.error('❌ No text in response:', JSON.stringify(data, null, 2));
         return {
           success: false,
           error: 'No content generated by AI'
         };
       }
 
-      console.log('✅ Successfully generated Dreams summary, length:', generatedText.length);
+      logger.log('✅ Successfully generated Dreams summary, length:', generatedText.length);
 
       const summary = this.parseDreamsResponse(generatedText);
 
@@ -984,7 +986,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
       };
 
     } catch (error) {
-      console.error('Error generating Dreams summary:', error);
+      logger.error('Error generating Dreams summary:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error occurred'
@@ -1009,7 +1011,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
 
       // Validate structure
       if (!parsed.entries || !Array.isArray(parsed.entries) || parsed.entries.length !== 3) {
-        console.error('❌ Invalid Dreams summary structure:', parsed);
+        logger.error('❌ Invalid Dreams summary structure:', parsed);
         return null;
       }
 
@@ -1025,8 +1027,8 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
         question4: '' // Not used for Dreams
       };
     } catch (error) {
-      console.error('❌ Failed to parse Dreams summary response:', error);
-      console.error('Response text:', text);
+      logger.error('❌ Failed to parse Dreams summary response:', error);
+      logger.error('Response text:', text);
       return null;
     }
   }
@@ -1074,7 +1076,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
     const template = await this.getSummaryTemplate('school_learning');
 
     if (!template) {
-      console.error('Failed to fetch School Learning summary template, falling back to default');
+      logger.error('Failed to fetch School Learning summary template, falling back to default');
       return this.buildSchoolLearningFallbackPrompt(responses, language);
     }
 
@@ -1191,40 +1193,40 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
         : '';
 
     const questionsPrompt = isKannada
-      ? `Question 1: ನನಗೆ ಇಷ್ಟವಾದ ವಿಷಯಗಳು
+      ? `Question 1: ನಾನು ಇಷ್ಟಪಡುವ ವಿಷಯಗಳು
 
-Question 2: ನನಗೆ ಇಷ್ಟವಾದ ವಿಷಯಗಳಿಂದ ಸಾಧ್ಯವಾದ ವೃತ್ತಿಗಳು
+Question 2: ನಾನು ಇಷ್ಟಪಡುವ ವಿಷಯಗಳಿಂದ ನಾನು ಪಡೆಯಲು ಸಾಧ್ಯವಾಗಬಹುದಾದ ವೃತ್ತಿಗಳು
 
-Question 3: ನನಗೆ ಇಷ್ಟವಿಲ್ಲದ ವಿಷಯಗಳು
+Question 3: ನಾನು ಇಷ್ಟಪಡದ ವಿಷಯಗಳು
 
-Question 4: ನನಗೆ ಇಷ್ಟವಿಲ್ಲದ ಆ ವಿಷಯಗಳಲ್ಲಿ ನಾನು ಸುಧಾರಿಸಿದರೆ ಸಾಧ್ಯವಾದ ವೃತ್ತಿಗಳು
+Question 4: ಇಷ್ಟಪಡದ ವಿಷಯಗಳಲ್ಲಿ ನಾನು ಸುಧಾರಿಸಿಕೊಂಡರೆ ಪಡೆಯಲು ಸಾಧ್ಯವಾಗಬಹುದಾದ ವೃತ್ತಿಗಳು
 
-Question 5: ಶಾಲೆಯಲ್ಲಿ ಶೈಕ್ಷಣಿಕ ಚಟುವಟಿಕೆಗಳ ಹೊರತಾಗಿ ನಾನು ಚೆನ್ನಾಗಿ ಮಾಡುವ ವಿಷಯಗಳು
+Question 5: ಪಠ್ಯ ವಿಷಯಗಳ ಜೊತೆಗೆ, ನಾನು ಉತ್ತಮ ಸಾಧನೆ ಮಾಡುವ ಇತರ ಚಟುವಟಿಕೆಗಳು / ವಿಷಯಗಳು
 
-Question 6: ಈ ಕೌಶಲ್ಯಗಳನ್ನು ಸುಧಾರಿಸುವುದು ನನ್ನ ವೃತ್ತಿಗೆ ಹೇಗೆ ಸಹಾಯ ಮಾಡುತ್ತದೆ`
+Question 6: ನಾನು ಈ ಕೌಶಲ್ಯಗಳನ್ನು ಸುಧಾರಿಸಿಕೊಂಡರೆ ನನ್ನ ಕೆಲಸ / ವೃತ್ತಿಯ ಆಯ್ಕೆಗೆ ಸಹಾಯವಾಗುತ್ತದೆ.`
       : isTamil
-        ? `Question 1: எனக்கு பிடித்த பாடங்கள்
+        ? `Question 1: 1.நான் விரும்பும் பாடங்கள்
 
-Question 2: எனக்கு பிடித்த பாடங்களில் இருந்து எந்த தொழில்கள் சாத்தியம்
+Question 2: 2.நான் விரும்பும் பாடங்களின் மூலம் நான் அடையக்கூடிய தொழில்கள்
 
-Question 3: எனக்கு பிடிக்காத பாடங்கள்
+Question 3: 3.நான் விரும்பாத பாடங்கள்
 
-Question 4: இந்த பிடிக்காத பாடங்களில் நான் மேம்பட்டால் சாத்தியமான தொழில்கள் என்ன
+Question 4: 4.நான் விரும்பாத பாடங்களில் முன்னேற்றம் பெற்றால் நான் அடையக்கூடிய தொழில்கள்
 
-Question 5: பள்ளியில் படிப்பைத் தவிர நான் நன்றாகச் செய்யும் செயல்கள்
+Question 5: 5.பாடப்பிரிவுகளுடன் சேர்த்து, நான் சிறப்பாக சாதனை புரியும் பிற செயல்பாடுகள் / விஷயங்கள்
 
-Question 6: இந்த திறன்களை மேம்படுத்துவது என் தொழிலுக்கு எப்படி உதவும்`
+Question 6: 6.இந்த திறன்களில் நான் மேம்பட்டால், என் வேலை / தொழில் தேர்வுக்கு உதவியாக இருக்கும்.`
         : `Question 1: Subjects I like
 
-Question 2: Careers that are possible of the subjects that I like
+Question 2: Careers I can pursue based on the subjects I like
 
-Question 3: Subjects I don't like
+Question 3: Subjects I do not like
 
-Question 4: Careers that are possible if I improve in those subjects which I don't like
+Question 4: Careers I can pursue if I make progress in the subjects I do not like
 
-Question 5: Things I am good at besides academics at school
+Question 5: Other activities / areas in which I perform well along with academic subjects
 
-Question 6: How will improving these skills help me with my career`;
+Question 6: If I improve these skills, it will help me in choosing my job / career.`;
 
     return `You are a career counselor helping a student create a summary of their school learning assessment.
 Based on the student's responses below, generate a thoughtful, personalized summary with 6 questions.
@@ -1287,7 +1289,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
     try {
       // Detect language from student responses (supports Kannada, Tamil, or default English)
       const detectedLanguage = this.detectLanguage({ part1: responses }, preferredLanguage);
-      console.log(`🌐 Detected language from student responses: ${detectedLanguage}`);
+      logger.log(`🌐 Detected language from student responses: ${detectedLanguage}`);
 
       const prompt = await this.buildSchoolLearningPrompt(responses, detectedLanguage);
 
@@ -1301,7 +1303,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
         ]
       };
 
-      console.log('📡 Calling Gemini API for School Learning summary:', this.endpoint);
+      logger.log('📡 Calling Gemini API for School Learning summary:', this.endpoint);
 
       // Try primary endpoint
       let response = await fetch(`${this.endpoint}?key=${this.apiKey}`, {
@@ -1314,7 +1316,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
 
       // If 404, try fallback endpoint
       if (!response.ok && response.status === 404) {
-        console.warn('⚠️ Primary model not found, trying fallback:', this.fallbackEndpoint);
+        logger.warn('⚠️ Primary model not found, trying fallback:', this.fallbackEndpoint);
 
         response = await fetch(`${this.fallbackEndpoint}?key=${this.apiKey}`, {
           method: 'POST',
@@ -1327,7 +1329,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.error('❌ Gemini API error:', errorData);
+        logger.error('❌ Gemini API error:', errorData);
         return {
           success: false,
           error: `API request failed: ${response.status} - ${response.statusText}`
@@ -1335,19 +1337,19 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
       }
 
       const data = await response.json();
-      console.log('✅ Gemini API response received for School Learning summary');
+      logger.log('✅ Gemini API response received for School Learning summary');
 
       const generatedText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
       if (!generatedText) {
-        console.error('❌ No text in response:', JSON.stringify(data, null, 2));
+        logger.error('❌ No text in response:', JSON.stringify(data, null, 2));
         return {
           success: false,
           error: 'No content generated by AI'
         };
       }
 
-      console.log('✅ Successfully generated School Learning summary, length:', generatedText.length);
+      logger.log('✅ Successfully generated School Learning summary, length:', generatedText.length);
 
       const summary = this.parseGeminiResponse(generatedText);
 
@@ -1364,7 +1366,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
       };
 
     } catch (error) {
-      console.error('Error generating School Learning summary:', error);
+      logger.error('Error generating School Learning summary:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error occurred'
@@ -1400,7 +1402,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
     const template = await this.getSummaryTemplate('hobbies');
 
     if (!template) {
-      console.error('Failed to fetch Hobbies summary template, falling back to default');
+      logger.error('Failed to fetch Hobbies summary template, falling back to default');
       return this.buildHobbiesFallbackPrompt(responses, language);
     }
 
@@ -1600,7 +1602,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
     try {
       // Detect language from student responses
       const detectedLanguage = this.detectLanguage({ part1: responses }, preferredLanguage);
-      console.log(`🌐 Detected language from student responses: ${detectedLanguage}`);
+      logger.log(`🌐 Detected language from student responses: ${detectedLanguage}`);
 
       const prompt = await this.buildHobbiesPrompt(responses, detectedLanguage);
 
@@ -1614,7 +1616,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
         ]
       };
 
-      console.log('📡 Calling Gemini API for Hobbies summary:', this.endpoint);
+      logger.log('📡 Calling Gemini API for Hobbies summary:', this.endpoint);
 
       // Try primary endpoint
       let response = await fetch(`${this.endpoint}?key=${this.apiKey}`, {
@@ -1627,7 +1629,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
 
       // If 404, try fallback endpoint
       if (!response.ok && response.status === 404) {
-        console.warn('⚠️ Primary model not found, trying fallback:', this.fallbackEndpoint);
+        logger.warn('⚠️ Primary model not found, trying fallback:', this.fallbackEndpoint);
 
         response = await fetch(`${this.fallbackEndpoint}?key=${this.apiKey}`, {
           method: 'POST',
@@ -1640,7 +1642,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.error('❌ Gemini API error:', errorData);
+        logger.error('❌ Gemini API error:', errorData);
         return {
           success: false,
           error: `API request failed: ${response.status} - ${response.statusText}`
@@ -1648,19 +1650,19 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
       }
 
       const data = await response.json();
-      console.log('✅ Gemini API response received for Hobbies summary');
+      logger.log('✅ Gemini API response received for Hobbies summary');
 
       const generatedText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
       if (!generatedText) {
-        console.error('❌ No text in response:', JSON.stringify(data, null, 2));
+        logger.error('❌ No text in response:', JSON.stringify(data, null, 2));
         return {
           success: false,
           error: 'No content generated by AI'
         };
       }
 
-      console.log('✅ Successfully generated Hobbies summary, length:', generatedText.length);
+      logger.log('✅ Successfully generated Hobbies summary, length:', generatedText.length);
 
       const summary = this.parseHobbiesResponse(generatedText);
 
@@ -1677,7 +1679,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
       };
 
     } catch (error) {
-      console.error('Error generating Hobbies summary:', error);
+      logger.error('Error generating Hobbies summary:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error occurred'
@@ -1702,17 +1704,17 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
 
       // Validate structure
       if (!parsed.hobbiesPortfolio || !parsed.talentsPortfolio) {
-        console.error('❌ Invalid Hobbies summary structure:', parsed);
+        logger.error('❌ Invalid Hobbies summary structure:', parsed);
         return null;
       }
 
       if (!parsed.hobbiesPortfolio.entries || !Array.isArray(parsed.hobbiesPortfolio.entries)) {
-        console.error('❌ Invalid Hobbies Portfolio structure:', parsed.hobbiesPortfolio);
+        logger.error('❌ Invalid Hobbies Portfolio structure:', parsed.hobbiesPortfolio);
         return null;
       }
 
       if (!parsed.talentsPortfolio.entries || !Array.isArray(parsed.talentsPortfolio.entries)) {
-        console.error('❌ Invalid Talents Portfolio structure:', parsed.talentsPortfolio);
+        logger.error('❌ Invalid Talents Portfolio structure:', parsed.talentsPortfolio);
         return null;
       }
 
@@ -1731,7 +1733,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
         question6: talentsJson // Store talents portfolio as JSON string
       };
     } catch (error) {
-      console.error('❌ Failed to parse Hobbies summary response:', error);
+      logger.error('❌ Failed to parse Hobbies summary response:', error);
       return null;
     }
   }
@@ -1769,7 +1771,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
     const template = await this.getSummaryTemplate('about_me');
 
     if (!template) {
-      console.error('Failed to fetch About Me summary template, falling back to default');
+      logger.error('Failed to fetch About Me summary template, falling back to default');
       return this.buildAboutMeFallbackPrompt(responses, language);
     }
 
@@ -1859,25 +1861,50 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
         ? '\n\nIMPORTANT LANGUAGE REQUIREMENT:\n- The student\'s responses are in Tamil (தமிழ்).\n- You MUST generate your summary answers in Tamil (தமிழ்) script.\n- Write all three answers in Tamil, maintaining the student\'s natural voice.\n- Use Tamil script for all text in question1, question2, and question3.\n'
         : '';
 
-    const listInstruction = isKannada
-      ? 'ಪ್ರತಿ ವರ್ಗವನ್ನು "ವರ್ಗ: ನಾನು ಬರೆದದ್ದು" ವಿನ್ಯಾಸದಲ್ಲಿ ತನ್ನದೇ ಸಾಲಿನಲ್ಲಿ ಬರೆಯಿರಿ. ಕ್ರಮವನ್ನು ಹಾಗೆಯೇ ಉಳಿಸಿ.'
-      : isTamil
-        ? 'ஒவ்வொரு பகுப்பையும் "பகுப்பு: நான் சொன்னது" என்ற வடிவில் தனித்தனி வரியாக எழுதுங்கள். கொடுக்கப்பட்ட வரிசையை அப்படியே வைத்துக் கொள்ளுங்கள்.'
-        : 'Put each category on its own line using the pattern "Category: What I said" and keep the same order.';
-
     const questionsPrompt = isKannada
-      ? `Question 1: ವಿದ್ಯಾರ್ಥಿಯ ಪ್ರತಿಕ್ರಿಯೆಗಳ ಆಧಾರದ ಮೇಲೆ ಸಮಗ್ರ ಸಾರಾಂಶ ಕೋಷ್ಟಕವನ್ನು ರಚಿಸಿ, ಅವರ ಉತ್ತರಗಳನ್ನು ಈ 15 ವಿಭಾಗಗಳಲ್ಲಿ ಸಂಘಟಿಸಿ: 1) ನನ್ನ ಕುಟುಂಬದಲ್ಲಿನ ಸ್ನೇಹಿತ, 2) ನನ್ನ ಕುಟುಂಬದ ಹೊರಗಿನ ನನ್ನ ಸ್ನೇಹಿತ, 3) ನಾನು ಮನೆಯಲ್ಲಿ ಯಾವ ಚಟುವಟಿಕೆಗಳನ್ನು ಮಾಡುತ್ತಿದ್ದೇನೆ?, 4) ಶಾಲೆಯ ಸಮಯದಲ್ಲಿ ನಾನು ಆನಂದಿಸುವ ಚಟುವಟಿಕೆಗಳು/ಅಂಶಗಳು, 5) ಶಾಲೆಯ ಹೊರಗೆ ನಾನು ಆನಂದಿಸುವ ಚಟುವಟಿಕೆಗಳು/ಅಂಶಗಳು, 6) ನಾನು ವೈಯಕ್ತಿಕವಾಗಿ ಆನಂದಿಸುವ ಕೆಲಸ/ಚಟುವಟಿಕೆಗಳು, 7) ನಾನು ತಂಡವಾಗಿ ಆನಂದಿಸುವ ಕೆಲಸ/ಚಟುವಟಿಕೆಗಳು, 8) ಶಾಲೆಯಲ್ಲಿ ಮಾಡಬೇಕಾದ ಆದರೆ ನನಗೆ ಕಷ್ಟಕರವಾದ ಚಟುವಟಿಕೆ, 9) ಶಾಲೆಯ ನಂತರ ನನಗೆ ಮಾಡಲು ಕಷ್ಟಕರವಾದ ಚಟುವಟಿಕೆ, 10) ನಾನು ಮಾಡಬೇಕಾದ ಚಟುವಟಿಕೆಗಳು, 11) ನನಗೆ ಸ್ವಾಭಾವಿಕವಾಗಿ ಬರುವ ಚಟುವಟಿಕೆಗಳು, 12) ನನಗೆ ಸ್ವಾಭಾವಿಕವಾಗಿ ಬರದ ಚಟುವಟಿಕೆಗಳು, 13) ನನ್ನಲ್ಲಿ ನನಗೆ ಇಷ್ಟವಾದ ಗುಣಗಳು, 14) ಇತರರಲ್ಲಿ ನನಗೆ ಇಷ್ಟವಾದ ಗುಣಗಳು, 15) ನಾನು ಸುಧಾರಿಸಬೇಕಾದ ಗುಣಗಳು. ಪ್ರತಿ ವಿಭಾಗಕ್ಕೂ, ವಿದ್ಯಾರ್ಥಿಯ ನಿಜವಾದ ಪ್ರತಿಕ್ರಿಯೆಗಳ ಆಧಾರದ ಮೇಲೆ ಸಂಕ್ಷಿಪ್ತ ಸಾರಾಂಶವನ್ನು ಒದಗಿಸಿ.
-${listInstruction}
-
-Question 2: ಸಾರಾಂಶದ ಆಧಾರದ ಮೇಲೆ ನಿಮ್ಮ ಬಗ್ಗೆ ಸಂಕ್ಷಿಪ್ತ ವಿವರಣೆಯನ್ನು ಬರೆಯಿರಿ. (ನೀವು ಪದಗಳು, ಚಿತ್ರಗಳು ಅಥವಾ ಚಿಹ್ನೆಗಳನ್ನು ಬಳಸಬಹುದು).
-
-Question 3: "ನನ್ನ ಪ್ರೇರಣೆ" ಮತ್ತು "ನನ್ನ ಬಗ್ಗೆ" ನಲ್ಲಿನ ಚಟುವಟಿಕೆಗಳ ಸಾರಾಂಶದ ಆಧಾರದ ಮೇಲೆ, ನಿಮ್ಮ ಪ್ರತಿಯೊಂದು ವೃತ್ತಿ ಆಸಕ್ತಿಗಳಲ್ಲಿ ನಿಮಗೆ ಸಹಾಯ ಮಾಡಬಹುದಾದ ಗುಣಗಳು, ಆಸಕ್ತಿಗಳು, ಶಕ್ತಿಗಳು ಮತ್ತು ಸುಧಾರಣೆಯ ಪ್ರದೇಶಗಳನ್ನು ಗುರುತಿಸಿ. ಇದು ನಿಮ್ಮ ವೃತ್ತಿ ಆಯ್ಕೆಯೊಂದಿಗೆ ನೀವು ಉತ್ತಮವಾಗಿ ಸಮಂಜಸವಾಗಲು ಸಹಾಯ ಮಾಡುತ್ತದೆ.`
-      : `Question 1: Create a comprehensive summary table based on the student's responses, organizing their answers into these 15 categories: 1) The friend in my family, 2) My friend outside of my family, 3) What activities am I doing at home?, 4) Activities/aspects I Enjoy during the school hours, 5) Activities/aspects I enjoy outside of the school, 6) Work/activities I enjoy personally, 7) Work/activities I enjoy as a team, 8) Activity that needs to be done in the school but I find difficult, 9) Activity that I find difficult to do after school hours, 10) Activities I must do, 11) Activities that come naturally to me, 12) Activities that don't come naturally to me, 13) Qualities I like in myself, 14) Qualities that others like in me, 15) Qualities that I need to improve on. For each category, provide a concise summary based on the student's actual responses.
-${listInstruction}
-
-Question 2: Write a brief description of yourself based on the summary. (You can use words, pictures or symbols).
-
-Question 3: Based on the summary of "My Motivation" and the activities in "About Me," identify the qualities, interests, strengths, and areas for improvement that would help you in each of your career interests. This will help you align better with your career choice.`;
+      ? `Question 1: ಕುಟುಂಬ ಬಿಟ್ಟು ಹೊರಗಿನ ನನ್ನ ಸ್ನೇಹಿತ
+Question 2: ನಾನು ಮನೆಯಲ್ಲಿ ಯಾವ ಕೆಲಸಗಳನ್ನು ಮಾಡುತ್ತಿದ್ದೇನೆ?
+Question 3: ಶಾಲೆಯ ಸಮಯದಲ್ಲಿ ನಾನು ಆನಂದಿಸುವ ಚಟುವಟಿಕೆ/ಅಂಶಗಳು
+Question 4: ಶಾಲೆಯ ಹೊರಗೆ ನಾನು ಆನಂದಿಸುವ ಚಟುವಟಿಕೆ/ಅಂಶಗಳು
+Question 5: ವೈಯಕ್ತಿಕವಾಗಿ ನಾನು ಆನಂದಿಸುವ ಕೆಲಸ / ಚಟುವಟಿಕೆಗಳು
+Question 6: ತಂಡವಾಗಿ ನಾನು ಆನಂದಿಸುವ ಕೆಲಸ / ಚಟುವಟಿಕೆಗಳು
+Question 7: ಶಾಲಾವಧಿಯಲ್ಲಿ ಮಾಡಬೇಕಾದ, ಆದರೆ ನನಗೆ ಕಷ್ಟವೆನಿಸುವ ಚಟುವಟಿಕೆ
+Question 8: ಶಾಲಾವಧಿಯ ನಂತರ, ಶಾಲೆಯ ಆಚೆ ನನಗೆ ನರ್ವಹಿಸಲು ಕಷ್ಟವೆನಿಸುವ ಚಟುವಟಿಕೆ
+Question 9: ನಾನು ಮಾಡಲೇಬೇಕಾದ ಚಟುವಟಿಕೆಗಳು
+Question 10: ನಾನು ಸಹಜವಾಗಿ ಮಾಡಬಹುದಾದ ಚಟುವಟಿಕೆಗಳು
+Question 11: ನನಗೆ ಸಹಜವಾಗಿ ಮಾಡಲು ಬಾರದಿರುವ ಚಟುವಟಿಕೆಗಳು
+Question 12: ನನ್ನಲ್ಲಿರುವ, ನಾನು ಇಷ್ಟಪಡುವ ಗುಣಗಳು
+Question 13: ಇತರರು ನನ್ನಲ್ಲಿ ಇಷ್ಟಪಡುವ ಗುಣಗಳು
+Question 14: ನಾನು ಸುಧಾರಿಸಿಕೊಳ್ಳಬೇಕಾದ ಗುಣ/ ಅಂಶಗಳು`
+      : isTamil
+        ? `Question 1: என் குடும்பத்தைத் தவிர, என் நண்பர்கள் யார்?
+Question 2: நான் தினமும் என்ன வேலைகளை செய்கிறேன்?
+Question 3: பள்ளி நேரத்தில் நான் ரசிக்கும் செயல்கள் என்ன?
+Question 4: பள்ளிக்கு வெளியே நான் ரசிக்கும் செயல்கள் என்ன?
+Question 5: தனிப்பட்ட முறையில் நான் ரசிக்கும் செயல்கள் என்ன?
+Question 6: குழுவாகச் செய்யும்போது நான் ரசிக்கும் செயல்கள் என்ன?
+Question 7: பள்ளியில் செய்ய வேண்டியிருந்தாலும் எனக்கு கடினமாக இருக்கும் செயல் எது?
+Question 8: பள்ளிக்கு பிறகு அல்லது பள்ளிக்கு வெளியே செய்ய கடினமாக இருப்பது எது?
+Question 9: நான் கட்டாயமாக செய்ய வேண்டிய செயல்கள் என்ன?
+Question 10: நான் எளிதாக செய்யக்கூடிய செயல்கள் என்ன?
+Question 11: எனக்கு எளிதாக செய்ய முடியாத செயல்கள் என்ன?
+Question 12: என்னிடத்தில் நான் விரும்பும் குணங்கள் என்ன?
+Question 13: மற்றவர்கள் என்னிடத்தில் விரும்பும் குணங்கள் என்ன?
+Question 14: நான் மேம்படுத்த வேண்டிய குணங்கள் / அம்சங்கள் என்ன?`
+        : `Question 1: Who are my friends outside my family?
+Question 2: What activities do I do daily?
+Question 3: Which activities do I enjoy during school time?
+Question 4: Which activities do I enjoy outside school?
+Question 5: What activities do I enjoy personally?
+Question 6: What activities do I enjoy doing as a team?
+Question 7: Which school activity do I find difficult even though I must do it?
+Question 8: Which activity do I find difficult to manage after school or outside school?
+Question 9: What activities must I do?
+Question 10: Which activities can I do easily?
+Question 11: Which activities are not easy for me to do?
+Question 12: What qualities do I like about myself?
+Question 13: What qualities do others like in me?
+Question 14: Which qualities or aspects do I need to improve?`;
 
     const coreInstructions =
       'You are a career guidance counsellor for rural students in India.\n' +
@@ -1898,7 +1925,7 @@ ${languageInstruction}
 STUDENT ANSWERS ABOUT THEMSELVES:
 ${formattedResponses}
 
-Write answers to these 3 questions as if the student is speaking (use "I" and "me").
+Write answers to these 14 questions as if the student is speaking (use "I" and "me").
 
 ${questionsPrompt}
 
@@ -1906,16 +1933,27 @@ IMPORTANT RULES:
 - Write like the student is talking (use "I" and "me")
 - Use very simple words that a grade 8 or 9 student can easily understand
 - Use plain English - no difficult words
-- The TOTAL length should be 100-150 words for all three answers together
+- The TOTAL length should be 200-300 words for all 14 answers together
 - Be short and clear
 - Use the student's own words from their answers
 - Write like the student himself/herself is writing
 - Format the response as valid JSON with this exact structure:
 
 {
-  "question1": "Your answer here...",
-  "question2": "Your answer here...",
-  "question3": "Your answer here..."
+  "question1": "...",
+  "question2": "...",
+  "question3": "...",
+  "question4": "...",
+  "question5": "...",
+  "question6": "...",
+  "question7": "...",
+  "question8": "...",
+  "question9": "...",
+  "question10": "...",
+  "question11": "...",
+  "question12": "...",
+  "question13": "...",
+  "question14": "..."
 }
 
 Return ONLY the JSON object, no additional text or markdown formatting.`;
@@ -1946,7 +1984,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
     try {
       // Detect language from student responses
       const detectedLanguage = this.detectLanguage({ part1: responses }, preferredLanguage);
-      console.log(`🌐 Detected language from student responses: ${detectedLanguage}`);
+      logger.log(`🌐 Detected language from student responses: ${detectedLanguage} `);
 
       const prompt = await this.buildAboutMePrompt(responses, detectedLanguage);
 
@@ -1960,10 +1998,10 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
         ]
       };
 
-      console.log('📡 Calling Gemini API for About Me summary:', this.endpoint);
+      logger.log('📡 Calling Gemini API for About Me summary:', this.endpoint);
 
       // Try primary endpoint
-      let response = await fetch(`${this.endpoint}?key=${this.apiKey}`, {
+      let response = await fetch(`${this.endpoint}?key = ${this.apiKey} `, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1973,9 +2011,9 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
 
       // If 404, try fallback endpoint
       if (!response.ok && response.status === 404) {
-        console.warn('⚠️ Primary model not found, trying fallback:', this.fallbackEndpoint);
+        logger.warn('⚠️ Primary model not found, trying fallback:', this.fallbackEndpoint);
 
-        response = await fetch(`${this.fallbackEndpoint}?key=${this.apiKey}`, {
+        response = await fetch(`${this.fallbackEndpoint}?key = ${this.apiKey} `, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -1986,27 +2024,27 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.error('❌ Gemini API error:', errorData);
+        logger.error('❌ Gemini API error:', errorData);
         return {
           success: false,
-          error: `API request failed: ${response.status} - ${response.statusText}`
+          error: `API request failed: ${response.status} - ${response.statusText} `
         };
       }
 
       const data = await response.json();
-      console.log('✅ Gemini API response received for About Me');
+      logger.log('✅ Gemini API response received for About Me');
 
       const generatedText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
       if (!generatedText) {
-        console.error('❌ No text in response:', JSON.stringify(data, null, 2));
+        logger.error('❌ No text in response:', JSON.stringify(data, null, 2));
         return {
           success: false,
           error: 'No content generated by AI'
         };
       }
 
-      console.log('✅ Successfully generated About Me summary, length:', generatedText.length);
+      logger.log('✅ Successfully generated About Me summary, length:', generatedText.length);
 
       const summary = this.parseGeminiResponse(generatedText);
 
@@ -2023,7 +2061,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
       };
 
     } catch (error) {
-      console.error('Error generating About Me summary:', error);
+      logger.error('Error generating About Me summary:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error occurred'
@@ -2042,10 +2080,10 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
       ['roleModel1', 'roleModel2', 'roleModel3'].forEach((key, index) => {
         const roleModel = responses[key];
         if (roleModel && typeof roleModel === 'object') {
-          formatted += `\n--- Role Model ${index + 1} ---\n`;
+          formatted += `\n-- - Role Model ${index + 1} ---\n`;
           Object.entries(roleModel).forEach(([field, value]) => {
             if (value && typeof value === 'string' && value.trim()) {
-              formatted += `${field}: ${value}\n`;
+              formatted += `${field}: ${value} \n`;
             }
           });
         }
@@ -2054,9 +2092,9 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
       // Fallback: format all fields
       Object.entries(responses).forEach(([key, value]) => {
         if (value && typeof value === 'string' && value.trim()) {
-          formatted += `${key}: ${value}\n`;
+          formatted += `${key}: ${value} \n`;
         } else if (value && typeof value === 'object') {
-          formatted += `${key}: ${JSON.stringify(value)}\n`;
+          formatted += `${key}: ${JSON.stringify(value)} \n`;
         }
       });
     }
@@ -2077,7 +2115,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
     const template = await this.getSummaryTemplate('role_models');
 
     if (!template) {
-      console.error('Failed to fetch Role Models summary template, falling back to default');
+      logger.error('Failed to fetch Role Models summary template, falling back to default');
       return this.buildRoleModelsFallbackPrompt(responses, language);
     }
 
@@ -2123,25 +2161,25 @@ ${languageInstruction}
 STUDENT ANSWERS ABOUT THEIR ROLE MODELS:
 ${formattedResponses}
 
-Write an answer to this question as if the student is speaking (use "I" and "me").
+Write an answer to this question as if the student is speaking(use "I" and "me").
 
-${questionsPrompt}
+      ${questionsPrompt}
 
 IMPORTANT RULES:
-- Write like the student is talking (use "I" and "me")
-- Use very simple words that a grade 8 or 9 student can easily understand
-- Use plain English - no difficult words
-- The output MUST be a numbered list of 5 to 10 specific questions
-- Each question in the list should be something the student would want to ask their role model
-- Base the questions on the specific role models and qualities the student mentioned (e.g., if they chose a teacher, ask about teaching; if they chose a doctor, ask about medicine)
-- Be short and clear
-- Use the student's own words from their answers
-- Write like the student himself/herself is writing
-- Format the response as valid JSON with this exact structure:
+    - Write like the student is talking(use "I" and "me")
+      - Use very simple words that a grade 8 or 9 student can easily understand
+        - Use plain English - no difficult words
+          - The output MUST be a numbered list of 5 to 10 specific questions
+            - Each question in the list should be something the student would want to ask their role model
+              - Base the questions on the specific role models and qualities the student mentioned(e.g., if they chose a teacher, ask about teaching; if they chose a doctor, ask about medicine)
+    - Be short and clear
+      - Use the student's own words from their answers
+        - Write like the student himself / herself is writing
+          - Format the response as valid JSON with this exact structure:
 
-{
-  "question1": "1. [First Question]\\n2. [Second Question]\\n..."
-}
+    {
+      "question1": "1. [First Question]\\n2. [Second Question]\\n..."
+    }
 
 Return ONLY the JSON object, no additional text or markdown formatting.`;
   }
@@ -2188,25 +2226,25 @@ ${languageInstruction}
 STUDENT ANSWERS ABOUT THEIR ROLE MODELS:
 ${formattedResponses}
 
-Write an answer to this question as if the student is speaking (use "I" and "me").
+Write an answer to this question as if the student is speaking(use "I" and "me").
 
-${questionsPrompt}
+      ${questionsPrompt}
 
 IMPORTANT RULES:
-- Write like the student is talking (use "I" and "me")
-- Use very simple words that a grade 8 or 9 student can easily understand
-- Use plain English - no difficult words
-- The output MUST be a numbered list of 5 to 10 specific questions
-- Each question in the list should be something the student would want to ask their role model
-- Base the questions on the specific role models and qualities the student mentioned
-- Be short and clear
-- Use the student's own words from their answers
-- Write like the student himself/herself is writing
-- Format the response as valid JSON with this exact structure:
+    - Write like the student is talking(use "I" and "me")
+      - Use very simple words that a grade 8 or 9 student can easily understand
+        - Use plain English - no difficult words
+          - The output MUST be a numbered list of 5 to 10 specific questions
+            - Each question in the list should be something the student would want to ask their role model
+              - Base the questions on the specific role models and qualities the student mentioned
+                - Be short and clear
+                  - Use the student's own words from their answers
+                    - Write like the student himself / herself is writing
+                      - Format the response as valid JSON with this exact structure:
 
-{
-  "question1": "1. [First Question]\\n2. [Second Question]\\n..."
-}
+    {
+      "question1": "1. [First Question]\\n2. [Second Question]\\n..."
+    }
 
 Return ONLY the JSON object, no additional text or markdown formatting.`;
   }
@@ -2236,7 +2274,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
     try {
       // Detect language from student responses
       const detectedLanguage = this.detectLanguage({ part1: responses }, preferredLanguage);
-      console.log(`🌐 Detected language from student responses: ${detectedLanguage}`);
+      logger.log(`🌐 Detected language from student responses: ${detectedLanguage} `);
 
       const prompt = await this.buildRoleModelsPrompt(responses, detectedLanguage);
 
@@ -2250,10 +2288,10 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
         ]
       };
 
-      console.log('📡 Calling Gemini API for Role Models summary:', this.endpoint);
+      logger.log('📡 Calling Gemini API for Role Models summary:', this.endpoint);
 
       // Try primary endpoint
-      let response = await fetch(`${this.endpoint}?key=${this.apiKey}`, {
+      let response = await fetch(`${this.endpoint}?key = ${this.apiKey} `, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -2263,9 +2301,9 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
 
       // If 404, try fallback endpoint
       if (!response.ok && response.status === 404) {
-        console.warn('⚠️ Primary model not found, trying fallback:', this.fallbackEndpoint);
+        logger.warn('⚠️ Primary model not found, trying fallback:', this.fallbackEndpoint);
 
-        response = await fetch(`${this.fallbackEndpoint}?key=${this.apiKey}`, {
+        response = await fetch(`${this.fallbackEndpoint}?key = ${this.apiKey} `, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -2276,40 +2314,40 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.error('❌ Gemini API error:', errorData);
+        logger.error('❌ Gemini API error:', errorData);
         return {
           success: false,
-          error: `API request failed: ${response.status} - ${response.statusText}`
+          error: `API request failed: ${response.status} - ${response.statusText} `
         };
       }
 
       const data = await response.json();
-      console.log('✅ Gemini API response received for Role Models summary');
+      logger.log('✅ Gemini API response received for Role Models summary');
 
       const generatedText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
       if (!generatedText) {
-        console.error('❌ No text in response:', JSON.stringify(data, null, 2));
+        logger.error('❌ No text in response:', JSON.stringify(data, null, 2));
         return {
           success: false,
           error: 'No content generated by AI'
         };
       }
 
-      console.log('✅ Successfully generated Role Models summary, length:', generatedText.length);
-      console.log('📄 Generated text (first 500 chars):', generatedText.substring(0, 500));
+      logger.log('✅ Successfully generated Role Models summary, length:', generatedText.length);
+      logger.log('📄 Generated text (first 500 chars):', generatedText.substring(0, 500));
 
       const summary = this.parseGeminiResponse(generatedText);
 
       if (!summary) {
-        console.error('❌ Failed to parse Role Models summary. Full response:', generatedText);
+        logger.error('❌ Failed to parse Role Models summary. Full response:', generatedText);
         return {
           success: false,
           error: 'Failed to parse AI response. Please check the console for details.'
         };
       }
 
-      console.log('✅ Successfully parsed Role Models summary:', summary);
+      logger.log('✅ Successfully parsed Role Models summary:', summary);
 
       return {
         success: true,
@@ -2317,7 +2355,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
       };
 
     } catch (error) {
-      console.error('Error generating Role Models summary:', error);
+      logger.error('Error generating Role Models summary:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error occurred'

@@ -1,3 +1,4 @@
+﻿import { logger } from '@/lib/logger';
 import { supabase } from '@/integrations/supabase/client';
 
 export type NotificationType = 'summary_approved' | 'teacher_message' | 'assessment_submitted' | 'system';
@@ -62,17 +63,17 @@ class NotificationService {
       });
 
       if (error) {
-        console.error('Error creating notification via RPC:', error);
+        logger.error('Error creating notification via RPC:', error);
         return { success: false, error: error.message };
       }
 
       if (!data) {
-        console.warn('Notification RPC returned no id; assuming success');
+        logger.warn('Notification RPC returned no id; assuming success');
       }
 
       return { success: true };
     } catch (error) {
-      console.error('Exception creating notification via RPC:', error);
+      logger.error('Exception creating notification via RPC:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'

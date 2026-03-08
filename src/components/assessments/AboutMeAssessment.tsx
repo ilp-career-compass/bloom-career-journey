@@ -1,3 +1,4 @@
+﻿import { logger } from '@/lib/logger';
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { User, ArrowLeft, CheckCircle } from 'lucide-react';
+import { User, ArrowLeft, CheckCircle, Lock, Sparkles } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +18,9 @@ import { useLang } from '@/hooks/useLang';
 import { KannadaKeyboard } from '@/components/ui/KannadaKeyboard';
 import { checkAssessmentUnlock } from '@/utils/assessmentUnlock';
 import { fetchTranslations } from '@/services/translationService';
+import { aiSummaryService } from '@/services/aiSummaryService';
+import { summaryDatabaseService } from '@/services/summaryDatabaseService';
+import { notificationService } from '@/services/notificationService';
 
 interface AboutMeField {
   field_key: string;
@@ -32,7 +36,7 @@ type Double = [string, string];
 
 // Dynamic responses based on database fields
 interface AboutMeResponses {
-  [field_key: string]: string | Triple | Double;
+  [field_key: string]: string | Triple | Double | { [key: string]: string };
 }
 
 export default function AboutMeAssessment() {
@@ -50,6 +54,7 @@ export default function AboutMeAssessment() {
   const [aboutMeFields, setAboutMeFields] = useState<AboutMeField[]>([]);
   const [currentSection, setCurrentSection] = useState<string>('');
   const [helpTranslations, setHelpTranslations] = useState<Record<string, string>>({});
+  const [summaryQuestions, setSummaryQuestions] = useState<any[]>([]);
   const toggleHelp = (k: string) => setHelpOpen(prev => ({ ...prev, [k]: !prev[k] }));
 
   // Initialize responses based on database fields
@@ -64,6 +69,21 @@ export default function AboutMeAssessment() {
         initialResponses[field.field_key] = '';
       }
     });
+
+    // Handle summary questions
+    const summary: Record<string, string> = {};
+    if (summaryQuestions.length > 0) {
+      summaryQuestions.forEach((_, i) => {
+        summary[`question${i + 1}`] = '';
+      });
+    } else {
+      // Fallback to default 3
+      summary['question1'] = '';
+      summary['question2'] = '';
+      summary['question3'] = '';
+    }
+    initialResponses['summary'] = summary;
+
     return initialResponses;
   };
 
@@ -86,6 +106,10 @@ export default function AboutMeAssessment() {
       const firstFieldB = fieldsBySection[b]?.[0];
       return (firstFieldA?.sequence_number || 0) - (firstFieldB?.sequence_number || 0);
     });
+    // Append Summary section only when real sections exist (fields loaded)
+    if (sectionsList.length > 0) {
+      sectionsList.push('Summary');
+    }
     return sectionsList;
   }, [fieldsBySection]);
 
@@ -96,17 +120,64 @@ export default function AboutMeAssessment() {
     }
   }, [sections, currentSection]);
 
+  const areCoreSectionsComplete = () => {
+    if (aboutMeFields.length === 0) return false;
+    return aboutMeFields.every(field => {
+      const value = responses[field.field_key];
+
+      if (field.field_type === 'triple') {
+        if (!Array.isArray(value)) return false;
+        return value.every(v => strFor(v) !== '');
+      }
+
+      if (field.field_type === 'double') {
+        if (!Array.isArray(value)) return false;
+        return value.every(v => strFor(v) !== '');
+      }
+
+      return strFor(value) !== '';
+    });
+  };
+
+  const isSummaryComplete = () => {
+    const summary = responses['summary'] as any;
+    if (!summary) return false;
+
+    if (summaryQuestions.length > 0) {
+      return summaryQuestions.every((_, i) => (summary[`question${i + 1}`] || '').trim() !== '');
+    }
+
+    return ['question1', 'question2', 'question3'].every(q => (summary[q] || '').trim() !== '');
+  };
+
   const getProgressPercentage = () => {
     if (aboutMeFields.length === 0) return 0;
-    const total = aboutMeFields.length;
-    const answered = aboutMeFields.filter(field => {
+
+    const sCount = summaryQuestions.length > 0 ? summaryQuestions.length : 3;
+    const total = aboutMeFields.length + sCount;
+
+    const answeredCore = aboutMeFields.filter(field => {
       const value = responses[field.field_key];
       if (Array.isArray(value)) {
         return value.some(v => (v || '').trim() !== '');
       }
-      return (value || '').trim() !== '';
+      return strFor(value) !== '';
     }).length;
-    return total > 0 ? (answered / total) * 100 : 0;
+
+    const summary = responses['summary'] as any;
+    let answeredSummary = 0;
+
+    if (summaryQuestions.length > 0) {
+      answeredSummary = summaryQuestions.filter((_, i) =>
+        summary && (summary[`question${i + 1}`] || '').trim() !== ''
+      ).length;
+    } else {
+      answeredSummary = ['question1', 'question2', 'question3'].filter(q =>
+        summary && (summary[q] || '').trim() !== ''
+      ).length;
+    }
+
+    return ((answeredCore + answeredSummary) / total) * 100;
   };
 
   const setField = (key: string, value: any) => {
@@ -122,15 +193,12 @@ export default function AboutMeAssessment() {
     if (readOnlyView) return false;
     if (aboutMeFields.length === 0) return false;
 
-    // Check if every required field has a value
-    return aboutMeFields.every(field => {
+    // 1. Check core sections
+    const coreComplete = aboutMeFields.every(field => {
       const value = responses[field.field_key];
 
       if (field.field_type === 'triple') {
         if (!Array.isArray(value)) return false;
-        // For triple, check if at least one field is filled (or all? usually all slots for triple are placeholders, but usually just checking if some content exists is enough, but typically we want full completion)
-        // Based on other assessments, usually we want strict non-empty. 
-        // Let's assume strict: if triple, all 3 are fields.
         return value.every(v => strFor(v) !== '');
       }
 
@@ -141,6 +209,11 @@ export default function AboutMeAssessment() {
 
       return strFor(value) !== '';
     });
+
+    if (!coreComplete) return false;
+
+    // 2. Check summary section
+    return isSummaryComplete();
   };
 
   const studentIdPromise = useMemo(async () => {
@@ -193,7 +266,7 @@ export default function AboutMeAssessment() {
   useEffect(() => {
     const loadFields = async () => {
       try {
-        console.log('🔄 Loading About Me fields from database...');
+        logger.log('🔄 Loading About Me fields from database...');
         let rows: any[] | null = null;
         try {
           const { data: i18nData } = await supabase.rpc('get_about_me_fields_i18n', { p_lang: lang } as any);
@@ -216,18 +289,18 @@ export default function AboutMeAssessment() {
         }
 
         if (validateApiResponse(rows, 'AboutMeAssessment - Fields')) {
-          console.log('✅ Database fields loaded:', (rows as any[]).length, 'fields');
+          logger.log('✅ Database fields loaded:', (rows as any[]).length, 'fields');
           const fields = rows as AboutMeField[];
           setAboutMeFields(fields);
           // Initialize responses with database fields
           const initialResponses = initializeResponses(fields);
           setResponses(prev => ({ ...prev, ...initialResponses }));
         } else {
-          console.log('⚠️ No fields found in database, using fallback');
+          logger.log('⚠️ No fields found in database, using fallback');
         }
       } catch (error) {
         handleDatabaseError(error, 'AboutMeAssessment - Fields');
-        console.log('🔄 Using hardcoded fallback fields');
+        logger.log('🔄 Using hardcoded fallback fields');
       }
     };
 
@@ -237,6 +310,34 @@ export default function AboutMeAssessment() {
   // Load localized help text overrides from content_translations (about_me_help)
   const [dbTitle, setDbTitle] = useState<string>('');
   const [dbIntro, setDbIntro] = useState<string>('');
+
+  useEffect(() => {
+    const loadSummaryQuestions = async () => {
+      try {
+        const { data, error } = await supabase.rpc('get_about_me_summary_questions_i18n', { p_lang: lang });
+        if (error) throw error;
+        if (data && Array.isArray(data)) {
+          setSummaryQuestions(data);
+          // Update responses to include these questions if missing
+          setResponses(prev => {
+            const summary = { ...(prev.summary as any || {}) };
+            let changed = false;
+            data.forEach((_, i) => {
+              if (summary[`question${i + 1}`] === undefined) {
+                summary[`question${i + 1}`] = '';
+                changed = true;
+              }
+            });
+            if (changed) return { ...prev, summary };
+            return prev;
+          });
+        }
+      } catch (err) {
+        logger.error('Error loading about me summary questions:', err);
+      }
+    };
+    loadSummaryQuestions();
+  }, [lang]);
 
   useEffect(() => {
     const loadHelpTranslations = async () => {
@@ -265,7 +366,7 @@ export default function AboutMeAssessment() {
         }
 
       } catch (error) {
-        console.warn('AboutMeAssessment: failed to load translations', error);
+        logger.warn('AboutMeAssessment: failed to load translations', error);
         setHelpTranslations({});
       }
     };
@@ -362,6 +463,11 @@ export default function AboutMeAssessment() {
           }
         });
 
+        // Restore saved summary responses if they exist
+        if (saved.summary) {
+          initialResponses.summary = { ...saved.summary };
+        }
+
         setResponses(initialResponses);
         if (data.completed_at) {
           setIsCompleted(true);
@@ -422,12 +528,14 @@ export default function AboutMeAssessment() {
 
         // Generate AI summary in the background
         try {
-          const { aiSummaryService } = await import('@/services/aiSummaryService');
-          const summaryDatabaseService = (await import('@/services/summaryDatabaseService')).summaryDatabaseService;
-
           if (aiSummaryService.isConfigured() && assessmentData?.id) {
-            console.log('🤖 Generating AI summary for About Me assessment:', assessmentData.id);
-            const summaryResult = await aiSummaryService.generateAboutMeSummary(responses);
+            logger.log('🤖 Generating AI summary for About Me assessment:', assessmentData.id);
+
+            // Filter out summary tab data for AI summary generation
+            const coreResponses = { ...responses };
+            delete (coreResponses as any).summary;
+
+            const summaryResult = await aiSummaryService.generateAboutMeSummary(coreResponses);
 
             if (summaryResult.success && summaryResult.summary) {
               // Save summary to database
@@ -438,7 +546,7 @@ export default function AboutMeAssessment() {
               );
 
               if (saveResult.success) {
-                console.log('✅ AI summary saved successfully:', saveResult.summaryId);
+                logger.log('✅ AI summary saved successfully:', saveResult.summaryId);
                 toast({
                   title:
                     lang === 'kn'
@@ -456,8 +564,6 @@ export default function AboutMeAssessment() {
 
                 // Notify teacher(s) assigned to this student
                 try {
-                  const { notificationService } = await import('@/services/notificationService');
-
                   // Find teacher(s) for this student
                   const studentId = await getStudentId();
                   if (studentId) {
@@ -479,34 +585,22 @@ export default function AboutMeAssessment() {
                     }
                   }
                 } catch (notifError) {
-                  console.error('Error notifying teacher:', notifError);
+                  logger.error('Error notifying teacher:', notifError);
                   // Don't fail the whole submission if notification fails
                 }
               } else {
-                console.error('Failed to save summary:', saveResult.error);
-                toast({
-                  title: "Summary Generation Issue",
-                  description: "Your assessment is saved, but summary generation needs attention.",
-                  variant: "destructive",
-                });
+                logger.error('Failed to save summary:', saveResult.error);
               }
             } else {
-              console.error('Failed to generate summary:', summaryResult.error);
-              toast({
-                title: "Summary Generation Issue",
-                description: "Your assessment is saved. Summary will be generated later.",
-                variant: "destructive",
-              });
+              logger.error('Failed to generate summary:', summaryResult.error);
             }
-          } else {
-            console.warn('⚠️ Gemini API not configured, skipping summary generation');
           }
         } catch (summaryError) {
-          console.error('Error in summary generation:', summaryError);
-          // Don't show error to user - assessment is already saved
+          logger.error('Error in summary generation:', summaryError);
         }
       }
     } catch (e) {
+      logger.error('Error saving:', e);
       toast({ title: 'Error', description: 'Unable to save. Please try again.', variant: 'destructive' });
     } finally {
       setSubmitting(false);
@@ -617,18 +711,35 @@ export default function AboutMeAssessment() {
             {/* Section Tabs */}
             {sections.length > 0 && (
               <div className="w-full">
-                <div className="flex flex-wrap gap-2 mb-6 justify-center">
+                <div className="flex flex-wrap gap-2 mb-6">
                   {sections.map((sectionTitle) => {
-                    const sectionLetter = sectionTitle.match(/^([A-D])\./)?.[1] || sectionTitle.charAt(0);
+                    const isSummary = sectionTitle === 'Summary';
+                    const sectionLetter = sectionTitle.match(/^([A-D])\./)?.[1] || (isSummary ? '' : sectionTitle.charAt(0));
                     const isCurrent = currentSection === sectionTitle;
+
+                    // Check if core sections are complete for Summary tab
+                    const isLocked = isSummary && !areCoreSectionsComplete();
+
                     return (
                       <Button
                         key={sectionTitle}
                         variant={isCurrent ? "default" : "outline"}
-                        onClick={() => setCurrentSection(sectionTitle)}
-                        className={isCurrent ? "bg-blue-600" : "text-blue-600 border-blue-200 hover:bg-blue-50"}
+                        size="sm"
+                        onClick={() => !isLocked && setCurrentSection(sectionTitle)}
+                        className={`${isCurrent ? "bg-blue-600" : "text-blue-600 border-blue-200 hover:bg-blue-50"}
+                          ${isLocked ? "opacity-60 cursor-not-allowed" : ""} border-blue-400`}
+                        disabled={isLocked && !readOnlyView}
                       >
-                        {sectionLetter}
+                        {isSummary ? (
+                          <div className="flex items-center gap-1">
+                            <Sparkles className="w-3 h-3 text-yellow-500" />
+                            {t('summary')}
+                            {isSummaryComplete() && <CheckCircle className="w-3 h-3 text-green-500 ml-1" />}
+                            {isLocked && <Lock className="w-3 h-3 ml-1 opacity-70" />}
+                          </div>
+                        ) : (
+                          sectionLetter
+                        )}
                       </Button>
                     );
                   })}
@@ -637,6 +748,91 @@ export default function AboutMeAssessment() {
                 {/* Tab Contents */}
                 {sections.map((sectionTitle) => {
                   if (sectionTitle !== currentSection) return null;
+
+                  if (sectionTitle === 'Summary') {
+                    const summaryData = (responses['summary'] as any) || {};
+                    return (
+                      <div key="summary-section" className="space-y-6 mt-0 animate-in fade-in duration-300">
+                        <div className="mb-6 p-4 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
+                          <h3 className="text-xl font-bold text-blue-800">
+                            {t('summaryReflection')}
+                          </h3>
+                          <p className="text-blue-600 text-sm mt-1">
+                            {lang === 'kn' ? 'ಸಾರಾಂಶದ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ' : lang === 'ta' ? 'சுருக்கமான கேள்விகளுக்கு பதிலளிக்கவும்' : 'Please answer these final summary questions'}
+                          </p>
+                        </div>
+
+                        <div className="space-y-6">
+                          {summaryQuestions.length > 0 ? (
+                            summaryQuestions.map((sq, index) => {
+                              const qKey = `question${index + 1}`;
+                              return (
+                                <div key={sq.id || qKey} className="space-y-2">
+                                  {sq.section_header && (
+                                    <div className="mb-4 pb-2 border-b border-gray-100">
+                                      <h4 className="text-md font-semibold text-blue-700">{sq.section_header}</h4>
+                                    </div>
+                                  )}
+                                  <label className="block text-base font-medium text-gray-800">
+                                    {index + 1}. {sq.question_text}
+                                    <span className="text-red-500 ml-1">*</span>
+                                  </label>
+                                  <Textarea
+                                    placeholder={t('typeYourAnswerHere', 'Type your answer here...')}
+                                    value={summaryData[qKey] || ''}
+                                    onChange={(e) => {
+                                      const newSummary = { ...summaryData, [qKey]: e.target.value };
+                                      setResponses(prev => ({ ...prev, summary: newSummary }));
+                                    }}
+                                    readOnly={readOnlyView}
+                                    rows={4}
+                                    className={`text-base ${(summaryData[qKey] || '').trim() !== ''
+                                      ? 'border-blue-200 focus:border-blue-400'
+                                      : 'border-red-200 focus:border-red-400 bg-red-50'
+                                      }`}
+                                  />
+                                </div>
+                              );
+                            })
+                          ) : (
+                            // Fallback to t() keys if DB fetch fails or is pending
+                            ['question1', 'question2', 'question3'].map((qKey, index) => (
+                              <div key={qKey} className="space-y-2">
+                                {index === 0 && (
+                                  <div className="mb-4 pb-2 border-b border-gray-100">
+                                    <h4 className="text-md font-semibold text-blue-700">
+                                      {lang === 'kn' ? 'ವೈಯಕ್ತಿಕ ಪ್ರೊಫೈಲ್ ಅಥವಾ ನಿಮ್ಮದೇ ವ್ಯಕ್ತಿಚಿತ್ರ ಸಿದ್ಧಪಡಿಸಿ...' :
+                                        lang === 'ta' ? 'ஒரு தனிப்பட்ட சுயவிவரம் அல்லது உங்கள் சொந்த சுயப்படத்தை தயாரிக்கவும்...' :
+                                          'Prepare a personal profile or your own self-portrait...'}
+                                    </h4>
+                                  </div>
+                                )}
+                                <label className="block text-base font-medium text-gray-800">
+                                  {index + 1}. {t(`aboutMeSummaryQ${index + 1}`)}
+                                  <span className="text-red-500 ml-1">*</span>
+                                </label>
+                                <Textarea
+                                  placeholder={t('typeYourAnswerHere', 'Type your answer here...')}
+                                  value={summaryData[qKey] || ''}
+                                  onChange={(e) => {
+                                    const newSummary = { ...summaryData, [qKey]: e.target.value };
+                                    setResponses(prev => ({ ...prev, summary: newSummary }));
+                                  }}
+                                  readOnly={readOnlyView}
+                                  rows={4}
+                                  className={`text-base ${(summaryData[qKey] || '').trim() !== ''
+                                    ? 'border-blue-200 focus:border-blue-400'
+                                    : 'border-red-200 focus:border-red-400 bg-red-50'
+                                    }`}
+                                />
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    );
+                  }
+
                   const fields = fieldsBySection[sectionTitle] || [];
                   return (
                     <div key={sectionTitle} className="space-y-4 mt-0 animate-in fade-in duration-300">
@@ -723,7 +919,8 @@ export default function AboutMeAssessment() {
                   );
                 })}
               </div>
-            )}
+            )
+            }
 
 
             <div className="flex flex-col-reverse sm:flex-row justify-between items-center mt-8 pt-4 border-t border-gray-200 gap-4 sm:gap-0">
@@ -736,7 +933,7 @@ export default function AboutMeAssessment() {
                 disabled={sections.indexOf(currentSection) === 0}
                 className="w-full sm:w-auto border-blue-200 text-blue-700 hover:bg-blue-50"
               >
-                {lang === 'kn' ? 'ಹಿಂದಿನ ವಿಭಾಗ' : lang === 'ta' ? 'முந்தைய பிரிவு' : 'Previous Section'}
+                {t('previous')}
               </Button>
 
               <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -747,7 +944,7 @@ export default function AboutMeAssessment() {
                   className="w-full sm:w-auto border-blue-200 text-blue-700 hover:bg-blue-50"
                 >
                   <CheckCircle className="w-4 h-4 mr-2" />
-                  {lang === 'kn' ? 'ಪ್ರಗತಿಯನ್ನು ಉಳಿಸಿ' : lang === 'ta' ? 'முன்னேற்றத்தைச் சேமி' : 'Save Progress'}
+                  {t('saveProgress')}
                 </Button>
 
                 {sections.indexOf(currentSection) < sections.length - 1 ? (
@@ -755,11 +952,27 @@ export default function AboutMeAssessment() {
                     variant="outline"
                     onClick={() => {
                       const idx = sections.indexOf(currentSection);
-                      if (idx < sections.length - 1) setCurrentSection(sections[idx + 1]);
+                      if (idx < sections.length - 1) {
+                        const nextSection = sections[idx + 1];
+                        if (nextSection === 'Summary' && !areCoreSectionsComplete()) {
+                          toast({
+                            title: lang === 'kn' ? 'ಸಾರಾಂಶ ಲಾಕ್ ಆಗಿದೆ' : lang === 'ta' ? 'சுருக்கம் பூட்டப்பட்டுள்ளது' : 'Summary Locked',
+                            description: lang === 'kn'
+                              ? 'ಸಾರಾಂಶವನ್ನು ವೀಕ್ಷಿಸಲು ದಯವಿಟ್ಟು ಎಲ್ಲಾ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ.'
+                              : lang === 'ta'
+                                ? 'சுருக்கத்தைப் பார்க்க அனைத்துக் கேள்விகளுக்கும் பதில் அளிக்கவும்.'
+                                : 'Please answer all core questions to unlock the summary.',
+                            variant: 'destructive',
+                          });
+                          return;
+                        }
+                        setCurrentSection(nextSection);
+                      }
                     }}
+
                     className="w-full sm:w-auto border-blue-200 text-blue-700 hover:bg-blue-50"
                   >
-                    {lang === 'kn' ? 'ಮುಂದಿನ ವಿಭಾಗ' : lang === 'ta' ? 'அடுத்த பிரிவு' : 'Next Section'}
+                    {t('next')}
                   </Button>
                 ) : (
                   <Button
@@ -775,7 +988,7 @@ export default function AboutMeAssessment() {
                     ) : (
                       <>
                         <Badge className="w-4 h-4 mr-2 bg-transparent border-0 p-0"><CheckCircle className="w-4 h-4" /></Badge>
-                        {lang === 'kn' ? 'ಸಲ್ಲಿಸಿ' : lang === 'ta' ? 'சமர்ப்பிக்கவும்' : 'Submit Assessment'}
+                        {t('submitAssessment')}
                       </>
                     )}
                   </Button>

@@ -1,3 +1,4 @@
+﻿import { logger } from '@/lib/logger';
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -250,7 +251,7 @@ export function AudioRecorder({
   // --- STREAMING LOGIC ---
   const startStreamingCapture = async (stream: MediaStream) => {
     try {
-      console.log('🔌 Connecting to Sarvam Streaming Service...');
+      logger.log('🔌 Connecting to Sarvam Streaming Service...');
 
       // Reset transcript buffer
       streamingTranscriptRef.current = "";
@@ -265,14 +266,14 @@ export function AudioRecorder({
       await sarvamStreamingService.connect(
         langCode,
         (text, isFinal) => {
-          console.log('📝 Stream update:', text);
+          logger.log('📝 Stream update:', text);
           streamingTranscriptRef.current += text + " ";
           if (onStreamTranscript) {
             onStreamTranscript(streamingTranscriptRef.current.trim());
           }
         },
         (error) => {
-          console.error('❌ Streaming error:', error);
+          logger.error('❌ Streaming error:', error);
           setErrorState('warning', 'Live transcription connection lost. Recording continues.');
         }
       );
@@ -280,7 +281,7 @@ export function AudioRecorder({
       // Create Audio Context @ 16kHz
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       const audioCtx = new AudioContextClass({ sampleRate: 16000 });
-      console.log('🎤 AudioContext Sample Rate:', audioCtx.sampleRate, 'State:', audioCtx.state);
+      logger.log('🎤 AudioContext Sample Rate:', audioCtx.sampleRate, 'State:', audioCtx.state);
 
       if (audioCtx.state === 'suspended') {
         await audioCtx.resume();
@@ -290,9 +291,9 @@ export function AudioRecorder({
       // Load AudioWorklet Module
       try {
         await audioCtx.audioWorklet.addModule('/sarvam-audio-processor.js');
-        console.log('✅ AudioWorklet Module Loaded');
+        logger.log('✅ AudioWorklet Module Loaded');
       } catch (err) {
-        console.error('❌ Failed to load AudioWorklet:', err);
+        logger.error('❌ Failed to load AudioWorklet:', err);
         throw err;
       }
 
@@ -331,17 +332,17 @@ export function AudioRecorder({
         }
         const base64Audio = window.btoa(binary);
 
-        console.log(`🎤 Generated Chunk: ${base64Audio.substring(0, 10)}...`);
+        logger.log(`🎤 Generated Chunk: ${base64Audio.substring(0, 10)}...`);
         sarvamStreamingService.sendAudioChunk(base64Audio);
       };
 
       source.connect(workletNode);
       workletNode.connect(audioCtx.destination);
 
-      console.log('✅ Streaming Capture Started (AudioWorklet)');
+      logger.log('✅ Streaming Capture Started (AudioWorklet)');
 
     } catch (e) {
-      console.error('Failed to start streaming capture:', e);
+      logger.error('Failed to start streaming capture:', e);
       // Fallback: Don't fail the whole recording if streaming fails
     }
   };
@@ -369,7 +370,7 @@ export function AudioRecorder({
   // Request microphone permission
   const requestMicrophonePermission = useCallback(async () => {
     try {
-      console.log('🎤 Requesting microphone permission...');
+      logger.log('🎤 Requesting microphone permission...');
 
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -392,10 +393,10 @@ export function AudioRecorder({
         description: "You can now record audio responses.",
       });
 
-      console.log('✅ Microphone permission granted');
+      logger.log('✅ Microphone permission granted');
       return true;
     } catch (error) {
-      console.error('❌ Microphone permission denied:', error);
+      logger.error('❌ Microphone permission denied:', error);
       setState(prev => ({ ...prev, hasPermission: false }));
 
       let errorMessage = 'Microphone access is required to record audio responses.';
@@ -515,7 +516,7 @@ export function AudioRecorder({
       };
 
       mediaRecorder.onstop = () => {
-        console.log('🛑 Recorder Stopped');
+        logger.log('🛑 Recorder Stopped');
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         setState(prev => ({ ...prev, audioBlob, buttonState: 'saved', hasRecorded: true }));
 
@@ -540,13 +541,13 @@ export function AudioRecorder({
         const streamClone = stream.clone();
 
         startStreamingCapture(streamClone).catch(err => {
-          console.warn("Streaming failed, but local recording continues:", err);
+          logger.warn("Streaming failed, but local recording continues:", err);
           setErrorState('warning', 'Live transcription unavailable. Recording locally.');
         });
       }
 
     } catch (e) {
-      console.error('Error starting recording:', e);
+      logger.error('Error starting recording:', e);
       setErrorState('error', 'Could not start recording.');
     }
   };

@@ -1,3 +1,4 @@
+﻿import { logger } from '@/lib/logger';
 import React, { useMemo, useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -105,7 +106,7 @@ export default function HollandCodeTest({ onCompleted }: { onCompleted?: (code: 
   useEffect(() => {
     const loadQuestionsFromDatabase = async () => {
       try {
-        console.log('🔄 Loading Holland Code questions from database...');
+        logger.log('🔄 Loading Holland Code questions from database...');
         const { data, error } = await supabase.rpc('get_holland_code_questions');
         
         if (error) {
@@ -114,7 +115,7 @@ export default function HollandCodeTest({ onCompleted }: { onCompleted?: (code: 
         }
         
         if (validateApiResponse(data, 'HollandCodeTest')) {
-          console.log('✅ Database questions loaded:', data);
+          logger.log('✅ Database questions loaded:', data);
           // Organize questions by category
           const newQuestions: Record<CategoryKey, string[]> = {
             R: [], I: [], A: [], S: [], E: [], C: []
@@ -128,11 +129,11 @@ export default function HollandCodeTest({ onCompleted }: { onCompleted?: (code: 
           
           setQUESTIONS(newQuestions);
         } else {
-          console.log('⚠️ No questions found in database, using fallback');
+          logger.log('⚠️ No questions found in database, using fallback');
         }
       } catch (error) {
         handleDatabaseError(error, 'HollandCodeTest');
-        console.log('🔄 Using hardcoded fallback questions');
+        logger.log('🔄 Using hardcoded fallback questions');
         // Keep default questions if database fails
       }
     };

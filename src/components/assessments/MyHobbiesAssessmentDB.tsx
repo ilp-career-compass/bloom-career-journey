@@ -1,3 +1,4 @@
+﻿import { logger } from '@/lib/logger';
 import { useState, useEffect } from 'react';
 import { useLang } from '@/hooks/useLang';
 import { useAuth } from '@/hooks/useAuth';
@@ -83,7 +84,7 @@ export default function MyHobbiesAssessmentDB() {
           });
         }
       } catch (error) {
-        console.error('Error loading assessment data:', error);
+        logger.error('Error loading assessment data:', error);
         toast({
           title: "Error",
           description: "Failed to load assessment data. Please try again.",
@@ -133,7 +134,7 @@ export default function MyHobbiesAssessmentDB() {
           }
         }
       } catch (error) {
-        console.error('Error checking existing response:', error);
+        logger.error('Error checking existing response:', error);
       }
     };
 
@@ -232,7 +233,7 @@ export default function MyHobbiesAssessmentDB() {
         description: "Your hobbies assessment has been submitted successfully.",
       });
     } catch (error) {
-      console.error('Error submitting assessment:', error);
+      logger.error('Error submitting assessment:', error);
       toast({
         title: "Error",
         description: "Failed to submit assessment. Please try again.",

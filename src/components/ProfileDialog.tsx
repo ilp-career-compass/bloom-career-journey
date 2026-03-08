@@ -1,3 +1,4 @@
+﻿import { logger } from '@/lib/logger';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -32,7 +33,7 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
 
   useEffect(() => {
     if (!userProfile?.id) return;
-    console.log('🔄 ProfileDialog: Loading user profile data:', userProfile);
+    logger.log('🔄 ProfileDialog: Loading user profile data:', userProfile);
     setFullName(userProfile.full_name || '');
     setGender((userProfile as any).gender || '');
     setGoal((userProfile as any).career_goals || '');
@@ -77,7 +78,7 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
   // Refresh profile data when dialog opens
   useEffect(() => {
     if (open && userProfile?.id) {
-      console.log('🔄 ProfileDialog opened - refreshing profile data');
+      logger.log('🔄 ProfileDialog opened - refreshing profile data');
       refreshUserProfile();
     }
   }, [open, userProfile?.id]);
@@ -100,7 +101,7 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
           const userId = authUser.id;
           const path = `${userId}/${Date.now()}_${avatarFile.name}`;
 
-          console.log('📤 Uploading profile picture:', {
+          logger.log('📤 Uploading profile picture:', {
             path,
             userId,
             userProfileId: userProfile.id,
@@ -111,12 +112,12 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
 
           const { error: upErr } = await supabase.storage.from('avatars').upload(path, avatarFile, { upsert: true });
           if (upErr) {
-            console.error('❌ Avatar upload error:', upErr);
+            logger.error('❌ Avatar upload error:', upErr);
             if (upErr.message?.includes('Bucket not found') || upErr.message?.includes('does not exist')) {
               throw new Error('Storage bucket "avatars" not found. Please run the database migration (20251112000002_ensure_avatars_bucket_exists.sql) or contact your administrator to set up file storage.');
             }
             if (upErr.message?.includes('row-level security policy') || upErr.message?.includes('RLS') || upErr.message?.includes('new row violates')) {
-              console.error('🔒 RLS Policy Error Details:', {
+              logger.error('🔒 RLS Policy Error Details:', {
                 userId,
                 userProfileId: userProfile.id,
                 path,
@@ -129,11 +130,11 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
             throw upErr;
           }
 
-          console.log('✅ Avatar uploaded successfully');
+          logger.log('✅ Avatar uploaded successfully');
           const { data } = supabase.storage.from('avatars').getPublicUrl(path);
           avatarUrl = data.publicUrl;
         } catch (uploadError) {
-          console.error('❌ Avatar upload failed:', uploadError);
+          logger.error('❌ Avatar upload failed:', uploadError);
           throw new Error(`Failed to upload profile picture: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`);
         }
       }
@@ -146,7 +147,7 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
         career_goals: isTeacher ? (userProfile as any).career_goals || null : goal || null
       };
 
-      console.log('🔄 Updating user profile with data:', updateData);
+      logger.log('🔄 Updating user profile with data:', updateData);
 
       const { data: updateResult, error } = await supabase
         .from('users')
@@ -155,16 +156,16 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
         .select();
 
       if (error) {
-        console.error('❌ Database update error:', error);
+        logger.error('❌ Database update error:', error);
         throw error;
       }
 
-      console.log('✅ Database update successful:', updateResult);
+      logger.log('✅ Database update successful:', updateResult);
       // password change
       if (password) {
         if (!isTeacher) {
           // Custom-auth students: update student_auth_credentials
-          console.log('Updating student password for user:', userProfile.id);
+          logger.log('Updating student password for user:', userProfile.id);
 
           const { error: credErr } = await supabase
             .from('student_auth_credentials')
@@ -175,11 +176,11 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
             .eq('user_id', userProfile.id);
 
           if (credErr) {
-            console.error('Password update error:', credErr);
+            logger.error('Password update error:', credErr);
             throw new Error(`Failed to update password: ${credErr.message}`);
           }
 
-          console.log('Student password updated successfully');
+          logger.log('Student password updated successfully');
           toast({
             title: lang === 'kn' ? "ಪಾಸ್ವರ್ಡ್ ನವೀಕರಿಸಲಾಗಿದೆ! 🔐" : lang === 'ta' ? "கடவுச்சொல் மாற்றப்பட்டது! 🔐" : "Password Updated! 🔐",
             description: lang === 'kn' ? "ನಿಮ್ಮ ಪಾಸ್ವರ್ಡ್ ಯಶಸ್ವಿಯಾಗಿ ಬದಲಾಯಿಸಲಾಗಿದೆ. ಈಗ ನೀವು ನಿಮ್ಮ ಹೊಸ ಪಾಸ್ವರ್ಡ್‌ನೊಂದಿಗೆ ಲಾಗಿನ್ ಮಾಡಬಹುದು." : lang === 'ta' ? "உங்கள் கடவுச்சொல் மாற்றப்பட்டது. இப்போது புதிய கடவுச்சொல்லுடன் நுழையலாம்." : "Your password has been changed successfully. You can now login with your new password.",
@@ -188,7 +189,7 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
           // Supabase-auth users (teachers/admins)
           const { error: pwErr } = await supabase.auth.updateUser({ password });
           if (pwErr) {
-            console.error('Password update error:', pwErr);
+            logger.error('Password update error:', pwErr);
             throw new Error(`Failed to update password: ${pwErr.message}`);
           }
           toast({
@@ -208,15 +209,15 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Refresh user profile to show updated picture
-      console.log('🔄 Refreshing user profile after update...');
+      logger.log('🔄 Refreshing user profile after update...');
       await refreshUserProfile();
 
       // Force re-render of profile dialog with fresh data
-      console.log('🔄 Profile dialog will re-render with fresh data');
+      logger.log('🔄 Profile dialog will re-render with fresh data');
 
       onOpenChange(false);
     } catch (err: any) {
-      console.error('Profile save error:', err);
+      logger.error('Profile save error:', err);
 
       const rawMessage = (err && err.message ? String(err.message) : '').toLowerCase();
       let description: string;
