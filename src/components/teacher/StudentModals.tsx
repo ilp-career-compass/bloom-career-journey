@@ -20,7 +20,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, Compass } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import type { Student } from './StudentsTab';
 import type { SchoolClass } from '@/integrations/supabase/types';
@@ -125,6 +126,7 @@ interface StudentDetailsModalProps {
 }
 
 export function StudentDetailsModal({ open, onOpenChange, selectedStudent, activityTimeline }: StudentDetailsModalProps) {
+    const navigate = useNavigate();
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-2xl">
@@ -188,7 +190,19 @@ export function StudentDetailsModal({ open, onOpenChange, selectedStudent, activ
                         )}
                     </div>
                 </div>
-                <div className="flex justify-end">
+                <div className="flex justify-end gap-2">
+                    {selectedStudent?.user_id && (
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                onOpenChange(false);
+                                navigate(`/teacher/student-profile-card/${selectedStudent.user_id}`);
+                            }}
+                        >
+                            <Compass className="w-4 h-4 mr-2" />
+                            View Profile Card
+                        </Button>
+                    )}
                     <Button onClick={() => onOpenChange(false)}>Close</Button>
                 </div>
             </DialogContent>

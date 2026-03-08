@@ -1,5 +1,6 @@
 import React from 'react';
 import { logger } from '@/lib/logger';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import NotificationBell from '@/components/NotificationBell';
 import {
@@ -9,7 +10,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Crown, Edit, MessageSquare, LogOut, ChevronDown } from 'lucide-react';
+import { Crown, Edit, MessageSquare, LogOut, ChevronDown, Compass, User, Map } from 'lucide-react';
 
 interface StudentDashboardHeaderProps {
     userProfile: any;
@@ -26,6 +27,8 @@ export default function StudentDashboardHeader({
     onOpenProfile,
     onOpenChat,
 }: StudentDashboardHeaderProps) {
+    const navigate = useNavigate();
+
     return (
         <div className="bg-white border-b border-gray-200 shadow-sm">
             <div className="container mx-auto px-4">
@@ -38,8 +41,27 @@ export default function StudentDashboardHeader({
                         <h1 className="text-lg md:text-xl font-bold text-gray-800 truncate">{t('brand')}</h1>
                     </div>
 
-                    {/* Notifications + Profile */}
+                    {/* Compass + Notifications + Profile */}
                     <div className="flex items-center gap-2">
+                        {/* Compass dropdown */}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="hover:bg-indigo-50">
+                                    <Compass className="w-5 h-5 text-indigo-600" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-52" align="end">
+                                <DropdownMenuItem onClick={() => navigate('/student/profile-card')}>
+                                    <User className="w-4 h-4 mr-2" />
+                                    {t('my_profile_card')}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => navigate('/student/career-roadmap')}>
+                                    <Map className="w-4 h-4 mr-2" />
+                                    {t('career_roadmap')}
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+
                         {userProfile?.id && <NotificationBell userId={userProfile.id} />}
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>

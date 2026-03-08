@@ -1,4 +1,4 @@
-﻿import { logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 // AI Summary Service - Generates reflective summaries using Gemini API
 
@@ -2360,6 +2360,152 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error occurred'
       };
+    }
+  }
+
+  /**
+   * Generate 3-5 keyword phrases from an approved assessment summary for the Profile Card.
+   * Returns a JSON array of strings.
+   */
+  async generateProfileCardKeywords(
+    assessmentType: string,
+    summaryText: string,
+    lang: string = 'en'
+  ): Promise<{ success: boolean; keywords?: string[]; error?: string }> {
+    if (!this.isConfigured()) {
+      return { success: false, error: 'Gemini API key is not configured' };
+    }
+    if (!summaryText || summaryText.trim().length === 0) {
+      return { success: false, error: 'No summary text provided' };
+    }
+
+    const langInstruction = lang === 'kn'
+      ? 'Respond in Kannada.'
+      : lang === 'ta'
+        ? 'Respond in Tamil.'
+        : 'Respond in English.';
+
+    const prompt = `You are a career guidance counsellor for Indian students in grades 8-12.
+Given the following approved assessment summary for the "${assessmentType}" module, extract 3-5 concise keyword phrases that capture the student's key insights from this module.
+
+Rules:
+- Each phrase should be 2-6 words.
+- Use age-appropriate, encouraging language.
+- ${langInstruction}
+- Return ONLY a JSON array of strings. No other text.
+
+Example output: ["Loves helping others", "Interested in science", "Creative problem solver"]
+
+Assessment Summary:
+${summaryText}`;
+
+    try {
+      const requestBody = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.4, maxOutputTokens: 300 }
+      };
+
+      let response = await fetch(`${this.endpoint}?key=${this.apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok && response.status === 404) {
+        response = await fetch(`${this.fallbackEndpoint}?key=${this.apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody)
+        });
+      }
+
+      if (!response.ok) {
+        return { success: false, error: `Gemini API returned ${response.status}` };
+      }
+
+      const data = await response.json();
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+      const keywords: string[] = JSON.parse(cleaned);
+
+      if (!Array.isArray(keywords) || keywords.length === 0) {
+        return { success: false, error: 'Failed to parse keywords from AI response' };
+      }
+
+      return { success: true, keywords: keywords.slice(0, 5) };
+    } catch (error) {
+      logger.error('Error generating profile card keywords:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  /**
+   * Generate a career direction paragraph combining Dreams + Talents + Role Models keywords.
+   */
+  async generateCareerDirection(
+    dreamsKeywords: string[],
+    hobbiesKeywords: string[],
+    roleModelsKeywords: string[],
+    studentName: string,
+    lang: string = 'en'
+  ): Promise<{ success: boolean; direction?: string; error?: string }> {
+    if (!this.isConfigured()) {
+      return { success: false, error: 'Gemini API key is not configured' };
+    }
+
+    const langInstruction = lang === 'kn'
+      ? 'Respond in Kannada.'
+      : lang === 'ta'
+        ? 'Respond in Tamil.'
+        : 'Respond in English.';
+
+    const prompt = `You are a warm, encouraging career guidance counsellor for Indian students in grades 8-12.
+Based on the student's self-assessment keywords below, write a single inspiring paragraph (60-100 words) that weaves together their dreams, talents, and role model inspirations into a cohesive career direction summary.
+
+${langInstruction}
+Address the student by name: ${studentName}.
+Be encouraging, specific, and age-appropriate.
+Return ONLY the paragraph text, no JSON or formatting.
+
+Dreams keywords: ${dreamsKeywords.join(', ')}
+Talents & Hobbies keywords: ${hobbiesKeywords.join(', ')}
+Role Models keywords: ${roleModelsKeywords.join(', ')}`;
+
+    try {
+      const requestBody = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.7, maxOutputTokens: 500 }
+      };
+
+      let response = await fetch(`${this.endpoint}?key=${this.apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok && response.status === 404) {
+        response = await fetch(`${this.fallbackEndpoint}?key=${this.apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody)
+        });
+      }
+
+      if (!response.ok) {
+        return { success: false, error: `Gemini API returned ${response.status}` };
+      }
+
+      const data = await response.json();
+      const direction = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+
+      if (!direction) {
+        return { success: false, error: 'Empty response from AI' };
+      }
+
+      return { success: true, direction };
+    } catch (error) {
+      logger.error('Error generating career direction:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 }

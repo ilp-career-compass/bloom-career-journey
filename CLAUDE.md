@@ -93,6 +93,8 @@ bloom-career-journey/
 │   │   ├── AdminDashboard.tsx     # Admin panel (31KB)
 │   │   ├── HollandTest.tsx        # Standalone Holland test page
 │   │   ├── CareersExplore.tsx     # Career exploration page
+│   │   ├── ProfileCardPage.tsx    # My Career Compass — profile card with AI keywords (student + teacher read-only)
+│   │   ├── CareerRoadmapPage.tsx  # Career Roadmap — milestone-based career choice tracker
 │   │   ├── StudentSummary.tsx     # Teacher view of a student's summaries
 │   │   └── *TestPage.tsx          # Audio, Assessment, Database test pages
 │   ├── services/
@@ -136,7 +138,7 @@ bloom-career-journey/
 │   └── requirements.txt              # Python deps (fastapi, websockets, uvicorn)
 ├── supabase/
 │   ├── config.toml                   # Supabase local config
-│   └── migrations/                   # 90+ SQL migration files (Jan 2025–Mar 2026)
+│   └── migrations/                   # 91+ SQL migration files (Jan 2025–Mar 2026)
 ├── scripts/                          # Utility scripts (includes parse_excel_questions.ts)
 ├── public/                           # Static assets (6 files)
 ├── docs/                             # Documentation (2 files)
@@ -462,6 +464,22 @@ Each assessment has a companion `*DB.tsx` component (e.g., `MyInspirationAssessm
 - Teacher-created student groups within a state/class
 - Has `max_students` and `is_active` fields
 
+### Compass Tables
+
+#### `profile_card_cache`
+- Caches AI-generated keyword summaries per assessment module per student
+- `student_id` (FK → `users.id`), `assessment_type` (text), `keywords` (jsonb), `generated_at` (timestamptz)
+- Unique constraint on `(student_id, assessment_type)`
+- Special `assessment_type = 'career_direction'` stores a career direction paragraph in `keywords.direction`
+- RLS: students own rows, teachers read via state join
+
+#### `career_roadmap`
+- Stores student career choices at 7 milestone points from 9th to final decision
+- `student_id` (FK → `users.id`), `milestone` (text, CHECK constrained), `plan_a/b/c` (text), `updated_at`
+- Unique constraint on `(student_id, milestone)`
+- Milestones: `beginning_9th`, `end_9th`, `beginning_10th`, `midterm_10th`, `post_exam_10th`, `before_results_10th`, `final_decision`
+- RLS: students own rows, teachers read via state join
+
 ### Chat Tables
 
 #### `chat_channels`
@@ -572,6 +590,7 @@ teachers  ←──N:1──→ chat_channels
 | 2025-11-11 | `fix_avatars_storage_rls` | Avatar storage RLS policies |
 | 2026-03-01 | `role_models_summary` | Role models summary template |
 | 2026-03-08 | `update_assessment_questions_from_excel` | Bulk update of all assessment questions (main + summary) from `Updated_Qns.xlsx` across 6 assessments, 3 languages (en/kn/ta). Updates base question tables, `content_translations`, `assessment_summary_templates` JSONB, and `role_models_module` intro text. |
+| 2026-03-08 | `add_compass_tables` | Creates `profile_card_cache` and `career_roadmap` tables for the "My Compass" feature. Both have RLS: students read/write own rows, teachers read students in their state. |
 
 ### Notable Schema Evolution
 - **Schools → States**: Renamed the "school" organizational unit to "state" to better represent the ILP's state-based operational model
@@ -685,6 +704,7 @@ These are **direct client-side API calls** from the browser (API keys stored in 
   2. Does user's role match `allowedRoles` prop? If not → redirect to their dashboard
 - Routes are protected with `<ProtectedRoute allowedRoles={['student']}>`
 - Role-based redirect: admin → `/admin`, teacher → `/teacher`, student → `/student`
+- **My Compass routes**: `/student/profile-card` (student), `/student/career-roadmap` (student), `/teacher/student-profile-card/:studentId` (teacher, read-only)
 
 ### Backend Access Control (RLS)
 - Row Level Security enforced on all tables
@@ -877,6 +897,15 @@ npm run build
 ### Student Dashboard — View Summary button moved from progress list to assessment grid cards
 - **Files**: `src/components/student/AssessmentGrid.tsx`, `src/components/student/ProgressSection.tsx`, `src/pages/StudentDashboard.tsx`, `src/components/student/studentStrings.ts`
 - **Change**: The "View Summary" button and ⟳ refresh button were removed from the Assessment Progress Summary list (`ProgressSection`). The progress list now shows only assessment name + status badge (clean rows, no extra buttons). The "View Summary ✨" button was added to the assessment grid cards (`AssessmentGrid`) — it appears in the card footer only for completed assessments with an approved summary. Completed assessments without an approved summary show a muted "Summary Pending..." text. The `AssessmentCardData` interface gained a `summaryState: SummaryState` field (`'approved' | 'pending' | 'none'`). The `ProgressRowData` interface was simplified to remove `summary`, `fetchSummary`, `setSummaryNull`, and `assessmentResponseId` fields. New localized string key `summary_pending_short` added for en/kn/ta. Tamil `view_summary` text updated to match spec.
+
+### My Compass — Profile Card + Career Roadmap
+- **New files**: `src/pages/ProfileCardPage.tsx`, `src/pages/CareerRoadmapPage.tsx`
+- **Modified files**: `src/App.tsx` (new routes), `src/components/student/StudentDashboardHeader.tsx` (compass dropdown), `src/components/student/studentStrings.ts` (new localized keys), `src/services/aiSummaryService.ts` (new methods: `generateProfileCardKeywords`, `generateCareerDirection`), `src/components/teacher/StudentModals.tsx` (View Profile Card button)
+- **Migration**: `supabase/migrations/20260308000002_add_compass_tables.sql` — creates `profile_card_cache` and `career_roadmap` tables with RLS
+- **Profile Card Page** (`/student/profile-card`): Shows 6 module cards in a responsive grid. Completed modules display 3-5 AI-generated keyword phrases (cached in `profile_card_cache`). Incomplete modules show a grey locked state. A 7th "My Career Direction" card appears when all 6 modules are complete, containing an AI-generated career direction paragraph. Teachers can view a student's profile card at `/teacher/student-profile-card/:studentId` in read-only mode.
+- **Career Roadmap Page** (`/student/career-roadmap`): Table with 7 milestone rows × 3 plan columns (A, B, C). Top 3 rows (9th–beginning 10th) are editable with 1-second debounced autosave. Bottom 4 rows are locked/greyed out. Data stored in `career_roadmap` table via UPSERT. Shows "Saved ✓" / "Save failed" status indicator.
+- **Navigation**: Compass icon (🧭) dropdown added to student header between notification bell and profile dropdown, with links to both pages. Labels localized in en/kn/ta.
+- **Teacher access**: "View Profile Card" button added to `StudentDetailsModal` in teacher dashboard, navigating to the read-only profile card view.
 
 ## Self-Update Rule
 At the end of any session where files were added/removed or dependencies changed,

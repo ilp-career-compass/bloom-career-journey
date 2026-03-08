@@ -1,4 +1,4 @@
-﻿import { logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './hooks/useAuth';
 import { LangProvider } from './hooks/useLang';
@@ -12,6 +12,8 @@ import StudentDashboard from './pages/StudentDashboard';
 import CareersExplore from './pages/CareersExplore';
 import StudentSummary from './pages/StudentSummary';
 import NotFound from './pages/NotFound';
+import ProfileCardPage from './pages/ProfileCardPage';
+import CareerRoadmapPage from './pages/CareerRoadmapPage';
 import MyInspirationAssessment from './components/assessments/MyInspirationAssessment';
 import MyDreamsAssessment from './components/assessments/MyDreamsAssessment';
 import MySchoolLearningAssessment from './components/assessments/MySchoolLearningAssessment';
@@ -294,6 +296,32 @@ function App() {
                 element={
                   <ProtectedRoute allowedRoles={['teacher']}>
                     <StudentSummary />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* My Compass routes */}
+              <Route
+                path="/student/profile-card"
+                element={
+                  <ProtectedRoute allowedRoles={['student']}>
+                    <ProfileCardPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/student/career-roadmap"
+                element={
+                  <ProtectedRoute allowedRoles={['student']}>
+                    <CareerRoadmapPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/teacher/student-profile-card/:studentId"
+                element={
+                  <ProtectedRoute allowedRoles={['teacher']}>
+                    <ProfileCardPage readOnly />
                   </ProtectedRoute>
                 }
               />
