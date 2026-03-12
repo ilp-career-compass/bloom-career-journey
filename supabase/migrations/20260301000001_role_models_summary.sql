@@ -49,16 +49,14 @@ SECURITY DEFINER
 AS $$
 BEGIN
     RETURN QUERY
-    SELECT 
+    SELECT
         q.id,
         'question' || q.sequence_number as key,
-        COALESCE(
-            (SELECT text FROM content_translations WHERE resource_type = 'role_models_summary_question' AND resource_key = 'question' || q.sequence_number AND lang = p_lang LIMIT 1),
-            q.question_text
-        ) as text,
+        COALESCE(t_q.text, q.question_text) as text,
         q.help_text,
         q.sequence_number
     FROM role_models_summary_questions q
+    LEFT JOIN content_translations t_q ON t_q.resource_type = 'role_models_summary_question' AND t_q.resource_key = ('question' || q.sequence_number) AND t_q.lang = p_lang
     WHERE q.is_active = true
     ORDER BY q.sequence_number;
 END $$;
