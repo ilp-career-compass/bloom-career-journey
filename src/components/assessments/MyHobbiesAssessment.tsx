@@ -31,6 +31,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLang } from '@/hooks/useLang';
+import { fetchTranslations } from '@/services/translationService';
 
 import { KannadaKeyboard } from '@/components/ui/KannadaKeyboard';
 import { checkAssessmentUnlock } from '@/utils/assessmentUnlock';
@@ -55,6 +56,7 @@ export default function MyHobbiesAssessment() {
   const navigate = useNavigate();
   const [hobbiesQuestions, setHobbiesQuestions] = useState<HobbyQuestion[]>([]);
   const [summaryQuestions, setSummaryQuestions] = useState<any[]>([]);
+  const [dbSummaryTitle, setDbSummaryTitle] = useState<string | null>(null);
   const [responses, setResponses] = useState<HobbiesAssessmentResponse>({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -230,6 +232,13 @@ export default function MyHobbiesAssessment() {
           } catch (e) {
             logger.error('Error loading summary questions:', e);
           }
+
+          // Fetch summary title from content_translations (future-proofing)
+          try {
+            const titleRows = await fetchTranslations('hobbies_module', ['summary_title'], lang);
+            const tTitle = titleRows.find(r => r.resource_key === 'summary_title')?.text;
+            if (tTitle) setDbSummaryTitle(tTitle);
+          } catch (e) { /* no-op */ }
 
           setResponses(prev => ({ ...prev, ...initialResponses, ...summaryInitialResponses }));
 
@@ -1028,12 +1037,12 @@ export default function MyHobbiesAssessment() {
             titleColor = 'text-purple-800';
             descColor = 'text-purple-600';
           } else if (sectionKey === 'summary') {
-            sectionTitle =
+            sectionTitle = dbSummaryTitle || (
               lang === 'kn'
                 ? 'ಸಾರಾಂಶ'
                 : lang === 'ta'
                   ? 'சுருக்கம்'
-                  : 'Summary';
+                  : 'Summary');
             sectionDescription =
               lang === 'kn'
                 ? 'ನಿಮ್ಮ ಉತ್ತರಗಳನ್ನು ಇಲ್ಲಿ ಸಾರಾಂಶ ಮಾಡಿ.'

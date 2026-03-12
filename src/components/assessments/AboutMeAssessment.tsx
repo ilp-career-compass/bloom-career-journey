@@ -310,6 +310,7 @@ export default function AboutMeAssessment() {
   // Load localized help text overrides from content_translations (about_me_help)
   const [dbTitle, setDbTitle] = useState<string>('');
   const [dbIntro, setDbIntro] = useState<string>('');
+  const [dbSummaryTitle, setDbSummaryTitle] = useState<string | null>(null);
 
   useEffect(() => {
     const loadSummaryQuestions = async () => {
@@ -355,7 +356,7 @@ export default function AboutMeAssessment() {
           .select('resource_key, text')
           .eq('resource_type', 'about_me_module')
           .eq('lang', lang)
-          .in('resource_key', ['title', 'intro']);
+          .in('resource_key', ['title', 'intro', 'summary_title']);
 
         if (moduleData) {
           const tTitle = moduleData.find(i => i.resource_key === 'title')?.text;
@@ -363,6 +364,8 @@ export default function AboutMeAssessment() {
 
           if (tTitle) setDbTitle(tTitle);
           if (tIntro) setDbIntro(tIntro);
+          const tSummary = moduleData.find(i => i.resource_key === 'summary_title')?.text;
+          if (tSummary) setDbSummaryTitle(tSummary);
         }
 
       } catch (error) {
@@ -755,7 +758,7 @@ export default function AboutMeAssessment() {
                       <div key="summary-section" className="space-y-6 mt-0 animate-in fade-in duration-300">
                         <div className="mb-6 p-4 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
                           <h3 className="text-xl font-bold text-blue-800">
-                            {t('summaryReflection')}
+                            {dbSummaryTitle || 'Summary'}
                           </h3>
                           <p className="text-blue-600 text-sm mt-1">
                             {lang === 'kn' ? 'ಸಾರಾಂಶದ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ' : lang === 'ta' ? 'சுருக்கமான கேள்விகளுக்கு பதிலளிக்கவும்' : 'Please answer these final summary questions'}

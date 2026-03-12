@@ -28,7 +28,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLang } from '@/hooks/useLang';
-
+import { fetchTranslations } from '@/services/translationService';
 
 import { KannadaKeyboard } from '@/components/ui/KannadaKeyboard';
 import { checkAssessmentUnlock } from '@/utils/assessmentUnlock';
@@ -67,6 +67,7 @@ export default function MyDreamsAssessment() {
 
   // Summary questions state
   const [summaryQuestions, setSummaryQuestions] = useState<{ id: string, text: string }[]>([]);
+  const [dbSummaryTitle, setDbSummaryTitle] = useState<string | null>(null);
 
   const saveProgress = async () => {
     if (isReadOnly) return;
@@ -274,6 +275,11 @@ export default function MyDreamsAssessment() {
               }));
               setSummaryQuestions(formattedSummaryQuestions);
             }
+
+            // Fetch summary title from content_translations
+            const titleRows = await fetchTranslations('dreams_module', ['summary_title'], lang);
+            const tTitle = titleRows.find(r => r.resource_key === 'summary_title')?.text;
+            if (tTitle) setDbSummaryTitle(tTitle);
           } catch (e) {
             logger.warn('Could not load i18n translations, using default:', e);
           }
@@ -902,7 +908,7 @@ export default function MyDreamsAssessment() {
                 <Card className="border-0 shadow-lg">
                   <CardHeader className="bg-gradient-to-r from-teal-50 to-emerald-50">
                     <CardTitle className="text-xl text-teal-800">
-                      {lang === 'kn' ? 'ಸಾರಾಂಶ' : lang === 'ta' ? 'சுருக்கம்' : 'Summary'}
+                      {dbSummaryTitle || 'Summary'}
                     </CardTitle>
                     <CardDescription className="text-teal-600">
                       {lang === 'kn'

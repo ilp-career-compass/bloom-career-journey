@@ -1,4 +1,4 @@
-﻿import { logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 import { useState, useEffect } from 'react';
 import { fetchTranslations } from '@/services/translationService';
 import { useAuth } from '@/hooks/useAuth';
@@ -160,6 +160,7 @@ export default function MyRoleModelsAssessment() {
   const [dbTitle, setDbTitle] = useState<string>('');
   const [dbIntro, setDbIntro] = useState<string>('');
   const [dbTabs, setDbTabs] = useState<Record<string, string>>({});
+  const [dbSummaryTitle, setDbSummaryTitle] = useState<string | null>(null);
 
   useEffect(() => {
     const loadI18n = async () => {
@@ -180,7 +181,7 @@ export default function MyRoleModelsAssessment() {
           .select('resource_key, text')
           .eq('resource_type', 'role_models_module')
           .eq('lang', lang)
-          .in('resource_key', ['title', 'intro', 'tab_rm1', 'tab_rm2', 'tab_rm3']);
+          .in('resource_key', ['title', 'intro', 'tab_rm1', 'tab_rm2', 'tab_rm3', 'summary_title']);
 
         if (moduleData) {
           const tTitle = moduleData.find(i => i.resource_key === 'title')?.text;
@@ -196,6 +197,9 @@ export default function MyRoleModelsAssessment() {
             }
           });
           setDbTabs(tabs);
+
+          const tSummary = moduleData.find(i => i.resource_key === 'summary_title')?.text;
+          if (tSummary) setDbSummaryTitle(tSummary);
         }
 
       } catch (error) {
@@ -1055,7 +1059,7 @@ export default function MyRoleModelsAssessment() {
                 <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-100">
                   <CardTitle className="text-xl text-purple-800 flex items-center gap-2">
                     <Target className="w-5 h-5" />
-                    {lang === 'kn' ? 'ಸಾರಾಂಶ' : lang === 'ta' ? 'சுருக்கம்' : 'Summary'}
+                    {dbSummaryTitle || 'Summary'}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-6">

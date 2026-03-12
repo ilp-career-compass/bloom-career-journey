@@ -127,6 +127,7 @@ export default function MySchoolLearningAssessment() {
   const [loading, setLoading] = useState(true);
   const [questions, setQuestions] = useState<any[]>([]);
   const [summaryQuestions, setSummaryQuestions] = useState<any[]>([]);
+  const [dbSummaryTitle, setDbSummaryTitle] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [savingSection, setSavingSection] = useState<string | null>(null);
   const [helpOpen, setHelpOpen] = useState<Record<string, boolean>>({});
@@ -223,6 +224,12 @@ export default function MySchoolLearningAssessment() {
     loadHelpTranslations();
     fetchQuestions();
     fetchSummaryQuestions();
+
+    // Fetch summary title from content_translations (future-proofing)
+    fetchTranslations('school_learning_module', ['summary_title'], lang).then(rows => {
+      const t = rows.find(r => r.resource_key === 'summary_title')?.text;
+      if (t) setDbSummaryTitle(t);
+    }).catch(() => {});
   }, [lang]);
 
   const getHelpText = (id: number, fallback: string) => {
@@ -1725,11 +1732,11 @@ export default function MySchoolLearningAssessment() {
           <Card className="border-0 shadow-lg mb-4">
             <CardHeader className="bg-gradient-to-r from-gray-50 to-slate-50">
               <CardTitle className="text-xl text-gray-800">
-                {lang === 'kn'
+                {dbSummaryTitle || (lang === 'kn'
                   ? 'ಭಾಗ 6: ಸಾರಾಂಶ'
                   : lang === 'ta'
                     ? 'பகுதி 6: சுருக்கம்'
-                    : 'Section 6: Summary'}
+                    : 'Section 6: Summary')}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-6">

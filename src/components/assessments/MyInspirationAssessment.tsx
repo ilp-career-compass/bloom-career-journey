@@ -28,6 +28,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLang } from '@/hooks/useLang';
+import { fetchTranslations } from '@/services/translationService';
 import { safeObjectEntries, handleDatabaseError, validateApiResponse } from '@/utils/errorHandler';
 import { AudioRecorder } from '@/components/ui/AudioRecorder';
 
@@ -73,6 +74,7 @@ export default function MyInspirationAssessment() {
   const [dbTitle, setDbTitle] = useState<string>('');
   const [dbIntro, setDbIntro] = useState<string>('');
   const [summaryQuestions, setSummaryQuestions] = useState<any[]>([]);
+  const [dbSummaryTitle, setDbSummaryTitle] = useState<string | null>(null);
 
   // Fetch module title and intro from database
   useEffect(() => {
@@ -442,7 +444,7 @@ export default function MyInspirationAssessment() {
     }
   }, [defaultVideos]);
 
-  // Load summary questions from database
+  // Load summary questions and title from database
   useEffect(() => {
     const loadSummaryQuestions = async () => {
       try {
@@ -472,7 +474,16 @@ export default function MyInspirationAssessment() {
         logger.error('Error loading inspiration summary questions:', err);
       }
     };
+    const loadSummaryTitle = async () => {
+      try {
+        const map = await fetchTranslations('inspiration_module', ['summary_title'], lang);
+        if (map['summary_title']) setDbSummaryTitle(map['summary_title']);
+      } catch (e) {
+        logger.warn('Failed to load summary title', e);
+      }
+    };
     loadSummaryQuestions();
+    loadSummaryTitle();
   }, [lang]);
 
   // Ensure an assessment_responses row exists and capture its id for audio uploads
@@ -1667,7 +1678,7 @@ export default function MyInspirationAssessment() {
           <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
             <CardTitle className="text-xl text-blue-800">
               {currentVideoIndex === inspirationVideos.length
-                ? t('summaryReflection')
+                ? (dbSummaryTitle || 'Summary')
                 : `${t('videoLabelN', '', currentVideoIndex + 1)}: ${currentVideo?.title}`}
             </CardTitle>
             <CardDescription className="text-blue-600">
