@@ -1,4 +1,4 @@
-﻿import { logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -311,6 +311,10 @@ export default function AboutMeAssessment() {
   const [dbTitle, setDbTitle] = useState<string>('');
   const [dbIntro, setDbIntro] = useState<string>('');
   const [dbSummaryTitle, setDbSummaryTitle] = useState<string | null>(null);
+  const [dbSectionATitle, setDbSectionATitle] = useState<string | null>(null);
+  const [dbSectionBTitle, setDbSectionBTitle] = useState<string | null>(null);
+  const [dbSectionCTitle, setDbSectionCTitle] = useState<string | null>(null);
+  const [dbSectionDTitle, setDbSectionDTitle] = useState<string | null>(null);
 
   useEffect(() => {
     const loadSummaryQuestions = async () => {
@@ -356,7 +360,7 @@ export default function AboutMeAssessment() {
           .select('resource_key, text')
           .eq('resource_type', 'about_me_module')
           .eq('lang', lang)
-          .in('resource_key', ['title', 'intro', 'summary_title']);
+          .in('resource_key', ['title', 'intro', 'summary_title', 'section_a_title', 'section_b_title', 'section_c_title', 'section_d_title']);
 
         if (moduleData) {
           const tTitle = moduleData.find(i => i.resource_key === 'title')?.text;
@@ -366,6 +370,15 @@ export default function AboutMeAssessment() {
           if (tIntro) setDbIntro(tIntro);
           const tSummary = moduleData.find(i => i.resource_key === 'summary_title')?.text;
           if (tSummary) setDbSummaryTitle(tSummary);
+
+          const tSecA = moduleData.find(i => i.resource_key === 'section_a_title')?.text;
+          const tSecB = moduleData.find(i => i.resource_key === 'section_b_title')?.text;
+          const tSecC = moduleData.find(i => i.resource_key === 'section_c_title')?.text;
+          const tSecD = moduleData.find(i => i.resource_key === 'section_d_title')?.text;
+          if (tSecA) setDbSectionATitle(tSecA);
+          if (tSecB) setDbSectionBTitle(tSecB);
+          if (tSecC) setDbSectionCTitle(tSecC);
+          if (tSecD) setDbSectionDTitle(tSecD);
         }
 
       } catch (error) {
@@ -376,25 +389,6 @@ export default function AboutMeAssessment() {
 
     loadHelpTranslations();
   }, [aboutMeFields, lang]);
-
-  // Localize section titles for display while keeping original section keys
-  const getLocalizedSectionTitle = (sectionTitle: string) => {
-    if (lang === 'kn') {
-      if (sectionTitle.startsWith('A.')) return 'A. ನನ್ನ ವೈಯಕ್ತಿಕ ಸ್ಥಳ';
-      if (sectionTitle.startsWith('B.')) return 'B. ನಾನು ಆನಂದಿಸುವ ಚಟುವಟಿಕೆಗಳು';
-      if (sectionTitle.startsWith('C.')) return 'C. ನನಗೆ ಸವಾಲಾಗಿರುವ ಕೆಲಸಗಳು';
-      if (sectionTitle.startsWith('D.')) return 'D. ನನ್ನ ಬಗ್ಗೆ ಇನ್ನಷ್ಟು ತಿಳಿದುಕೊಳ್ಳೋಣ';
-      return sectionTitle;
-    }
-    if (lang === 'ta') {
-      if (sectionTitle.startsWith('A.')) return 'A. என் தனிப்பட்ட இடம்';
-      if (sectionTitle.startsWith('B.')) return 'B. நான் விரும்பும் செயல்கள்';
-      if (sectionTitle.startsWith('C.')) return 'C. எனக்கு சிரமமாக இருக்கும் வேலைகள்';
-      if (sectionTitle.startsWith('D.')) return 'D. என்னைப் பற்றி ஆழமாக அறிதல்';
-      return sectionTitle;
-    }
-    return sectionTitle;
-  };
 
   // Keep URL ?lang in sync without re-rendering
   useEffect(() => {
@@ -841,7 +835,11 @@ export default function AboutMeAssessment() {
                     <div key={sectionTitle} className="space-y-4 mt-0 animate-in fade-in duration-300">
                       <div className="mb-4 pb-3 border-b border-gray-200">
                         <h3 className="text-lg font-semibold text-gray-800">
-                          {getLocalizedSectionTitle(sectionTitle)}
+                          {sectionTitle.startsWith('A.') ? (dbSectionATitle || sectionTitle)
+                            : sectionTitle.startsWith('B.') ? (dbSectionBTitle || sectionTitle)
+                            : sectionTitle.startsWith('C.') ? (dbSectionCTitle || sectionTitle)
+                            : sectionTitle.startsWith('D.') ? (dbSectionDTitle || sectionTitle)
+                            : sectionTitle}
                         </h3>
                       </div>
                       {fields.map((field, index) => {
