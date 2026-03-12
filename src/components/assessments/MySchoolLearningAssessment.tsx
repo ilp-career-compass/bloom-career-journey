@@ -1,4 +1,4 @@
-﻿import { logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -146,6 +146,7 @@ export default function MySchoolLearningAssessment() {
 
   const [dbTitle, setDbTitle] = useState<string>('');
   const [dbIntro, setDbIntro] = useState<string>('');
+  const [optionLabels, setOptionLabels] = useState<Record<string, string>>({});
 
   // Fetch module content (title, intro)
   useEffect(() => {
@@ -225,11 +226,14 @@ export default function MySchoolLearningAssessment() {
     fetchQuestions();
     fetchSummaryQuestions();
 
-    // Fetch summary title from content_translations (future-proofing)
-    fetchTranslations('school_learning_module', ['summary_title'], lang).then(rows => {
-      const t = rows.find(r => r.resource_key === 'summary_title')?.text;
-      if (t) setDbSummaryTitle(t);
+    fetchTranslations('school_learning_module', ['summary_title'], lang).then(map => {
+      if (map['summary_title']) setDbSummaryTitle(map['summary_title']);
     }).catch(() => {});
+
+    fetchTranslations('school_learning_option',
+      ['visual', 'audio', 'experimenting', 'discuss', 'groupDiscussions', 'presentation', 'rolePlay', 'teaching', 'other'],
+      lang
+    ).then(map => setOptionLabels(map)).catch(() => {});
   }, [lang]);
 
   const getHelpText = (id: number, fallback: string) => {
@@ -237,46 +241,15 @@ export default function MySchoolLearningAssessment() {
     return helpTranslations[key] || fallback;
   };
 
-  const getLearningMethodOption = (key: string) => {
-    const options: Record<string, { label: string; help: string }> = {
-      visual: {
-        label: 'Observe the experiment and explain by relating it with suitable illustrative pictures (audio-visual medium).',
-        help: 'Observe and explain clearly using related pictures.'
-      },
-      audio: {
-        label: 'Oral explanation (audio medium).',
-        help: 'Explain clearly through oral explanation.'
-      },
-      experimenting: {
-        label: 'Learning through experiment / experiential learning.',
-        help: 'Learn through hands-on activity and experience.'
-      },
-      discuss: {
-        label: 'Discussion / Reasoning.',
-        help: 'Discuss ideas and explain logically.'
-      },
-      groupDiscussions: {
-        label: 'Group discussion.',
-        help: 'Share ideas and discuss as a group.'
-      },
-      presentation: {
-        label: 'Presentation.',
-        help: 'Present the topic clearly and in an organized manner.'
-      },
-      rolePlay: {
-        label: 'Oral practice through role play.',
-        help: 'Practice speaking through role play.'
-      },
-      teaching: {
-        label: 'I learn by teaching others.',
-        help: 'Write about how you learn by teaching others.'
-      }
-    };
-    return options[key] || { label: key, help: '' };
-  };
-
-  const getLearningMethodLabel = (key: string): string => {
-    return getLearningMethodOption(key).label;
+  const OPTION_EN_LABELS: Record<string, string> = {
+    visual: 'Observe the experiment and explain by relating it with suitable illustrative pictures (audio-visual medium).',
+    audio: 'Oral explanation (audio medium).',
+    experimenting: 'Learning through experiment / experiential learning.',
+    discuss: 'Discussion / Reasoning.',
+    groupDiscussions: 'Group discussion.',
+    presentation: 'Presentation.',
+    rolePlay: 'Oral practice through role play.',
+    teaching: 'I learn by teaching others.'
   };
 
   // Helper to get question labels
@@ -1357,9 +1330,7 @@ export default function MySchoolLearningAssessment() {
                     'presentation',
                     'rolePlay',
                     'teaching'
-                  ].map((key) => {
-                    const option = getLearningMethodOption(key);
-                    return (
+                  ].map((key) => (
                       <div key={key} className="flex items-start space-x-2">
                         <Checkbox
                           id={key}
@@ -1368,17 +1339,11 @@ export default function MySchoolLearningAssessment() {
                           disabled={isReadOnly}
                           className="mt-1"
                         />
-                        <div className="space-y-1">
-                          <label htmlFor={key} className="text-sm font-medium text-gray-700 block">
-                            {option.label}
-                          </label>
-                          <p className="text-xs text-gray-500">
-                            {option.help}
-                          </p>
-                        </div>
+                        <label htmlFor={key} className="text-sm font-medium text-gray-700 block">
+                          {optionLabels[key] || OPTION_EN_LABELS[key] || key}
+                        </label>
                       </div>
-                    )
-                  })}
+                  ))}
                   <div className="flex items-start space-x-2">
                     <Checkbox
                       id="other"
