@@ -252,6 +252,10 @@ export function IndicKeyboard({ targetInputId, targetElement, onInput, lang = 'e
 
 
   const insertChar = (char: string) => {
+    // navigator.vibrate() is not supported on iOS Safari — intentional.
+    // The try/catch handles it gracefully. Do not debug this on iPhone.
+    try { navigator.vibrate(10); } catch (e) { /* not supported */ }
+
     const element = findTargetInput();
     if (!element) {
       logger.warn('⚠️ Keyboard: No input element found');
@@ -278,6 +282,7 @@ export function IndicKeyboard({ targetInputId, targetElement, onInput, lang = 'e
   };
 
   const handleBackspace = () => {
+    try { navigator.vibrate(10); } catch (e) { /* not supported */ }
     const element = findTargetInput();
     if (element) {
       const start = element.selectionStart || 0;
@@ -503,6 +508,23 @@ export function IndicKeyboard({ targetInputId, targetElement, onInput, lang = 'e
     };
   }, []);
 
+  // Scroll compensation: add bottom padding when keyboard opens so content isn't hidden
+  useEffect(() => {
+    const scrollContainer = document.querySelector('main') || document.documentElement;
+    if (isOpen) {
+      scrollContainer.style.paddingBottom = '40vh';
+      // Scroll the focused input into view above the keyboard
+      if (lastFocusedElementRef.current) {
+        lastFocusedElementRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    } else {
+      scrollContainer.style.paddingBottom = '';
+    }
+    return () => {
+      scrollContainer.style.paddingBottom = '';
+    };
+  }, [isOpen]);
+
   if (!isSupported) return null;
   if (typeof document === 'undefined') return null;
 
@@ -548,9 +570,9 @@ export function IndicKeyboard({ targetInputId, targetElement, onInput, lang = 'e
           </Button>
         </div>
 
-        <div className="space-y-1">
+        <div className="space-y-0.5">
           {/* Vowels */}
-          <div className="flex flex-wrap gap-1 justify-center">
+          <div className="flex flex-wrap gap-0.5 justify-center">
             {layout.vowels.map((char) => (
               <button
                 key={char}
@@ -558,7 +580,7 @@ export function IndicKeyboard({ targetInputId, targetElement, onInput, lang = 'e
                 onMouseDown={handleKeyButtonMouseDown}
                 onTouchStart={handleKeyButtonTouchStart}
                 onClick={() => handleKeyButtonClick(char)}
-                className="px-3 py-2 text-lg font-medium bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded active:bg-blue-200 transition-colors touch-manipulation"
+                className="min-w-[44px] px-3 py-2 text-lg font-medium bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded active:bg-blue-200 transition-colors touch-manipulation"
               >
                 {char}
               </button>
@@ -566,7 +588,7 @@ export function IndicKeyboard({ targetInputId, targetElement, onInput, lang = 'e
           </div>
 
           {/* Consonants Row 1 */}
-          <div className="flex flex-wrap gap-1 justify-center">
+          <div className="flex flex-wrap gap-0.5 justify-center">
             {layout.row1.map((char) => (
               <button
                 key={char}
@@ -574,7 +596,7 @@ export function IndicKeyboard({ targetInputId, targetElement, onInput, lang = 'e
                 onMouseDown={handleKeyButtonMouseDown}
                 onTouchStart={handleKeyButtonTouchStart}
                 onClick={() => handleKeyButtonClick(char)}
-                className="px-3 py-2 text-lg font-medium bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded active:bg-gray-200 transition-colors touch-manipulation"
+                className="min-w-[44px] px-3 py-2 text-lg font-medium bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded active:bg-gray-200 transition-colors touch-manipulation"
               >
                 {char}
               </button>
@@ -582,7 +604,7 @@ export function IndicKeyboard({ targetInputId, targetElement, onInput, lang = 'e
           </div>
 
           {/* Consonants Row 2 */}
-          <div className="flex flex-wrap gap-1 justify-center">
+          <div className="flex flex-wrap gap-0.5 justify-center">
             {layout.row2.map((char) => (
               <button
                 key={char}
@@ -590,7 +612,7 @@ export function IndicKeyboard({ targetInputId, targetElement, onInput, lang = 'e
                 onMouseDown={handleKeyButtonMouseDown}
                 onTouchStart={handleKeyButtonTouchStart}
                 onClick={() => handleKeyButtonClick(char)}
-                className="px-3 py-2 text-lg font-medium bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded active:bg-gray-200 transition-colors touch-manipulation"
+                className="min-w-[44px] px-3 py-2 text-lg font-medium bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded active:bg-gray-200 transition-colors touch-manipulation"
               >
                 {char}
               </button>
@@ -598,7 +620,7 @@ export function IndicKeyboard({ targetInputId, targetElement, onInput, lang = 'e
           </div>
 
           {/* Consonants Row 3 */}
-          <div className="flex flex-wrap gap-1 justify-center">
+          <div className="flex flex-wrap gap-0.5 justify-center">
             {layout.row3.map((char) => (
               <button
                 key={char}
@@ -606,7 +628,7 @@ export function IndicKeyboard({ targetInputId, targetElement, onInput, lang = 'e
                 onMouseDown={handleKeyButtonMouseDown}
                 onTouchStart={handleKeyButtonTouchStart}
                 onClick={() => handleKeyButtonClick(char)}
-                className="px-3 py-2 text-lg font-medium bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded active:bg-gray-200 transition-colors touch-manipulation"
+                className="min-w-[44px] px-3 py-2 text-lg font-medium bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded active:bg-gray-200 transition-colors touch-manipulation"
               >
                 {char}
               </button>
@@ -614,7 +636,7 @@ export function IndicKeyboard({ targetInputId, targetElement, onInput, lang = 'e
           </div>
 
           {/* Consonants Row 4 */}
-          <div className="flex flex-wrap gap-1 justify-center">
+          <div className="flex flex-wrap gap-0.5 justify-center">
             {layout.row4.map((char) => (
               <button
                 key={char}
@@ -622,7 +644,7 @@ export function IndicKeyboard({ targetInputId, targetElement, onInput, lang = 'e
                 onMouseDown={handleKeyButtonMouseDown}
                 onTouchStart={handleKeyButtonTouchStart}
                 onClick={() => handleKeyButtonClick(char)}
-                className="px-3 py-2 text-lg font-medium bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded active:bg-gray-200 transition-colors touch-manipulation"
+                className="min-w-[44px] px-3 py-2 text-lg font-medium bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded active:bg-gray-200 transition-colors touch-manipulation"
               >
                 {char}
               </button>
@@ -630,7 +652,7 @@ export function IndicKeyboard({ targetInputId, targetElement, onInput, lang = 'e
           </div>
 
           {/* Consonants Row 5 */}
-          <div className="flex flex-wrap gap-1 justify-center">
+          <div className="flex flex-wrap gap-0.5 justify-center">
             {layout.row5.map((char) => (
               <button
                 key={char}
@@ -638,7 +660,7 @@ export function IndicKeyboard({ targetInputId, targetElement, onInput, lang = 'e
                 onMouseDown={handleKeyButtonMouseDown}
                 onTouchStart={handleKeyButtonTouchStart}
                 onClick={() => handleKeyButtonClick(char)}
-                className="px-3 py-2 text-lg font-medium bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded active:bg-gray-200 transition-colors touch-manipulation"
+                className="min-w-[44px] px-3 py-2 text-lg font-medium bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded active:bg-gray-200 transition-colors touch-manipulation"
               >
                 {char}
               </button>
@@ -646,7 +668,7 @@ export function IndicKeyboard({ targetInputId, targetElement, onInput, lang = 'e
           </div>
 
           {/* Consonants Row 6 */}
-          <div className="flex flex-wrap gap-1 justify-center">
+          <div className="flex flex-wrap gap-0.5 justify-center">
             {layout.row6.map((char) => (
               <button
                 key={char}
@@ -654,7 +676,7 @@ export function IndicKeyboard({ targetInputId, targetElement, onInput, lang = 'e
                 onMouseDown={handleKeyButtonMouseDown}
                 onTouchStart={handleKeyButtonTouchStart}
                 onClick={() => handleKeyButtonClick(char)}
-                className="px-3 py-2 text-lg font-medium bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded active:bg-gray-200 transition-colors touch-manipulation"
+                className="min-w-[44px] px-3 py-2 text-lg font-medium bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded active:bg-gray-200 transition-colors touch-manipulation"
               >
                 {char}
               </button>
@@ -662,7 +684,7 @@ export function IndicKeyboard({ targetInputId, targetElement, onInput, lang = 'e
           </div>
 
           {/* Consonants Row 7 */}
-          <div className="flex flex-wrap gap-1 justify-center">
+          <div className="flex flex-wrap gap-0.5 justify-center">
             {layout.row7.map((char) => (
               <button
                 key={char}
@@ -670,7 +692,7 @@ export function IndicKeyboard({ targetInputId, targetElement, onInput, lang = 'e
                 onMouseDown={handleKeyButtonMouseDown}
                 onTouchStart={handleKeyButtonTouchStart}
                 onClick={() => handleKeyButtonClick(char)}
-                className="px-3 py-2 text-lg font-medium bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded active:bg-gray-200 transition-colors touch-manipulation"
+                className="min-w-[44px] px-3 py-2 text-lg font-medium bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded active:bg-gray-200 transition-colors touch-manipulation"
               >
                 {char}
               </button>
@@ -678,8 +700,8 @@ export function IndicKeyboard({ targetInputId, targetElement, onInput, lang = 'e
           </div>
 
           {/* Numbers and Actions */}
-          <div className="flex flex-wrap gap-1 justify-center items-center mt-2">
-            <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-0.5 justify-center items-center mt-1">
+            <div className="flex flex-wrap gap-0.5">
               {layout.numbers.map((char) => (
                 <button
                   key={char}
@@ -687,7 +709,7 @@ export function IndicKeyboard({ targetInputId, targetElement, onInput, lang = 'e
                   onMouseDown={handleKeyButtonMouseDown}
                   onTouchStart={handleKeyButtonTouchStart}
                   onClick={() => handleKeyButtonClick(char)}
-                  className="px-3 py-2 text-lg font-medium bg-yellow-50 hover:bg-yellow-100 border border-yellow-200 rounded active:bg-yellow-200 transition-colors touch-manipulation"
+                  className="min-w-[44px] px-3 py-2 text-lg font-medium bg-yellow-50 hover:bg-yellow-100 border border-yellow-200 rounded active:bg-yellow-200 transition-colors touch-manipulation"
                 >
                   {char}
                 </button>
@@ -698,7 +720,7 @@ export function IndicKeyboard({ targetInputId, targetElement, onInput, lang = 'e
               onMouseDown={handleKeyButtonMouseDown}
               onTouchStart={handleKeyButtonTouchStart}
               onClick={() => handleKeyButtonClick(' ')}
-              className="px-6 py-2 text-sm font-medium bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded active:bg-gray-300 transition-colors touch-manipulation"
+              className="min-w-[44px] px-6 py-2 text-sm font-medium bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded active:bg-gray-300 transition-colors touch-manipulation"
             >
               Space
             </button>
@@ -714,7 +736,7 @@ export function IndicKeyboard({ targetInputId, targetElement, onInput, lang = 'e
                   }
                 }, 10);
               }}
-              className="px-4 py-2 text-sm font-medium bg-red-50 hover:bg-red-100 border border-red-200 rounded active:bg-red-200 transition-colors touch-manipulation"
+              className="min-w-[44px] px-4 py-2 text-sm font-medium bg-red-50 hover:bg-red-100 border border-red-200 rounded active:bg-red-200 transition-colors touch-manipulation"
             >
               ⌫
             </button>
@@ -724,7 +746,7 @@ export function IndicKeyboard({ targetInputId, targetElement, onInput, lang = 'e
                 onMouseDown={handleKeyButtonMouseDown}
                 onTouchStart={handleKeyButtonTouchStart}
                 onClick={() => handleKeyButtonClick('\n')}
-                className="px-4 py-2 text-sm font-medium bg-green-50 hover:bg-green-100 border border-green-200 rounded active:bg-green-200 transition-colors touch-manipulation"
+                className="min-w-[44px] px-4 py-2 text-sm font-medium bg-green-50 hover:bg-green-100 border border-green-200 rounded active:bg-green-200 transition-colors touch-manipulation"
               >
                 ↵ Enter
               </button>
