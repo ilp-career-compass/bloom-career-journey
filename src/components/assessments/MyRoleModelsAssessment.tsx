@@ -1101,7 +1101,7 @@ export default function MyRoleModelsAssessment() {
             disabled={currentSection === 'roleModel1'}
             className="w-full sm:w-auto border-purple-200 text-purple-700 hover:bg-purple-50"
           >
-            {lang === 'kn' ? 'ಹಿಂದಿನ ಭಾಗ' : lang === 'ta' ? 'ಮುந்தைய பகுதி' : 'Previous Section'}
+            {lang === 'kn' ? 'ಹಿಂದಿನ ಭಾಗ' : lang === 'ta' ? 'முந்தைய பகுதி' : 'Previous Section'}
           </Button>
 
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">

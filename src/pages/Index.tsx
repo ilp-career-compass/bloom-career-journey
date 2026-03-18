@@ -176,7 +176,7 @@ const Index = () => {
               <GraduationCap className="w-6 h-6 text-primary" />
               <span className="text-lg font-semibold">CareerCompass</span>
             </div>
-            <p className="text-sm text-muted-foreground">© 2024 CareerCompass by ILP. {t('footer')}</p>
+            <p className="text-sm text-muted-foreground">© {new Date().getFullYear()} CareerCompass by ILP. {t('footer')}</p>
           </div>
         </div>
       </footer>
