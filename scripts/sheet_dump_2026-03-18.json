@@ -1,0 +1,3369 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-03-18T00:21:18.453Z",
+  "sheet_id": "1xntQSs1Gpz2f9iDaf4ru6-OznsdoYgqV0lNRfRE2I54",
+  "assessments": {
+    "inspiration": {
+      "tab_name": "9.1_My Inspiration",
+      "assessment_type": "inspiration",
+      "module_title": {
+        "kn": "ನನ್ನ ಪ್ರೇರಣೆ",
+        "ta": "என் உத்வேகம்",
+        "en": "My Inspiration",
+        "hi": "मेरी प्रेरणा"
+      },
+      "title_text": {
+        "kn": "“ಪ್ರತಿಯೊಬ್ಬರೂ ಬೇರೆ, ಬೇರೆ ವಿಷಯಗಳಿಂದ ಪ್ರೇರಣೆ/ಸ್ಪೂರ್ತಿ ಪಡೆಯುತ್ತೇವೆ. ಈ ಪ್ರೇರಣೆ/ಸ್ಫೂರ್ತಿಗಳಿಂದ ನಾವು ಯಾವ ರೀತಿಯ ವ್ಯಕ್ತಿಯಾಗಲು ಬಯಸುತ್ತೇವೆ ಮತ್ತು ನಮ್ಮ ವೃತ್ತಿಜೀವನದಲ್ಲಿ ಅನುಸರಿಸಲು ಬಯಸುವ ಮೌಲ್ಯಗಳೇನು ಎಂಬ ಬಗ್ಗೆ ಅರಿವನ್ನು ಪಡೆಯುತ್ತೇವೆ. ನಮ್ಮನ್ನು ಪ್ರೇರೇಪಿಸುವ ಅಂಶವು, ನಾವು ಇಷ್ಟಪಡುವ ಗುಣಗಳು ಮತ್ತು ಮೌಲ್ಯಗಳನ್ನು ಪ್ರತಿಬಿಂಬಿಸುತ್ತದೆ.",
+        "ta": "நாம் ஒவ்வொருவரும் வெவ்வேறு மனிதர்களிடமிருந்தும், வெவ்வேறு விஷயங்களிலிருந்தும் ஊக்கம் பெறுகிறோம். அந்த ஊக்கத்தின் மூலம், நாம் எந்த மாதிரியான மனிதராக ஆக வேண்டும் என்பதையும், வாழ்க்கையில் நாம் பின்பற்ற விரும்பும் மதிப்புகள் என்ன என்பதையும் புரிந்துகொள்கிறோம். நமக்கு ஊக்கம் அளிக்கும் விஷயங்கள், நாம் விரும்பும் குணங்களையும் மதிப்புகளையும் காட்டுகின்றன.",
+        "en": "Each of us gets inspiration from different people and different things. This inspiration helps us understand what kind of person we want to become and what values we want to follow in our life and work. The things that inspire us show the qualities and values that we like and respect.",
+        "hi": "हम में से हर कोई अलग-अलग चीजों से प्रेरित होता है। जो हमें प्रेरित करता है, वह अक्सर हमारी पसंद और हमारे अच्छे मूल्यों (values) के बारे में बताता है। इन प्रेरणाओं का अन्वेषण करके, हम यह समझ पाते हैं कि हम किस तरह के व्यक्ति बनना चाहते हैं और अपने भविष्य के करियर में हम किन मूल्यों को अपनाना चाहते हैं।"
+      },
+      "subtitle_text": {
+        "kn": "ಸೂಚನೆ: ಶಿಕ್ಷಕರ ಮಾರ್ಗದರ್ಶನ ಮತ್ತು ವಿವರಣೆ ನಂತರ, ವೀಡಿಯೋ/ಆಡಿಯೋ ನೋಡಿದ/ಕೇಳಿದ ನಂತರ ಯೋಚಿಸಿ ಪ್ರಶ್ನೆಗಳಿಗೆ ನಿಮ್ಮ ಪ್ರತಿಕ್ರಿಯೆಯನ್ನು ಬರೆಯಿರಿ.",
+        "ta": "குறிப்பு: கல்வி வழிகாட்டியின் (Vidya Saathi) வழிகாட்டுதல் மற்றும் விளக்கத்திற்குப் பிறகு, காணொளிகளைப் பார்த்துவிட்டு, கீழே உள்ள கேள்விகளுக்கு உங்கள் பதில்களை எழுதுங்கள்",
+        "en": "Note: After the Vidya Saathi's guidance and explanation, watch the videos and then write your responses to the questions below.",
+        "hi": "टिप्पणी: शिक्षक के मार्गदर्शन और स्पष्टीकरण के बाद, वीडियो देखें और फिर नीचे दिए गए प्रश्नों के उत्तर लिखें।"
+      },
+      "question_header": [
+        "Sno",
+        "Kannada Question",
+        "Kannada Help Text",
+        "Tamil Question",
+        "Tamil Help Text",
+        "English Question",
+        "English Help Text",
+        "Hindi Question",
+        "Hindi Help Text",
+        "Input Type",
+        "Display Type",
+        "Remark"
+      ],
+      "sections": [
+        {
+          "title": {
+            "kn": "",
+            "ta": "",
+            "en": "",
+            "hi": ""
+          },
+          "subtitle": {
+            "kn": "",
+            "ta": "",
+            "en": "",
+            "hi": ""
+          }
+        }
+      ],
+      "sub_headers": [
+        {
+          "row_index": 7,
+          "section": "Section_1",
+          "text": {
+            "kn": "",
+            "ta": "",
+            "en": "",
+            "hi": ""
+          },
+          "type": "section_title"
+        },
+        {
+          "row_index": 8,
+          "section": "Section_1",
+          "text": {
+            "kn": "",
+            "ta": "",
+            "en": "",
+            "hi": ""
+          },
+          "type": "section_subtitle"
+        }
+      ],
+      "questions": [
+        {
+          "sno": 1,
+          "section": "Section_1",
+          "question": {
+            "kn": "ಈ ವೀಡಿಯೋ / ಆಡಿಯೋದಲ್ಲಿ ನಿಮಗೆ ಹೆಚ್ಚು ಇಷ್ಟವಾದ / ಪ್ರೇರಣಾದಾಯಕ ಅಂಶಗಳು ಯಾವುವು?",
+            "ta": "இந்த வீடியோ/ஆடியோவில் உங்களுக்கு மிகவும் பிடித்த பகுதி அல்லது உத்வேகத்தை அளித்தது எது?",
+            "en": "Which parts of this video/audio did you like the most or find inspiring?",
+            "hi": "इस वीडियो/ऑडियो के कौन से पहलू आपको सबसे अधिक पसंद आए या सबसे अधिक प्रेरणादायक लगे?"
+          },
+          "help_text": {
+            "kn": "ವೀಡಿಯೊ/ಆಡಿಯೋದ ಯಾವ ಭಾಗವು ನಿಮಗೆ ಹೆಚ್ಚು ಸ್ಫೂರ್ತಿ ನೀಡಿತು ಎಂಬುದರ ಬಗ್ಗೆ ಬರೆಯಿರಿ",
+            "ta": "இந்த வீடியோ/ஆடியோவில் எந்த பகுதி உங்களை அதிகம் ஊக்கமளித்தது?",
+            "en": "Which part of the video/audio inspired you most?",
+            "hi": "वीडियो या ऑडियो के उस हिस्से के बारे में लिखें जिसने आपको सबसे ज्यादा प्रेरित किया।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 2,
+          "section": "Section_1",
+          "question": {
+            "kn": "ಈ ವೀಡಿಯೋ/ಆಡಿಯೋದಲ್ಲಿ ನಿಮಗೆ ಯಾರ ನಡವಳಿಕೆ ಹೆಚ್ಚು ಇಷ್ಟವಾಯಿತು?",
+            "ta": "இந்த வீடியோ/ஆடியோவில் உங்களுக்கு யாருடைய செயல் அல்லது பேசும் விதம் மிகவும் பிடித்தது? ?",
+            "en": "Whose behavior or way of speaking did you like the most in this video/audio?",
+            "hi": "इस वीडियो/ऑडियो में आपको किसका व्यवहार (conduct) सबसे अधिक पसंद आया?"
+          },
+          "help_text": {
+            "kn": "ಯಾರ ನಡವಳಿಕೆ ಅಥವಾ ನಡತೆ ನಿಮಗೆ ಹೆಚ್ಚು ಇಷ್ಟವಾಯಿತು ಎಂಬುದನ್ನು ಬಗ್ಗೆ ಬರೆಯಿರಿ",
+            "ta": "யாருடைய செயல் அல்லது பேசும் விதம் உங்களுக்கு பிடித்தது என்பதை எழுதுங்கள்.",
+            "en": "Whose behavior or speech did you like most?",
+            "hi": "लिखें कि किस व्यक्ति का व्यवहार या काम करने का तरीका आपको सबसे अच्छा लगा।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 3,
+          "section": "Section_1",
+          "question": {
+            "kn": "ಅವರಲ್ಲಿ ನೀವು ಗಮನಿಸಿದ ಗುಣಗಳು ಯಾವುವು?",
+            "ta": "அவர்களில் நீங்கள் கவனித்த குணங்கள் என்ன?",
+            "en": "What qualities did you observe in them?",
+            "hi": "आप अपने जीवन में कौन से विशिष्ट गुण या मूल्य शामिल करना चाहेंगे?"
+          },
+          "help_text": {
+            "kn": "ಪಾತ್ರಗಳಲ್ಲಿ ನೀವು ಗಮನಿಸಿದ ಉತ್ತಮ ಗುಣಗಳು ಯಾವವುಬರೆಯಿರಿ.",
+            "ta": "இந்தக் கேள்வி, கதாபாத்திரங்களில் நீங்கள் கவனித்த நல்ல குணங்களை எழுதச் சொல்லுகிறது.",
+            "en": "This question asks you to write the good qualities you noticed in the characters.",
+            "hi": "वीडियो के पात्रों में आपने जो अच्छी खूबियाँ देखीं, उन्हें यहाँ लिखें।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 4,
+          "section": "Section_1",
+          "question": {
+            "kn": "ಅವುಗಳಲ್ಲಿನ ಯಾವ ಅಂಶ ನಿಮ್ಮ ಜೀವನದಲ್ಲಿ ಉತ್ತಮ ಬದಲಾವಣೆ ತರಬಹುದು?",
+            "ta": "அந்த நபரின் எந்த குணம் உங்கள் வாழ்க்கையில் நல்ல மாற்றத்தை ஏற்படுத்தும்?",
+            "en": "Which quality of the person can bring a positive change in your life?",
+            "hi": "उनमें से कौन सी बात आपके जीवन में सकारात्मक बदलाव ला सकती है?"
+          },
+          "help_text": {
+            "kn": "ಆ ಗುಣಗಳಲ್ಲಿ ಯಾವುದು ನಿಮ್ಮ ಜೀವನದಲ್ಲಿ ಒಳ್ಳೆಯ ಬದಲಾವಣೆ ತರಲು ಸಹಾಯ ಮಾಡಬಹುದು ಎಂಬುದರ ಬಗ್ಗೆ ಬರೆಯಿರಿ",
+            "ta": "அந்த நபரின் எந்த குணம் உங்களுக்கு உதவும் என்று எழுதுங்கள்.",
+            "en": "Write the quality that can help you bring a positive change in your life.",
+            "hi": "उन खूबियों में से कौन सी ऐसी है जिसे अपनाकर आप अपने जीवन को बेहतर बना सकते हैं?"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 5,
+          "section": "Section_1",
+          "question": {
+            "kn": "ಯಾವ ಪಾತ್ರ ನಿಮಗೆ ಹೋಲಿಕೆಯಾಯಿತು ಎಂದು ಅನಿಸಿತು ಮತ್ತು ಅದಕ್ಕೆ ಕಾರಣಗಳನ್ನು ತಿಳಿಸುವಿರಾ?",
+            "ta": "உங்களைப் போலவே இருக்கும் கதாபாத்திரம் எது என்று தோன்றுகிறது? அதற்கான காரணங்களைக் கூற முடியுமா?",
+            "en": "Which character did you find relatable to yourself, and can you explain the reasons for it?",
+            "hi": "आपको कौन सा पात्र (character) अपने जैसा लगा और क्यों?"
+          },
+          "help_text": {
+            "kn": "ನಿಮ್ಮ ಸ್ವಭಾವವನ್ನೇ ಹೋಲುವ ಪಾತ್ರದ ಬಗ್ಗೆ ಬರೆಯಿರಿ.",
+            "ta": "உங்கள் சுபாவத்தைப் போன்றே இருக்கும் கதாபாத்திரத்தைப் பற்றி எழுதுங்கள்.",
+            "en": "Write about the character that matches your own nature",
+            "hi": "उस पात्र का नाम लिखें जिसका स्वभाव या आदतें आपसे मिलती-जुलती हैं।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 6,
+          "section": "Section_1",
+          "question": {
+            "kn": "ನೀವು ನಿಜ ಜೀವನದಲ್ಲಿ ಮೆಚ್ಚುವ ಯಾವುದೇ ಮೌಲ್ಯಗಳನ್ನು ಎಂದಾದರೂ ಪ್ರದರ್ಶಿಸಿದ್ದೀರಾ? ಆ ಸನ್ನಿವೇಶವನ್ನು ಸಂಕ್ಷಿಪ್ತವಾಗಿ ವಿವರಿಸಿ.",
+            "ta": "கதையில் உள்ள கதாபாத்திரம் போல நீங்கள் உண்மையான வாழ்க்கையில் யாருக்காவது உதவியிருக்கிறீர்களா? அந்த அனுபவத்தை சுருக்கமாக விவரித்து, அதைப் பற்றிச் சிந்தியுங்கள்",
+            "en": "Have you ever demonstrated any of the values you admire in real life? Describe the situation briefly.",
+            "hi": "क्या आपने कभी वास्तविक जीवन में अपने किसी आदर्श मूल्य का प्रदर्शन किया है? उस स्थिति का संक्षेप में वर्णन करें।"
+          },
+          "help_text": {
+            "kn": "ಪಾತ್ರದಲ್ಲಿ ನೀವು ಇಷ್ಟಪಡುವ ಒಳ್ಳೆಯ ನಡತೆಯನ್ನು ನೀವು ಪ್ರದರ್ಶಿಸಿದ್ದೀರಾ ಎಂಬ ಬಗ್ಗೆ ಬರೆಯಿರಿ",
+            "ta": "கதாபாத்திரத்தில் நீங்கள் விரும்பும் நல்ல நடத்தையை நீங்கள் காட்டியிருக்கிறீர்களா என்பதைப் பற்றி எழுதுங்கள்.",
+            "en": "Write about whether you have demonstrated the good behavior you liked in the character.",
+            "hi": "किसी ऐसी घटना के बारे में लिखें जहाँ आपने ईमानदारी या साहस जैसा कोई अच्छा गुण दिखाया हो।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 7,
+          "section": "Section_1",
+          "question": {
+            "kn": "ನಿವೇ ಆ ಪಾತ್ರಧಾರಿ ಆಗಿದ್ದರೆ ಏನು ಮಾಡುತ್ತಿದ್ದಿರಿ?",
+            "ta": "நீங்கள் அந்த கதாபாத்திரமாக இருந்தால், நீங்கள் என்ன செய்வீர்கள்?",
+            "en": "If you were that character, what would you do?",
+            "hi": "यदि आप उस पात्र की जगह होते, तो आप उस स्थिति में क्या करते?"
+          },
+          "help_text": {
+            "kn": "ನಿವು ಇಷ್ಟಪಟ್ಟ ಪಾತ್ರ ನೀವೇ ಆದರೆ ನಿಮ್ಮ ವರ್ತನೆ ಹೇಗಿರುತ್ತಿತ್ತು? ಎಂಬ ಬಗ್ಗೆ ಬರೆಯಿರಿ",
+            "ta": "நீங்கள் அந்த கதாபாத்திரமாக இருந்தால் என்ன செய்வீர்கள்?",
+            "en": "What would you do as the character?",
+            "hi": "कल्पना कीजिए कि आप उस स्थिति में हैं; आप उस समय कैसा व्यवहार करते या क्या निर्णय लेते?"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 8,
+          "section": "Section_1",
+          "question": {
+            "kn": "ಈ ವಿಡಿಯೋ/ಆಡಿಯೋದಲ್ಲಿ ನೋಡಿರುವ ಹಾಗೆ ನಿಮ್ಮನ್ನು ಪ್ರೇರೇಪಿಸಿರುವ ವ್ಯಕ್ತಿ ಅಥವಾ ಸನ್ನಿವೇಶವನ್ನು ಬರೆಯಿರಿ.",
+            "ta": "இந்த வீடியோ/ஆடியோவில் ஏதாவது கதாபாத்திரம் உங்களை ஊக்கமளித்ததா? அந்த மனிதர் உங்களை ஊக்கமளிப்பவர் என்பதை விளக்கும் காரணத்தை எழுதுங்கள்.",
+            "en": "In this video/audio, did any character inspire you? Write down what makes that person an inspiration to you",
+            "hi": "इस वीडियो की तरह, क्या आपके जीवन में कोई ऐसी घटना या व्यक्ति है जिसने आपको प्रेरित किया हो?"
+          },
+          "help_text": {
+            "kn": "ನಿಮಗೆ ಸ್ಫೂರ್ತಿ ನೀಡಿದ ಪಾತ್ರ ಮತ್ತು ಅದು ಹೇಗೆ ಸ್ಪೂರ್ತಿ ನೀಡಿದೆ? ಎಂಬುದರ ಬಗ್ಗೆ ಬರೆಯಿರಿ",
+            "ta": "எந்த கதாபாத்திரம் உங்களை ஊக்கமளித்தது? ஏன்?",
+            "en": "Write about the character that inspired you and how it inspired you.",
+            "hi": "अपने जीवन की किसी ऐसी घटना या व्यक्ति का नाम लिखें जिससे आपको आगे बढ़ने की सीख मिली हो।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 9,
+          "section": "Section_1",
+          "question": {
+            "kn": "ಆ ಪಾತ್ರಗಳಿಂದ ಯಾವ ಹೊಸ ಅಂಶಗಳನ್ನು ನಿಮ್ಮ ಜೀವನದಲ್ಲಿ ಅಳವಡಿಸಿಕೊಳ್ಳಲು ಬಯಸುತ್ತೀರಿ?",
+            "ta": "அந்த கதாபாத்திரத்தின் எந்த குணத்தை நீங்கள் உண்மையான வாழ்க்கையில் பின்பற்ற விரும்புகிறீர்கள்?",
+            "en": "Which quality of that character would you like to follow in real life?",
+            "hi": "उन पात्रों से आप अपने जीवन में कौन सी नई बातें अपनाना चाहेंगे?"
+          },
+          "help_text": {
+            "kn": "ಅದರಲ್ಲಿನ ಯಾವ ಗುಣವನ್ನು ನೀವು ಅನುಸರಿಸುತ್ತೀರಿ? ಎಂಬುದನ್ನು ಬರೆಯಿರಿ",
+            "ta": "நீங்கள் எந்த குணத்தை பின்பற்ற விரும்புகிறீர்கள்?",
+            "en": "Which quality will you follow?",
+            "hi": "उन पात्रों की कौन सी अच्छी आदत आप अपने खुद के जीवन में शुरू करना चाहते हैं?"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 10,
+          "section": "Section_1",
+          "question": {
+            "kn": "ನೀವು ಹಂಚಿಕೊಳ್ಳಬಹುದಾದ ಇನ್ನೇನಾದರೂ ಹೆಚ್ಚಿನ ಅಂಶಗಳನ್ನು ಗಮನಿಸಿದ್ದರೆ ಅದನ್ನು ಬರೆಯಿರಿ.",
+            "ta": "கதாபாத்திரத்தின் வேறு ஏதாவது குணம் உங்களுக்கு பிடித்திருந்தால், அதை எழுதுங்கள்",
+            "en": "If there are any additional points you noticed that you can share, write them down.",
+            "hi": "क्या आपने कुछ और भी गौर किया है जिसे आप साझा करना चाहते हैं?"
+          },
+          "help_text": {
+            "kn": "ನೀವು ಇಷ್ಟಪಟ್ಟ ಪಾತ್ರದ ಯಾವುದೇ ಇತರ ಗುಣವನ್ನು ಬರೆಯಿರಿ.",
+            "ta": "கதாபாத்திரத்தின் மற்றொரு பிடித்த குணத்தை எழுதுங்கள்.",
+            "en": "Write any other quality of the character you liked.",
+            "hi": "अपने पसंदीदा पात्र या वीडियो के बारे में कोई अन्य खास बात यहाँ लिखें।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        }
+      ],
+      "summary": {
+        "title": {
+          "kn": "ಸಾರಾಂಶ: ನಾನು ಸ್ಫೂರ್ತಿ ಪಡೆದ ಅಂಶಗಳು",
+          "ta": "சுருக்கம்: எனக்கு ஊக்கம் அளித்தது",
+          "en": "Summary: Things that Inspired Me",
+          "hi": "सारांश: प्रेरणा के बिंदु"
+        },
+        "subtitle": {
+          "kn": "",
+          "ta": "",
+          "en": "",
+          "hi": ""
+        },
+        "header": [
+          "SNo",
+          "Kannada",
+          "Tamil",
+          "English",
+          "Hindi",
+          "Input Type",
+          "Display Type",
+          "Remark"
+        ],
+        "questions": [
+          {
+            "sno": 1,
+            "question": {
+              "kn": "ಈ ಎಲ್ಲಾ ವಿಡಿಯೋಗಳನ್ನು ನೋಡಿದಾಗ ಮತ್ತು ಸ್ವಂತ ಅನುಭವದಿಂದ ನೀವು ಸ್ಪೂರ್ತಿ ಪಡೆದ ಅಂಶಗಳನ್ನು ಪಟ್ಟಿಮಾಡಿ.",
+              "ta": "இந்த அனைத்து வீடியோக்களையும் பார்த்த பிறகு, உங்கள் அனுபவத்தில் உங்களை ஊக்கமளித்த முக்கியமானவற்றை பட்டியலிடுங்கள்",
+              "en": "After watching all these videos, list the points that inspired you from your experience",
+              "hi": "इन सभी वीडियो को देखने के बाद और अपने स्वयं के अनुभवों से आपने जो प्रेरणा ली है, उसकी सूची बनाएं।"
+            },
+            "input_type": "Text field",
+            "display_type": "Regular text",
+            "remark": ""
+          },
+          {
+            "sno": 2,
+            "question": {
+              "kn": "ಈ ಎಲ್ಲಾ ವಿಡಿಯೋಗಳನ್ನು ನೋಡಿದಾಗ ಮತ್ತು ನಿಮಗೆ ಅನಿಸುತ್ತಿರುವ - ನಿಮ್ಮಲ್ಲಿ ಇರಬಾರದೆನಿಸಿದ ನಡವಳಿಕೆಗಳು ಯಾವವು? ಅದನ್ನು ಬರೆಯಿರಿ",
+              "ta": "இந்த வீடியோக்களைப் பார்த்த பிறகு, உங்களிடம் இருக்கக்கூடாது என்று நீங்கள் நினைக்கும் பழக்கவழக்கங்கள்/நடத்தைகள் எவை?",
+              "en": "After watching these videos, which behaviors do you feel you should not have?",
+              "hi": "इन सभी वीडियो को देखने के बाद, आपको अपने व्यवहार में कौन सी बातें पसंद नहीं आईं या आप उन्हें बदलना चाहते हैं?"
+            },
+            "input_type": "Text field",
+            "display_type": "Regular text",
+            "remark": ""
+          },
+          {
+            "sno": 3,
+            "question": {
+              "kn": "ನಿಮ್ಮ ಗೆಳೆಯೊರೊಂದಿಗೆ, ಈ ವಿಡಿಯೋಗಳಲ್ಲಿನ ನಿಮಗೆ ಪ್ರೇರಣೆ ನೀಡಿದ ಪಾತ್ರಗಳು ಮತ್ತು ನಿಮ್ಮ ನಿಜ ಜೀವನದಲ್ಲಿ ನಿಮಗೆ ಸ್ಪೂರ್ತಿ ನೀಡಿದ ವ್ಯಕ್ತಿಗಳಿಗೂ ಇರುವ ಹೋಲಿಕೆಗಳನ್ನು ಕುರಿತು ಚರ್ಚಿಸಿ. ಆ ಸಾರಾಂಶವನ್ನು ಬರೆಯಿರಿ",
+              "ta": "உங்கள் நண்பர்களுடன், இந்த வீடியோவில் உங்களுக்கு ஊக்கமளித்த பாத்திரம் யார், மேலும் அது உங்கள் நிஜ வாழ்க்கையில் உங்களுக்கு ஊக்கமளிக்கும் நபர்களுக்கும் இடையிலான ஒற்றுமைகளைப் பற்றி விவாதிக்கவும்",
+              "en": "Discuss with your friend about the similarities between the characters in the video and the people who inspire you in real life.",
+              "hi": "अपने दोस्तों के साथ चर्चा करें कि इन वीडियो के प्रेरणादायक पात्रों और आपके वास्तविक जीवन के प्रेरणादायक व्यक्तियों के बीच क्या समानताएं हैं। उस चर्चा का सारांश लिखें।"
+            },
+            "input_type": "Text field",
+            "display_type": "Regular text",
+            "remark": ""
+          }
+        ]
+      },
+      "empty_cells": [
+        {
+          "location": "Row 7",
+          "field": "section_title [Section_1]",
+          "lang": "kn"
+        },
+        {
+          "location": "Row 7",
+          "field": "section_title [Section_1]",
+          "lang": "ta"
+        },
+        {
+          "location": "Row 7",
+          "field": "section_title [Section_1]",
+          "lang": "en"
+        },
+        {
+          "location": "Row 7",
+          "field": "section_title [Section_1]",
+          "lang": "hi"
+        }
+      ]
+    },
+    "about_me": {
+      "tab_name": "9.2_About Me",
+      "assessment_type": "about_me",
+      "module_title": {
+        "kn": "ನನ್ನ ಬಗ್ಗೆ",
+        "ta": "என்னைப் பற்றி",
+        "en": "About Me",
+        "hi": "मेरे बारे में"
+      },
+      "title_text": {
+        "kn": "ಈ ಚಟುವಟಿಕೆಯ ಭಾಗವಾಗಿ, ನಿಮ್ಮ ಬಗ್ಗೆ ವಿಚಾರ ಮಾಡುತ್ತೀರಿ. ನೀವು ಏನನ್ನು ಚೆನ್ನಾಗಿ ಮಾಡಬಲ್ಲಿರಿ, ನಿಮಗೆ ಏನು ಮಾಡುವುದು ಇಷ್ಟ, ಕಷ್ಟ, ಮುಂತಾದವುಗಳನ್ನು ಇಲ್ಲಿ ಬರೆಯುತ್ತೀರಿ. ಈ ಚಟುವಟಿಕೆ ನಿಮ್ಮನ್ನು ನೀವು ಅರ್ಥಮಾಡಿಕೊಳ್ಳಲು ಹಾಗೂ ಸುಧಾರಿಸಿಕೊಳ್ಳಲು ಸಹಾಯ ಮಾಡುತ್ತದೆ. (ನಿಮ್ಮ ಕುಟುಂಬ, ಶಿಕ್ಷಕರು, ಸ್ನೇಹಿತರು ಮುಂತಾದವರೊಂದಿಗೆ ಮಾತನಾಡಿ ಅಗತ್ಯವಿರುವಲ್ಲಿ ಅವರಿಂದ ಸಹಾಯ, ಸಲಹೆಗಳನ್ನು ಪಡೆಯಿರಿ)",
+        "ta": "இந்தச் செயல்பாட்டின் ஒரு பகுதியாக, உங்களைப் பற்றி நீங்கள் சிந்திப்பீர்கள். நீங்கள் எதைச் சிறப்பாகச் செய்ய முடியும், உங்களுக்கு என்ன செய்ய பிடிக்கும், எது கடினமாக உள்ளது என்பது போன்றவற்றை இங்கே எழுதுவீர்கள். இந்தச் செயல்பாடு உங்களைப் பற்றி நீங்களே புரிந்துகொள்ளவும், உங்களை மேம்படுத்திக்கொள்ளவும் உதவும். (உங்கள் குடும்பத்தினர், ஆசிரியர்கள், நண்பர்கள் போன்றவர்களிடம் பேசி, தேவையான இடங்களில் அவர்களிடம் உதவி மற்றும் ஆலோசனைகளைப் பெறுங்கள்).",
+        "en": "As part of this activity, you will reflect on yourself. Write here about what you can do well, what you like to do, what you find difficult, and so on. This activity will help you understand yourself better and improve. (Talk to your family, teachers, friends, etc., and seek their help or advice wherever necessary).",
+        "hi": "इस गतिविधि के हिस्से के रूप में, आप अपने बारे में विचार करेंगे। आप क्या अच्छी तरह से कर सकते हैं, आपको क्या करना पसंद है, क्या कठिन लगता है, आदि के बारे में यहाँ लिखें। यह गतिविधि आपको खुद को समझने और सुधारने में मदद करेगी। (अपने परिवार, शिक्षकों, दोस्तों आदि से बात करें और जहाँ आवश्यक हो उनसे सहायता और सलाह लें)।"
+      },
+      "subtitle_text": {
+        "kn": "",
+        "ta": "",
+        "en": "",
+        "hi": ""
+      },
+      "question_header": [
+        "Sno",
+        "Kannada Question",
+        "Kannada Help Text",
+        "Tamil Question",
+        "Tamil Help Text",
+        "English Question",
+        "English Help Text",
+        "Hindi Question",
+        "Hindi Help Text",
+        "Input Type",
+        "Display Type",
+        "Remark"
+      ],
+      "sections": [
+        {
+          "title": {
+            "kn": "ನನ್ನ ವೈಯಕ್ತಿಕ ಸ್ಥಳ",
+            "ta": "தனிப்பட்ட விவரங்கள்",
+            "en": "My Personal Space",
+            "hi": "मेरा निजी दुनिया"
+          },
+          "subtitle": {
+            "kn": "",
+            "ta": "",
+            "en": "",
+            "hi": ""
+          }
+        },
+        {
+          "title": {
+            "kn": "ನೀವು ಸಂತೋಷದಿಂದ ಮಾಡುವ ಕೆಲಸಗಳು : (ಒಂದಕ್ಕಿಂತ ಹೆಚ್ಚು ಪ್ರಶ್ನೆಗಳಿಗೆ ನೀವು ನೀಡುವ ಉತ್ತರ ಒಂದೇ ಆಗಿರಬಹುದು)",
+            "ta": "நீங்கள் மகிழ்ச்சியுடன் செய்யும் வேலைகள்: (ஒன்றுக்கும் மேற்பட்ட கேள்விகளுக்கு உங்கள் பதில் ஒன்றாகவே இருக்கலாம்)",
+            "en": "Activities You Enjoy (Answers to more than one question below can be the similar)",
+            "hi": "वे काम जो आप खुशी से करते है"
+          },
+          "subtitle": {
+            "kn": "",
+            "ta": "",
+            "en": "",
+            "hi": ""
+          }
+        },
+        {
+          "title": {
+            "kn": "ನಿಮಗೆ ಕಷ್ಟವೆನಿಸುವ ಕೆಲಸ/ಚಟುವಟಿಕೆಗಳು:",
+            "ta": "நீங்கள் சவாலாகக் கருதும் பணிகள் அல்லது செயல்பாடுகள்:",
+            "en": "Tasks or activities you find challenging:",
+            "hi": "वे कार्य या गतिविधियां जो आपको मुश्किल लगती हैं:"
+          },
+          "subtitle": {
+            "kn": "",
+            "ta": "",
+            "en": "",
+            "hi": ""
+          }
+        },
+        {
+          "title": {
+            "kn": "ನಿಮ್ಮ ಬಗ್ಗೆ ಇನ್ನಷ್ಟು ವಿಚಾರಗಳನ್ನು ತಿಳಿಯಲು ಈ ಕೆಳಗಿನ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ.",
+            "ta": "உங்களைப் பற்றி மேலும் அறிய பின்வரும் கேள்விகளு\nக்குப் பதிலளிக்கவும்.",
+            "en": "Let's delve deeper into understanding more about you.",
+            "hi": "अपने बारे में और अधिक जानें"
+          },
+          "subtitle": {
+            "kn": "",
+            "ta": "",
+            "en": "",
+            "hi": ""
+          }
+        }
+      ],
+      "sub_headers": [
+        {
+          "row_index": 7,
+          "section": "My Personal Space",
+          "text": {
+            "kn": "ನನ್ನ ವೈಯಕ್ತಿಕ ಸ್ಥಳ",
+            "ta": "தனிப்பட்ட விவரங்கள்",
+            "en": "My Personal Space",
+            "hi": "मेरा निजी दुनिया"
+          },
+          "type": "section_title"
+        },
+        {
+          "row_index": 8,
+          "section": "My Personal Space",
+          "text": {
+            "kn": "",
+            "ta": "",
+            "en": "",
+            "hi": ""
+          },
+          "type": "section_subtitle"
+        },
+        {
+          "row_index": 12,
+          "section": "Activities You Enjoy (Answers to more than one question below can be the similar)",
+          "text": {
+            "kn": "ನೀವು ಸಂತೋಷದಿಂದ ಮಾಡುವ ಕೆಲಸಗಳು : (ಒಂದಕ್ಕಿಂತ ಹೆಚ್ಚು ಪ್ರಶ್ನೆಗಳಿಗೆ ನೀವು ನೀಡುವ ಉತ್ತರ ಒಂದೇ ಆಗಿರಬಹುದು)",
+            "ta": "நீங்கள் மகிழ்ச்சியுடன் செய்யும் வேலைகள்: (ஒன்றுக்கும் மேற்பட்ட கேள்விகளுக்கு உங்கள் பதில் ஒன்றாகவே இருக்கலாம்)",
+            "en": "Activities You Enjoy (Answers to more than one question below can be the similar)",
+            "hi": "वे काम जो आप खुशी से करते है"
+          },
+          "type": "section_title"
+        },
+        {
+          "row_index": 13,
+          "section": "Activities You Enjoy (Answers to more than one question below can be the similar)",
+          "text": {
+            "kn": "",
+            "ta": "",
+            "en": "",
+            "hi": ""
+          },
+          "type": "section_subtitle"
+        },
+        {
+          "row_index": 19,
+          "section": "Tasks or activities you find challenging:",
+          "text": {
+            "kn": "ನಿಮಗೆ ಕಷ್ಟವೆನಿಸುವ ಕೆಲಸ/ಚಟುವಟಿಕೆಗಳು:",
+            "ta": "நீங்கள் சவாலாகக் கருதும் பணிகள் அல்லது செயல்பாடுகள்:",
+            "en": "Tasks or activities you find challenging:",
+            "hi": "वे कार्य या गतिविधियां जो आपको मुश्किल लगती हैं:"
+          },
+          "type": "section_title"
+        },
+        {
+          "row_index": 20,
+          "section": "Tasks or activities you find challenging:",
+          "text": {
+            "kn": "",
+            "ta": "",
+            "en": "",
+            "hi": ""
+          },
+          "type": "section_subtitle"
+        },
+        {
+          "row_index": 26,
+          "section": "Let's delve deeper into understanding more about you.",
+          "text": {
+            "kn": "ನಿಮ್ಮ ಬಗ್ಗೆ ಇನ್ನಷ್ಟು ವಿಚಾರಗಳನ್ನು ತಿಳಿಯಲು ಈ ಕೆಳಗಿನ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ.",
+            "ta": "உங்களைப் பற்றி மேலும் அறிய பின்வரும் கேள்விகளு\nக்குப் பதிலளிக்கவும்.",
+            "en": "Let's delve deeper into understanding more about you.",
+            "hi": "अपने बारे में और अधिक जानें"
+          },
+          "type": "section_title"
+        },
+        {
+          "row_index": 27,
+          "section": "Let's delve deeper into understanding more about you.",
+          "text": {
+            "kn": "",
+            "ta": "",
+            "en": "",
+            "hi": ""
+          },
+          "type": "section_subtitle"
+        }
+      ],
+      "questions": [
+        {
+          "sno": 1,
+          "section": "My Personal Space",
+          "question": {
+            "kn": "ನಿಮ್ಮ ಕುಟುಂಬದಲ್ಲಿ ಯಾರೊಂದಿಗೆ ನೀವು ಭಯ/ಸಂಕೋಚವಿಲ್ಲದೆ ಮುಕ್ತವಾಗಿ ನಿಮ್ಮ ಅಭಿಪ್ರಾಯಗಳನ್ನು ಹಾಗೂ ಭಾವನೆಗಳನ್ನು ಹಂಚಿಕೊಳ್ಳಬಲ್ಲಿರಿ? ಮತ್ತು ಅವರೊಂದಿಗೆ ನಿಮಗೆ ಅಷ್ಟು ವಿಶ್ವಾಸವೇಕೆ?",
+            "ta": "உங்கள் குடும்பத்தில், பயம் அல்லது தயக்கம் இல்லாமல் உங்கள் கருத்துகளையும் உணர்வுகளையும் யாருடன் சுதந்திரமாகப் பகிர்ந்து கொள்ள முடியும்? அவர்கள் மீது உங்களுக்கு ஏன் அவ்வளவு நம்பிக்கை?",
+            "en": "In your family, with whom can you freely share your opinions and feelings without fear or hesitation? And why do you trust them so much?",
+            "hi": "अपने परिवार में, आप किसके साथ बिना किसी डर या संकोच के अपने विचारों और भावनाओं को खुलकर साझा कर सकते हैं? और आपको उन पर इतना भरोसा क्यों है?"
+          },
+          "help_text": {
+            "kn": "ನಿಮ್ಮ ಮನೆಯಲ್ಲಿ ಯಾರೊಂದಿಗೆ ನೀವು ಮುಕ್ತವಾಗಿ ಮಾತನಾಡಬಹುದು ಎಂಬುದನ್ನು ಬರೆಯಿರಿ",
+            "ta": "நீங்கள் பாதுகாப்பாக பேச முடியும் என்ற குடும்ப உறுப்பினரை தேர்வு செய்யவும்.",
+            "en": "Choose the family member you feel safest talking to.",
+            "hi": "लिखें कि आप अपने घर में किसके साथ सबसे खुलकर बात कर सकते हैं।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 2,
+          "section": "My Personal Space",
+          "question": {
+            "kn": "ನಿಮ್ಮ ಕುಟುಂಬದವರನ್ನು ಬಿಟ್ಟು ಬೇರೆ ಯಾರೊಂದಿಗೆ ನೀವು ಭಯ / ಸಂಕೋಚವಿಲ್ಲದೆ ಮುಕ್ತವಾಗಿ ನಿಮ್ಮ ಅಭಿಪ್ರಾಯಗಳನ್ನು ಹಾಗೂ ಭಾವನೆಗಳನ್ನು ಹಂಚಿಕೊಳ್ಳಬಲ್ಲಿರಿ?",
+            "ta": "உங்கள் குடும்பத்தினரைத் தவிர, பயம் அல்லது தயக்கம் இல்லாமல் உங்கள் கருத்துகளையும் உணர்வுகளையும் யாருடன் சுதந்திரமாக பகிர்ந்து கொள்ள முடியும்?",
+            "en": "Other than your family members, with whom can you freely share your opinions and feelings without fear or hesitation?",
+            "hi": "परिवार के सदस्यों को छोड़कर, और कौन है जिसके साथ आप अपने विचारों और भावनाओं को खुलकर साझा कर सकते हैं?"
+          },
+          "help_text": {
+            "kn": "ಮನೆಯವರ ಹೊರತು ಇನ್ನಾರು ನಿಮ್ಮ ಮಾತು ಕೇಳುತ್ತಾರೆ ಎಂಬುದನ್ನು ಬರೆಯಿರಿ",
+            "ta": "உங்கள் குடும்பத்திற்கு வெளியே, நீங்கள் நம்பி நிம்மதியாக பேச முடியும் நபரை நினைத்துப் பதிலளிக்கவும்.",
+            "en": "Think about someone outside your family whom you trust and feel comfortable talking to.",
+            "hi": "परिवार के अलावा और कौन आपकी बात ध्यान से सुनता है, उनका नाम लिखें।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 3,
+          "section": "My Personal Space",
+          "question": {
+            "kn": "ಮನೆಯಲ್ಲಿ ನೀವು ಮಾಡುವ ಕೆಲಸಗಳು ಯಾವುವು? \n (ಉದಾ: ಕೃಷಿ ಚಟುವಟಿಕೆಗಳಲ್ಲಿ ಸಹಾಯ ಮಾಡುವುದು, ಅಂಗಡಿಯಿಂದ ತರಕಾರಿ, ಕಿರಾಣಿ ಸಾಮಗ್ರಿಗಳನ್ನು ತರುವುದು, ದನ-ಕರುಗಳ, ಪ್ರಾಣಿಗಳ ಆರೈಕೆ, ನೀರು ತುಂಬಿಸುವುದು ಇತ್ಯಾದಿ)",
+            "ta": "வீட்டில் நீங்கள் செய்யும் வேலைகள் என்னென்ன?\n(உதா: விவசாயப் பணிகளில் உதவுதல், கடையிலிருந்து காய்கறிகள் மற்றும் மளிகைப் பொருட்கள் வாங்கி வருதல், பணம் தொடர்பான வேலைகள், விலங்குகளை  பராமரித்தல், தண்ணீர் நிரப்புதல் போன்றவை)",
+            "en": "What are the tasks you do at home?\n(e.g., helping in agricultural activities, bringing vegetables and groceries from the shop, money-related work, taking care of animals, filling water, etc.)",
+            "hi": "3. आप घर पर कौन-कौन से काम करते हैं? (उदाहरण: खेती में मदद करना, दुकान से सामान लाना, पशुओं की देखभाल, पानी भरना आदि)"
+          },
+          "help_text": {
+            "kn": "ನೀವು ಮನೆಯಲ್ಲಿ ಮಾಡುವ ಕೆಲಸಗಳು ಯಾವುವು ಎಂಬುದನ್ನು ಬರೆಯಿರಿ",
+            "ta": "வீட்டில் நீங்கள் தினமும் செய்யும்  வேலைகளை நினைத்து பதிலளிக்கவும்.",
+            "en": "Think about the daily work you help with at home.",
+            "hi": "आप घर पर नियमित रूप से जो भी काम करते हैं, उनके बारे में लिखें।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 1,
+          "section": "Activities You Enjoy (Answers to more than one question below can be the similar)",
+          "question": {
+            "kn": "ನೀವು ಇಷ್ಟಪಟ್ಟು ಮಾಡುವ ಕೆಲಸಗಳು:",
+            "ta": "நீங்கள் விரும்பி செய்யும் வேலைகள்:",
+            "en": "Activities you find most enjoyable and fulfilling:",
+            "hi": "वे काम जो आप पसंद से करते हैं:"
+          },
+          "help_text": {
+            "kn": "ಶಾಲೆಯಲ್ಲಿ ನಿಮಗೆ ಇಷ್ಟವಾಗುವ ವಿಷಯಗಳು ಅಥವಾ ಕೆಲಸಗಳು ಯಾವುವು? \n ಶಾಲೆ ಮುಗಿದ ನಂತರ ಅಥವಾ ಶಾಲೆಗೆ ಮೊದಲು ನೀವು ಏನು ಮಾಡಲು ಇಷ್ಟಪಡುತ್ತೀರಿ? \nಎಂಬುದರ ಬಗ್ಗೆ ಬರೆಯಿರಿ",
+            "ta": "பள்ளி நேரத்திலும் , பள்ளிக்குப் பிறகும் நீங்கள் விரும்பி செய்யும் செயல்களை எழுதுங்கள்.",
+            "en": "Write the activities you enjoy doing during and after school.",
+            "hi": "स्कूल में आपको कौन से विषय या गतिविधियाँ पसंद हैं? स्कूल के अलावा खाली समय में आप क्या करना पसंद करते हैं?"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 2,
+          "section": "Activities You Enjoy (Answers to more than one question below can be the similar)",
+          "question": {
+            "kn": "ನೀವೊಬ್ಬರೇ ಸ್ವತಂತ್ರವಾಗಿ ಮಾಡಲು ಇಷ್ಟಪಡುವ ಕೆಲಸಗಳು ಯಾವುವು? (ಪ್ರತ್ಯೇಕವಾಗಿ ಒಬ್ಬರೇ ನಿರ್ವಹಿಸುವ ಕಾರ್ಯಗಳು)",
+            "ta": "நீங்கள் சுயமாக செய்ய விரும்பும் வேலைகள் என்னென்ன?\n(தனியாகவே செய்து முடிக்கும் பணிகள்)",
+            "en": "What are the activities you like to do alone, independently?\n(Tasks you do by yourself)",
+            "hi": "ऐसे कौन से काम हैं जो आप अकेले स्वतंत्र रूप से करना पसंद करते हैं?"
+          },
+          "help_text": {
+            "kn": "ನೀವು ಒಬ್ಬರೇ ಏನು ಮಾಡಲು ಇಷ್ಟಪಡುತ್ತೀರಿ ಎಂಬುದನ್ನು ಬರೆಯಿರಿ",
+            "ta": "நீங்கள் தனியாக செய்து மகிழும் செயல்களை நினைத்து பதிலளிக்கவும்.",
+            "en": "Think about activities you enjoy doing by yourself.",
+            "hi": "उन कामों के बारे में लिखें जिन्हें आप बिना किसी की मदद के अकेले करना पसंद करते हैं।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 3,
+          "section": "Activities You Enjoy (Answers to more than one question below can be the similar)",
+          "question": {
+            "kn": "ನೀವು ಗುಂಪಿನಲ್ಲಿ / ನಿಮ್ಮ ಸ್ನೇಹಿತರೊಂದಿಗೆ ಯಾವ ಕೆಲಸಗಳನ್ನು ಮಾಡಲು ಇಷ್ಟಪಡುತ್ತೀರಿ?",
+            "ta": "நீங்கள் குழுவாக அல்லது உங்கள் நண்பர்களுடன் செய்ய விரும்பும் செயல்கள் என்னென்ன?",
+            "en": "What activities do you like to do in a group or with your friends?",
+            "hi": "आप समूह में या अपने दोस्तों के साथ कौन से काम करना पसंद करते हैं?"
+          },
+          "help_text": {
+            "kn": "ನಿಮ್ಮ ಸ್ನೇಹಿತರ ಜೊತೆ ನೀವು ಏನು ಮಾಡಲು ಇಷ್ಟಪಡುತ್ತೀರಿ ಎಂಬುದನ್ನು ಬರೆಯಿರಿ",
+            "ta": "நண்பர்களுடன் சேர்ந்து செய்ய விரும்பும் செயல்களை நினைத்து பதிலளிக்கவும்.",
+            "en": "Think about activities you enjoy doing with friends.",
+            "hi": "अपने दोस्तों के साथ मिलकर आप कौन सी गतिविधियाँ करना पसंद करते हैं, उनके बारे में लिखें।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 1,
+          "section": "Tasks or activities you find challenging:",
+          "question": {
+            "kn": "ನಿಮಗೆ ಶಾಲೆಯಲ್ಲಿ ಕಷ್ಟವೆನಿಸುವ ಚಟುವಟಿಕೆಗಳು ಯಾವುವು? ಬರೆಯಿರಿ.",
+            "ta": "பள்ளியில் உங்களுக்கு கடினமாக தோன்றும் செயல்கள் என்னென்ன? எழுதுங்கள்.",
+            "en": "What activities do you find difficult at school? Write them.",
+            "hi": "स्कूल में आपको कौन सी गतिविधियाँ या विषय कठिन लगते हैं?"
+          },
+          "help_text": {
+            "kn": "ಶಾಲೆಯಲ್ಲಿ ನಿಮಗೆ ಕಷ್ಟವಾಗುವ ವಿಷಯಗಳು ಯಾವುವು ಎಂಬುದನ್ನು ಬರೆಯಿರಿ",
+            "ta": "பள்ளியில் உங்களுக்கு கடினமாக இருக்கும் செயல்களை நினைத்து பதிலளிக்கவும்.",
+            "en": "Think about school activities that are hard for you.",
+            "hi": "स्कूल की उन चीजों के बारे में लिखें जिन्हें करने में आपको मुश्किल आती है।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 2,
+          "section": "Tasks or activities you find challenging:",
+          "question": {
+            "kn": "ಶಾಲೆಯ ಕೆಲಸ / ಚಟುವಟಿಕೆಗಳನ್ನು ಹೊರತುಪಡಿಸಿ ನಿಮಗೆ ಕಷ್ಟಕರವಾದ ಇನ್ನುಳಿದ ಕೆಲಸಗಳು ಯಾವವು?",
+            "ta": "பள்ளி வேலைகள் / செயல்களைத் தவிர, உங்களுக்கு கடினமாக இருக்கும் மற்ற வேலைகள் என்னென்ன?",
+            "en": "Apart from school work or activities, what other tasks do you find difficult?",
+            "hi": "स्कूल के कामों के अलावा, आपको अन्य कौन से काम कठिन लगते हैं?"
+          },
+          "help_text": {
+            "kn": "ಶಾಲೆಯ ಹೊರತುಪಡಿಸಿ ನಿಮಗೆ ಕಷ್ಟವಾಗುವ ಕೆಲಸಗಳು ಯಾವುವು ಎಂಬುದನ್ನು ಬರೆಯಿರಿ",
+            "ta": "பள்ளிக்கு வெளியே உங்களுக்கு கடினமாக இருக்கும் வேலைகளை நினைத்து பதிலளிக்கவும்.",
+            "en": "Think about tasks outside school that you find difficult.",
+            "hi": "स्कूल के बाहर के उन कामों के बारे में लिखें जो आपको चुनौतीपूर्ण लगते हैं"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 3,
+          "section": "Tasks or activities you find challenging:",
+          "question": {
+            "kn": "ನೀವು ಮಾಡಲು ಇಷ್ಟ ಪಡದ ಆದರೆ ಮಾಡಲೇಬೇಕಾದ ಕೆಲಸಗಳನ್ನು ಪಟ್ಟಿ ಮಾಡಿ.",
+            "ta": "உங்களுக்குப் பிடிக்காத ஆனால் நீங்கள் செய்ய வேண்டிய வேலைகளைப் பட்டியலிடுங்கள்.",
+            "en": "List the tasks that you don't like doing but have to do.",
+            "hi": "उन कामों की सूची बनाएं जो आपको पसंद नहीं हैं लेकिन आपको करने ही पड़ते हैं।"
+          },
+          "help_text": {
+            "kn": "ನಿಮಗೆ ಇಷ್ಟವಿಲ್ಲದರೂ ಮಾಡಲೇಬೇಕಾದ ಕೆಲಸಗಳು ಯಾವುವು ಎಂಬುದನ್ನು ಬರೆಯಿರಿ",
+            "ta": "நீங்கள் தனியாக செய்து மகிழும் செயல்களை நினைத்து பதிலளிக்கவும்.",
+            "en": "Write about the tasks you have to do even if you don't like them.",
+            "hi": "ऐसे कामों के बारे में लिखें जिन्हें आप मजबूरी में या जिम्मेदारी समझकर करते हैं।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 4,
+          "section": "Tasks or activities you find challenging:",
+          "question": {
+            "kn": "ನೀವು ಮಾಡುವ ಕೆಲಸ/ಚಟುವಟಿಕೆಗಳಲ್ಲಿ, ಸಹಜವಾಗಿ ತೊಡಗಿಸಿಕೊಳ್ಳುವ ಕೆಲಸ/ಚಟುವಟಿಕೆಗಳನ್ನು ಪಟ್ಟಿಮಾಡಿ.",
+            "ta": "நீங்கள் செய்யும் வேலைகளில், நீங்கள் இயல்பாகவே/ஈடுபாட்டுடன் செய்யும் செயல்களைப் பட்டியலிடுங்கள்.",
+            "en": "List the activities that you get involved in naturally/effortlessly.",
+            "hi": "अपनी उन गतिविधियों की सूची बनाएं जिनमें आप स्वाभाविक रूप से (आसानी से) शामिल हो जाते हैं।"
+          },
+          "help_text": {
+            "kn": "ನೀವು ಸುಲಭವಾಗಿ ಮಾಡುವ ಕೆಲಸಗಳು ಯಾವುವು ಎಂಬುದನ್ನು ಬರೆಯಿರಿ",
+            "ta": "நீங்கள் எளிதாகச் செய்யும் வேலைகளை எழுதுங்கள்.",
+            "en": "Write about the tasks that come easily to you.",
+            "hi": "उन कामों के बारे में लिखें जिन्हें आप बहुत सहजता और आसानी से कर लेते हैं।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 5,
+          "section": "Tasks or activities you find challenging:",
+          "question": {
+            "kn": "ನೀವು ಮಾಡುವ ಕೆಲಸ/ಚಟುವಟಿಕೆಗಳಲ್ಲಿ, ಸಹಜವಾಗಿ ಮಾಡಲು ಬಾರದ ಕೆಲಸ/ಚಟುವಟಿಕೆಗಳನ್ನು ಪಟ್ಟಿಮಾಡಿ.",
+            "ta": "நீங்கள் செய்யும் வேலைகளில், உங்களுக்கு இயல்பாக வராத செயல்களைப் பட்டியலிடுங்கள்.",
+            "en": "List the activities that do not come naturally to you.",
+            "hi": "अपनी उन गतिविधियों की सूची बनाएं जो आप स्वाभाविक रूप से नहीं कर पाते हैं।"
+          },
+          "help_text": {
+            "kn": "ನಿಮಗೆ ಸುಲಭವಾಗಿ ಆಗದ ಕೆಲಸಗಳು ಯಾವುವು ಎಂಬುದನ್ನು ಬರೆಯಿರಿ",
+            "ta": "உங்களுக்கு எளிதாக வராத வேலைகளைப் பற்றி எழுதுங்கள்.",
+            "en": "Write about the tasks that are not easy for you.",
+            "hi": "उन कामों के बारे में लिखें जो आपके लिए सहज नहीं हैं या जिन्हें करने में बहुत मेहनत लगती है।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 1,
+          "section": "Let's delve deeper into understanding more about you.",
+          "question": {
+            "kn": "ನಿಮ್ಮ ಬಗ್ಗೆ ನೀವೆ ಹೆಮ್ಮೆಪಟ್ಟುಕೊಳ್ಳುವ, ನಿಮ್ಮಲ್ಲಿನ ಗುಣಗಳು ಯಾವವು?",
+            "ta": "உங்களைப் பற்றி நீங்களே பெருமைப்படும் குணங்கள் எவை?",
+            "en": "What qualities or aspects do you love & appreciate about yourself?",
+            "hi": "आपके वे कौन से गुण हैं जिन पर आपको स्वयं गर्व है?"
+          },
+          "help_text": {
+            "kn": "ನಿಮ್ಮಲ್ಲಿ ನಿಮಗೆ ಇಷ್ಟವಾಗುವ ಗುಣಗಳು ಯಾವುವು ಎಂಬುದನ್ನು ಬರೆಯಿರಿ",
+            "ta": "உங்களிடம் உங்களுக்குப் பிடித்த குணங்களைப் பற்றி எழுதுங்கள்.",
+            "en": "Write about the qualities you like in yourself.",
+            "hi": "अपनी उन खूबियों के बारे में लिखें जो आपको अपने आप में सबसे अच्छी लगती हैं।"
+          },
+          "input_type": "textarea",
+          "display_type": "grouped",
+          "remark": ""
+        },
+        {
+          "sno": 2,
+          "section": "Let's delve deeper into understanding more about you.",
+          "question": {
+            "kn": "ಇತರರು (ಪಾಲಕರು, ಶಿಕ್ಷಕರು, ಸ್ನೇಹಿತರು ಇತ್ಯಾದಿ) ನಿಮ್ಮ ಯಾವ ಗುಣಗಳನ್ನು ಇಷ್ಟಪಡುತ್ತಾರೆ ಎಂದು ಭಾವಿಸುತ್ತೀರಿ? ಪಟ್ಟಿ ಮಾಡಿ. (ಪೋಷಕರು, ಶಿಕ್ಷಕರು, ಸ್ನೇಹಿತರನ್ನು ಕೇಳಿ ಪರಿಶೀಲಿಸಿಕೊಳ್ಳಿ)",
+            "ta": "மற்றவர்கள் (பெற்றோர், ஆசிரியர்கள், நண்பர்கள் போன்றவை) உங்கள் எந்த குணங்களை விரும்புகிறார்கள் என்று நினைக்கிறீர்கள்?",
+            "en": "Which of your qualities do you think these people (parents, teachers, friends, etc.) like?",
+            "hi": "आपको क्या लगता है कि दूसरे (माता-पिता, शिक्षक, मित्र) आपके किन गुणों को पसंद करते हैं? (पूछकर पुष्टि करें)"
+          },
+          "help_text": {
+            "kn": "ಇತರರು ನಿಮ್ಮಲ್ಲಿ ಇಷ್ಟಪಡುವ ಗುಣಗಳು ಯಾವುವು? ಅದನ್ನು ಬರೆಯಿರಿ",
+            "ta": "மற்றவர்கள் உங்களிடம் விரும்பும் குணங்கள் எவை என்று எழுதுங்கள்.",
+            "en": "Write about the qualities that others like in you.",
+            "hi": "उन गुणों को लिखें जिन्हें आपके करीबी लोग आप में पसंद करते हैं।"
+          },
+          "input_type": "textarea",
+          "display_type": "grouped",
+          "remark": ""
+        },
+        {
+          "sno": 3,
+          "section": "Let's delve deeper into understanding more about you.",
+          "question": {
+            "kn": "ನಿಮ್ಮಲ್ಲಿನ ಯಾವ ಸ್ವಭಾವವನ್ನು ಸುಧಾರಣೆ / ಬದಲಾವಣೆ ಮಾಡಿಕೊಳ್ಳಲು ನೀವು ಬಯಸುತ್ತೀರಿ?",
+            "ta": "உங்களிடம் உள்ள எந்த சுபாவத்தை/பண்பை மேம்படுத்த அல்லது மாற்ற விரும்புகிறீர்கள்?",
+            "en": "Which habit or behaviour of yours do you want to improve or change?",
+            "hi": "आप अपने स्वभाव में किस तरह का सुधार या बदलाव करना चाहेंगे?"
+          },
+          "help_text": {
+            "kn": "ನಿಮ್ಮಲ್ಲಿ ನೀವು ಬದಲಾಯಿಸಿಕೊಳ್ಳಲು ಬಯಸುವ ಗುಣ ಯಾವುದು? ಅದನ್ನು ಬರೆಯಿರಿ",
+            "ta": "நீங்கள் மாற்ற அல்லது மேம்படுத்த விரும்பும் பழக்கம் அல்லது நடத்தை ஏதாவது உள்ளதா?",
+            "en": "Is there any habit or behaviour you want to change or improve?",
+            "hi": "अपनी उस आदत या स्वभाव के बारे में लिखें जिसे आप बदलना चाहते हैं।"
+          },
+          "input_type": "textarea",
+          "display_type": "grouped",
+          "remark": ""
+        },
+        {
+          "sno": 4,
+          "section": "Let's delve deeper into understanding more about you.",
+          "question": {
+            "kn": "ನಿಮ್ಮ ಯಾವ ಗುಣ /ಸ್ವಭಾವವನ್ನು ತಿದ್ದಿಕೊಳ್ಳಬೇಕು ಎಂದು ಇತರರು ಬಯಸುತ್ತಾರೆ ಅಥವಾ ಸಲಹೆ ನೀಡುತ್ತಾರೆ?",
+            "ta": "உங்கள் எந்த குணம் அல்லது சுபாவத்தை மாற்றிக்கொள்ள வேண்டும் என்று மற்றவர்கள் விரும்புகிறார்கள் அல்லது ஆலோசனை கூறுகிறார்கள்?",
+            "en": "Which of your qualities or behaviors do others suggest you should correct or change?",
+            "hi": "आपके किस गुण या स्वभाव को बदलने के लिए दूसरे आपको सलाह देते हैं?"
+          },
+          "help_text": {
+            "kn": "ನಿಮ್ಮಲ್ಲಿ ಯಾವ ಗುಣವನ್ನು ಬದಲಾಯಿಸು ಎಂದು ಇತರರು ಹೇಳುತ್ತಾರೆ? ಅದನ್ನು ಬರೆಯಿರಿ",
+            "ta": "உங்கள் எந்த குணத்தை மாற்றிக்கொள்ள வேண்டும் என்று மற்றவர்கள் சொல்கிறார்கள் என்பதை எழுதுங்கள்.",
+            "en": "Write about the quality that others tell you to change or improve.",
+            "hi": "दूसरे लोग आपको अक्सर क्या सुधारने के लिए कहते हैं, उसके बारे में लिखें।"
+          },
+          "input_type": "textarea",
+          "display_type": "grouped",
+          "remark": ""
+        },
+        {
+          "sno": 5,
+          "section": "Let's delve deeper into understanding more about you.",
+          "question": {
+            "kn": "ಜೀವನದಲ್ಲಿ ನಿಮಗೆ ಏನಾದರೂ / ಯಾರಾದರೂ ಆಗುವ ಅವಕಾಶ ಇದ್ದರೆ, ನೀವು ಏನಾಗಲು / ಯಾರಾಗಲು ಬಯಸುತ್ತೀರಿ?",
+            "ta": "வாழ்க்கையில் உங்களுக்கு ஏதேனும் அல்லது யாராவது ஆகும் வாய்ப்பு கிடைத்தால், நீங்கள் என்னவாக/யாராக விரும்புகிறீர்கள்?",
+            "en": "If you had a chance to become something or someone in the future, what/who would you like to become?",
+            "hi": "यदि आपको जीवन में कुछ भी या कोई भी बनने का अवसर मिले, तो आप क्या बनना चाहेंगे?"
+          },
+          "help_text": {
+            "kn": "ಭವಿಷ್ಯದಲ್ಲಿ ನೀವು ಏನಾಗಲು ಬಯಸುತ್ತೀರಿ ಎಂಬುದನ್ನು ಬರೆಯಿರಿ",
+            "ta": "எதிர்காலத்தில் நீங்கள் என்னவாக விரும்புகிறீர்கள் என்பதை எழுதுங்கள்.",
+            "en": "Write about what you want to become in the future.",
+            "hi": "भविष्य में आप क्या बनने का सपना देखते हैं, उसके बारे में लिखें।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 6,
+          "section": "Let's delve deeper into understanding more about you.",
+          "question": {
+            "kn": "ನಿಮ್ಮ ಬಗ್ಗೆ ನೀವು ಹೆಮ್ಮೆ ಪಟ್ಟುಕೊಂಡ ಸಂದರ್ಭವನ್ನು ಮೆಲುಕುಹಾಕಿ. ನಿಮ್ಮ ಯಾವ ಕೆಲಸದಿಂದ ನಿಮಗೆ ಮೆಚ್ಚುಗೆ ದೊರೆಯಿತು? ಅದನ್ನು ಹೇಗೆ ಸಾಧಿಸಿದಿರಿ? ಸಂಕ್ಷಿಪ್ತವಾಗಿ ವಿವರಿಸಿ",
+            "ta": "உங்களைப் பற்றி நீங்கள் பெருமைப்பட்ட ஒரு தருணத்தை நினைவுகூருங்கள். உங்கள் எந்தச் செயலால் உங்களுக்கு பாராட்டு கிடைத்தது? அதை எப்படிச் சாதித்தீர்கள்?",
+            "en": "Reflect on a time when you felt proud of yourself. Which of your actions earned you appreciation? How did you achieve it?",
+            "hi": "उस समय को याद करें जब आपको अपने आप पर गर्व हुआ था। आपको किस काम के लिए प्रशंसा मिली और आपने उसे कैसे हासिल किया?"
+          },
+          "help_text": {
+            "kn": "ನೀವು ಮಾಡಿದ ಯಾವ ಕೆಲಸಕ್ಕೆ ನಿಮಗೆ ಮೆಚ್ಚುಗೆ ಸಿಕ್ಕಿತು? ಎಂಬುದನ್ನು ಬರೆಯಿರಿ",
+            "ta": "எந்த வேலை அல்லது செயலில் உங்களுக்கு பாராட்டு கிடைத்தது?",
+            "en": "Write about the work or action for which you received appreciation.",
+            "hi": "अपनी किसी सफलता या अच्छे काम के बारे में संक्षेप में लिखें जिसके लिए आपकी तारीफ हुई थी।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 7,
+          "section": "Let's delve deeper into understanding more about you.",
+          "question": {
+            "kn": "ನೀವು ಇತ್ತೀಚೆಗೆ ಎದುರಿಸಿದ ಕಠೀಣ/ಕಷ್ಟಕರ ಸನ್ನಿವೇಶದ ಬಗ್ಗೆ ಯೋಚಿಸಿ. ಅದನ್ನು ನೀವು ಹೇಗೆ ಎದುರಿಸಿದಿರಿ ಅಥವಾ ಅದರಿಂದ ಹೇಗೆ ಪಾರಾದಿರಿ? ಅದರಿಂದ ಕಲಿತ ಪಾಠವೇನು?",
+            "ta": "சமீபத்தில் நீங்கள் எதிர்கொண்ட ஒரு கடினமான சூழ்நிலையைப் பற்றி யோசியுங்கள். அதை எப்படி எதிர்கொண்டீர்கள் அல்லது அதிலிருந்து எப்படி மீண்டீர்கள்? அதிலிருந்து நீங்கள் கற்றுக்கொண்ட பாடம் என்ன?",
+            "en": "Think about a difficult or challenging situation you faced recently.\nHow did you face it or overcome it?\nWhat lesson did you learn from it?",
+            "hi": "हाल ही में आपने जिस कठिन स्थिति का सामना किया, उसके बारे में सोचें। आपने उसका सामना कैसे किया और उससे क्या सीखा?"
+          },
+          "help_text": {
+            "kn": "ಇತ್ತೀಚೆಗೆ ನಿಮಗೆ ಕಷ್ಟವಾದ ಒಂದು ಘಟನೆ ಯಾವುದು? ಅದನ್ನು ನೀವು ಹೇಗೆ ಎದುರಿಸಿದಿರಿ? ಎಂಬುದನ್ನು ಬರೆಯಿರಿ",
+            "ta": "சமீபத்தில் உங்களுக்குக் கடினமாக இருந்த ஒரு நிகழ்வு எது? அதை எப்படி எதிர்கொண்டீர்கள் என்று எழுதுங்கள்.",
+            "en": "Write about a recent difficult event and how you handled it.",
+            "hi": "किसी हालिया मुश्किल घटना और उससे मिली सीख के बारे में लिखें।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 8,
+          "section": "Let's delve deeper into understanding more about you.",
+          "question": {
+            "kn": "ಇತರರು ನಿಮ್ಮನ್ನು ತಪ್ಪಾಗಿ ತಿಳಿದ (ನಿಮ್ಮ ಬಗ್ಗೆ ತಪ್ಪು ಕಲ್ಪನೆ ಹೊಂದಿದ) ಸಂದರ್ಭವನ್ನು ನೆನಪಿಸಿಕೊಳ್ಳಿ. ನೀವು ಆ ಪರಿಸ್ಥಿತಿಯನ್ನು ಹೇಗೆ ನಿರ್ವಹಿಸಿದಿರಿ ಮತ್ತು ಅದರಿಂದ ನೀವು ಏನು ಕಲಿತಿರಿ?",
+            "ta": "மற்றவர்கள் உங்களைத் தவறாகப் புரிந்துகொண்ட ஒரு தருணத்தை நினைவுகூருங்கள். அந்தச் சூழ்நிலையை நீங்கள் எப்படி கையாண்டீர்கள், அதிலிருந்து என்ன கற்றுக்கொண்டீர்கள்?",
+            "en": "Recall a situation where others misunderstood you. How did you handle that situation and what did you learn from it?",
+            "hi": "उस घटना को याद करें जब दूसरों ने आपको गलत समझा था। आपने उस स्थिति को कैसे संभाला और क्या सीखा?"
+          },
+          "help_text": {
+            "kn": "ಯಾರಾದರೂ ನಿಮ್ಮ ಬಗ್ಗೆ ತಪ್ಪಾಗಿ ಯೋಚಿಸಿದ ಸಂದರ್ಭವಿದೆಯೇ? ನೀವು ಅದನ್ನು ಹೇಗೆ ಸರಿಪಡಿಸಿದಿರಿ? ಎಂಬುದರ ಬಗ್ಗೆ ಬರೆಯಿರಿ",
+            "ta": "யாராவது உங்களைப் பற்றித் தவறாக நினைத்த சந்தர்ப்பம் உண்டா? அதை எப்படிச் சரி செய்தீர்கள் என்பதைப் பற்றி எழுதுங்கள்.",
+            "en": "Was there a time when someone thought wrongly about you? Write about how you corrected it.",
+            "hi": "क्या कभी किसी ने आपके बारे में गलत धारणा बनाई थी? आपने उस स्थिति को कैसे ठीक किया, उसके बारे में लिखें।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        }
+      ],
+      "summary": {
+        "title": {
+          "kn": "ಸಾರಾಂಶ: ನನ್ನ ಮುಂದಿನ ಯೋಜನೆ",
+          "ta": "சுருக்கம்: எனது எதிர்காலத் திட்டம்",
+          "en": "Summary: My Future Plan",
+          "hi": "सारांश: मेरी अगली योजना"
+        },
+        "subtitle": {
+          "kn": "ವೈಯಕ್ತಿಕ ಪ್ರೊಫೈಲ್ ಅಥವಾ ನಿಮ್ಮದೇ ವ್ಯಕ್ತಿಚಿತ್ರ ಸಿದ್ಧಪಡಿಸಿ. ಮೇಲೆ ನಿಮ್ಮ ಬಗ್ಗೆ ನೀವು ಬರೆದ ಅಂಶಗಳನ್ನು ಒಂದು ಅಥವಾ ಕೆಲವು ಪದಗಳಲ್ಲಿ ಸಂಕ್ಷಿಪ್ತವಾಗಿ ಬರೆಯಿರಿ.",
+          "ta": "ஒரு தனிப்பட்ட சுயவிவரம் அல்லது உங்கள் சொந்த சுயப்படத்தை தயாரிக்கவும்.மேலே உங்களைப் பற்றி நீங்கள் எழுதிய அம்சங்களை ஒரு அல்லது சில சொற்களில் சுருக்கமாக எழுதுங்கள்.",
+          "en": "Prepare a personal profile or your own self-portrait.Summarize the points you wrote about yourself above in one or a few words.",
+          "hi": "व्यक्तिगत प्रोफ़ाइल या अपना स्वयं का चित्र तैयार करें।"
+        },
+        "header": [
+          "Sno",
+          "Kannada",
+          "English",
+          "Tamil",
+          "Hindi",
+          "Input Type",
+          "Display Type",
+          "Remark"
+        ],
+        "questions": [
+          {
+            "sno": 1,
+            "question": {
+              "kn": "ನನ್ನ ಕುಟುಂಬದಲ್ಲಿ ನನ್ನ ಸ್ನೇಹಿತ",
+              "ta": "என் குடும்பத்தில் உள்ள எனது நண்பர்",
+              "en": "The friend in my family",
+              "hi": "मेरे परिवार में मेरा मित्र"
+            },
+            "input_type": "Text field",
+            "display_type": "Table row",
+            "remark": ""
+          },
+          {
+            "sno": 2,
+            "question": {
+              "kn": "ಕುಟುಂಬ ಬಿಟ್ಟು ಹೊರಗಿನ ನನ್ನ ಸ್ನೇಹಿತ",
+              "ta": "குடும்பத்திற்கு வெளியே உள்ள நண்பர்",
+              "en": "My family outside of my family",
+              "hi": "परिवार के बाहर मेरा मित्र"
+            },
+            "input_type": "Text field",
+            "display_type": "Table row",
+            "remark": ""
+          },
+          {
+            "sno": 3,
+            "question": {
+              "kn": "ನಾನು ಮನೆಯಲ್ಲಿ ಯಾವ ಕೆಲಸಗಳನ್ನು ಮಾಡುತ್ತಿದ್ದೇನೆ?",
+              "ta": "நான் வீட்டில் செய்யும் வேலைகள்",
+              "en": "Activities I am doing at home",
+              "hi": "मैं घर पर कौन से काम कर रहा/रही हूँ?"
+            },
+            "input_type": "Text field",
+            "display_type": "Table row",
+            "remark": ""
+          },
+          {
+            "sno": 4,
+            "question": {
+              "kn": "ಶಾಲೆಯ ಸಮಯದಲ್ಲಿ ನಾನು ಆನಂದಿಸುವ ಚಟುವಟಿಕೆ/ಅಂಶಗಳು",
+              "ta": "பள்ளி நேரத்தில் நான் ரசிக்கும் விஷயங்கள்",
+              "en": "Activities I enjoy during the school hours",
+              "hi": "स्कूल के समय के दौरान जिन गतिविधियों/पहलुओं का मैं आनंद लेता/लेती हूँ"
+            },
+            "input_type": "Text field",
+            "display_type": "Table row",
+            "remark": ""
+          },
+          {
+            "sno": 5,
+            "question": {
+              "kn": "ಶಾಲೆಯ ಹೊರಗೆ ನಾನು ಆನಂದಿಸುವ ಚಟುವಟಿಕೆ/ಅಂಶಗಳು",
+              "ta": "பள்ளிக்கு வெளியே நான் ரசிக்கும் விஷயங்கள்",
+              "en": "Activities I enjoy outside the school",
+              "hi": "स्कूल के बाहर जिन गतिविधियों/पहलुओं का मैं आनंद लेता/लेती हूँ"
+            },
+            "input_type": "Text field",
+            "display_type": "Table row",
+            "remark": ""
+          },
+          {
+            "sno": 6,
+            "question": {
+              "kn": "ವೈಯಕ್ತಿಕವಾಗಿ ನಾನು ಆನಂದಿಸುವ ಕೆಲಸ / ಚಟುವಟಿಕೆಗಳು",
+              "ta": "நான் தனியாக ரசித்துச் செய்யும் செயல்கள்",
+              "en": "Work/activities I enjoy personally",
+              "hi": "व्यक्तिगत रूप से वे काम/गतिविधियाँ जिनका मैं आनंद लेता/लेती हूँ"
+            },
+            "input_type": "Text field",
+            "display_type": "Table row",
+            "remark": ""
+          },
+          {
+            "sno": 7,
+            "question": {
+              "kn": "ತಂಡವಾಗಿ ನಾನು ಆನಂದಿಸುವ ಕೆಲಸ / ಚಟುವಟಿಕೆಗಳು",
+              "ta": "நான் குழுவாக ரசித்துச் செய்யும் செயல்கள்",
+              "en": "Work/activities I enjoy as a team",
+              "hi": "एक टीम के रूप में वे काम/गतिविधियाँ जिनका मैं आनंद लेता/लेती हूँ"
+            },
+            "input_type": "Text field",
+            "display_type": "Table row",
+            "remark": ""
+          },
+          {
+            "sno": 8,
+            "question": {
+              "kn": "ಶಾಲಾವಧಿಯಲ್ಲಿ ಮಾಡಬೇಕಾದ, ಆದರೆ ನನಗೆ ಕಷ್ಟವೆನಿಸುವ ಚಟುವಟಿಕೆ",
+              "ta": "பள்ளியில் எனக்குக் கடினமாகத் தோன்றும் செயல்கள்",
+              "en": "Activity that needs to be done in the school but I find difficult",
+              "hi": "स्कूल के घंटों के दौरान की जाने वाली गतिविधियाँ जो मुझे कठिन लगती हैं"
+            },
+            "input_type": "Text field",
+            "display_type": "Table row",
+            "remark": ""
+          },
+          {
+            "sno": 9,
+            "question": {
+              "kn": "ಶಾಲಾವಧಿಯ ನಂತರ, ಶಾಲೆಯ ಆಚೆ ನನಗೆ ನಿರ್ವಹಿಸಲು ಕಷ್ಟವೆನಿಸುವ ಚಟುವಟಿಕೆ",
+              "ta": "பள்ளிக்கு வெளியே எனக்குக் கடினமாகத் தோன்றும் வேலைகள்",
+              "en": "Activity that I find difficult to do after school hours",
+              "hi": "स्कूल के बाद या स्कूल के बाहर वे गतिविधियाँ जिन्हें करना मेरे लिए कठिन है"
+            },
+            "input_type": "Text field",
+            "display_type": "Table row",
+            "remark": ""
+          },
+          {
+            "sno": 10,
+            "question": {
+              "kn": "ನಾನು ಮಾಡಲೇಬೇಕಾದ ಚಟುವಟಿಕೆಗಳು",
+              "ta": "நான் கட்டாயம் செய்ய வேண்டிய வேலைகள்",
+              "en": "Activities I must do",
+              "hi": "वे गतिविधियाँ जो मुझे करनी ही चाहिए (अनिवार्य कार्य)"
+            },
+            "input_type": "Text field",
+            "display_type": "Table row",
+            "remark": ""
+          },
+          {
+            "sno": 11,
+            "question": {
+              "kn": "ನಾನು ಸಹಜವಾಗಿ ಮಾಡಬಹುದಾದ ಚಟುವಟಿಕೆಗಳು",
+              "ta": "நான் இயல்பாகச் செய்யும் செயல்கள்",
+              "en": "Activities that come naturally to me",
+              "hi": "वे गतिविधियाँ जो मैं स्वाभाविक रूप से कर सकता/सकती हूँ"
+            },
+            "input_type": "Text field",
+            "display_type": "Table row",
+            "remark": ""
+          },
+          {
+            "sno": 12,
+            "question": {
+              "kn": "ನನಗೆ ಸಹಜವಾಗಿ ಮಾಡಲು ಬಾರದಿರುವ ಚಟುವಟಿಕೆಗಳು",
+              "ta": "எனக்கு எளிதாக வராத செயல்கள்",
+              "en": "Activities that don't come naturally to me",
+              "hi": "वे गतिविधियाँ जो मैं स्वाभाविक रूप से नहीं कर पाता/पाती"
+            },
+            "input_type": "Text field",
+            "display_type": "Table row",
+            "remark": ""
+          },
+          {
+            "sno": 13,
+            "question": {
+              "kn": "ನನ್ನಲ್ಲಿರುವ, ನಾನು ಇಷ್ಟಪಡುವ ಗುಣಗಳು",
+              "ta": "என்னிடத்தில் எனக்குப் பிடித்த குணங்கள்",
+              "en": "Qualities I like in myself",
+              "hi": "मेरे अपने वे गुण जिन्हें मैं पसंद करता/करती हूँ"
+            },
+            "input_type": "Text field",
+            "display_type": "Table row",
+            "remark": ""
+          },
+          {
+            "sno": 14,
+            "question": {
+              "kn": "ಇತರರು ನನ್ನಲ್ಲಿ ಇಷ್ಟಪಡುವ ಗುಣಗಳು",
+              "ta": "மற்றவர்கள் என்னிடம் விரும்பும் குணங்கள்",
+              "en": "Qualities that others like in me",
+              "hi": "मेरे वे गुण जिन्हें दूसरे पसंद करते हैं"
+            },
+            "input_type": "Text field",
+            "display_type": "Table row",
+            "remark": ""
+          },
+          {
+            "sno": 15,
+            "question": {
+              "kn": "ನಾನು ಸುಧಾರಿಸಿಕೊಳ್ಳಬೇಕಾದ ಗುಣ/ ಅಂಶಗಳು",
+              "ta": "நான் மேம்படுத்த வேண்டிய விஷயங்கள்",
+              "en": "Qualities that I need to improve on",
+              "hi": "वे गुण/पहलू जिनमें मुझे सुधार करने की आवश्यकता है"
+            },
+            "input_type": "Text field",
+            "display_type": "Table row",
+            "remark": ""
+          },
+          {
+            "sno": 16,
+            "question": {
+              "kn": "ಸಾರಾಂಶದ ಆಧಾರದ ಮೇಲೆ ನಿಮ್ಮ ಬಗ್ಗೆ ಸಂಕ್ಷಿಪ್ತವಾಗಿ ಬರೆಯಿರಿ.",
+              "ta": "சுருக்கத்தின் அடிப்படையில் உங்களைப் பற்றிச் சுருக்கமாக எழுதுங்கள்.",
+              "en": "Write a brief description of yourself based on the summary.",
+              "hi": "सारांश के आधार पर अपने बारे में संक्षेप में लिखें।"
+            },
+            "input_type": "Text field",
+            "display_type": "Regular Text",
+            "remark": ""
+          }
+        ]
+      },
+      "empty_cells": []
+    },
+    "dreams": {
+      "tab_name": "9.3_My Dreams",
+      "assessment_type": "dreams",
+      "module_title": {
+        "kn": "ನನ್ನ ಕನಸುಗಳು",
+        "ta": "என் கனவுகள்",
+        "en": "My Dreams",
+        "hi": "मेरे सपने"
+      },
+      "title_text": {
+        "kn": "“ನೀವು ನಿದ್ರೆ ಮಾಡುವಾಗ ಕಾಣುವುದು ಕನಸಲ್ಲ, ಯಾವ ಕನಸು ನಿಮ್ಮನ್ನು ನಿದ್ರಿಸಲು ಬಿಡುವುದಿಲ್ಲವೋ ಅದೇ ನಿಜವಾದ ಕನಸು.” - ಡಾ. ಎ. ಪಿ. ಜೆ. ಅಬ್ದುಲ್ ಕಲಾಮ್",
+        "ta": "“தூக்கத்தில் வருவதல்ல கனவு; உன்னைத் தூங்கவிடாமல் செய்வதே கனவு.” - டாக்டர் ஏ.பி.ஜே. அப்துல் கலாம்",
+        "en": "“Dream is not that which you see while sleeping, it is something that does not let you sleep.” - Dr. A.P.J. Abdul Kalam",
+        "hi": "\"सपना वह नहीं है जो आप नींद में देखते हैं, सपना वह है जो आपको सोने नहीं देता।\"\n— डॉ. ए. पी. जे. अब्दुल कलाम"
+      },
+      "subtitle_text": {
+        "kn": "ನಾವೆಲ್ಲರೂ ನಮ್ಮ, ನಮ್ಮ ಭವಿಷ್ಯದ ಬಗ್ಗೆ ಕನಸುಗಳನ್ನು ಹೊಂದಿದ್ದೇವಲ್ಲವೇ? ಹಾಗಾದರೆ ನಿಮ್ಮ ಪ್ರಕಾರ ಕನಸು ಎಂದರೇನು? ನಿಮ್ಮ ಕನಸುಗಳು ಯಾವುವು? ನಿಮಗನಿಸುವ ಪ್ರಕಾರ ನಿಮ್ಮನ್ನು ಪದೇ ಪದೇ ಕಾಡುವ ಕನಸುಗಳು ಯಾವುದು? - ಈ ಎಲ್ಲದರ ಕುರಿತು ನಿಮ್ಮ ಅಭಿಪ್ರಾಯಗಳನ್ನು ಈ ಚಟುವಟಿಕೆಯಲ್ಲಿ ವ್ಯಕ್ತಪಡಿಸುತ್ತೀರಿ.",
+        "ta": "நமது எதிர்காலத்தைப் பற்றி நாம் அனைவரும் கனவுகளைக் கொண்டுள்ளோம் அல்லவா? உங்கள் கருத்துப்படி கனவு என்றால் என்ன? உங்கள் கனவுகள் யாவை? உங்களை அடிக்கடித் தூண்டும் கனவுகள் எவை என்று நீங்கள் கருதுகிறீர்கள்? - இவை அனைத்தைப் பற்றியும் உங்கள் கருத்துக்களை இந்தச் செயல்பாட்டில் வெளிப்படுத்துவீர்கள்.",
+        "en": "We all have dreams for our future, don't we? So, according to you, what is a dream? What are your dreams? Which dreams do you feel haunt or recur in your mind frequently? - You will express your opinions on all of these in this activity.",
+        "hi": "हम सभी के अपने भविष्य के बारे में कुछ सपने होते हैं, है ना? तो आपके अनुसार सपना क्या है? आपके सपने क्या हैं? आपको क्या लगता है कि वे कौन से सपने हैं जो आपको बार-बार आते हैं या प्रभावित करते हैं? - इस गतिविधि में आप इन सभी के बारे में अपनी राय व्यक्त करेंगे।"
+      },
+      "question_header": [
+        "Sno",
+        "Kannada Question",
+        "Kannada Help Text",
+        "Tamil Question",
+        "Tamil Help Text",
+        "English Question",
+        "English Help Text",
+        "Hindi Question",
+        "Hindi Help Text",
+        "Input Type",
+        "Display Type",
+        "Remark"
+      ],
+      "sections": [
+        {
+          "title": {
+            "kn": "ನಿಮ್ಮ ಕನಸುಗಳು ಮತ್ತು ಭವಿಷ್ಯದ ಗುರಿಗಳು",
+            "ta": "உங்கள் கனவுகள் மற்றும் எதிர்கால இலக்குகள்",
+            "en": "Your Dreams & Future Goals",
+            "hi": "आपके सपने और भविष्य के लक्ष्य"
+          },
+          "subtitle": {
+            "kn": "ನಿಮ್ಮ ಭವಿಷ್ಯದ ಕನಸುಗಳನ್ನು ಮತ್ತು ನೀವು ಏನನ್ನು ಸಾಧಿಸಲು ಬಯಸುತ್ತೀರಿ ಎಂಬುದನ್ನು ವ್ಯಕ್ತಪಡಿಸಿ.",
+            "ta": "எதிர்காலத்திற்கான உங்கள் கனவுகளையும் நீங்கள் எதைச் சாதிக்க விரும்புகிறீர்கள் என்பதையும் வெளிப்படுத்துங்கள்.",
+            "en": "Express your dreams for the future and what you aspire to achieve.",
+            "hi": "भविष्य के लिए अपने सपनों और आप क्या हासिल करना चाहते हैं, उसे व्यक्त करें।"
+          }
+        },
+        {
+          "title": {
+            "kn": "ವೃತ್ತಿಜೀವನ ಮತ್ತು ಜೀವನದ ಆಕಾಂಕ್ಷೆಗಳು",
+            "ta": "தொழில் மற்றும் வாழ்க்கை அபிலாஷைகள்",
+            "en": "Career & Life Aspirations",
+            "hi": "करियर और जीवन की आकांक्षाएं"
+          },
+          "subtitle": {
+            "kn": "ನಿಮ್ಮ ವೃತ್ತಿಜೀವನ ಮತ್ತು ಜೀವನದ ಗುರಿಗಳು, ನೀವು ಎಲ್ಲಿ ವಾಸಿಸಲು ಬಯಸುತ್ತೀರಿ ಮತ್ತು ನೀವು ಹೇಗೆ ಕೊಡುಗೆ ನೀಡಲು ಬಯಸುತ್ತೀರಿ ಎಂಬುದನ್ನು ಕಂಡುಕೊಳ್ಳಿ.",
+            "ta": "உங்கள் தொழில் மற்றும் வாழ்க்கை இலக்குகள், நீங்கள் எங்கு வாழ விரும்புகிறீர்கள் மற்றும் உங்கள் பங்களிப்பு எப்படி இருக்க வேண்டும் என்பதை ஆராயுங்கள்.",
+            "en": "Explore your career and life goals, where you want to live, and how you want to contribute",
+            "hi": "अपने करियर और जीवन के लक्ष्यों को जानें, आप कहाँ रहना चाहते हैं और आप समाज में क्या योगदान देना चाहते हैं, उसे पहचानें।"
+          }
+        },
+        {
+          "title": {
+            "kn": "ಕನಸುಗಳನ್ನು ನನಸಾಗಿಸುವುದು",
+            "ta": "கனவுகளை நனவாக்குதல்",
+            "en": "Making Dreams Reality",
+            "hi": "सपनों को सच करना"
+          },
+          "subtitle": {
+            "kn": "ನಿಮ್ಮ ಕನಸುಗಳನ್ನು ನನಸಾಗಿಸಲು ಬೇಕಾದ ಹಂತಗಳನ್ನು ಯೋಜಿಸಿ ಮತ್ತು ಎದುರಾಗಬಹುದಾದ ಅಡೆತಡೆಗಳನ್ನು ಗುರುತಿಸಿ.",
+            "ta": "கனவுகளை நனவாக்குதல்\tஉங்கள் கனவுகளை அடையத் தேவையான படிகளைத் திட்டமிடுங்கள் மற்றும் வரக்கூடிய தடைகளை அடையாளம் காணுங்கள்.",
+            "en": "Plan the steps needed to achieve your dreams and identify potential obstacles",
+            "hi": "अपने सपनों को पूरा करने के लिए आवश्यक कदमों की योजना बनाएं और संभावित बाधाओं की पहचान करें।"
+          }
+        }
+      ],
+      "sub_headers": [
+        {
+          "row_index": 7,
+          "section": "Your Dreams & Future Goals",
+          "text": {
+            "kn": "ನಿಮ್ಮ ಕನಸುಗಳು ಮತ್ತು ಭವಿಷ್ಯದ ಗುರಿಗಳು",
+            "ta": "உங்கள் கனவுகள் மற்றும் எதிர்கால இலக்குகள்",
+            "en": "Your Dreams & Future Goals",
+            "hi": "आपके सपने और भविष्य के लक्ष्य"
+          },
+          "type": "section_title"
+        },
+        {
+          "row_index": 8,
+          "section": "Your Dreams & Future Goals",
+          "text": {
+            "kn": "ನಿಮ್ಮ ಭವಿಷ್ಯದ ಕನಸುಗಳನ್ನು ಮತ್ತು ನೀವು ಏನನ್ನು ಸಾಧಿಸಲು ಬಯಸುತ್ತೀರಿ ಎಂಬುದನ್ನು ವ್ಯಕ್ತಪಡಿಸಿ.",
+            "ta": "எதிர்காலத்திற்கான உங்கள் கனவுகளையும் நீங்கள் எதைச் சாதிக்க விரும்புகிறீர்கள் என்பதையும் வெளிப்படுத்துங்கள்.",
+            "en": "Express your dreams for the future and what you aspire to achieve.",
+            "hi": "भविष्य के लिए अपने सपनों और आप क्या हासिल करना चाहते हैं, उसे व्यक्त करें।"
+          },
+          "type": "section_subtitle"
+        },
+        {
+          "row_index": 15,
+          "section": "Career & Life Aspirations",
+          "text": {
+            "kn": "ವೃತ್ತಿಜೀವನ ಮತ್ತು ಜೀವನದ ಆಕಾಂಕ್ಷೆಗಳು",
+            "ta": "தொழில் மற்றும் வாழ்க்கை அபிலாஷைகள்",
+            "en": "Career & Life Aspirations",
+            "hi": "करियर और जीवन की आकांक्षाएं"
+          },
+          "type": "section_title"
+        },
+        {
+          "row_index": 16,
+          "section": "Career & Life Aspirations",
+          "text": {
+            "kn": "ನಿಮ್ಮ ವೃತ್ತಿಜೀವನ ಮತ್ತು ಜೀವನದ ಗುರಿಗಳು, ನೀವು ಎಲ್ಲಿ ವಾಸಿಸಲು ಬಯಸುತ್ತೀರಿ ಮತ್ತು ನೀವು ಹೇಗೆ ಕೊಡುಗೆ ನೀಡಲು ಬಯಸುತ್ತೀರಿ ಎಂಬುದನ್ನು ಕಂಡುಕೊಳ್ಳಿ.",
+            "ta": "உங்கள் தொழில் மற்றும் வாழ்க்கை இலக்குகள், நீங்கள் எங்கு வாழ விரும்புகிறீர்கள் மற்றும் உங்கள் பங்களிப்பு எப்படி இருக்க வேண்டும் என்பதை ஆராயுங்கள்.",
+            "en": "Explore your career and life goals, where you want to live, and how you want to contribute",
+            "hi": "अपने करियर और जीवन के लक्ष्यों को जानें, आप कहाँ रहना चाहते हैं और आप समाज में क्या योगदान देना चाहते हैं, उसे पहचानें।"
+          },
+          "type": "section_subtitle"
+        },
+        {
+          "row_index": 23,
+          "section": "Making Dreams Reality",
+          "text": {
+            "kn": "ಕನಸುಗಳನ್ನು ನನಸಾಗಿಸುವುದು",
+            "ta": "கனவுகளை நனவாக்குதல்",
+            "en": "Making Dreams Reality",
+            "hi": "सपनों को सच करना"
+          },
+          "type": "section_title"
+        },
+        {
+          "row_index": 24,
+          "section": "Making Dreams Reality",
+          "text": {
+            "kn": "ನಿಮ್ಮ ಕನಸುಗಳನ್ನು ನನಸಾಗಿಸಲು ಬೇಕಾದ ಹಂತಗಳನ್ನು ಯೋಜಿಸಿ ಮತ್ತು ಎದುರಾಗಬಹುದಾದ ಅಡೆತಡೆಗಳನ್ನು ಗುರುತಿಸಿ.",
+            "ta": "கனவுகளை நனவாக்குதல்\tஉங்கள் கனவுகளை அடையத் தேவையான படிகளைத் திட்டமிடுங்கள் மற்றும் வரக்கூடிய தடைகளை அடையாளம் காணுங்கள்.",
+            "en": "Plan the steps needed to achieve your dreams and identify potential obstacles",
+            "hi": "अपने सपनों को पूरा करने के लिए आवश्यक कदमों की योजना बनाएं और संभावित बाधाओं की पहचान करें।"
+          },
+          "type": "section_subtitle"
+        }
+      ],
+      "questions": [
+        {
+          "sno": 1,
+          "section": "Your Dreams & Future Goals",
+          "question": {
+            "kn": "ನಿಮ್ಮ ಭವಿಷ್ಯದ ಬಗ್ಗೆ ನಿಮ್ಮ ಕನಸುಗಳು ಏನು?",
+            "ta": "உங்கள் எதிர்காலத்தைப் பற்றி உங்கள் கனவு என்ன?",
+            "en": "What are your dreams about your future?",
+            "hi": "भविष्य को लेकर आपके सपने क्या हैं?"
+          },
+          "help_text": {
+            "kn": "ಭವಿಷ್ಯದಲ್ಲಿ ನೀವು ಏನಾಗಲು ಬಯಸುತ್ತೀರಿ?",
+            "ta": "நீங்கள் எதிர்காலத்தில் என்ன ஆக விரும்புகிறீர்கள்?",
+            "en": "What do you want to become in the future?",
+            "hi": "भविष्य में आप क्या बनना चाहते हैं?"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 2,
+          "section": "Your Dreams & Future Goals",
+          "question": {
+            "kn": "ನೀವು ಪಡೆಯಲು ಬಯಸುವ ಶಿಕ್ಷಣ/ಶೈಕ್ಷಣಿಕ ಪದವಿ ಯಾವುದು?",
+            "ta": "நீங்கள் எந்த கல்விப் பட்டப்படிப்பை படிக்க விரும்புகிறீர்கள்?",
+            "en": "What are your academic goals and what would you like to achieve in your studies?",
+            "hi": "आप कौन सी शिक्षा/शैक्षिक डिग्री प्राप्त करना चाहते हैं?"
+          },
+          "help_text": {
+            "kn": "ನೀವು ಯಾವ ಪದವಿ ವ್ಯಾಸಂಗ ಮಾಡಲು ಬಯಸುತ್ತೀರಿ",
+            "ta": "நீங்கள் படிக்க விரும்பும் பட்டப்படிப்பு என்ன?",
+            "en": "Which degree do you want to study?",
+            "hi": "आप किस डिग्री की पढ़ाई करना चाहते हैं?"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 3,
+          "section": "Your Dreams & Future Goals",
+          "question": {
+            "kn": "ನೀವು ಯಾವ ವೃತ್ತಿಯನ್ನು ಮಾಡುವ ಕನಸು ಕಾಣುತ್ತೀರಿ?",
+            "ta": "நீங்கள் எந்த தொழிலை செய்ய கனவு காண்கிறீர்கள்?",
+            "en": "Which profession do you dream of pursuing?",
+            "hi": "आप किस करियर या पेशे का सपना देखते हैं?"
+          },
+          "help_text": {
+            "kn": "ನೀವು ಯಾವ ಕೆಲಸ (ಉದ್ಯೋಗ) ಮಾಡಲು ಬಯಸುತ್ತೀರಿ?",
+            "ta": "நீங்கள் செய்ய விரும்பும் வேலை என்ன?",
+            "en": "What job do you want to do?",
+            "hi": "आप कौन सा काम (नौकरी) करना चाहते हैं?"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 4,
+          "section": "Your Dreams & Future Goals",
+          "question": {
+            "kn": "ನೀವು ವೃತ್ತಿಪರವಾಗಿ ಆಡಲು ಬಯಸುವ ಕ್ರೀಡೆ ಯಾವುದು?",
+            "ta": "நீங்கள் தொழில்முறையாக விளையாட விரும்பும் விளையாட்டு எது?",
+            "en": "Which sport do you want to play professionally?",
+            "hi": "वह कौन सा खेल है जिसे आप पेशेवर रूप से खेलना चाहते हैं?"
+          },
+          "help_text": {
+            "kn": "ನಿಮಗೆ ಅತಿ ಹೆಚ್ಚು ಇಷ್ಟವಾದ ಕ್ರೀಡೆ ಯಾವುದು?",
+            "ta": "நீங்கள் எந்த விளையாட்டில் ஆர்வம் உள்ளவர்?",
+            "en": "Which sport do you like most?",
+            "hi": "आपका सबसे पसंदीदा खेल कौन सा है?"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 5,
+          "section": "Your Dreams & Future Goals",
+          "question": {
+            "kn": "ನೀವು ಬರಹಗಾರರಾಗಲು ಸಾಧ್ಯವಾದರೆ, ಯಾವ ಕ್ಷೇತ್ರದಲ್ಲಿ?",
+            "ta": "நீங்கள் ஒரு எழுத்தாளராகும் வாய்ப்பு கிடைத்தால், எந்தத் துறையைத் தேர்ந்தெடுப்பீர்கள்?",
+            "en": "If you could be a writer, which field would you choose?",
+            "hi": "यदि आप लेखक बन सकें, तो किस क्षेत्र में?"
+          },
+          "help_text": {
+            "kn": "ಕಥೆ, ಕವನ, ಕಾದಂಬರಿ, ಲೇಖನ, ಇತ್ಯಾದಿ.",
+            "ta": "கதை, கவிதை, நாவல், கட்டுரை போன்றவை.",
+            "en": "Story, poem, novel, article, etc.",
+            "hi": "कहानी, कविता, उपन्यास, लेख, आदि।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 6,
+          "section": "Your Dreams & Future Goals",
+          "question": {
+            "kn": "ಸಂಗೀತ ಕ್ಷೇತ್ರದಲ್ಲಿ ನೀವು ಬಯಸುವ ವಿಭಾಗ? (ಹಾಡುಗಾರಿಕೆ / ಯಾವುದೇ ವಾದ್ಯ)",
+            "ta": "இசைத்துறையில் நீங்கள் எதை விரும்புகிறீர்கள்? (பாடல் / இசைக்கருவி)",
+            "en": "Which branch of music do you prefer? (Singing / Instrument)",
+            "hi": "संगीत के क्षेत्र में आपकी पसंद का विभाग क्या है?"
+          },
+          "help_text": {
+            "kn": "ಹಾಡುಗಾರಿಕೆ ಅಥವಾ ವಾದ್ಯದ ಹೆಸರನ್ನು ಬರೆಯಿರಿ.",
+            "ta": "பாடுதல் அல்லது இசைக்கருவியின் பெயரை எழுதுங்கள்",
+            "en": "Write \"Singing\" or name of instrument.",
+            "hi": "गायन या किसी वाद्य यंत्र का नाम लिखें।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 1,
+          "section": "Career & Life Aspirations",
+          "question": {
+            "kn": "ನೀವು ಆಯ್ಕೆ ಮಾಡಿಕೊಳ್ಳಲು ಬಯಸುವ ಕಾಲೇಜು",
+            "ta": "நீங்கள் தேர்வு செய்ய விரும்பும் கல்லூரி எது?",
+            "en": "The college that you want to choose.",
+            "hi": "वह कॉलेज जिसे आप चुनना चाहते हैं?"
+          },
+          "help_text": {
+            "kn": "ಕಾಲೇಜಿನ ಹೆಸರು ಅಥವಾ ಸ್ಥಳವನ್ನು ಬರೆಯಿರಿ.",
+            "ta": "தெரிந்தால் கல்லூரி பெயரை எழுதுங்கள்.",
+            "en": "Write college name or place.",
+            "hi": "कॉलेज का नाम या स्थान लिखें।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 2,
+          "section": "Career & Life Aspirations",
+          "question": {
+            "kn": "ನೀವು ಜಗತ್ತಿನಲ್ಲಿ ಯಾರಿಗಾದರೂ ಅಥವಾ ಯಾವುದಕ್ಕಾದರೂ ಸೇವೆ ಮಾಡಲು ನಿಮ್ಮ ಬದುಕು ಮೀಸಲಿಡುವುದಾದರೆ, ನಿಮ್ಮ ಆಯ್ಕೆ",
+            "ta": "நீங்கள் சேவை செய்ய விரும்பினால் யாருக்கு அல்லது எதற்கு செய்வீர்கள்?",
+            "en": "If you want to serve others, whom or what will you serve?",
+            "hi": "यदि आप दुनिया में किसी की सेवा के लिए अपना जीवन समर्पित करना चाहें, तो आपकी पसंद क्या होगी?"
+          },
+          "help_text": {
+            "kn": "ಜನರು, ಬಡವರು, ಸಮಾಜ, ದೇಶ, ಪ್ರಾಣಿಗಳು- ಇತ್ಯಾದಿ.. ಯಾವುದು ಎಂಬುದನ್ನು ತಿಳಿಸಿ.",
+            "ta": "மக்கள், ஏழைகள், நாடு, விலங்குகள்",
+            "en": "People, poor, society, country, animals.",
+            "hi": "लोग, गरीब, समाज, देश, जानवर आदि में से बताएं।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 3,
+          "section": "Career & Life Aspirations",
+          "question": {
+            "kn": "ಪ್ರಪಂಚದ ಬೇರೊಂದು ಸ್ಥಳದಲ್ಲಿ ನಿಮಗೆ ವಾಸ್ತವ್ಯ ಹೂಡಲು ಅವಕಾಶ ಸಿಕ್ಕರೆ, ಅದು ಎಲ್ಲಿ?",
+            "ta": "உலகில் எங்கு வேண்டுமானாலும்  வாழ வாய்ப்பு கிடைத்தால், எங்கு வாழ விரும்புவீர்கள்?",
+            "en": "If you could live anywhere in the world, where would it be?",
+            "hi": "यदि आपको दुनिया में कहीं और रहने का मौका मिले, तो वह जगह कौन सी होगी?"
+          },
+          "help_text": {
+            "kn": "ದೇಶ ಅಥವಾ ನಗರದ ಹೆಸರನ್ನು ಬರೆಯಿರಿ.",
+            "ta": "நாடு அல்லது நகரத்தின் பெயரை எழுதுங்கள்.",
+            "en": "Write country or city name.",
+            "hi": "देश या शहर का नाम लिखें।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 4,
+          "section": "Career & Life Aspirations",
+          "question": {
+            "kn": "ನೀವು ಕಲಾವಿದರಾಗಲು ಸಾಧ್ಯವಾದರೆ, ನೀವು ಬಯಸುವ ಕಲೆ ಯಾವುದು?",
+            "ta": "நீங்கள் கலைஞராக இருந்தால் எந்த வகை கலையை தேர்வு செய்வீர்கள்?",
+            "en": "If you could be an artist, what kind of art would you pursue?",
+            "hi": "यदि आप कलाकार बन सकें, तो आप कौन सी कला चुनेंगे?"
+          },
+          "help_text": {
+            "kn": "ಚಿತ್ರಕಲೆ, ಪೇಂಟಿಂಗ್, ನೃತ್ಯ, ಇತ್ಯಾದಿ.. ಯಾವುದು ಎಂಬುದನ್ನು ತಿಳಿಸಿ.",
+            "ta": "ஓவியம், நடனம் போன்றவற்றை எழுதுங்கள்",
+            "en": "Drawing, painting, dance, etc.",
+            "hi": "चित्रकला (Painting), नृत्य (Dance) आदि में से बताएं।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 5,
+          "section": "Career & Life Aspirations",
+          "question": {
+            "kn": "ನೀವು ಪ್ರಯಾಣ/ಪ್ರವಾಸ ಮಾಡಲು ಇಷ್ಟಪಡುತ್ತೀರಾ? ಪ್ರಯಾಣದ ಯಾವ ಅಂಶ/ಸಂಗತಿಗಳು ನಿಮ್ಮನ್ನು ಹೆಚ್ಚು ಆಕರ್ಷಿಸುತ್ತದೆ? ಬರೆಯಿರಿ.",
+            "ta": "பயணத்தில் எந்த விஷயங்கள் உங்களை மிகவும் ஈர்க்கின்றன?",
+            "en": "Do you like travelling? If so, what do you like the most about travelling?",
+            "hi": "क्या आपको यात्रा करना पसंद है? यात्रा का कौन सा पहलू आपको सबसे अधिक आकर्षित करता है?"
+          },
+          "help_text": {
+            "kn": "ಸ್ಥಳಗಳು, ಪ್ರಕೃತಿ, ಆಹಾರ, ಸಂಸ್ಕೃತಿ.ಇತ್ಯಾದಿ.. ಯಾವುದು ಎಂಬುದನ್ನು ತಿಳಿಸಿ",
+            "ta": "இடங்கள், இயற்கை, உணவு என்று எழுதலாம்.",
+            "en": "Places, nature, food, culture.",
+            "hi": "स्थान, प्रकृति, भोजन, संस्कृति आदि में से बताएं।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 6,
+          "section": "Career & Life Aspirations",
+          "question": {
+            "kn": "ನೀವು ಒಂದು ದಿನ ಒಬ್ಬ ವೃತ್ತಿಪರ/ಉದ್ಯೋಗಿಯನ್ನು ಗಮನಿಸಿ ಕಲಿಯಲು ಸಾಧ್ಯವಾದರೆ, ಅದು ಯಾರು ಮತ್ತು ಏಕೆ?",
+            "ta": "ஒரு நாள் ஒரு தொழில்முறை நபரிடமிருந்து கற்றுக்கொள்ள வாய்ப்பு கிடைத்தால், அவர் யார்? ஏன்?",
+            "en": "If you could learn from a professional for one day, who would it be and why?",
+            "hi": "यदि आपको एक दिन किसी पेशेवर व्यक्ति को करीब से देखकर सीखने का मौका मिले, तो वह कौन होगा और क्यों?"
+          },
+          "help_text": {
+            "kn": "ಶಿಕ್ಷಕ, ವೈದ್ಯ, ವಿಜ್ಞಾನಿ, ನಾಯಕ ಇತ್ಯಾದಿ.. ಯಾವುದು ಎಂಬುದನ್ನು ತಿಳಿಸಿ",
+            "ta": "ஆசிரியர், மருத்துவர், பொறியாளர், விஞ்ஞானி.",
+            "en": "Teacher, doctor, scientist, leader.",
+            "hi": "शिक्षक, डॉक्टर, वैज्ञानिक, नेता आदि में से बताएं।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 1,
+          "section": "Making Dreams Reality",
+          "question": {
+            "kn": "ನಿಮ್ಮ ಕನಸುಗಳನ್ನು ನನಸಾಗಿಸಲು ನೀವು ಬಯಸುವಿರಾ?",
+            "ta": "உங்கள் கனவுகளை நிஜமாக்க விரும்புகிறீர்களா?",
+            "en": "Do you want to make your dreams come true?",
+            "hi": "क्या आप अपने सपनों को सच करना चाहते हैं?"
+          },
+          "help_text": {
+            "kn": "ಹೌದು ಅಥವಾ ಇಲ್ಲ ಎಂದು ಬರೆಯಿರಿ.",
+            "ta": "ஆம் அல்லது இல்லை என்று எழுதுங்கள்.",
+            "en": "Write Yes or No.",
+            "hi": "हाँ' या 'नहीं' लिखें।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 2,
+          "section": "Making Dreams Reality",
+          "question": {
+            "kn": "ನಿಮ್ಮ ಕನಸುಗಳನ್ನು ನನಸಾಗಿಸಲು ಏನೆಲ್ಲಾ ಅವಶ್ಯಕತೆಗಳಿವೆ? (ನಿಮ್ಮ ಯಾವುದಾದರೂ ಒಂದು ಕನಸು, ನನಸಾಗಿಸುವುದು ಹೇಗೆ ತಿಳಿಸಿ)",
+            "ta": "உங்கள் கனவுகளை நனவாக்க என்னென்ன தேவை? (உங்களது ஏதேனும் ஒரு கனவை எப்படி நனவாக்குவீர்கள் என்று கூறுங்கள்)",
+            "en": "What are the things needed to make your dreams come true? (Explain how you will make any one of your dreams come true)",
+            "hi": "अपने सपनों को साकार करने के लिए किन चीजों की आवश्यकता है?"
+          },
+          "help_text": {
+            "kn": "ಕಠಿಣ ಪರಿಶ್ರಮ, ಸಮಯ, ಬೆಂಬಲ, ಅಭ್ಯಾಸ-  ಇತ್ಯಾದಿ.. ಯಾವುದು ಎಂಬುದನ್ನು ತಿಳಿಸಿ",
+            "ta": "கடின உழைப்பு, நேரம், ஆதரவு, பயிற்சி போன்றவற்றில் உங்களுக்கு எது தேவை என்பதைக் குறிப்பிடுங்கள்",
+            "en": "Mention what you need, such as hard work, time, support, practice, etc.",
+            "hi": "कड़ी मेहनत, समय, समर्थन, अभ्यास आदि में से बताएं।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 3,
+          "section": "Making Dreams Reality",
+          "question": {
+            "kn": "ನಿಮ್ಮ ಆಕಾಂಕ್ಷೆಗಳು ಅಥವಾ ಕನಸುಗಳನ್ನು ನನಸಾಗಿಸಲು ಮೊದಲ ಹೆಜ್ಜೆ ಯಾವುದು?",
+            "ta": "உங்கள் லட்சியங்கள் அல்லது கனவுகளை நனவாக்க நீங்கள் எடுக்கும் முதல் படி என்ன?",
+            "en": "What is the first step toward making your aspirations or dreams come true?",
+            "hi": "अपनी आकांक्षाओं या सपनों को पूरा करने की दिशा में पहला कदम क्या है?"
+          },
+          "help_text": {
+            "kn": "ಚೆನ್ನಾಗಿ ಓದುವುದು, ಪ್ರತಿದಿನ ಅಭ್ಯಾಸ ಮಾಡುವುದು.",
+            "ta": "நன்றாக படித்தல், பயிற்சி செய்தல்.",
+            "en": "Study well, practice daily.",
+            "hi": "अच्छी तरह से पढ़ाई करना, हर दिन अभ्यास करना आदि।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 4,
+          "section": "Making Dreams Reality",
+          "question": {
+            "kn": "ನಿಮ್ಮ ಕನಸುಗಳನ್ನು ಸಾಧಿಸುವ ಛಲ ಮತ್ತು ಉತ್ಸಾಹವನ್ನು ನೀವು ಹೊಂದಿದ್ದೀರಾ?",
+            "ta": "உங்கள் கனவுகளை அடைய தேவையான உறுதியும் உற்சாகமும் உங்களிடம் இருக்கிறதா?",
+            "en": "Do you have the determination and enthusiasm to achieve your dreams?",
+            "hi": "क्या आपके पास अपने सपनों को हासिल करने का दृढ़ संकल्प और उत्साह है?"
+          },
+          "help_text": {
+            "kn": "ಪ್ರಾಮಾಣಿಕವಾಗಿ ಉತ್ತರಿಸಿ.",
+            "ta": "நேர்மையாக பதில் எழுதுங்கள்.",
+            "en": "Answer honestly.",
+            "hi": "ईमानदारी से उत्तर दें।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 5,
+          "section": "Making Dreams Reality",
+          "question": {
+            "kn": "ನಿಮ್ಮ ಕನಸುಗಳನ್ನು ಸಾಧಿಸಲು ಅಡೆತಡೆಗಳೇನಾದರೂ ಇದೆಯೇ? ಇದ್ದರೆ ಅವುಗಳು ಯಾವವು? ಬರೆಯಿರಿ.",
+            "ta": "உங்கள் கனவுகளை அடைய ஏதேனும் தடைகள் இருக்கிறதா? இருந்தால் அவை என்ன?",
+            "en": "Are there any obstacles to achieving your dreams? If yes, what are they?",
+            "hi": "क्या आपके सपनों को पूरा करने में कोई बाधाएँ हैं? यदि हाँ, तो वे क्या हैं?"
+          },
+          "help_text": {
+            "kn": "ಹಣ, ಭಯ, ಅಂಕಗಳು, ಕೌಟುಂಬಿಕ ಸಮಸ್ಯೆಗಳು ಇತ್ಯಾದಿ.. ಯಾವುದು ಎಂಬುದನ್ನು ತಿಳಿಸಿ",
+            "ta": "பணம், பயம், மதிப்பெண்கள், குடும்பப் பிரச்சனைகள் போன்றவை.",
+            "en": "Money, fear, marks, family issues.",
+            "hi": "पैसा, डर, अंक (Marks), पारिवारिक समस्याएँ आदि।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 6,
+          "section": "Making Dreams Reality",
+          "question": {
+            "kn": "ನಿಮ್ಮ ಕನಸುಗಳನ್ನು ನನಸಾಗಿಸಲು ಈಗ ನೀವು ಶಾಲೆಯಲ್ಲಿ ಪಡೆಯುತ್ತಿರುವ ಶಿಕ್ಷಣ/ಕಲಿಕೆಯು ಸಹಾಯವಾಗುತ್ತದೆಯೇ? ಹೌದು ಎಂದಾದರೆ ಹೇಗೆ? ತಿಳಿಸಿ",
+            "ta": "பள்ளியில் நீங்கள் பெறும் கல்வி உங்கள் கனவுக்கு உதவுமா? ஆம் என்றால், எப்படி?",
+            "en": "Is the education/learning you receive in school helpful for your dreams? If yes, how?",
+            "hi": "क्या वर्तमान में स्कूल में मिल रही शिक्षा आपके सपनों को पूरा करने में मदद कर रही है? यदि हाँ, तो कैसे?"
+          },
+          "help_text": {
+            "kn": "ವಿಷಯಗಳು ಜ್ಞಾನ ಮತ್ತು ಕೌಶಲ್ಯಗಳನ್ನು ನೀಡುತ್ತವೆ. ಇತ್ಯಾದಿ..\nಯಾವುದು ಮತ್ತು ಹೇಗೆ ಎಂಬುದನ್ನು ಬರೆಯಿರಿ",
+            "ta": "பாடங்கள் அறிவும் திறனும் தரும்.",
+            "en": "Subjects give knowledge and skills.",
+            "hi": "विषय, ज्ञान और कौशल प्रदान करते हैं। यह कैसे मदद करता है, लिखें।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        }
+      ],
+      "summary": {
+        "title": {
+          "kn": "ಸಾರಾಂಶ: ನನ್ನ ಮುಂದಿನ ಯೋಜನೆ",
+          "ta": "சுருக்கம்: எனது அடுத்த திட்டம்",
+          "en": "Summary: My Next Plan",
+          "hi": "सारांश: मेरी अगली योजना"
+        },
+        "subtitle": {
+          "kn": "ಈ ಚಟುವಟಿಕೆಯ ಸಾರಾಂಶವಾಗಿ, ನಿಮ್ಮ ಕನಸುಗಳ ಪೋರ್ಟ್ಫೋಲಿಯೊವನ್ನು ರಚಿಸೋಣ.",
+          "ta": "இந்தச் செயல்பாட்டின் சுருக்கமாக, உங்கள் கனவுகளின் தொகுப்பை (Portfolio) உருவாக்குவோம்.",
+          "en": "As a summary of this activity, let's create your dream portfolio.",
+          "hi": "इस गतिविधि के सारांश के रूप में, आइए आपके सपनों का एक पोर्टफोलियो बनाएं।"
+        },
+        "header": [
+          "Sno.",
+          "Kannada",
+          "Tamil",
+          "English",
+          "Hindi",
+          "Input Type",
+          "Display Type",
+          "Remark"
+        ],
+        "questions": [
+          {
+            "sno": 1,
+            "question": {
+              "kn": "ಕನಸು",
+              "ta": "கனவு",
+              "en": "Dream",
+              "hi": "सपना"
+            },
+            "input_type": "Text field",
+            "display_type": "Table column",
+            "remark": ""
+          },
+          {
+            "sno": 2,
+            "question": {
+              "kn": "ನಿಮ್ಮಲ್ಲಿ ಈಗಾಗಲೇ ಕಂಡುಕೊಂಡಿರುವ ಯಾವ ಗುಣ/ ಮೌಲ್ಯ/ ಸಾಮರ್ಥ್ಯ ನಿಮ್ಮ ಕನಸನ್ನು ಸಾಧಿಸಲು ಸಹಾಯ ಮಾಡುತ್ತದೆ.",
+              "ta": "எனது கனவை அடைய என்னிடம் ஏற்கனவே உள்ள பண்புகள்/திறமைகள்",
+              "en": "Qualities/abilities I already have to achieve my dream",
+              "hi": "आपके भीतर पहले से मौजूद कौन से गुण/मूल्य/क्षमता आपके सपने को हासिल करने में मदद करेंगे?"
+            },
+            "input_type": "Text field",
+            "display_type": "Table column",
+            "remark": ""
+          },
+          {
+            "sno": 3,
+            "question": {
+              "kn": "ಕನಸು ವಿಫಲವಾಗುವುದಿಲ್ಲ ಎಂದು ಖಚಿತಪಡಿಸಿಕೊಳ್ಳಲು ನೀವು ಏನು ಮಾಡಬೇಕಾಗುತ್ತದೆ",
+              "ta": "என் கனவு தோற்காமல் இருக்க நான் செய்ய வேண்டியவை",
+              "en": "What I need to do to ensure my dream does not fail",
+              "hi": "यह सुनिश्चित करने के लिए कि आपका सपना विफल न हो, आपको क्या करने की आवश्यकता है?"
+            },
+            "input_type": "Text field",
+            "display_type": "Table column",
+            "remark": ""
+          },
+          {
+            "sno": 4,
+            "question": {
+              "kn": "ಈ ಕನಸನ್ನುಸಾಧಿಸಲು 10ನೇ ತರಗತಿಯ ನಂತರ ನೀವು ಏನು ಅಧ್ಯಯನ ಮಾಡಬೇಕು? (ಅನ್ವಯಿಸಿದರೆ)",
+              "ta": "இந்தக் கனவை அடைய 10-ஆம் வகுப்பிற்குப் பிறகு நான் படிக்க வேண்டியவை",
+              "en": "What I need to study after Class 10 to achieve this dream (if applicable)",
+              "hi": "इस सपने को पूरा करने के लिए आपको 10वीं कक्षा के बाद क्या अध्ययन करना चाहिए? (यदि लागू हो)"
+            },
+            "input_type": "Text field",
+            "display_type": "Table column",
+            "remark": ""
+          }
+        ]
+      },
+      "empty_cells": []
+    },
+    "school_learning": {
+      "tab_name": "9.4_My School, Learnings and I",
+      "assessment_type": "school_learning",
+      "module_title": {
+        "kn": "ನಾನು, ನನ್ನ ಶಾಲೆ, ನನ್ನ ಕಲಿಕೆ",
+        "ta": "நானும், என் பள்ளியும், என் கற்றலும்",
+        "en": "My School, My Learning and I",
+        "hi": "मैं, मेरा स्कूल, मेरी सीख"
+      },
+      "title_text": {
+        "kn": "ಈ ಚುಟುವಟಿಕೆಯಲ್ಲಿ ನೀವು ನಿಮ್ಮ ಶಾಲೆಯ ಬಗ್ಗೆ ಏನು ಇಷ್ಟಪಡುತ್ತೀರಿ? ಏನನ್ನು ಕಲಿಯಲು ಇಷ್ಟಪಡುತ್ತೀರಿ? ಮತ್ತು ಏನನ್ನು ಇಷ್ಟಪಡುವುದಿಲ್ಲ? ಹಾಗೂ ಕಲಿಕೆ, ಏಕೆ ಮತ್ತು ಹೇಗೆ ಎಂಬುದರ ಬಗ್ಗೆ ಯೋಚಿಸಬೇಕೆಂದು ನಾವು ಅಪೇಕ್ಷಿಸುತ್ತೇವೆ. ಇದರಿಂದ ಉನ್ನತ ಶಿಕ್ಷಣದಲ್ಲಿ ನಿಮ್ಮ ಕನಸಿಗೆ ಹೊಂದುವಂತೆ ಏನು ಕಲಿಯಬೇಕೆಂಬ ಅರಿವು ಮತ್ತು ಸೂಕ್ತವಾದ ವೃತ್ತಿಗಳನ್ನು ಆಯ್ದುಕೊಳ್ಳಲು ನಿಮಗೆ ಸಹಕಾರಿಯಾಗುತ್ತದೆ.",
+        "ta": "இந்தப் பயிற்சியில், உங்கள் பள்ளியில் உங்களுக்குப் பிடித்தவை எவை? நீங்கள் எதைக் கற்க விரும்புகிறீர்கள்? எதை விரும்பவில்லை? மற்றும் எதற்காக, எப்படி கற்கிறீர்கள் என்பதைப் பற்றிச் சிந்திக்க விரும்புகிறோம். இது உங்கள் உயர்கல்வியில் உங்கள் கனவுகளுக்கு ஏற்ப என்ன கற்க வேண்டும் என்ற விழிப்புணர்வையும், பொருத்தமான தொழிலைத் தேர்ந்தெடுப்பதற்கான உதவியையும் வழங்கும்",
+        "en": "In this activity, we want you to think about what you like about your school, what you like to learn, and what you don't like. We also want you to reflect on why and how you learn. This will help you understand what to study in higher education to match your dreams and help you choose suitable careers.",
+        "hi": "इस अभ्यास खंड में, लक्ष्य आपकी खूबियों, विकास के क्षेत्रों, जुनून, चुनौतियों, विचारों और भावनाओं को उजागर करना है। यह प्रक्रिया आपको खुद को बेहतर जानने में मदद करेगी। परिवार, मित्रों, शिक्षकों और मार्गदर्शकों से मार्गदर्शन लेने से आपको आप खुद को और भी बेहतर तरीके से समझ पाएंगे।"
+      },
+      "subtitle_text": {
+        "kn": "ಸೂಚನೆ: ನಿಮಗೆ ಇಷ್ಟವಾದ ಅಥವಾ ಆನಂದಿಸುವ ವಿಷಯಗಳನ್ನು ಗುರುತಿಸುವುದು ಒಂದು ಬಾರಿಯ ಚಟುವಟಿಕೆಯಲ್ಲ; ಇದನ್ನು ನಿರಂತರವಾಗಿ ಗಮನಿಸುತ್ತಿರಬೇಕು. ಮುಂಬರುವ ದಿನಗಳಲ್ಲಿ ನೀವು ಯಾವುದಾದರೂ ಆಸಕ್ತಿದಾಯಕ ವಿಷಯವನ್ನು ಕಲಿತಾಗ, ಆ ಪಾಠ ಅಥವಾ ವಿಷಯವನ್ನು ದಾಖಲಿಸಲು \"ನನ್ನ ಆಸಕ್ತಿಯ ಕ್ಷೇತ್ರಗಳು\" ಕೋಷ್ಟಕವನ್ನು ಭರ್ತಿ ಮಾಡಿ. ಇದು ನಿಮಗೆ ಯಾವ ರೀತಿಯ ವಿಷಯಗಳು ಇಷ್ಟವೆಂದು ಅರಿಯಲು ಮತ್ತು ಅದಕ್ಕೆ ಅನುಗುಣವಾಗಿ ನಿಮ್ಮ ವೃತ್ತಿಜೀವನದ ಆಯ್ಕೆಗಳನ್ನು ರೂಪಿಸಿಕೊಳ್ಳಲು ಸಹಾಯ ಮಾಡುತ್ತದೆ.",
+        "ta": "குறிப்பு: உங்களுக்குப் பிடித்த அல்லது நீங்கள் ரசிக்கும் விஷயங்களைக் கவனிப்பது ஒருமுறை செய்யும் செயல் அல்ல; இது தொடர்ந்து கவனிக்கப்பட வேண்டிய ஒன்று. வரும் நாட்களில் நீங்கள் ஏதேனும் சுவாரஸ்யமான விஷயத்தைக் கற்றுக் கொள்ளும்போது, அந்தப் பாடம் அல்லது பாடத்தைப் பதிவு செய்ய \"எனது ஆர்வமுள்ள பகுதிகள்\" என்ற அட்டவணையை நிரப்பவும். இது உங்களுக்கு எந்த வகையான பாடங்கள் பிடிக்கும் என்பதை உணரவும், அதற்கேற்ப உங்கள் தொழில் தேர்வுகளை அமைத்துக் கொள்ளவும் உதவும்.",
+        "en": "Note: Noticing things you like or enjoy is not a one-time activity; it is something to be observed continuously. When you learn something interesting in the coming days, fill in the table \"My Areas of Interest\" to record that lesson/subject. This will help you realize what types of subjects you like and allow you to align your career choices accordingly.",
+        "hi": "नोट: अपनी पसंद या आनंद की चीज़ों पर ध्यान देना केवल एक बार की गतिविधि नहीं है; इसे निरंतर देखा जाना चाहिए। आने वाले दिनों में जब आप कुछ दिलचस्प सीखें, तो उस पाठ/विषय को दर्ज करने के लिए \"मेरी रुचि के क्षेत्र\" तालिका भरें। इससे आपको यह समझने में मदद मिलेगी कि आपको किस प्रकार के विषय पसंद हैं और आप उसी के अनुसार अपने करियर विकल्पों को चुन सकेंगे।"
+      },
+      "question_header": [
+        "Sno",
+        "Kannada Question",
+        "Kannada Help Text",
+        "Tamil Question",
+        "Tamil Help Text",
+        "English Question",
+        "English Help Text",
+        "Hindi Question",
+        "Hindi Help Text",
+        "Input Type",
+        "Display Type",
+        "Remark"
+      ],
+      "sections": [
+        {
+          "title": {
+            "kn": "ಶಾಲಾ ಅನುಭವ",
+            "ta": "பள்ளி அனுபவம்",
+            "en": "School Experience",
+            "hi": "स्कूल का अनुभव"
+          },
+          "subtitle": {
+            "kn": "",
+            "ta": "",
+            "en": "",
+            "hi": ""
+          }
+        },
+        {
+          "title": {
+            "kn": "ವಿಷಯಗಳು ಮತ್ತು ಕಲಿಕೆಯ ಆಸಕ್ತಿಗಳು",
+            "ta": "பாடங்கள் மற்றும் கற்றல் விருப்பங்கள்",
+            "en": "Subjects & Learning Preferences",
+            "hi": "विषय और सीखने की पसंद"
+          },
+          "subtitle": {
+            "kn": "",
+            "ta": "",
+            "en": "",
+            "hi": ""
+          }
+        },
+        {
+          "title": {
+            "kn": "ಶೈಕ್ಷಣಿಕ ಸಾಧನೆ ಮತ್ತು ಕಲಿಕೆಯ ವಿಧಾನಗಳು",
+            "ta": "கல்வித் திறன் மற்றும் கற்றல் முறைகள்",
+            "en": "Academic Performance & Learning Methods",
+            "hi": "शैक्षणिक प्रदर्शन और सीखने के तरीके"
+          },
+          "subtitle": {
+            "kn": "",
+            "ta": "",
+            "en": "",
+            "hi": ""
+          }
+        },
+        {
+          "title": {
+            "kn": "ಶಾಲಾ ಸಂಬಂಧಗಳು ಮತ್ತು ಅನುಭವಗಳು",
+            "ta": "பள்ளியில் உறவுகள் மற்றும் அனுபவங்கள்",
+            "en": "School Relationships & Experiences",
+            "hi": "स्कूल के संबंध और अनुभव"
+          },
+          "subtitle": {
+            "kn": "",
+            "ta": "",
+            "en": "",
+            "hi": ""
+          }
+        },
+        {
+          "title": {
+            "kn": "ಭವಿಷ್ಯ ಮತ್ತು ಅವಲೋಕನ",
+            "ta": "எதிர்காலம் மற்றும் பிரதிபலிப்பு",
+            "en": "Future & Reflection",
+            "hi": "भविष्य और आत्म-चिंतन"
+          },
+          "subtitle": {
+            "kn": "",
+            "ta": "",
+            "en": "",
+            "hi": ""
+          }
+        }
+      ],
+      "sub_headers": [
+        {
+          "row_index": 7,
+          "section": "School Experience",
+          "text": {
+            "kn": "ಶಾಲಾ ಅನುಭವ",
+            "ta": "பள்ளி அனுபவம்",
+            "en": "School Experience",
+            "hi": "स्कूल का अनुभव"
+          },
+          "type": "section_title"
+        },
+        {
+          "row_index": 8,
+          "section": "School Experience",
+          "text": {
+            "kn": "",
+            "ta": "",
+            "en": "",
+            "hi": ""
+          },
+          "type": "section_subtitle"
+        },
+        {
+          "row_index": 13,
+          "section": "Subjects & Learning Preferences",
+          "text": {
+            "kn": "ವಿಷಯಗಳು ಮತ್ತು ಕಲಿಕೆಯ ಆಸಕ್ತಿಗಳು",
+            "ta": "பாடங்கள் மற்றும் கற்றல் விருப்பங்கள்",
+            "en": "Subjects & Learning Preferences",
+            "hi": "विषय और सीखने की पसंद"
+          },
+          "type": "section_title"
+        },
+        {
+          "row_index": 14,
+          "section": "Subjects & Learning Preferences",
+          "text": {
+            "kn": "",
+            "ta": "",
+            "en": "",
+            "hi": ""
+          },
+          "type": "section_subtitle"
+        },
+        {
+          "row_index": 19,
+          "section": "Academic Performance & Learning Methods",
+          "text": {
+            "kn": "ಶೈಕ್ಷಣಿಕ ಸಾಧನೆ ಮತ್ತು ಕಲಿಕೆಯ ವಿಧಾನಗಳು",
+            "ta": "கல்வித் திறன் மற்றும் கற்றல் முறைகள்",
+            "en": "Academic Performance & Learning Methods",
+            "hi": "शैक्षणिक प्रदर्शन और सीखने के तरीके"
+          },
+          "type": "section_title"
+        },
+        {
+          "row_index": 20,
+          "section": "Academic Performance & Learning Methods",
+          "text": {
+            "kn": "",
+            "ta": "",
+            "en": "",
+            "hi": ""
+          },
+          "type": "section_subtitle"
+        },
+        {
+          "row_index": 35,
+          "section": "School Relationships & Experiences",
+          "text": {
+            "kn": "ಶಾಲಾ ಸಂಬಂಧಗಳು ಮತ್ತು ಅನುಭವಗಳು",
+            "ta": "பள்ளியில் உறவுகள் மற்றும் அனுபவங்கள்",
+            "en": "School Relationships & Experiences",
+            "hi": "स्कूल के संबंध और अनुभव"
+          },
+          "type": "section_title"
+        },
+        {
+          "row_index": 36,
+          "section": "School Relationships & Experiences",
+          "text": {
+            "kn": "",
+            "ta": "",
+            "en": "",
+            "hi": ""
+          },
+          "type": "section_subtitle"
+        },
+        {
+          "row_index": 41,
+          "section": "Future & Reflection",
+          "text": {
+            "kn": "ಭವಿಷ್ಯ ಮತ್ತು ಅವಲೋಕನ",
+            "ta": "எதிர்காலம் மற்றும் பிரதிபலிப்பு",
+            "en": "Future & Reflection",
+            "hi": "भविष्य और आत्म-चिंतन"
+          },
+          "type": "section_title"
+        },
+        {
+          "row_index": 42,
+          "section": "Future & Reflection",
+          "text": {
+            "kn": "",
+            "ta": "",
+            "en": "",
+            "hi": ""
+          },
+          "type": "section_subtitle"
+        }
+      ],
+      "questions": [
+        {
+          "sno": 1,
+          "section": "School Experience",
+          "question": {
+            "kn": "ನಿಮಗೆ ಶಾಲೆಗೆ ಬರುವುದೆಂದರೆ ಇಷ್ಟವೇ? ಯಾಕೆ?",
+            "ta": "உங்களுக்கு பள்ளிக்கு செல்ல விருப்பமா? ஏன்?",
+            "en": "Do you like coming to school? Why?",
+            "hi": "क्या आपको स्कूल आना पसंद है? क्यों?"
+          },
+          "help_text": {
+            "kn": "ನಿಮಗೆ ಶಾಲೆಗೆ ಬರಲು ಇಷ್ಟವೇ ಎಂದು ಬರೆಯಿರಿ ಮತ್ತು ಅದಕ್ಕೆ ಕಾರಣ ನೀಡಿ.",
+            "ta": "பள்ளிக்குச் செல்ல விருப்பம் உள்ளதா என்பதை காரணத்துடன் எழுதுங்கள்.",
+            "en": "Write whether you like coming to school and give the reason.",
+            "hi": "लिखें कि क्या आपको स्कूल आना पसंद है और उसका कारण दें।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 2,
+          "section": "School Experience",
+          "question": {
+            "kn": "ಶಾಲೆಯಲ್ಲಿ ಏನನ್ನು ಕಲಿಯಲು ಇಷ್ಟಪಡುತ್ತೀರಿ?",
+            "ta": "பள்ளியில் நீங்கள் என்ன கற்றுக்கொள்ள விரும்புகிறீர்கள்?",
+            "en": "What do you like to learn in school?",
+            "hi": "आप स्कूल में क्या सीखना पसंद करते हैं?"
+          },
+          "help_text": {
+            "kn": "ನೀವು ಶಾಲೆಯಲ್ಲಿ ಏನನ್ನು ಕಲಿಯಲು ಇಷ್ಟಪಡುತ್ತೀರಿ ಎಂದು ಬರೆಯಿರಿ.",
+            "ta": "பள்ளியில் உங்களுக்கு பிடித்த கற்றல் விஷயங்களை எழுதுங்கள்.",
+            "en": "Write what you like to learn in school.",
+            "hi": "लिखें कि आप स्कूल में क्या सीखना पसंद करते हैं।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 3,
+          "section": "School Experience",
+          "question": {
+            "kn": "ನೀವು ಶಾಲೆಯಲ್ಲಿ ಕಲಿಯಲು ಇಷ್ಟಪಡದಿರಲು ಕಾರಣಗಳೇನು? ವಿವರಿಸಿ.",
+            "ta": "பள்ளியில் கற்றுக்கொள்ள உங்களுக்கு பிடிக்காத காரணங்கள் என்ன? விளக்குங்கள்.",
+            "en": "What are the reasons you do not like learning in school? Explain.",
+            "hi": "स्कूल में सीखने में आपकी अरुचि के क्या कारण हैं? विस्तार से बताएं।"
+          },
+          "help_text": {
+            "kn": "ನಿಮಗೆ ಶಾಲೆಯಲ್ಲಿ ಕಲಿಯುವುದು ಏಕೆ ಇಷ್ಟವಿಲ್ಲ ಎಂಬುದಕ್ಕೆ ಕಾರಣಗಳನ್ನು ಸ್ಪಷ್ಟವಾಗಿ ಬರೆಯಿರಿ.",
+            "ta": "கற்றலில் விருப்பமில்லாத காரணங்களை தெளிவாக எழுதுங்கள்.",
+            "en": "Clearly write the reasons why you do not like learning in school.",
+            "hi": "स्पष्ट रूप से लिखें कि आपको स्कूल में पढ़ना क्यों पसंद नहीं है।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 4,
+          "section": "School Experience",
+          "question": {
+            "kn": "ಶಾಲೆಯಲ್ಲಿ ನಿಮಗೆ ಆತ್ಮೀಯ ಸ್ನೇಹಿತರು ಯಾರು? ಅವರಲ್ಲಿ ಇರುವ ಯಾವ ಗುಣ/ ಸಂಗತಿಗಳು ನೀವಿಬ್ಬರು ಸ್ನೇಹಿತರಾಗುವಂತೆ ಮಾಡಿದೆ?",
+            "ta": "பள்ளியில் உங்களுக்கு நெருங்கிய நண்பர்கள் யார்? அவர்களிடம் உள்ள எந்த குணங்கள் / அம்சங்கள் அவர்களை உங்கள் நெருங்கிய நண்பர்களாக ஆக்கியது?",
+            "en": "Who are your close friends in school? What qualities or traits in them have made them your close friends?",
+            "hi": "स्कूल में आपके सबसे अच्छे दोस्त कौन हैं? उनके किन गुणों के कारण आप दोस्त बने?"
+          },
+          "help_text": {
+            "kn": "ನಿಮ್ಮ ಆಪ್ತ ಸ್ನೇಹಿತರು ಮತ್ತು ಅವರ ವಿಶೇಷ ಗುಣಗಳ ಬಗ್ಗೆ ಬರೆಯಿರಿ.",
+            "ta": "உங்கள் நெருங்கிய நண்பர்கள் மற்றும் அவர்களின் நல்ல குணங்களை எழுதுங்கள்.",
+            "en": "Write about your close friends and the qualities that make them special.",
+            "hi": "अपने करीबी दोस्तों और उनके विशेष गुणों के बारे में लिखें।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 1,
+          "section": "Subjects & Learning Preferences",
+          "question": {
+            "kn": "ನೀವು ಹೆಚ್ಚು ಇಷ್ಟಪಡುವ ಪಠ್ಯ ವಿಷಯಗಳು ಯಾವುವು? ಬರೆಯಿರಿ.",
+            "ta": "நீங்கள் அதிகம் விரும்பும் பாடப்பிரிவுகள் எவை? எழுதுங்கள்.",
+            "en": "Which subjects do you like the most? Write them.",
+            "hi": "आपके पसंदीदा विषय कौन से हैं? लिखें।"
+          },
+          "help_text": {
+            "kn": "ನಿಮಗೆ ಅತಿ ಹೆಚ್ಚು ಇಷ್ಟವಾಗುವ ವಿಷಯಗಳನ್ನು ಪಟ್ಟಿ ಮಾಡಿ.",
+            "ta": "உங்களுக்கு பிடித்த பாடங்களை பட்டியலிடுங்கள்.",
+            "en": "List the subjects you like the most.",
+            "hi": "उन विषयों की सूची बनाएं जिन्हें आप सबसे अधिक पसंद करते हैं।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 2,
+          "section": "Subjects & Learning Preferences",
+          "question": {
+            "kn": "ನೀವು ಈ ವಿಷಯಗಳನ್ನು ಏಕೆ ಇಷ್ಟಪಡುತ್ತೀರಿ? ಕಾರಣವನ್ನು ಬರೆಯಿರಿ.",
+            "ta": "நீங்கள் இந்த பாடத்தை ஏன் விரும்புகிறீர்கள்? காரணத்தை எழுதுக.",
+            "en": "Why do you like this subject? Write the reason.",
+            "hi": "आप इन विषयों को क्यों पसंद करते हैं? कारण लिखें।"
+          },
+          "help_text": {
+            "kn": "ಯಾಕೆ ಇಷ್ಟ ಎಂಬುದನ್ನು ಬರೆಯಿರಿ. ಉದಾಹರಣೆ :ಆ ವಿಷಯವು ಸುಲಭವಾಗಿರುವುದರಿಂದ, ಆಸಕ್ತಿದಾಯಕವಾಗಿರುವುದರಿಂದ ಅಥವಾ ಶಿಕ್ಷಕರು ಚೆನ್ನಾಗಿ ಬೋಧಿಸುವುದರಿಂದ.",
+            "ta": "பாடம் எளிதாக இருப்பது, சுவாரசியமாக இருப்பது அல்லது ஆசிரியர் நன்றாக கற்பிப்பது காரணமாக இருக்கலாம்.",
+            "en": "You may like the subject because it is easy, interesting, or taught well by the teacher.",
+            "hi": "कारण लिखें कि वे क्यों पसंद हैं। उदाहरण: विषय आसान है, दिलचस्प है या शिक्षक अच्छा पढ़ाते हैं।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 3,
+          "section": "Subjects & Learning Preferences",
+          "question": {
+            "kn": "ನಿಮಗೆ ಕಲಿಯಲು ಇಷ್ಟವಿಲ್ಲದ ಪಠ್ಯ ವಿಷಯಗಳು ಯಾವವು?",
+            "ta": "உங்களுக்கு கற்க விருப்பமில்லாத பாடப்பிரிவுகள் எவை?",
+            "en": "Which subjects do you not like to study?",
+            "hi": "आपको कौन से विषय पढ़ना पसंद नहीं है?"
+          },
+          "help_text": {
+            "kn": "ಯಾಕೆ ಎಂಬುದನ್ನು ಬರೆಯಿರಿ. \n ಉದಾಹರಣೆ : ಕಷ್ಟಕರವಾಗಿರುವುದರಿಂದ, ಅರ್ಥಮಾಡಿಕೊಳ್ಳಲು ಕಠಿಣವಾಗಿರುವುದರಿಂದ ಇತ್ಯಾದಿ",
+            "ta": "பாடம் கடினமாக இருப்பது அல்லது புரியாமல் இருப்பது காரணமாக சில பாடங்கள் பிடிக்காமல் இருக்கலாம்.",
+            "en": "Some subjects may be disliked because they are difficult or hard to understand.",
+            "hi": "कारण लिखें। उदाहरण: कठिन होने के कारण, समझ में न आने के कारण आदि।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 4,
+          "section": "Subjects & Learning Preferences",
+          "question": {
+            "kn": "ಮೇಲಿನ ತಿಳಿಸಿದ ವಿಷಯಗಳಲ್ಲಿ ನಿಮಗೆ ಕಡಿಮೆ ಆಸಕ್ತಿ ಏಕೆ? ಈ ವಿಷಯಗಳನ್ನು ಕಲಿಯಲು ನೀವು ಯಾವ ಸವಾಲುಗಳನ್ನು ಪಡೆದಿದ್ದೀರಾ?",
+            "ta": "மேலே கூறிய பாடங்களில் உங்களுக்கு ஏன் குறைந்த ஆர்வம் உள்ளது? இந்த பாடங்களை கற்க நீங்கள் எந்த உதவிகளை பெற்றீர்கள்?",
+            "en": "Why do you have less interest in the above subjects? What help did you receive to learn these subjects?",
+            "hi": "ऊपर बताए गए विषयों में आपकी रुचि कम क्यों है? इन्हें सीखने में आपको किन चुनौतियों का सामना करना पड़ा?"
+          },
+          "help_text": {
+            "kn": "ಯಾಕೆ ಕಡಿಮೆ ಆಸಕ್ತಿ ಎಂಬುದನ್ನು ಬರೆಯಿರಿ. ಶಿಕ್ಷಕರು, ಸ್ನೇಹಿತರು ಅಥವಾ ಇನ್ಯಾರ ಸಹಾಯ ಪಡೆದಿರಿ ಎಂಬುದನ್ನು ಬರೆಯಿರಿ.",
+            "ta": "பாடம் கடினமாக இருப்பதால் ஆர்வம் குறையலாம், ஆசிரியர் மற்றும் நண்பர்களின் உதவி கற்றலுக்கு உதவுகிறது.",
+            "en": "Interest may be less because the subject is difficult, and help from teachers or friends supports learning.",
+            "hi": "रुचि कम होने का कारण लिखें। यह भी लिखें कि आपने शिक्षकों, दोस्तों या किसी और की मदद ली या नहीं।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 1,
+          "section": "Academic Performance & Learning Methods",
+          "question": {
+            "kn": "ನೀವು ಹೆಚ್ಚು ಅಂಕಗಳಿಸುತ್ತಿರುವ ವಿಷಯಗಳು ಯಾವುವು?",
+            "ta": "நீங்கள் அதிக மதிப்பெண் பெறும் பாடங்கள் எவை?",
+            "en": "Which subjects do you score the highest marks in?",
+            "hi": "आप किन विषयों में अधिक अंक प्राप्त कर रहे हैं?"
+          },
+          "help_text": {
+            "kn": "ನೀವು ಯಾವ ವಿಷಯಗಳಲ್ಲಿ ಹೆಚ್ಚಿನ ಅಂಕಗಳನ್ನು ಪಡೆಯುತ್ತಿದ್ದೀರಿ ಬರೆಯಿರಿ",
+            "ta": "எளிதாக புரியும் மற்றும் விருப்பமான பாடங்களில் மாணவர்கள் அதிக மதிப்பெண் பெறுவார்கள்.",
+            "en": "Students usually score higher marks in subjects they understand well and like.",
+            "hi": "उन विषयों के नाम लिखें जिनमें आपको अच्छे अंक मिलते हैं।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 2,
+          "section": "Academic Performance & Learning Methods",
+          "question": {
+            "kn": "ನೀವು ಕಡಿಮೆ ಅಂಕಗಳಿಸುತ್ತಿರುವ ವಿಷಯಗಳು ಯಾವುವು?",
+            "ta": "நீங்கள் குறைந்த மதிப்பெண் பெறும் பாடங்கள் எவை?",
+            "en": "Which subjects do you score low marks in?",
+            "hi": "आप किन विषयों में कम अंक प्राप्त कर रहे हैं?"
+          },
+          "help_text": {
+            "kn": "ನೀವು ಯಾವ ವಿಷಯಗಳಲ್ಲಿ ಕಡಿಮೆ ಅಂಕಗಳನ್ನು ಪಡೆಯುತ್ತಿದ್ದೀರಿ ಬರೆಯಿರಿ",
+            "ta": "பாடம் புரியாமல் இருப்பது அல்லது பயிற்சி குறைவாக இருப்பது குறைந்த மதிப்பெண்களுக்கு காரணமாகும்.",
+            "en": "Low marks may be due to lack of understanding or insufficient practice.",
+            "hi": "उन विषयों के नाम लिखें जिनमें आपके अंक कम आते हैं।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 3,
+          "section": "Academic Performance & Learning Methods",
+          "question": {
+            "kn": "ಈ ಕೆಳಗಿನ ಯಾವ ಕಲಿಕಾ ವಿಧಾನಗಳನ್ನು ನೀವು ಹೆಚ್ಚು ಇಷ್ಟಪಡುತ್ತೀರಿ? (ನಿಮಗೆ ಅನ್ವಯವಾಗುವುದನ್ನು ✔ ಎಂದು ಗುರುತು ಮಾಡಿ)",
+            "ta": "கீழ்க்கண்ட எந்த கற்றல் முறைகளை நீங்கள் அதிகமாக விரும்புகிறீர்கள்? (உங்களுக்கு பொருந்துவதை ✔ என்று குறிக்கவும்)",
+            "en": "Which of the following learning methods do you like the most? (Put a ✔ mark for the one that applies to you)",
+            "hi": "आप इनमें से कौन सी सीखने की विधि सबसे अधिक पसंद करते हैं? (✔️ का निशान लगाएं)"
+          },
+          "help_text": {
+            "kn": "ನಿಮಗೆ ಅನ್ವಯಿಸುವ ಆಯ್ಕೆಗಳಿಗೆ ಮಾತ್ರ ಸರಿಯಾದ (✔️) ಗುರುತು ಹಾಕಿ.",
+            "ta": "மாணவர்கள் தங்களுக்கு எளிதாக புரியும் மற்றும் விருப்பமான கற்றல் முறையை தேர்வு செய்ய வேண்டும்",
+            "en": "Tick ✔ only the options that apply to you.",
+            "hi": "केवल उन्हीं विकल्पों पर (✔️) का निशान लगाएं जो आप पर लागू होते हैं।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 4,
+          "section": "Academic Performance & Learning Methods",
+          "question": {
+            "kn": "ನೀವು ಒಬ್ಬರೇ ಕಲಿಯಲು ಇಷ್ಟಪಡುತ್ತೀರಾ ಅಥವಾ ಗುಂಪಿನಲ್ಲಿ ಕಲಿಯಲು ಇಷ್ಟಪಡುತ್ತೀರಾ? ಏಕೆ? ಕಾರಣ ಬರೆಯಿರಿ.",
+            "ta": "நீங்கள் தனியாகக் கற்றுக்கொள்ள விரும்புகிறீர்களா அல்லது குழுவாக  கற்றுக்கொள்ள விரும்புகிறீர்களா? ஏன்? காரணத்தை எழுதுங்கள்.",
+            "en": "Do you prefer to learn alone or in a group? Why? Write the reason.",
+            "hi": "क्या आप अकेले पढ़ना पसंद करते हैं या समूह में? क्यों? कारण लिखें।"
+          },
+          "help_text": {
+            "kn": "ನಿಮ್ಮ ಮೆಚ್ಚಿನ ಕಲಿಕಾ ವಿಧಾನವನ್ನು ಆರಿಸಿ ಮತ್ತು ಕಾರಣವನ್ನು ಬರೆಯಿರಿ.",
+            "ta": "உங்களுக்கு பிடித்த கற்றல் முறையை தேர்வு செய்து காரணத்தை எழுதுங்கள்.",
+            "en": "Select your preferred learning method and write the reason.",
+            "hi": "अपनी पसंदीदा सीखने की विधि चुनें और उसका कारण लिखें।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 1,
+          "section": "School Relationships & Experiences",
+          "question": {
+            "kn": "ಶಾಲೆಯಲ್ಲಿ ನೀವು ನಿಮ್ಮ ಸ್ನೇಹಿತರಿಂದ ಕಲಿಯುತ್ತೀರಾ? ಶಾಲೆಯಲ್ಲಿ ಇತ್ತೀಚೆಗೆ ಸ್ನೇಹಿತರಿಂದ ಕಲಿತ ಕೆಲವು ವಿಷಯಗಳನ್ನು ಪಟ್ಟಿ ಮಾಡಿ.",
+            "ta": "பள்ளியில் நீங்கள் உங்கள் நண்பர்களிடமிருந்து கற்றுக்கொள்கிறீர்களா? பள்ளியில் சமீபத்தில் நண்பர்களிடமிருந்து கற்ற சில விஷயங்களை பட்டியலிடுங்கள்.",
+            "en": "Do you learn from your friends in school? List some of the things you have recently learned from friends at school.",
+            "hi": "क्या आप स्कूल में अपने दोस्तों से सीखते हैं? हाल ही में दोस्तों से सीखी गई कुछ चीज़ों की सूची बनाएं।"
+          },
+          "help_text": {
+            "kn": "ನಿಮ್ಮ ಸ್ನೇಹಿತರಿಂದ ನೀವು ಕಲಿತದ್ದನ್ನು ನೆನಪಿಸಿಕೊಳ್ಳಿ ಮತ್ತು ಪಟ್ಟಿ ಮಾಡಿ.",
+            "ta": "நண்பர்களிடமிருந்து கற்ற விஷயங்களை நினைத்து பட்டியலிடுங்கள்.",
+            "en": "Recall and list what you learned from your friends.",
+            "hi": "याद करें कि आपने अपने दोस्तों से क्या सीखा है और उसकी सूची बनाएं।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 2,
+          "section": "School Relationships & Experiences",
+          "question": {
+            "kn": "ಪಠ್ಯ ವಿಷಯಗಳನ್ನು ಹೊರತುಪಡಿಸಿ, ಶಾಲೆಗೆ ನಿಮ್ಮನ್ನು ಆಕರ್ಷಿಸುವ ಅಂಶಗಳು ಯಾವುವು?",
+            "ta": "பாடப்புத்தகப் பாடங்களைத் தவிர, பள்ளிக்குச் செல்ல உங்களை ஈர்க்கும் அம்சங்கள் எவை?",
+            "en": "Apart from textbook subjects, what aspects attract you to school?",
+            "hi": "विषयों के अलावा, स्कूल की कौन सी बातें आपको आकर्षित करती हैं?"
+          },
+          "help_text": {
+            "kn": "ಶಾಲೆಯನ್ನು ಆಕರ್ಷಕವಾಗಿಸುವ ಇತರ ಚಟುವಟಿಕೆಗಳು ಅಥವಾ ಅಂಶಗಳನ್ನು ಬರೆಯಿರಿ.",
+            "ta": "பள்ளி மீது விருப்பத்தை ஏற்படுத்தும் பிற செயல்கள் அல்லது அம்சங்களை எழுதுங்கள்.",
+            "en": "Write the other activities or aspects that make school appealing.",
+            "hi": "उन गतिविधियों या बातों के बारे में लिखें जो स्कूल को आकर्षक बनाती हैं।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 3,
+          "section": "School Relationships & Experiences",
+          "question": {
+            "kn": "ನಿಮ್ಮ ನೆಚ್ಚಿನ ಶಿಕ್ಷಕರು ಯಾರು ಮತ್ತು ಏಕೆ? ಈ ಶಿಕ್ಷಕರು ನಿಮ್ಮ ಮೇಲೆ ಹೇಗೆ ಪ್ರಭಾವ ಬೀರುತ್ತಿದ್ದಾರೆ?",
+            "ta": "உங்களுக்கு பிடித்த 2 ஆசிரியர்கள் யார்? ஏன்? இந்த 2 ஆசிரியர்கள் உங்கள் மீது எவ்வாறு தாக்கம் ஏற்படுத்தியுள்ளனர்?",
+            "en": "Who are your two favourite teachers and why? How have these two teachers influenced you?",
+            "hi": "आपके पसंदीदा शिक्षक कौन हैं और क्यों? वे आप पर कैसा प्रभाव डालते हैं?"
+          },
+          "help_text": {
+            "kn": "ನಿಮ್ಮ ನೆಚ್ಚಿನ ಶಿಕ್ಷಕರು ಮತ್ತು ಅವರು ನಿಮ್ಮ ಮೇಲೆ ಹೇಗೆ ಪ್ರಭಾವ ಬೀರಿದ್ದಾರೆ ಎಂಬುದರ ಬಗ್ಗೆ ಬರೆಯಿರಿ.",
+            "ta": "பிடித்த ஆசிரியர்களையும் அவர்கள் உங்களை மாற்றிய விதத்தையும் எழுதுங்கள்.",
+            "en": "Write about your favourite teachers and how they influenced you.",
+            "hi": "अपने प्रिय शिक्षक के बारे में और उन्होंने आपको कैसे प्रभावित किया, इसके बारे में लिखें।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 4,
+          "section": "School Relationships & Experiences",
+          "question": {
+            "kn": "ಶಾಲೆಯಲ್ಲಿ ನಿಮಗೆ ತುಂಬಾ ಯಶಸ್ಸು ಅಥವಾ ಹೆಮ್ಮೆ ಅನಿಸುವಂತೆ ಮಾಡಿದ ಒಂದು ನಿರ್ದಿಷ್ಟ ಘಟನೆ / ಸನ್ನಿವೇಶ ಇದೆಯೇ? ಅದು ಏನು?",
+            "ta": "பள்ளியில் உங்களுக்கு மிகுந்த வெற்றி அல்லது திருப்தி உணர்வை ஏற்படுத்திய ஒரு குறிப்பிட்ட நிகழ்வு / அனுபவம் உள்ளதா? அது என்ன?",
+            "en": "Is there any specific incident or experience in school that gave you a great sense of success or satisfaction? What is it?",
+            "hi": "क्या स्कूल में ऐसी कोई विशेष घटना हुई है जिससे आपको बहुत सफलता या गर्व महसूस हुआ हो? वह क्या थी?"
+          },
+          "help_text": {
+            "kn": "ನೀವು ಹೆಮ್ಮೆ ಅಥವಾ ಸಂತೋಷ ಅನುಭವಿಸುವಂತೆ ಮಾಡಿದ ಶಾಲಾ ಘಟನೆಯ ಬಗ್ಗೆ ಬರೆಯಿರಿ.",
+            "ta": "உங்களுக்கு பெருமை அல்லது திருப்தி அளித்த பள்ளி நிகழ்வை எழுதுங்கள்.",
+            "en": "Write about a school incident that made you feel successful or satisfied.",
+            "hi": "स्कूल की उस घटना के बारे में लिखें जिसने आपको गर्व या खुशी महसूस कराई।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 1,
+          "section": "Future & Reflection",
+          "question": {
+            "kn": "ನಿಮ್ಮ ಕನಸು ಮತ್ತು ನಿರೀಕ್ಷೆಗಳನ್ನು ಸಾಧಿಸಲು ಶಾಲೆಯಲ್ಲಿ ನೀವು ಕಲಿತ ವಿಷಯಗಳು ನಿಮಗೆ ಹೇಗೆ ಸಹಾಯ ಮಾಡುತ್ತ+B32:B33ವೆ?",
+            "ta": "உங்கள் கனவுகள் மற்றும் எதிர்பார்ப்புகளை அடைய, பள்ளியில் நீங்கள் கற்ற விஷயங்கள் உங்களுக்கு எவ்வாறு உதவுகின்றன?",
+            "en": "How do the things you learned in school help you achieve your dreams and expectations?",
+            "hi": "स्कूल में सीखी गई बातें आपके सपनों और उम्मीदों को पूरा करने में कैसे मदद करती हैं?"
+          },
+          "help_text": {
+            "kn": "ಶಾಲೆಯಲ್ಲಿ ನೀವು ಕಲಿತದ್ದನ್ನು ನಿಮ್ಮ ಕನಸುಗಳು ಮತ್ತು ಗುರಿಗಳಿಗೆ ಸಂಬಂಧಿಸಿ ನೋಡಿ.",
+            "ta": "பள்ளியில் கற்றதை உங்கள் கனவுகளுடன் தொடர்புபடுத்தி எழுதுங்கள்",
+            "en": "Relate what you learned in school to your dreams and goals.",
+            "hi": "स्कूल में आपने जो सीखा है उसे अपने सपनों और लक्ष्यों से जोड़कर देखें।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 2,
+          "section": "Future & Reflection",
+          "question": {
+            "kn": "ನಿಮ್ಮ ಶಾಲೆಯಲ್ಲಿ ಯಾವ, ಯಾವ ಸಂಗತಿಗಳು ಬದಲಾಗಬೇಕು ಎಂದು ನೀವು ಬಯಸುತ್ತೀರಿ? ಅದಕ್ಕೆ ಕಾರಣವೇನು ತಿಳಿಸಿ?",
+            "ta": "உங்கள் பள்ளியில் எந்த எந்த விஷயங்கள் மாற்றப்பட வேண்டும் என்று நீங்கள் விரும்புகிறீர்கள்? அதற்கான காரணம் என்ன?",
+            "en": "What are the things you want to be changed in your school? What is the reason for that?",
+            "hi": "आप अपने स्कूल में किन चीज़ों को बदलना चाहते हैं? इसका कारण बताएं।"
+          },
+          "help_text": {
+            "kn": "ನೀವು ಬಯಸುವ ಬದಲಾವಣೆಗಳು ಮತ್ತು ಅವುಗಳಿಗೆ ಕಾರಣಗಳನ್ನು ಬರೆಯಿರಿ.",
+            "ta": "மாற்றம் வேண்டிய விஷயங்களையும் அதற்கான காரணத்தையும் எழுதுங்கள்.",
+            "en": "Write the changes you want and the reasons for them.",
+            "hi": "उन बदलावों के बारे में लिखें जिन्हें आप देखना चाहते हैं और उनका कारण भी बताएं।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 3,
+          "section": "Future & Reflection",
+          "question": {
+            "kn": "ಅಭ್ಯಾಸ ಮಾಡಲು ಯಾವುದಾದರೂ ಪ್ರತ್ಯೇಕ ಸ್ಥಳ ಇದೆಯೇ? ಅದು ಯಾಕೆ ಅಗತ್ಯ? ತಿಳಿಸಿ",
+            "ta": "உங்களுக்குப் படிக்கத் தனியாக இடம் உள்ளதா? அது ஏன் அவசியம்?",
+            "en": "Do you have a separate place to study? Why is it necessary?",
+            "hi": "क्या पढ़ाई के लिए कोई अलग जगह है? वह क्यों आवश्यक है? बताएं।"
+          },
+          "help_text": {
+            "kn": "ನಿಮ್ಮ ಅಭ್ಯಾಸಕ್ಕೆಂದು ಪ್ರತ್ಯೇಕ ಸ್ಥಳ ಇದೆಯೇ? ಹಾಗು ಅದು ಯಾಕೆ ಅಗತ್ಯ ಎಂಬುದರ ಬಗ್ಗೆ ಬರೆಯಿರಿ.",
+            "ta": "உங்கள் படிப்பிற்கெனத் தனி இடம் இருக்கிறதா என்பதைப் பற்றி எழுதுங்கள்.",
+            "en": "Write about whether you have a separate place for your studies.",
+            "hi": "लिखें कि क्या आपके पास पढ़ाई के लिए कोई अलग जगह है और वह क्यों जरूरी है।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 4,
+          "section": "Future & Reflection",
+          "question": {
+            "kn": "ನಿಮ್ಮ ಜೀವನದಲ್ಲಿ ಕಲಿಕೆಗೆ ಸಂಬಂಧಿಸಿದಂತೆ ಶಾಲೆ ಮಹತ್ವದ ಪಾತ್ರವಹಿಸಿದೆಯೇ? ನಿಮ್ಮ ಅಭಿಪ್ರಾಯವನ್ನು ಬರೆಯಿರಿ.",
+            "ta": "உங்கள் வாழ்க்கை, கற்றலுடன் தொடர்புடையதாக மாற்றுவதில்  பள்ளிக்கு முக்கியமான பங்கு உள்ளதா? உங்கள் கருத்தை எழுதுங்கள்.",
+            "en": "Does the school play an important role in your life related to learning? Write your opinion.",
+            "hi": "क्या आपके जीवन में शिक्षा के मामले में स्कूल ने महत्वपूर्ण भूमिका निभाई है? अपनी राय लिखें।"
+          },
+          "help_text": {
+            "kn": "ನಿಮ್ಮ ಕಲಿಕೆಯಲ್ಲಿ ಶಾಲೆಯ ಪಾತ್ರದ ಬಗ್ಗೆ ನಿಮ್ಮ ಅಭಿಪ್ರಾಯವನ್ನು ಬರೆಯಿರಿ.",
+            "ta": "கற்றலில் பள்ளியின் பங்கைப் பற்றி உங்கள் கருத்தை எழுதுங்கள்.",
+            "en": "Write your opinion about the role of school in your learning.",
+            "hi": "अपनी पढ़ाई और सीखने में स्कूल की भूमिका पर अपनी राय लिखें।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 5,
+          "section": "Future & Reflection",
+          "question": {
+            "kn": "ಶಾಲೆಯ ಚಟುವಟಿಕೆಗಳು ಮತ್ತು ಕಲಿಕೆಯ ಬಗ್ಗೆ ನಿಮ್ಮ ಪಾಲಕರೊಂದಿಗೆ ಚರ್ಚಿಸಲು ಹೇಳಿಕೊಳ್ಳುವುದೆಂದರೆ ನಿಮಗೆ ಇಷ್ಟವೇ? ಯಾವೆಲ್ಲ ವಿಷಯಗಳನ್ನು ನೀವು ಅವರೊಂದಿಗೆ ಚರ್ಚಿಸುತ್ತೀರಿ?",
+            "ta": "பள்ளியின் செயல்பாடுகள் மற்றும் கற்றல் குறித்து உங்கள் பெற்றோருடன் விவாதிக்க உங்களுக்கு விருப்பமா? அவர்களுடன் நீங்கள் எந்த விஷயங்களைப் பேசுகிறீர்கள்?",
+            "en": "Do you like to discuss school activities and learning with your parents? What topics do you discuss with them?",
+            "hi": "क्या आपको अपने माता-पिता के साथ स्कूल की गतिविधियों और पढ़ाई के बारे में चर्चा करना पसंद है? आप उनके साथ किन विषयों पर चर्चा करते हैं?"
+          },
+          "help_text": {
+            "kn": "ನಿಮ್ಮ ಪೋಷಕರೊಂದಿಗೆ ನೀವು ಚರ್ಚಿಸುವ ಶಾಲೆಗೆ ಸಂಬಂಧಿಸಿದ ವಿಷಯ ಯಾವುದು ಎಂಬುದನ್ನು ಬರೆಯಿರಿ.",
+            "ta": "பெற்றோருடன் நீங்கள் பேசும் பள்ளி தொடர்பான விஷயங்களை எழுதுங்கள்.",
+            "en": "Write the school-related topics you discuss with your parents.",
+            "hi": "स्कूल से संबंधित उन विषयों के बारे में लिखें जिन पर आप अपने माता-पिता के साथ चर्चा करते हैं।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        }
+      ],
+      "summary": {
+        "title": {
+          "kn": "ಸಾರಾಂಶ: ನನ್ನ ಮುಂದಿನ ಯೋಜನೆ",
+          "ta": "சுருக்கம்: என் எதிர்கால திட்டம்",
+          "en": "Summary: My future plan",
+          "hi": "सारांश: मेरी अगली योजना"
+        },
+        "subtitle": {
+          "kn": "",
+          "ta": "",
+          "en": "",
+          "hi": ""
+        },
+        "header": [
+          "",
+          "Kannada",
+          "Tamil",
+          "English",
+          "Hindi",
+          "Input Type",
+          "Display Type",
+          "Remark"
+        ],
+        "questions": [
+          {
+            "sno": 1,
+            "question": {
+              "kn": "ನಾನು ಇಷ್ಟಪಡುವ ವಿಷಯಗಳು",
+              "ta": "எனக்கு பிடித்த பாடங்கள்",
+              "en": "Subjects I like",
+              "hi": "वे विषय जो मुझे पसंद हैं"
+            },
+            "input_type": "Text field",
+            "display_type": "Table column",
+            "remark": ""
+          },
+          {
+            "sno": 2,
+            "question": {
+              "kn": "ನಾನು ಇಷ್ಟಪಡುವ ವಿಷಯಗಳಿಂದ ನಾನು ಪಡೆಯಲು ಸಾಧ್ಯವಾಗಬಹುದಾದ ವೃತ್ತಿಗಳು",
+              "ta": "விருப்பமான பாடங்கள் மூலம் நான் அடையக்கூடிய தொழில்கள்",
+              "en": "Careers I can pursue based on the subjects I like",
+              "hi": "मेरी पसंद के विषयों से मैं जो करियर/पेशे अपना सकता हूँ"
+            },
+            "input_type": "Text field",
+            "display_type": "Table column",
+            "remark": ""
+          },
+          {
+            "sno": 3,
+            "question": {
+              "kn": "ನಾನು ಇಷ್ಟಪಡದ ವಿಷಯಗಳು",
+              "ta": "எனக்கு பிடிக்காத பாடங்கள்",
+              "en": "Subjects I do not like",
+              "hi": "वे विषय जो मुझे पसंद नहीं हैं"
+            },
+            "input_type": "Text field",
+            "display_type": "Table column",
+            "remark": ""
+          },
+          {
+            "sno": 4,
+            "question": {
+              "kn": "ಇಷ್ಟಪಡದ ವಿಷಯಗಳಲ್ಲಿ ನಾನು ಸುಧಾರಿಸಿಕೊಂಡರೆ ಪಡೆಯಲು ಸಾಧ್ಯವಾಗಬಹುದಾದ ವೃತ್ತಿಗಳು",
+              "ta": "விருப்பமில்லாத பாடங்களில் முன்னேறினால் நான் அடையக்கூடிய தொழில்கள்",
+              "en": "Careers I can pursue if I make progress in the subjects I do not like",
+              "hi": "जिन विषयों को मैं पसंद नहीं करता, यदि उनमें सुधार करूँ तो मैं कौन से करियर अपना सकता हूँ"
+            },
+            "input_type": "Text field",
+            "display_type": "Table column",
+            "remark": ""
+          },
+          {
+            "sno": 5,
+            "question": {
+              "kn": "ಪಠ್ಯ ವಿಷಯಗಳ ಜೊತೆಗೆ, ನಾನು ಉತ್ತಮ ಸಾಧನೆ ಮಾಡುವ ಇತರ ಚಟುವಟಿಕೆಗಳು / ವಿಷಯಗಳು",
+              "ta": "நான் சிறப்பாகச் செய்யும் பிற செயல்பாடுகள்",
+              "en": "Other activities I perform well in",
+              "hi": "शैक्षणिक विषयों के अलावा, अन्य गतिविधियाँ / विषय जिनमें मैं अच्छा प्रदर्शन करता हूँ"
+            },
+            "input_type": "Text field",
+            "display_type": "Table column",
+            "remark": ""
+          },
+          {
+            "sno": 6,
+            "question": {
+              "kn": "ನಾನು ಈ ಕೌಶಲ್ಯಗಳನ್ನು ಸುಧಾರಿಸಿಕೊಂಡರೆ ನನ್ನ ಕೆಲಸ / ವೃತ್ತಿಯ ಆಯ್ಕೆಗೆ ಸಹಾಯವಾಗುತ್ತದೆ.",
+              "ta": "நான் மேம்படுத்த வேண்டிய திறன்கள்",
+              "en": "If I improve these skills, it will help me in choosing my job / career.",
+              "hi": "यदि मैं इन कौशलों (skills) में सुधार करता हूँ, तो इससे मुझे अपने काम / करियर के चुनाव में मदद मिलेगी।"
+            },
+            "input_type": "Text field",
+            "display_type": "Table column",
+            "remark": ""
+          },
+          {
+            "sno": 7,
+            "question": {
+              "kn": "ಸೂಚನೆ: ನಿಮ್ಮ ಆಸಕ್ತಿಯ ಕ್ಷೇತ್ರಗಳ ಆಧಾರದ ಮೇಲೆ ನಿಮ್ಮ ವೃತ್ತಿಜೀವನವನ್ನು ಆಯ್ಕೆ ಮಾಡುವ ಅವಕಾಶ ನಿಮಗಿದೆ. ಮುಂಬರುವ ದಿನಗಳಲ್ಲಿ ನೀವು ಯಾವ ಪಾಠಗಳನ್ನು ಕಲಿಯಲು ಬಯಸುತ್ತೀರಿ, ಯಾವ ವಿಷಯಗಳು/ಪಾಠಗಳು ನಿಮಗೆ ಇಷ್ಟ ಮತ್ತು ಅವು ಏಕೆ ಇಷ್ಟ ಎಂಬುದನ್ನು ದಾಖಲಿಸಲು \"ನನ್ನ ಆಸಕ್ತಿಯ ಕ್ಷೇತ್ರಗಳು\" ಕೋಷ್ಟಕವನ್ನು ಭರ್ತಿ ಮಾಡಿ. ಇದು ಈ ವಿಷಯಗಳಿಗೆ ಸಂಬಂಧಿಸಿದ ವೃತ್ತಿಗಳನ್ನು ಅರ್ಥಮಾಡಿಕೊಳ್ಳಲು, ಇಲ್ಲಿ ಕಲಿತ ಪಾಠಗಳು ವಿವಿಧ ವೃತ್ತಿಗಳಲ್ಲಿ/ಕ್ಷೇತ್ರಗಳಲ್ಲಿ ಹೇಗೆ ಉಪಯುಕ್ತವಾಗಿವೆ ಎಂದು ತಿಳಿಯಲು ಮತ್ತು ಭವಿಷ್ಯದ ವೃತ್ತಿಜೀವನದ ನಿರ್ಧಾರಗಳನ್ನು ತೆಗೆದುಕೊಳ್ಳಲು ನಿಮಗೆ ಸಹಾಯ ಮಾಡುತ್ತದೆ.",
+              "ta": "குறிப்பு: உங்கள் ஆர்வமுள்ள துறைகளின் அடிப்படையில் உங்கள் தொழிலைத் தேர்ந்தெடுக்கும் வாய்ப்பு உங்களுக்கு உள்ளது. வரும் நாட்களில் நீங்கள் எந்தப் பாடங்களைக் கற்றுக்கொள்ள விரும்புகிறீர்கள், எந்தப் பாடங்கள் உங்களுக்குப் பிடிக்கும், அவை ஏன் உங்களுக்குப் பிடிக்கும் என்பதைப் பதிவு செய்ய \"எனது ஆர்வமுள்ள பகுதிகள்\" அட்டவணையை நிரப்பவும். இது இந்த பாடங்கள் தொடர்பான தொழில்களைப் புரிந்துகொள்ளவும், இங்கு கற்ற பாடங்கள் பல்வேறு தொழில்களில்/துறைகளில் எவ்வாறு பயனுள்ளதாக இருக்கும் என்பதை அறியவும், எதிர்கால தொழில் முடிவுகளை எடுக்கவும் உங்களுக்கு உதவும்.",
+              "en": "Note: You have the opportunity to choose your career based on your areas of interest. Fill the “My Areas of Interest,” table to record which lessons you would like to learn in the coming days, which subjects/lessons you like, and why you like them. This will help you understand the careers related to these subjects, how the lessons learned here are useful in different professions/fields, and support you in making future career decisions.",
+              "hi": "नोट: आपके पास अपनी रुचि के क्षेत्रों के आधार पर अपना करियर चुनने का अवसर है। आने वाले दिनों में आप कौन से पाठ सीखना चाहते हैं, आपको कौन से विषय/पाठ पसंद हैं, और वे आपको क्यों पसंद हैं, इसे दर्ज करने के लिए \"मेरी रुचि के क्षेत्र\" तालिका भरें। इससे आपको इन विषयों से संबंधित करियर को समझने में मदद मिलेगी, यह पता चलेगा कि यहां सीखे गए पाठ विभिन्न व्यवसायों/क्षेत्रों में कैसे उपयोगी हैं, और भविष्य के करियर संबंधी निर्णय लेने में आपको समर्थन मिलेगा।"
+            },
+            "input_type": "None",
+            "display_type": "Regular Text",
+            "remark": ""
+          }
+        ]
+      },
+      "empty_cells": []
+    },
+    "hobbies": {
+      "tab_name": "9.5_My Talents and Hobbies",
+      "assessment_type": "hobbies",
+      "module_title": {
+        "kn": "ನನ್ನ ಪ್ರತಿಭೆ ಮತ್ತು ಹವ್ಯಾಸಗಳು",
+        "ta": "என் திறமைகள் மற்றும் பொழுதுபோக்குகள்",
+        "en": "My Talents and Hobbies",
+        "hi": "मेरा प्रतिबाएँ और शौक"
+      },
+      "title_text": {
+        "kn": "ಈ ಚಟುವಟಿಕೆ ಮೂಲಕ ನೀವು ನಿಮ್ಮಲ್ಲಿರುವ ಪ್ರತಿಭೆ, ನಿಮ್ಮ ಹವ್ಯಾಸಗಳು ಮತ್ತು ನಿಮಗೆ ಸಂತೋಷ ನೀಡುವ ಕೆಲಸ/ಚಟುವಟಿ ಕೆಗಳ ಕುರಿತು ಅವಲೋಕನ ಮಾಡಿಕೊಳ್ಳುತ್ತೀರಿ. ಇದರಿಂದ ನಿಮ್ಮ ಆಸಕ್ತಿಗಳೇನು, ನಿಮ್ಮ ಹವ್ಯಾಸಗಳು ಯಾವವು ಮತ್ತು ನಿಮ್ಮ ಪ್ರತಿಭೆಯ ಕ್ಷೇತ್ರಗಳು ಯಾವುದೆಂದು ನೀವೇ ಅರಿಯಲು ಸಾಧ್ಯವಾಗುತ್ತದೆ. ಈ ಮೂಲಕ ನಿಮ್ಮ ಸ್ವಭಾವ, ಆಸಕ್ತಿ ಮತ್ತು ಭಾವನೆಗೆ ಸರಿಹೊಂದುವ ವೃತ್ತಿಗಳನ್ನು ಗುರುತಿಸಿ ನಿರ್ಧರಿಸಲು ಈ ಚಟುವಟಿಕೆ ಸಹಕಾರಿಯಾಗುತ್ತದೆ.",
+        "ta": "இந்த செயல்பாட்டின் மூலம், உங்களிடம் உள்ள திறமைகள், உங்கள் பொழுதுபோக்குகள் மற்றும் உங்களுக்கு மகிழ்ச்சி அளிக்கும் செயல்கள் குறித்து நீங்கள் சிந்திக்க முடியும். இதனால், உங்கள் ஆர்வங்கள் என்ன, உங்கள் பொழுதுபோக்குகள் எவை, மற்றும் உங்கள் திறமை இருக்கும் துறைகள் எவை என்பதையும் நீங்கள் புரிந்துகொள்ள முடியும். இதன் மூலம், உங்கள் தன்மை, ஆர்வம் மற்றும் உணர்வுகளுக்கு ஏற்ற தொழில்களை அடையாளம் காணவும் தீர்மானிக்கவும் இந்த செயல்பாடு உதவுகிறது.",
+        "en": "In this practice section, we delve into your interests, hobbies, pastimes, and activities that bring you joy, exploring the depths of your creativity. By delving into your hobbies and interests, you can not only fi nd happiness but also identify your unique learning style and potential professions aligned with your passions.\nThrough this activity, you will explore your talents, hobbies, and the work/activities that bring you joy. This will help you understand your interests, hobbies, and areas of talent, and guide you in identifying careers that suit your personality, interests, and passions.\"",
+        "hi": "इस अभ्यास खंड में, हम आपकी रुचियों, शौक, मनोरंजन और उन गतिविधियों पर गहराई से चर्चा करेंगे जो आपको खुशी देती हैं, और आपकी रचनात्मकता की गहराई को उजागर करेंगे। अपने शौक और रुचियों पर गहराई से विचार करके, आप न केवल खुशी पा सकते हैं, बल्कि अपनी अनूठी सीखने की शैली और अपने जुनून से जुड़े संभावित व्यवसायों की भी पहचान कर सकते हैं।\nइस गतिविधि के माध्यम से, आप अपनी प्रतिभाओं, शौक और उन कामों/गतिविधियों का पता लगाएंगे जो आपको खुशी देते हैं। इससे आपको अपनी रुचियों, शौक और प्रतिभा के क्षेत्रों को समझने में मदद मिलेगी, और आपको अपने व्यक्तित्व, रुचियों और जुनून के अनुकूल करियर चुनने में मदद मिलेगी।\n\"शौक हमारी प्रतिभा को सामने लाते हैं और हमें अपने सपनों को पूरा करने के लिए प्रेरित करते हैं।\""
+      },
+      "subtitle_text": {
+        "kn": "“ಹವ್ಯಾಸಗಳು ನಮ್ಮಲ್ಲಿರುವ ಪ್ರತಿಭೆಯನ್ನು ಮುನ್ನೆಲೆಗೆ ತರುತ್ತವೆ ಮತ್ತು ಕನಸುಗಳನ್ನು ಈಡೇರಿಸಲು ಸ್ಪೂರ್ತಿ ನೀಡುತ್ತವೆ.\n I. ಹವ್ಯಾಸ (Hobby) ಎಂದರೆ ಏನು? \n a) ಅದು ನಾವು ಖುಷಿಯಿಂದ, ನಮ್ಮ ದೈನಂದಿನ ಕೆಲಸಗಳು ಆದಮೇಲೆ ಮಾಡುವ ಚಟುವಟಿಕೆ. \n b) ಸಮಯ ಕಳೆಯಲು ಅಥವಾ ಮನಸ್ಸಿಗೆ ಸಂತೋಷ ನೀಡಲು ಮಾಡುವ ಕೆಲಸ. \n c) ಹವ್ಯಾಸ ಕಲಿತು ಬೆಳೆಸಿಕೊಳ್ಳಬಹುದಾದದ್ದು. \n ಉದಾಹರಣೆಗಳು: ಚಿತ್ರ ಬಿಡಿಸುವುದು, ಹಾಡು ಹಾಡುವುದು, ಓದು, ನೃತ್ಯ, ಹಕ್ಕಿಗಳನ್ನು ನೋಡುವುದು, ತೋಟಗಾರಿಕೆ ಇತ್ಯಾದಿ.\n\nII. ಪ್ರತಿಭೆ (Talent) ಎಂದರೆ ಏನು? \n a) ಹುಟ್ಟಿನಿಂದಲೇ ನಮ್ಮೊಳಗೆ ಇರುವ ಒಂದು ನೈಸರ್ಗಿಕ ಸಾಮರ್ಥ್ಯ. \n b) ಹೆಚ್ಚು ಅಭ್ಯಾಸ ಮಾಡದೇಸಹ ಸುಲಭವಾಗಿ ಮಾಡಬಹುದಾದ ಕೌಶಲ್ಯ.\n c) ಇದು ಇನ್ನಷ್ಟು ಅಭ್ಯಾಸದಿಂದ ಅಪಾರ ಸಾಧನೆಗೆ ದಾರಿ ಮಾಡಬಹುದು. \n ಉದಾಹರಣೆಗಳು: ಸಹಜವಾಗಿ ಹಾಡುವಂತ, ಸ್ಪಷ್ಟವಾಗಿ ಸಂವಹನ ಮಾಡುವಂತ, ಗಣಿತದಲ್ಲಿ ವೇಗವಾಗಿ ಉತ್ತರ ನೀಡುವಂತ, ತ್ವರಿತವಾಗಿ ಕಲಿಯುವಂತ ಸಾಮರ್ಥ್ಯಗಳು ಇತ್ಯಾದಿ.",
+        "ta": "I. பொழுதுபோக்கு (Hobby) என்றால் என்ன?\na) நமது மகிழ்ச்சிக்காக, தினசரி வேலைகளுடன் சேர்த்து செய்யப்படும் செயல்கள்.                \nb) நேரத்தை பயனுள்ளதாக கழிக்க அல்லது மனதிற்கு மகிழ்ச்சி தர செய்யப்படும் செயல்கள்.                \nc) பொழுதுபோக்கை கற்றுக்கொண்டு வளர்த்துக்கொள்ளலாம்.\n\nII. திறமை (Talent) என்றால் என்ன?\na) பிறப்பிலிருந்தே நமக்கு உள்ள இயற்கையான திறன்.                                \nb) அதிக பயிற்சி இல்லாமலேயே எளிதாக செய்யக்கூடிய திறமை.                                \nc) இதை மேலும் பயிற்சி செய்வதன் மூலம் பெரிய சாதனைகளை அடையலாம்.                                \n                                \nஉதாரணங்கள்:                                \nஎளிதாக பாடும் திறன், தெளிவாக பேசும் திறன், கணிதத்தில் வேகமாக விடை அளிக்கும் திறன், விரைவாக கற்றுக்கொள்ளும் திறன் போன்றவை.",
+        "en": "I. What is a Hobby?\na) An activity that we do for our happiness along with our daily work.        \nb) An activity done to spend time usefully or to give happiness to the mind.        \nc) A hobby can be learned and developed.\n\nII. What is Talent?\na) A natural ability that we are born with.                \nb) A skill that can be done easily even without much practice.                \nc) With more practice, it can lead to great achievements.                \n                \nExamples:                \nAbility to sing easily, speak clearly, give quick answers in mathematics, learn quickly, etc.",
+        "hi": "I. शौक क्या है?\nक) यह एक ऐसी गतिविधि है जिसे हम अपने दैनिक कार्यों के बाद मनोरंजन के लिए करते हैं।\nख) समय बिताने या मन को प्रसन्न करने के लिए किया गया कार्य।\nग) शौक एक ऐसी चीज़ है जिसे समय के साथ सीखा और विकसित किया जा सकता है।\nउदाहरण: चित्रकारी, गायन, पढ़ना, नृत्य, पक्षी देखना, बागवानी, आदि।\n\nII. प्रतिभा क्या है?\nक) एक प्राकृतिक क्षमता जो हमारे साथ जन्म से होती है।\nख) ऐसा कौशल जो बिना अधिक अभ्यास के आसानी से किया जा सकता है।\nग) अधिक अभ्यास से इससे अपार उपलब्धि प्राप्त की जा सकती है।\nउदाहरण: स्वाभाविक रूप से गाने, स्पष्ट रूप से संवाद करने, गणित में प्रश्नों का शीघ्रता से उत्तर देने, शीघ्रता से सीखने आदि की क्षमता।"
+      },
+      "question_header": [
+        "Sno",
+        "Kannada Question",
+        "Kannada Help Text",
+        "Tamil Question",
+        "Tamil Help Text",
+        "English Question",
+        "English Help Text",
+        "Hindi Question",
+        "Hindi Help Text",
+        "Input Type",
+        "Display Type",
+        "Remark"
+      ],
+      "sections": [
+        {
+          "title": {
+            "kn": "ಹವ್ಯಾಸಗಳು ಮತ್ತು ಆಸಕ್ತಿಗಳು",
+            "ta": "பொழுதுபோக்குகள் மற்றும் ஆர்வங்கள்",
+            "en": "Hobbies & Interests",
+            "hi": "शौक और रुचियां"
+          },
+          "subtitle": {
+            "kn": "ನಿಮ್ಮ ಹವ್ಯಾಸಗಳ ಬಗ್ಗೆ ಮತ್ತು ಅವುಗಳಿಗೆ ಪ್ರೇರಣೆ ನೀಡಿದ ವಿಷಯಗಳ ಬಗ್ಗೆ ತಿಳಿಸಿ",
+            "ta": "உங்கள் பொழுதுபோக்குகள் மற்றும் அவற்றிற்கான உத்வேகம் பற்றி உங்கள் கருத்துக்களைப் பகிர்ந்து கொள்ளுங்கள்",
+            "en": "Share your thoughts about your hobbies and what inspires them",
+            "hi": "अपने शौक और उन्हें प्रेरित करने वाली चीजों के बारे में अपने विचार साझा करें"
+          }
+        },
+        {
+          "title": {
+            "kn": "ಪ್ರತಿಭೆಗಳು ಮತ್ತು ಅಭ್ಯಾಸ",
+            "ta": "திறமைகள் மற்றும் பயிற்சி",
+            "en": "Talents & Practice",
+            "hi": "प्रतिभा और अभ्यास"
+          },
+          "subtitle": {
+            "kn": "ನಿಮ್ಮಲ್ಲಿರುವ ನೈಸರ್ಗಿಕ ಪ್ರತಿಭೆಗಳು ಮತ್ತು ಅವುಗಳನ್ನು ನೀವು ಹೇಗೆ ಬೆಳೆಸಿಕೊಳ್ಳುತ್ತೀರಿ ಎಂಬುದನ್ನು ಕಂಡುಕೊಳ್ಳಿ",
+            "ta": "உங்கள் இயல்பான திறமைகளையும் அவற்றை நீங்கள் எவ்வாறு மேம்படுத்துகிறீர்கள் என்பதையும் ஆராயுங்கள்",
+            "en": "Explore your natural talents and how you develop them",
+            "hi": "अपनी प्राकृतिक प्रतिभाओं को पहचानें और जानें कि आप उन्हें कैसे विकसित करते हैं"
+          }
+        },
+        {
+          "title": {
+            "kn": "ಬೆಂಬಲ ಮತ್ತು ವೃತ್ತಿ ಸಂಬಂಧ",
+            "ta": "ஆதரவு மற்றும் தொழில் தொடர்பு",
+            "en": "Support & Career Connection",
+            "hi": "सहयोग और करियर संबंध"
+          },
+          "subtitle": {
+            "kn": "ನಿಮ್ಮ ಹವ್ಯಾಸಗಳಿಂದ ಸಿಗುವ ಬೆಂಬಲ ಮತ್ತು ವೃತ್ತಿ ಅವಕಾಶಗಳ ಬಗ್ಗೆ ಆಲೋಚಿಸಿ",
+            "ta": "உங்கள் பொழுதுபோக்குகளிலிருந்து கிடைக்கும் ஆதரவு மற்றும் தொழில் வாய்ப்புகள் பற்றிச் சிந்தியுங்கள்",
+            "en": "Reflect on support systems and career possibilities from your hobbies",
+            "hi": "अपने शौक से मिलने वाले सहयोग और करियर की संभावनाओं पर विचार करें"
+          }
+        }
+      ],
+      "sub_headers": [
+        {
+          "row_index": 7,
+          "section": "Hobbies & Interests",
+          "text": {
+            "kn": "ಹವ್ಯಾಸಗಳು ಮತ್ತು ಆಸಕ್ತಿಗಳು",
+            "ta": "பொழுதுபோக்குகள் மற்றும் ஆர்வங்கள்",
+            "en": "Hobbies & Interests",
+            "hi": "शौक और रुचियां"
+          },
+          "type": "section_title"
+        },
+        {
+          "row_index": 8,
+          "section": "Hobbies & Interests",
+          "text": {
+            "kn": "ನಿಮ್ಮ ಹವ್ಯಾಸಗಳ ಬಗ್ಗೆ ಮತ್ತು ಅವುಗಳಿಗೆ ಪ್ರೇರಣೆ ನೀಡಿದ ವಿಷಯಗಳ ಬಗ್ಗೆ ತಿಳಿಸಿ",
+            "ta": "உங்கள் பொழுதுபோக்குகள் மற்றும் அவற்றிற்கான உத்வேகம் பற்றி உங்கள் கருத்துக்களைப் பகிர்ந்து கொள்ளுங்கள்",
+            "en": "Share your thoughts about your hobbies and what inspires them",
+            "hi": "अपने शौक और उन्हें प्रेरित करने वाली चीजों के बारे में अपने विचार साझा करें"
+          },
+          "type": "section_subtitle"
+        },
+        {
+          "row_index": 16,
+          "section": "Talents & Practice",
+          "text": {
+            "kn": "ಪ್ರತಿಭೆಗಳು ಮತ್ತು ಅಭ್ಯಾಸ",
+            "ta": "திறமைகள் மற்றும் பயிற்சி",
+            "en": "Talents & Practice",
+            "hi": "प्रतिभा और अभ्यास"
+          },
+          "type": "section_title"
+        },
+        {
+          "row_index": 17,
+          "section": "Talents & Practice",
+          "text": {
+            "kn": "ನಿಮ್ಮಲ್ಲಿರುವ ನೈಸರ್ಗಿಕ ಪ್ರತಿಭೆಗಳು ಮತ್ತು ಅವುಗಳನ್ನು ನೀವು ಹೇಗೆ ಬೆಳೆಸಿಕೊಳ್ಳುತ್ತೀರಿ ಎಂಬುದನ್ನು ಕಂಡುಕೊಳ್ಳಿ",
+            "ta": "உங்கள் இயல்பான திறமைகளையும் அவற்றை நீங்கள் எவ்வாறு மேம்படுத்துகிறீர்கள் என்பதையும் ஆராயுங்கள்",
+            "en": "Explore your natural talents and how you develop them",
+            "hi": "अपनी प्राकृतिक प्रतिभाओं को पहचानें और जानें कि आप उन्हें कैसे विकसित करते हैं"
+          },
+          "type": "section_subtitle"
+        },
+        {
+          "row_index": 20,
+          "section": "Support & Career Connection",
+          "text": {
+            "kn": "ಬೆಂಬಲ ಮತ್ತು ವೃತ್ತಿ ಸಂಬಂಧ",
+            "ta": "ஆதரவு மற்றும் தொழில் தொடர்பு",
+            "en": "Support & Career Connection",
+            "hi": "सहयोग और करियर संबंध"
+          },
+          "type": "section_title"
+        },
+        {
+          "row_index": 21,
+          "section": "Support & Career Connection",
+          "text": {
+            "kn": "ನಿಮ್ಮ ಹವ್ಯಾಸಗಳಿಂದ ಸಿಗುವ ಬೆಂಬಲ ಮತ್ತು ವೃತ್ತಿ ಅವಕಾಶಗಳ ಬಗ್ಗೆ ಆಲೋಚಿಸಿ",
+            "ta": "உங்கள் பொழுதுபோக்குகளிலிருந்து கிடைக்கும் ஆதரவு மற்றும் தொழில் வாய்ப்புகள் பற்றிச் சிந்தியுங்கள்",
+            "en": "Reflect on support systems and career possibilities from your hobbies",
+            "hi": "अपने शौक से मिलने वाले सहयोग और करियर की संभावनाओं पर विचार करें"
+          },
+          "type": "section_subtitle"
+        }
+      ],
+      "questions": [
+        {
+          "sno": 1,
+          "section": "Hobbies & Interests",
+          "question": {
+            "kn": "ನೀವು ಬಿಡುವಿನ ವೇಳೆಯಲ್ಲಿ ಯಾವ ಕೆಲಸ/ ಚಟುವಟಿಕೆಗಳನ್ನು ಮಾಡುತ್ತೀರಿ?",
+            "ta": "நீங்கள் ஓய்வு நேரத்தில் எந்த வேலைகள் / செயல்களை செய்கிறீர்கள்?",
+            "en": "What activities / work do you do in your free time?",
+            "hi": "आप अपने खाली समय में कौन से काम या गतिविधियाँ करते हैं?"
+          },
+          "help_text": {
+            "kn": "ಬಿಡುವಿನ ಸಮಯದಲ್ಲಿ ನೀವು ಮಾಡುವ ಕೆಲಸ ಅಥವಾ ಚಟುವಟಿಕೆಗಳ ಬಗ್ಗೆ ಬರೆಯಿರಿ.",
+            "ta": "புத்தகம் படிப்பது, வரைவது அல்லது விளையாடுவது போன்றவற்றை எழுதுங்கள்.",
+            "en": "Write about activities like reading, drawing or playing",
+            "hi": "खाली समय में आप जो भी काम करते हैं, उनके बारे में लिखें।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 2,
+          "section": "Hobbies & Interests",
+          "question": {
+            "kn": "ನಿಮಗೆ ಯಾವುದಾದರೂ ಹವ್ಯಾಸಗಳು ಇದೆಯೇ? ನಿಮ್ಮಲ್ಲಿರುವ ಒಳ್ಳೆಯ ಹವ್ಯಾಸಗಳನ್ನು ಪಟ್ಟಿಮಾಡಿ",
+            "ta": "உங்களுக்கு ஏதேனும் பொழுதுபோக்குகள் (Hobbies) உண்டா? பட்டியலிடுங்கள்",
+            "en": "Do you have any hobbies? List them.",
+            "hi": "क्या आपका कोई शौक (Hobby) है? अपने अच्छे शौकों की सूची बनाएं।"
+          },
+          "help_text": {
+            "kn": "ಸಂತೋಷಕ್ಕಾಗಿ ರೂಢಿಸಿಕೊಂಡ ಒಳ್ಳೆಯ ಕೆಲಸ ಅಥವಾ ಚಟುವಟಿಕೆಗಳನ್ನು ಬರೆಯಿರಿ.",
+            "ta": "உங்களுக்கு மகிழ்ச்சி தரும் செயல்களைப் பட்டியலிடுங்கள் (உதாரணம்: தோட்டம் வளர்த்தல்).",
+            "en": "List activities you do for joy (e.g., gardening, singing).",
+            "hi": "खुशी के लिए आप जो अच्छे काम या गतिविधियाँ करते हैं, उनके बारे में लिखें।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 3,
+          "section": "Hobbies & Interests",
+          "question": {
+            "kn": "ನೀವು ಮೇಲೆ ಪಟ್ಟಿಮಾಡಿದ ಹವ್ಯಾಸಗಳಲ್ಲಿ ನಿಮ್ಮ ನೆಚ್ಚಿನ ಹವ್ಯಾಸ ಯಾವುದು? ಯಾಕೆ? ಕಾರಣ ವಿವರಿಸಿ",
+            "ta": "மேலே பட்டியலிட்ட திறமைகளில் உங்களுக்கு மிகவும் பிடித்த திறமை எது? ஏன்? காரணம் விளக்குங்கள்.",
+            "en": "Among the hobbies listed above, which is your favorite? Why?",
+            "hi": "ऊपर बताए गए शौकों में से आपका सबसे पसंदीदा शौक कौन सा है? और क्यों?"
+          },
+          "help_text": {
+            "kn": "ನಿಮಗೆ ಅತಿ ಹೆಚ್ಚು ಇಷ್ಟವಾದದ್ದನ್ನು ಆರಿಸಿ ಮತ್ತು ಅದು ಏಕೆ ಇಷ್ಟ ಎಂದು ವಿವರಿಸಿ.",
+            "ta": "அது ஏன் உங்களுக்கு மகிழ்ச்சி தருகிறது என்பதை 2-3 வரிகளில் விளக்குங்கள்.",
+            "en": "Choose your favorite and explain why it brings you joy.",
+            "hi": "अपना सबसे पसंदीदा शौक चुनें और बताएं कि वह आपको क्यों पसंद है।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 4,
+          "section": "Hobbies & Interests",
+          "question": {
+            "kn": "ನಿಮ್ಮ ಹವ್ಯಾಸಗಳು (Hobbies) ಎಂದಾದರೂ ಬದಲಾಗಿವೆಯೇ?",
+            "ta": "உங்கள் பொழுதுபோக்குகள் எப்போதாவது மாறியுள்ளதா?",
+            "en": "Have your hobbies changed at any time?",
+            "hi": "क्या समय के साथ आपके शौक (Hobbies) कभी बदले हैं?"
+          },
+          "help_text": {
+            "kn": "ಕಾಲಾನಂತರದಲ್ಲಿ ನಿಮ್ಮ ಹವ್ಯಾಸಗಳು ಬದಲಾಗಿವೆಯೇ?",
+            "ta": "முன்பு பிடித்தது மற்றும் இப்போது பிடித்ததை ஒப்பிட்டு எழுதுங்கள்.",
+            "en": "Mention if your interests have changed over the years",
+            "hi": "क्या बड़े होने के साथ-साथ आपके पुराने शौक बदल गए हैं?"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 5,
+          "section": "Hobbies & Interests",
+          "question": {
+            "kn": "ನಿಮ್ಮ ಹವ್ಯಾಸಗಳಿಗೆ ಪ್ರೇರಣೆ ನೀಡಿದ ಸಂಗತಿ ಯಾವುದು? ಯಾವುದಾದರೂ ಹವ್ಯಾಸ ನಿಮ್ಮ ಕುಟುಂಬದಿಂದ, ಅನುವಂಶಿಕವಾಗಿ ಬಂದಿದೆಯೇ? ಈ ಕುರಿತು ಆಲೋಚಿಸಿ ತಿಳಿಸಿ",
+            "ta": "உங்கள் பொழுதுபோக்கிற்குத் ஊக்கம் அளித்தது எது?",
+            "en": "What inspired your hobbies?",
+            "hi": "आपको ये शौक पालने की प्रेरणा कहाँ से मिली? क्या कोई शौक आपको अपने परिवार या बुजुर्गों से मिला है?"
+          },
+          "help_text": {
+            "kn": "ನಿಮ್ಮ ಹವ್ಯಾಸಗಳಿಗೆ ಪ್ರೇರಣೆ ನೀಡಿದವರು ಯಾರು ಎಂದು ತಿಳಿಸಿ.",
+            "ta": "உங்கள் குடும்பம், நண்பர்கள் அல்லது ஆசிரியர் யாராவது காரணமா என எழுதுங்கள்.",
+            "en": "Mention who or what inspired you (family, friends, etc.).",
+            "hi": "बताएं कि आपको इन शौकों के लिए किसने प्रेरित किया या बढ़ावा दिया।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 6,
+          "section": "Hobbies & Interests",
+          "question": {
+            "kn": "ನಿಮಗೆ ಪರಿಚಿತವಿರುವ ಯಾರಾದರೂ ಇದೇ ರೀತಿಯ ಹವ್ಯಾಸಗಳು ಅಥವಾ ಆಸಕ್ತಿಗಳನ್ನು ಹೊಂದಿದ್ದಾರೆಯೇ? ಅವರು ಯಾರು?",
+            "ta": "உங்களுக்கு அறிமுகமானவர்களில் யாராவது இதே போன்ற பொழுதுபோக்கு கொண்டுள்ளார்களா? அவர்கள் யார்?",
+            "en": "Do you know anyone who has similar hobbies?",
+            "hi": "क्या आपके जान-पहचान में किसी और के भी ऐसे ही शौक हैं? वे कौन हैं?"
+          },
+          "help_text": {
+            "kn": "ಹವ್ಯಾಸ ಇರುವ ವ್ಯಕ್ತಿ ಸ್ನೇಹಿತ, ಸಂಬಂಧಿ ಅಥವಾ ಶಿಕ್ಷಕ ಇರಬಹುದು.",
+            "ta": "தெரிந்த நண்பர் அல்லது உறவினரின் பெயரைக் குறிப்பிடுங்கள்",
+            "en": "Name a friend, relative, or teacher with the same hobby.",
+            "hi": "वे व्यक्ति आपके दोस्त, रिश्तेदार या शिक्षक भी हो सकते हैं।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 7,
+          "section": "Hobbies & Interests",
+          "question": {
+            "kn": "ನಿಮ್ಮ ನೆಚ್ಚಿನ ಹವ್ಯಾಸದಲ್ಲಿ ತೊಡಗಿಸಿಕೊಂಡಾಗ ನಿಮಗೆ ಹೇಗನಿಸುತ್ತದೆ? ಅದು ನಿಮಗೆ ವಿಶ್ರಾಂತಿ ಪಡೆಯಲು ಅಥವಾ ಹೆಚ್ಚು ಆತ್ಮವಿಶ್ವಾಸವನ್ನು ಅನುಭವಿಸಲು ಸಹಾಯ ಮಾಡುತ್ತದೆಯೇ?",
+            "ta": "பொழுதுபோக்கில் ஈடுபடும்போது எப்படி உணர்கிறீர்கள்?",
+            "en": "How do you feel when engaging in your favorite hobby?",
+            "hi": "जब आप अपने पसंदीदा शौक में समय बिताते हैं, तो आपको कैसा लगता है?"
+          },
+          "help_text": {
+            "kn": "ನಿಮ್ಮ ನೆಚ್ಚಿನ ಹವ್ಯಾಸವು ನಿಮಗೆ ಸಂತೋಷ, ನಿರಾಳತೆ ಅಥವಾ ಹೆಚ್ಚಿನ ಆತ್ಮವಿಶ್ವಾಸವನ್ನು ನೀಡುತ್ತದೆಯೇ ಎಂದು ಬರೆಯಿರಿ.",
+            "ta": "அது உங்களுக்கு ஓய்வு அல்லது தன்னம்பிக்கையைத் தருகிறதா என எழுதுங்கள்.",
+            "en": "Write whether your favorite hobby makes you feel happy, relaxed, or more confident.",
+            "hi": "लिखें कि क्या आपका शौक आपको खुशी, शांति या आत्मविश्वास देता है।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 1,
+          "section": "Talents & Practice",
+          "question": {
+            "kn": "ನಿಮ್ಮಲ್ಲಿರುವ ಪ್ರತಿಭೆಗಳನ್ನು (Talents) ಪಟ್ಟಿ ಮಾಡಿ.",
+            "ta": "உங்களிடம் உள்ள திறமைகளை (Talents) பட்டியலிடுங்கள்.",
+            "en": "List the talents you have.",
+            "hi": "अपनी प्रतिभाओं (Talents) की सूची बनाएं।"
+          },
+          "help_text": {
+            "kn": "ಯಾವ್ಯಾವ ಪ್ರತಿಭೆ ನಿಮ್ಮಲ್ಲಿದೆ ಬರೆಯಿರಿ.",
+            "ta": "நீங்கள் இயற்கையாகவே சிறந்து விளங்கும் திறன்களை எழுதுங்கள் (உதாரணம்: கணிதம்).",
+            "en": "List skills you are naturally good at (e.g., Math, Singing).",
+            "hi": "आपमें कौन-कौन सी खूबियां या हुनर हैं, उनके बारे में लिखें।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 2,
+          "section": "Talents & Practice",
+          "question": {
+            "kn": "ನಿಮ್ಮ ಪ್ರತಿಭೆಯನ್ನು ಇನ್ನಷ್ಟು ಉತ್ತಮಗೊಳಿಸಲು ನೀವು ಪ್ರಯತ್ನ ಮಾಡುತ್ತಿದ್ದೀರಾ? ಮಾಡುತ್ತಿದ್ದರೆ ಹೇಗೆ ಎಂಬುದನ್ನು ತಿಳಿಸಿ",
+            "ta": "உங்கள் திறமையை மேலும் மேம்படுத்த நீங்கள் முயற்சி செய்து கொண்டிருக்கிறீர்களா? செய்தால், எவ்வாறு என்பதை விளக்குங்கள்.",
+            "en": "Are you trying to improve your talent further? If yes, explain how.",
+            "hi": "क्या आप अपनी प्रतिभा को और बेहतर बनाने की कोशिश कर रहे हैं? यदि हाँ, तो कैसे?"
+          },
+          "help_text": {
+            "kn": "ನಿಮ್ಮ ಪ್ರತಿಭೆಯನ್ನು ಸುಧಾರಿಸಲು ನೀವು ಏನು ಮಾಡುತ್ತಿದ್ದೀರಿ ಎಂದು ಬರೆಯಿರಿ.",
+            "ta": "உங்கள் பயிற்சி அல்லது கூடுதல் கற்றல் முறைகளைப் பற்றி எழுதுங்கள்.",
+            "en": "Mention how you practice or learn to get better.",
+            "hi": "अपनी प्रतिभा या हुनर को निखारने के लिए आप क्या कर रहे हैं, लिखें।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 1,
+          "section": "Support & Career Connection",
+          "question": {
+            "kn": "ನಿಮ್ಮ ಹವ್ಯಾಸ ಮತ್ತು ಪ್ರತಿಭೆಗಳನ್ನು ಮುಂದುವರೆಸಲು ಮತ್ತು ಪ್ರದರ್ಶಿಸಲು ಶಾಲೆ ಮತ್ತು ಮನೆಯಲ್ಲಿ ಪ್ರೋತ್ಸಾಹ ಹಾಗೂ ಅವಕಾಶ ಸಿಗುತ್ತಿದೆಯೇ?",
+            "ta": "உங்கள் திறமைகளை தொடர்ந்து வெளிப்படுத்த பள்ளியிலும் வீட்டிலும் ஊக்கம் மற்றும் வாய்ப்பு கிடைக்கிறதா?",
+            "en": "Do you get encouragement and opportunities at school or at home to continue and showcase your talents?",
+            "hi": "क्या आपको स्कूल या घर पर अपने शौक और प्रतिभा को दिखाने का मौका और प्रोत्साहन मिलता है?"
+          },
+          "help_text": {
+            "kn": "ಶಾಲೆಯಲ್ಲಿ ಅಥವಾ ಮನೆಯಲ್ಲಿ ನಿಮ್ಮ ಪ್ರತಿಭೆಯನ್ನು ವ್ಯಕ್ತಪಡಿಸಲು/ತೋರಿಸಲು ನಿಮಗೆ ಪ್ರೋತ್ಸಾಹ ಮತ್ತು ಅವಕಾಶಗಳು ಸಿಗುತ್ತವೆಯೇ ಎಂದು ಬರೆಯಿರಿ.",
+            "ta": "உங்கள் திறமையை வெளிப்படுத்த உங்களுக்குக் கிடைக்கும் வாய்ப்புகளை எழுதுங்கள்.",
+            "en": "Mention if you get chances to show what you are good at.",
+            "hi": "लिखें कि क्या आपको अपनी प्रतिभा दिखाने के लिए स्कूल या घर से मदद और अवसर मिलते हैं।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 2,
+          "section": "Support & Career Connection",
+          "question": {
+            "kn": "ನಿಮ್ಮ ಹವ್ಯಾಸ ಮತ್ತು ಪ್ರತಿಭೆಯನ್ನು ಇನ್ನಷ್ಟು ಉತ್ತಮಗೊಳಿಸುವ ನಿಮ್ಮ ಪ್ರಯತ್ನಕ್ಕೆ ಪಾಲಕರು ಬೆಂಬಲ ನೀಡುತ್ತಾರೆಯೇ? ಯಾವ ರೀತಿ ತಿಳಿಸಿ.",
+            "ta": "உங்கள் திறமையை மேலும் மேம்படுத்த நீங்கள் செய்யும் முயற்சிகளுக்கு உங்கள் பெற்றோர் ஆதரவு அளிக்கிறார்களா? எவ்வாறு என்பதை விளக்குங்கள்.",
+            "en": "Do your parents support your efforts to further improve your talent? If yes, in what way?",
+            "hi": "क्या आपकी प्रतिभा को बेहतर बनाने में आपके माता-पिता आपकी मदद करते हैं? कैसे?"
+          },
+          "help_text": {
+            "kn": "ನಿಮ್ಮ ಪ್ರತಿಭೆಯನ್ನು ಬೆಳೆಸಿಕೊಳ್ಳಲು ನಿಮ್ಮ ಪೋಷಕರು ನಿಮಗೆ ಹೇಗೆ ಸಹಾಯ ನೀಡುತ್ತಾರೆ ಎಂದು ಬರೆಯಿರಿ.",
+            "ta": "அவர்கள் உங்களுக்கு எப்படி உதவுகிறார்கள் என்பதை விளக்குங்கள்.",
+            "en": "Write how your parents support you in developing your talent.",
+            "hi": "लिखें कि आपके माता-पिता आपकी प्रतिभा को निखारने में किस तरह सहायता करते हैं।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 3,
+          "section": "Support & Career Connection",
+          "question": {
+            "kn": "ನಿಮ್ಮ ಯಾವುದಾದರೂ ಹವ್ಯಾಸಗಳು ನಿಮ್ಮ ಸ್ವಾಭಾವಿಕ ಪ್ರತಿಭೆ ಮತ್ತು ಸಾಮರ್ಥ್ಯಗಳೊಂದಿಗೆ ಹೊಂದಿಕೆಯಾಗುತ್ತವೆಯೇ?",
+            "ta": "உங்கள் பொழுதுபோக்கு, உங்கள் இயற்கை திறமையோடு பொருந்துகிறதா?",
+            "en": "Does any of your hobby match with your natural talents?",
+            "hi": "क्या आपका कोई शौक आपकी स्वाभाविक प्रतिभा या काबिलियत से मेल खाता है?"
+          },
+          "help_text": {
+            "kn": "ಹವ್ಯಾಸಕ್ಕೆ ಹೊಂದುವ ಪ್ರತಿಭೆ ನಿಮ್ಮಲ್ಲಿದೆಯೇ ಎಂಬುದನ್ನು ಬರೆಯಿರಿ.",
+            "ta": "உதாரணம்: நீங்கள் கிரிக்கெட் விரும்பி விளையாடலாம் (ஆர்வம்) மற்றும் வேகமாக ஓடலாம் (திறமை).",
+            "en": "e.g., You love cricket (Hobby) and are a fast runner (Talent).",
+            "hi": "लिखें कि क्या आपके पास ऐसा कोई हुनर है जो आपके शौक से जुड़ा हो।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 4,
+          "section": "Support & Career Connection",
+          "question": {
+            "kn": "ನಿಮ್ಮ ಯಾವುದಾದರೂ ಹವ್ಯಾಸವನ್ನು ಭವಿಷ್ಯದಲ್ಲಿ ನಿಮ್ಮ ವೃತ್ತಿಯಾಗಿ ಮುಂದುವರೆಸಲು ಸಾಧ್ಯವೇ? ಸಾಧ್ಯವೆಂದಾದರೆ, ಅದಕ್ಕಾಗಿ ನೀವು ಅನುಸರಿಸುವ ಕ್ರಮ/ಸಿದ್ಧತೆಗಳೇನು?",
+            "ta": "உங்கள் பொழுதுபோக்கை எதிர்காலத் தொழிலாக மாற்ற முடியுமா?",
+            "en": "Can any of your hobbies be pursued as a career? If yes, how?",
+            "hi": "क्या आप भविष्य में अपने किसी शौक को अपना पेशा (नौकरी/काम) बना सकते हैं? इसके लिए आपकी क्या तैयारी है?"
+          },
+          "help_text": {
+            "kn": "ನಿಮ್ಮ ಪ್ರತಿಭೆಯನ್ನು ಭವಿಷ್ಯದ ವೃತ್ತಿಯನ್ನಾಗಿ ಮಾಡಲು ನಿಮ್ಮ ಯೋಜನೆ ಏನು?",
+            "ta": "இதைத் தொழிலாக மாற்ற உங்களுக்கு என்ன திட்டம் உள்ளது என எழுதுங்கள்.",
+            "en": "If yes, what steps or plans do you have to achieve this?",
+            "hi": "अपनी प्रतिभा को भविष्य के करियर में बदलने के लिए आपकी क्या योजना है?"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 5,
+          "section": "Support & Career Connection",
+          "question": {
+            "kn": "ತಮ್ಮ ಹವ್ಯಾಸವನ್ನೇ ವೃತ್ತಿಯಾಗಿ ಮಾಡಿಕೊಂಡಿರುವ ನಿಮ್ಮ ಪರಿಚಯದ ಯಾರಾದರೂ ಇದ್ದಾರಾ? ಅವರು ಯಾರು ಮತ್ತು ಹೇಗೆ ಅವರು ತಮ್ಮ ಹವ್ಯಾಸವನ್ನೇ ವೃತ್ತಿಯಾಗಿ ಮಾಡಿಕೊಂಡರು ಎಂಬುದನ್ನು ತಿಳಿಸಿ.",
+            "ta": "பொழுதுபோக்கைத் தொழிலாக மாற்றியவர் யாராவது உண்டா?",
+            "en": "Do you know anyone who turned a hobby into a career?",
+            "hi": "क्या आप किसी ऐसे व्यक्ति को जानते हैं जिसने अपने शौक को ही अपना पेशा बनाया हो? उनके बारे में बताएं।"
+          },
+          "help_text": {
+            "kn": "ತಮ್ಮ ಪ್ರತಿಭೆಯನ್ನು ವೃತ್ತಿಯನ್ನಾಗಿ ಪರಿವರ್ತಿಸಿಕೊಂಡ ವ್ಯಕ್ತಿಯ ಬಗ್ಗೆ ಸಂಕ್ಷಿಪ್ತವಾಗಿ ಬರೆಯಿರಿ.",
+            "ta": "தெரிந்த நபர் மற்றும் அவர்களின் தொழிலைப் பற்றிச் சுருக்கமாக எழுதுங்கள்.",
+            "en": "Briefly mention someone who turned their passion into a profession.",
+            "hi": "उस व्यक्ति के बारे में संक्षेप में लिखें जिसने अपने हुनर को ही अपनी आजीविका (कमाई का साधन) बना लिया।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        }
+      ],
+      "summary": {
+        "title": {
+          "kn": "ಸಾರಾಂಶ: ನನ್ನ ಮುಂದಿನ ಯೋಜನೆ",
+          "ta": "சுருக்கம்: எனது அடுத்த திட்டம்",
+          "en": "My Next Plan",
+          "hi": "सारांश: मेरी अगली योजना"
+        },
+        "subtitle": {
+          "kn": "ನನ್ನ ಆಸಕ್ತಿಯ ಸಾರಾಂಶ.",
+          "ta": "எனது ஆர்வங்களின் சுருக்கம்",
+          "en": "Summary of my interests",
+          "hi": "मेरी रुचियों का सारांश"
+        },
+        "header": [
+          "SNo",
+          "Kannada",
+          "Tamil",
+          "English",
+          "Hindi",
+          "Input Type",
+          "Display Type",
+          "Remark"
+        ],
+        "questions": [
+          {
+            "sno": 1,
+            "question": {
+              "kn": "ಹವ್ಯಾಸಗಳು",
+              "ta": "பொழுதுபோக்குகள்",
+              "en": "Hobbies",
+              "hi": "शौक"
+            },
+            "input_type": "Text field",
+            "display_type": "Table column",
+            "remark": ""
+          },
+          {
+            "sno": 2,
+            "question": {
+              "kn": "ನನ್ನ ಈ ಹವ್ಯಾಸವನ್ನು ವೃತ್ತಿಯಾಗಿ ರೂಪಿಸಿಕೊಳ್ಳಲು ನಾನು ಬಯಸುತ್ತೇನೆ.",
+              "ta": "இந்தப் பொழுதுபோக்கை ஒரு தொழிலாக மாற்ற நான் விரும்புகிறேன்.",
+              "en": "I would like to turn this hobby into a career",
+              "hi": "मैं इस शौक को करियर में बदलना चाहता हूँ"
+            },
+            "input_type": "Text field",
+            "display_type": "Table column",
+            "remark": ""
+          },
+          {
+            "sno": 3,
+            "question": {
+              "kn": "ಈ ಹವ್ಯಾಸಗಳೊಂದಿಗೆ ಹೊಂದಾಣಿಕೆಯಾಗಬಲ್ಲ ವೃತ್ತಿಗಳು",
+              "ta": "இந்தப் பொழுதுபோக்குகளுக்கு ஏற்ற தொழில்கள்.",
+              "en": "Careers that match with these hobbies",
+              "hi": "इन शौकों के साथ मेल खाने वाले करियर"
+            },
+            "input_type": "Text field",
+            "display_type": "Table column",
+            "remark": ""
+          },
+          {
+            "sno": 4,
+            "question": {
+              "kn": "ತಮ್ಮ ಹವ್ಯಾಸಗಳನ್ನು ವೃತ್ತಿಗಳನ್ನಾಗಿ ಮಾಡಿಕೊಂಡಿರುವ ನಿಮಗೆ ಪರಿಚಿತವಿರುವ ವ್ಯಕ್ತಿಗಳು",
+              "ta": "தங்களது பொழுதுபோக்கை தொழிலாக மாற்றிக்கொண்ட எனக்குத் தெரிந்த நபர்கள்.",
+              "en": "People known to me who have turned their hobbies into careers",
+              "hi": "ऐसे लोग जिन्हें मैं जानता हूँ जिन्होंने अपने शौक को करियर बनाया है"
+            },
+            "input_type": "Text field",
+            "display_type": "Table column",
+            "remark": ""
+          },
+          {
+            "sno": 1,
+            "question": {
+              "kn": "ಪ್ರತಿಭೆಗಳು",
+              "ta": "திறமைகள்",
+              "en": "Talents",
+              "hi": "प्रतिभा"
+            },
+            "input_type": "Text field",
+            "display_type": "Table column",
+            "remark": ""
+          },
+          {
+            "sno": 2,
+            "question": {
+              "kn": "ನಾನು ಈ ಪ್ರತಿಭೆಯನ್ನು ವೃತ್ತಿಯಾಗಿ ರೂಪಿಸಿಕೊಳ್ಳಲು ಬಯಸುತ್ತೇನೆ.",
+              "ta": "இந்தத் திறமையை ஒரு தொழிலாக மாற்ற நான் விரும்புகிறேன்.",
+              "en": "I would like to turn this talent into a career.",
+              "hi": "मैं इस प्रतिभा को करियर में बदलना चाहता हूँ"
+            },
+            "input_type": "Text field",
+            "display_type": "Table column",
+            "remark": ""
+          },
+          {
+            "sno": 3,
+            "question": {
+              "kn": "ಪ್ರತಿಭೆಗಳೊಂದಿಗೆ ಹೊಂದಾಣಿಕೆಯಾಗಬಲ್ಲ ವೃತ್ತಿಗಳು",
+              "ta": "இந்தத் திறமைகளுக்கு ஏற்ற தொழில்கள்",
+              "en": "Careers that match your talents",
+              "hi": "मैं अपनी प्रतिभा को करियर में बदलना चाहता हूँ"
+            },
+            "input_type": "Text field",
+            "display_type": "Table column",
+            "remark": ""
+          },
+          {
+            "sno": 4,
+            "question": {
+              "kn": "ತಮ್ಮ ಪ್ರತಿಭೆಯನ್ನು ವೃತ್ತಿಗಳನ್ನಾಗಿ ಮಾಡಿಕೊಂಡಿರುವ ನನಗೆ ಪರಿಚಿತವಿರುವ ವ್ಯಕ್ತಿಗಳು",
+              "ta": "தங்களது திறமையை தொழிலாக மாற்றிக்கொண்ட எனக்குத் தெரிந்த நபர்கள்",
+              "en": "People known to me who have turned their talents into careers.",
+              "hi": "ऐसे लोग जिन्हें मैं जानता हूँ जिन्होंने अपनी प्रतिभा को करियर बनाया है"
+            },
+            "input_type": "Text field",
+            "display_type": "Table column",
+            "remark": ""
+          }
+        ]
+      },
+      "empty_cells": []
+    },
+    "role_models": {
+      "tab_name": "9.6_My Role Models",
+      "assessment_type": "role_models",
+      "module_title": {
+        "kn": "ನನ್ನ ಆದರ್ಶ ವ್ಯಕ್ತಿಗಳು",
+        "ta": "என் முன்மாதிரி நபர்",
+        "en": "My Role Model",
+        "hi": "मेरे आदर्श"
+      },
+      "title_text": {
+        "kn": "ನಾವೆಲ್ಲರೂ ವಿಶಿಷ್ಟ ಗುಣವುಳ್ಳ ವ್ಯಕ್ತಿಗಳಿಂದ ಪ್ರೇರಿತರಾಗಿರುತ್ತೇವೆ. ಅಂತಹ ಆದರ್ಶ ವ್ಯಕ್ತಿಗಳ ಬಗ್ಗೆ ತಿಳಿಯುವುದು ನಮ್ಮ ವ್ಯಕ್ತಿತ್ವ ರೂಪಿಸಿಕೊಳ್ಳಲು ಸ್ಪೂರ್ತಿ ನೀಡುತ್ತದೆ. ಈ ಚಟುವಟಿಕೆಯ ಮೂಲಕ ಅಂತಹವರನ್ನು ಗುರುತಿಸಿ, ಅವರ ಬಗ್ಗೆ ಇನ್ನಷ್ಟು ತಿಳಿದುಕೊಳ್ಳೋಣ.",
+        "ta": "நாம் அனைவரும் தனித்துவமான பண்புகளைக் கொண்ட மனிதர்களால் ஈர்க்கப்படுகிறோம். அத்தகைய முன்மாதிரிகளைப் பற்றித் தெரிந்துகொள்வது நமது ஆளுமையை வடிவமைக்க உதவும். இந்தச் செயல்பாட்டின் மூலம் உங்களின் முன்மாதிரிகளைக் கண்டறிந்து அவர்களைப் பற்றி மேலும் தெரிந்துகொள்வோம்.",
+        "en": "We are all inspired by people with unique qualities. Learning about these role models helps shape our own personalities. Use this activity to identify your role models and discover what makes them inspiring.",
+        "hi": "हम सभी विशिष्ट गुणों वाले व्यक्तियों से प्रेरित होते हैं। ऐसे आदर्श व्यक्तियों के बारे में जानना हमारे व्यक्तित्व को संवारने में मदद करता है। आइए, इस गतिविधि के माध्यम से अपने प्रेरणास्रोतों को पहचानें और उनके बारे में और जानें।"
+      },
+      "subtitle_text": {
+        "kn": "ನಿಮ್ಮ ಆಯ್ಕೆಯ ಆದರ್ಶ ವ್ಯಕ್ತಿಗಳ ಕುರಿತು ಈ ಕೆಳಗಿನ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ:",
+        "ta": "நீங்கள் தேர்ந்தெடுத்த முன்மாதிரிகளைப் பற்றி பின்வரும் கேள்விகளுக்குப் பதிலளிக்கவும்:",
+        "en": "Answer the following questions about your chosen role models:",
+        "hi": "अपने चुने हुए प्रेरणास्रोतों के बारे में निम्नलिखित प्रश्नों के उत्तर दें:"
+      },
+      "question_header": [
+        "Sno",
+        "Kannada Question",
+        "Kannada Help text",
+        "Tamil Question",
+        "Tamil Help Text",
+        "English Question",
+        "English Help Text",
+        "Hindi Question",
+        "Hindi Help Text",
+        "Input Type",
+        "Display Type",
+        "Remark"
+      ],
+      "sections": [
+        {
+          "title": {
+            "kn": "ಮಾದರಿ ವ್ಯಕ್ತಿ - 1 (ನಿಮಗೆ ಹತ್ತಿರದಿಂದ ಪರಿಚಯವಿರುವ ವ್ಯಕ್ತಿ)",
+            "ta": "முன்மாதிரி - 1 (உங்களுக்கு நெருக்கமாகத் தெரிந்தவர்)",
+            "en": "Role Model - 1 (Preferably Closely Known Person)",
+            "hi": "प्रेरणास्रोत - 1 (कोई ऐसा व्यक्ति जिसे आप करीब से जानते हों)"
+          },
+          "subtitle": {
+            "kn": "",
+            "ta": "",
+            "en": "",
+            "hi": ""
+          }
+        },
+        {
+          "title": {
+            "kn": "ಅವಲೋಕನ",
+            "ta": "பிரதிபலிப்பு",
+            "en": "Reflection",
+            "hi": "आत्म-चिंतन"
+          },
+          "subtitle": {
+            "kn": "",
+            "ta": "",
+            "en": "",
+            "hi": ""
+          }
+        }
+      ],
+      "sub_headers": [
+        {
+          "row_index": 7,
+          "section": "Role Model - 1 (Preferably Closely Known Person)",
+          "text": {
+            "kn": "ಮಾದರಿ ವ್ಯಕ್ತಿ - 1 (ನಿಮಗೆ ಹತ್ತಿರದಿಂದ ಪರಿಚಯವಿರುವ ವ್ಯಕ್ತಿ)",
+            "ta": "முன்மாதிரி - 1 (உங்களுக்கு நெருக்கமாகத் தெரிந்தவர்)",
+            "en": "Role Model - 1 (Preferably Closely Known Person)",
+            "hi": "प्रेरणास्रोत - 1 (कोई ऐसा व्यक्ति जिसे आप करीब से जानते हों)"
+          },
+          "type": "section_title"
+        },
+        {
+          "row_index": 8,
+          "section": "Role Model - 1 (Preferably Closely Known Person)",
+          "text": {
+            "kn": "",
+            "ta": "",
+            "en": "",
+            "hi": ""
+          },
+          "type": "section_subtitle"
+        },
+        {
+          "row_index": 20,
+          "section": "Reflection",
+          "text": {
+            "kn": "ಅವಲೋಕನ",
+            "ta": "பிரதிபலிப்பு",
+            "en": "Reflection",
+            "hi": "आत्म-चिंतन"
+          },
+          "type": "section_title"
+        },
+        {
+          "row_index": 21,
+          "section": "Reflection",
+          "text": {
+            "kn": "",
+            "ta": "",
+            "en": "",
+            "hi": ""
+          },
+          "type": "section_subtitle"
+        }
+      ],
+      "questions": [
+        {
+          "sno": 1,
+          "section": "Role Model - 1 (Preferably Closely Known Person)",
+          "question": {
+            "kn": "ನಿಮ್ಮ ಆದರ್ಶ ವ್ಯಕ್ತಿಗಳ ಹೆಸರು",
+            "ta": "உங்கள் முன்மாதிரி நபரின் பெயர் என்ன?",
+            "en": "What is the name of your role model?",
+            "hi": "अपने आदर्श व्यक्ति का नाम।"
+          },
+          "help_text": {
+            "kn": "ನಿಮ್ಮ ಮಾದರಿ ವ್ಯಕ್ತಿಯ ಪೂರ್ಣ ಹೆಸರನ್ನು ಬರೆಯಿರಿ.",
+            "ta": "முன்மாதிரி நபரின் முழுப் பெயரை எழுதுங்கள்.",
+            "en": "Write the full name of your role model.",
+            "hi": "अपने आदर्श व्यक्ति का पूरा नाम लिखें।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 2,
+          "section": "Role Model - 1 (Preferably Closely Known Person)",
+          "question": {
+            "kn": "ಇವರು ನಿಮ್ಮ ಕುಟುಂಬದವರೇ? ಸಂಬಂಧಿಕರೆ? ಪರಿಚಯದವರೇ? ತಿಳಿಸಿ",
+            "ta": "அவர் உங்கள் குடும்ப உறுப்பினரா, உறவினரா அல்லது அறிமுகமானவரா?",
+            "en": "Is the person a family member, relative, or someone you know?",
+            "hi": "क्या वे आपके परिवार, रिश्तेदार या परिचित व्यक्ति हैं?"
+          },
+          "help_text": {
+            "kn": "ಆ ವ್ಯಕ್ತಿಯು ನಿಮಗೆ ಹೇಗೆ ಸಂಬಂಧಪಟ್ಟವರು ಎಂದು ತಿಳಿಸಿ.",
+            "ta": "அவர் உங்களுடன் எந்த வகை தொடர்பில் உள்ளார் என்பதை குறிப்பிடுங்கள்.",
+            "en": "Mention how the person is related to you.",
+            "hi": "बताएं कि वह व्यक्ति आपसे कैसे संबंधित है।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 3,
+          "section": "Role Model - 1 (Preferably Closely Known Person)",
+          "question": {
+            "kn": "ನಿಮ್ಮ ಆದರ್ಶ ವ್ಯಕ್ತಿಗಳಲ್ಲಿ ನೀವು ಮೆಚ್ಚುವ ಗುಣಗಳನ್ನು ಪಟ್ಟಿ ಮಾಡಿ ಹಾಗೂ ಅವರು ನಿಮಗೆ ವಿಶೇಷವಾಗಿ ಕಾಣುವ ಕಾರಣ ಹಂಚಿಕೊಳ್ಳಿ.",
+            "ta": "அவர்களிடம் நீங்கள் வியக்கும் பண்புகள் யாவை? அவர்கள் ஏன் உங்களுக்குச் சிறப்பானவர்?",
+            "en": "What qualities do you admire in your role model? Why are they special to you?",
+            "hi": "अपने आदर्श व्यक्ति के उन गुणों की सूची बनाएं जिन्हें आप पसंद करते हैं और बताएं कि वे आपके लिए विशेष क्यों हैं।"
+          },
+          "help_text": {
+            "kn": "ಕಠಿಣ ಪರಿಶ್ರಮ, ಪ್ರಾಮಾಣಿಕತೆ ಮತ್ತು ಧೈರ್ಯದಂತಹ ಗುಣಗಳ ಬಗ್ಗೆ ಯೋಚಿಸಿ.",
+            "ta": "உழைப்பு, நேர்மை, தைரியம் போன்ற பண்புகளை நினைத்து எழுதுங்கள்.",
+            "en": "Think about qualities like hard work, honesty, and courage.",
+            "hi": "कड़ी मेहनत, ईमानदारी और साहस जैसे गुणों के बारे में सोचें और उन्हें लिखें।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 4,
+          "section": "Role Model - 1 (Preferably Closely Known Person)",
+          "question": {
+            "kn": "ಇವರು ಯಾವ ಕೆಲಸ/ ಉದ್ಯೋಗ ಮಾಡುತ್ತಿದ್ದಾರೆ?",
+            "ta": "அவர் எந்த வேலை அல்லது தொழில் செய்கிறார்?",
+            "en": "What work or profession does the person do?",
+            "hi": "वे क्या काम या व्यवसाय करते हैं?"
+          },
+          "help_text": {
+            "kn": "ಅವರ ಉದ್ಯೋಗ ಅಥವಾ ವೃತ್ತಿಯ ಬಗ್ಗೆ ಬರೆಯಿರಿ.",
+            "ta": "அவரின் வேலை அல்லது தொழிலை எளிமையாக எழுதுங்கள்.",
+            "en": "Briefly describe the work they do.",
+            "hi": "उनके काम या करियर के बारे में जानकारी लिखें।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 5,
+          "section": "Role Model - 1 (Preferably Closely Known Person)",
+          "question": {
+            "kn": "ಇವರ ಪ್ರೇರಣೆಯಿಂದ ನಿಮ್ಮಲ್ಲಿರುವ ಯಾವ ಕೌಶಲ್ಯ ಅಥವಾ ಪ್ರತಿಭೆಯನ್ನು ಉತ್ತಮ ಪಡಿಸಿಕೊಳ್ಳಲು ಬಯಸುತ್ತೀರಿ?",
+            "ta": "அவரின் ஊக்கத்தால் உங்கள் எந்த திறன் அல்லது திறமையை வளர்க்க விரும்புகிறீர்கள்?",
+            "en": "Which skill or talent of yours do you want to develop inspired by them?",
+            "hi": "उनकी प्रेरणा से आप अपने किस कौशल या प्रतिभा में सुधार करना चाहते हैं?"
+          },
+          "help_text": {
+            "kn": "ಅವರಲ್ಲಿರುವ - ಅಧ್ಯಯನ, ನಾಯಕತ್ವ ಅಥವಾ ಸಂವಹನದಂತಹ ಕೌಶಲಗಳ ಬಗ್ಗೆ ಯೋಚಿಸಿ, ಬರೆಯಿರಿ.",
+            "ta": "படிப்பு, தலைமைத் திறன், பேசும் திறன் போன்றவற்றை யோசிக்கவும்.",
+            "en": "Think about skills like studies, leadership, or communication.",
+            "hi": "उनके अध्ययन, नेतृत्व या संचार (communication) जैसे कौशलों के बारे में सोचें और लिखें।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 6,
+          "section": "Role Model - 1 (Preferably Closely Known Person)",
+          "question": {
+            "kn": "ನಿಮ್ಮ ಆದರ್ಶ ವ್ಯಕ್ತಿಗಳೊಂದಿಗೆ ನಿಮ್ಮ ಆಯ್ಕೆಯ ವೃತ್ತಿ/ ಉದ್ಯೋಗದ ಬಗ್ಗೆ ಚರ್ಚಿಸಿದಿರಾ? ಏನನ್ನು ಚರ್ಚಿಸಿದಿರಿ?",
+            "ta": "உங்கள் முன்மாதிரி நபருடன் நீங்கள் தேர்ந்தெடுத்த தொழில் அல்லது வேலை பற்றி பேசினீர்களா? என்ன பேசினீர்கள்?",
+            "en": "Have you discussed your chosen career or job with your role model? What did you discuss?",
+            "hi": "क्या आपने अपने आदर्श व्यक्ति के साथ अपने पसंदीदा करियर के बारे में चर्चा की है? आपने क्या चर्चा की?"
+          },
+          "help_text": {
+            "kn": "ನೀವು ಮಾಡಲು ಬಯಸುವ ಉದ್ಯೋಗ, ಶಿಕ್ಷಣ ಅಥವಾ ಭವಿಷ್ಯದ ಯೋಜನೆಗಳ ಬಗ್ಗೆ ಚರ್ಚಿಸಿದ್ದೀರಾ ಎಂದು ಬರೆಯಿರಿ.",
+            "ta": "வேலை தேர்வு, படிப்பு வழி, எதிர்கால திட்டங்கள் பற்றி பேசினீர்களா என்று எழுதுங்கள்.",
+            "en": "Write if you discussed career choice, education path, or future plans.",
+            "hi": "बताएं कि क्या आपने अपनी शिक्षा, नौकरी या भविष्य की योजनाओं के बारे में उनसे बात की है।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 7,
+          "section": "Role Model - 1 (Preferably Closely Known Person)",
+          "question": {
+            "kn": "ಇಲ್ಲ ಎಂದರೆ, ಅವರೊಂದಿಗೆ ನಿಮ್ಮ ಕನಸಿನ ಯೋಜನೆ ಬಗ್ಗೆ ಅವರ ಅಭಿಪ್ರಾಯ ಪಡೆಯುವ ಯೋಚನೆ ಮಾಡಿದ್ದೀರಾ?",
+            "ta": "இல்லையென்றால், அவர்களிடம் ஆலோசனை பெறும் எண்ணம் உள்ளதா?",
+            "en": "If not, do you plan to seek their advice or opinion?",
+            "hi": "यदि नहीं, तो क्या आपने अपने सपनों की योजना के बारे में उनकी राय लेने के बारे में सोचा है?"
+          },
+          "help_text": {
+            "kn": "ನಿಮ್ಮ ಕನಸು ಅಥವಾ ಭವಿಷ್ಯದ ಯೋಜನೆಯ ಬಗ್ಗೆ ಅವರು ಏನು ಹೇಳುತ್ತಾರೆ ಎಂದು ಬರೆಯಿರಿ.",
+            "ta": "உங்கள் கனவுத் திட்டம் பற்றி அவரிடம் பேசத் திட்டமிட்டுள்ளீர்களா என எழுதுங்கள்.",
+            "en": "Write whether you plan to discuss your dream or future plan with them.",
+            "hi": "अपने सपनों या भविष्य की योजना के बारे में उनकी संभावित राय के बारे में लिखें।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 8,
+          "section": "Role Model - 1 (Preferably Closely Known Person)",
+          "question": {
+            "kn": "ನಿಮ್ಮ ಕನಸಿನ ಉದ್ಯೋಗ/ವೃತ್ತಿಯ ಬಗ್ಗೆ ಆದರ್ಶ ವ್ಯಕ್ತಿಗಳು ಏನು ಹೇಳುತ್ತಾರೆ?",
+            "ta": "உங்கள் கனவு வேலை அல்லது தொழில் பற்றி முன்மாதிரி நபர் என்ன கூறுகிறார்?",
+            "en": "What does your role model say about your dream job or career?",
+            "hi": "आपके सपनों के करियर के बारे में आपके आदर्श व्यक्ति क्या कहते हैं?"
+          },
+          "help_text": {
+            "kn": "ಅವರು ನಿಮ್ಮನ್ನು ಪ್ರೋತ್ಸಾಹಿಸಿದರೇ ಅಥವಾ ಸಲಹೆ ನೀಡಿದರೇ ಎಂದು ತಿಳಿಸಿ.",
+            "ta": "அவர் ஊக்குவித்தாரா, அறிவுரை கொடுத்தாரா என்பதை குறிப்பிடுங்கள்.",
+            "en": "Mention if they encouraged you or gave you specific advice.",
+            "hi": "लिखें कि उन्होंने आपको प्रोत्साहित किया या कोई विशेष सलाह दी।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 9,
+          "section": "Role Model - 1 (Preferably Closely Known Person)",
+          "question": {
+            "kn": "ಯಾವುದಾದರೂ ಆದರ್ಶ ವ್ಯಕ್ತಿಗಳು ನಿಮ್ಮ ಕನಸಿನ ವೃತ್ತಿಯ ಆಯ್ಕೆಯಲ್ಲಿ ನಿಮಗೆ ಸಹಾಯ ಮಾಡಬಹುದೆ?",
+            "ta": "எந்த முன்மாதிரி நபர் உங்கள் கனவு தொழில் தேர்வில் உங்களுக்கு உதவி செய்தாரா?",
+            "en": "Has any role model helped you in choosing your dream career?",
+            "hi": "क्या कोई आदर्श व्यक्ति आपके सपनों के करियर के चुनाव में आपकी मदद कर सकता है?"
+          },
+          "help_text": {
+            "kn": "ನಿಮಗೆ ಯಾರು ಸಹಾಯ ಮಾಡಬಹುದು ಮತ್ತು ಅವರು ಹೇಗೆ ಸಹಾಯ ಮಾಡಬಹುದು ಎಂದು ಬರೆಯಿರಿ.",
+            "ta": "யார் உதவி செய்தார், எவ்வாறு உதவி செய்தார் என்பதை எழுதுங்கள்.",
+            "en": "Write who helped you and how they helped you.",
+            "hi": "लिखें कि कौन आपकी मदद कर सकता है और वे किस तरह से मददगार हो सकते हैं।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 10,
+          "section": "Role Model - 1 (Preferably Closely Known Person)",
+          "question": {
+            "kn": "ಹೌದಾದಲ್ಲಿ, ನೀವು ಯಾವ ರೀತಿಯ ಸಹಾಯವನ್ನು ನಿರೀಕ್ಷಿಸುತ್ತೀರಿ?",
+            "ta": "ஆம் என்றால், நீங்கள் எந்த வகையான உதவியை எதிர்பார்க்கிறீர்கள்?",
+            "en": "If yes, what kind of help do you expect?",
+            "hi": "यदि हाँ, तो आप किस प्रकार की सहायता की अपेक्षा करते हैं?"
+          },
+          "help_text": {
+            "kn": "ಶಿಕ್ಷಣ, ತರಬೇತಿ ಅಥವಾ ಮಾರ್ಗದರ್ಶನ etc. ಯಾವುದು ಎಂಬುದನ್ನು ಬರೆಯಿರಿ",
+            "ta": "படிப்பு, பயிற்சி, வழிகாட்டுதல் போன்ற உதவிகளை நினைத்து எழுதுங்கள்.",
+            "en": "Think about help like education, training, or guidance.",
+            "hi": "शिक्षा, प्रशिक्षण या मार्गदर्शन आदि में से आपको किस तरह की मदद चाहिए, उसे लिखें।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 11,
+          "section": "Role Model - 1 (Preferably Closely Known Person)",
+          "question": {
+            "kn": "ಮೇಲಿನ ಪ್ರಶ್ನೆಗಳ ಹೊರತಾಗಿ ಏನನ್ನಾದರೂ ತಿಳಿಸಲು ಬಯಸುವಿರಾ?",
+            "ta": "மேலுள்ள கேள்விகளுக்கு கூடுதலாக நீங்கள் வேறு ஏதாவது சொல்ல விரும்புகிறீர்களா?",
+            "en": "Apart from the above questions, is there anything else you would like to say?",
+            "hi": "क्या आप उपरोक्त प्रश्नों के अलावा कुछ और बताना चाहते हैं?"
+          },
+          "help_text": {
+            "kn": "ನೀವು ನಿಮ್ಮಇನ್ನಿತರ ಆಲೋಚನೆಗಳು ಅಥವಾ ಅಭಿಪ್ರಾಯಗಳನ್ನು ಬರೆಯಬಹುದು.",
+            "ta": "உங்கள் எண்ணங்கள் அல்லது கருத்துகளை சுதந்திரமாக எழுதலாம்.",
+            "en": "You may write any additional thoughts or opinions.",
+            "hi": "आप अपने अन्य विचार या राय यहाँ लिख सकते हैं।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 12,
+          "section": "Reflection",
+          "question": {
+            "kn": "ನಿಮ್ಮ ಹಾಗೂ ನೀವು ಆದರ್ಶವೆಂದು ಭಾವಿಸಿದ ಈ ಮೇಲಿನ ವ್ಯಕ್ತಿಗಳ ವ್ಯಕ್ತಿತ್ವದಲ್ಲಿರುವ ಹೋಲಿಕೆ ಅಥವಾ ಸಾಮ್ಯತೆಯನ್ನು ಗಮನಿಸಿದ್ದೀರಾ? ಏನದು?",
+            "ta": "உங்களுக்கும் அவருக்கும் உள்ள குண ஒற்றுமைகளைக் கவனித்துள்ளீர்களா?",
+            "en": "Have you noticed any similarity or comparison between your personality and that of the above role models?",
+            "hi": "क्या आपने अपने और अपने आदर्श व्यक्ति के व्यक्तित्व में कोई समानता देखी है? वह क्या है?"
+          },
+          "help_text": {
+            "kn": "ನಿಮ್ಮ ಮತ್ತು ನಿಮ್ಮ ಮಾದರಿ ವ್ಯಕ್ತಿಯ ನಡುವಿನ ಸಮಾನ ಗುಣಗಳು, ಹವ್ಯಾಸಗಳು ಅಥವಾ ಆಲೋಚನೆಗಳ ಬಗ್ಗೆ ಯೋಚಿಸಿ ಮತ್ತು ಅವುಗಳನ್ನು ಬರೆಯಿರಿ.",
+            "ta": "உங்களுக்கும் உங்கள் முன்மாதிரி நபருக்கும் உள்ள ஒத்த குணங்கள், பழக்கங்கள் அல்லது எண்ணங்களை நினைத்து எழுதுங்கள்.",
+            "en": "Think about common qualities, habits, or thoughts between you and your role model and write them.",
+            "hi": "अपने और अपने आदर्श व्यक्ति के बीच समान गुणों, शौक या विचारों के बारे में सोचें और उन्हें लिखें।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        },
+        {
+          "sno": 13,
+          "section": "Reflection",
+          "question": {
+            "kn": "ನಿಮ್ಮ ಆದರ್ಶ ವ್ಯಕ್ತಿಗಳ ಗುಣಗಳನ್ನು ನಿಮ್ಮ ಜೀವನದಲ್ಲಿ ಅಳವಡಿಸಿಕೊಳ್ಳಲು ನೀವು ಹೇಗೆ ಪ್ರಯತ್ನ ಮಾಡುವಿರಿ?",
+            "ta": "அவர்களின் நல்ல பண்புகளை உங்கள் வாழ்க்கையில் எப்படிப் பின்பற்றுவீர்கள்?",
+            "en": "How do you try to adopt the qualities of your role model in your life?",
+            "hi": "आप अपने आदर्श व्यक्ति के गुणों को अपने जीवन में अपनाने का प्रयास कैसे करेंगे?"
+          },
+          "help_text": {
+            "kn": "ನಿಮ್ಮ ಮಾದರಿ ವ್ಯಕ್ತಿಯ ಒಳ್ಳೆಯ ಹವ್ಯಾಸಗಳು, ಶಿಸ್ತು ಮತ್ತು ಕಠಿಣ ಪರಿಶ್ರಮವನ್ನು ನಿಮ್ಮ ಜೀವನದಲ್ಲಿ ನೀವು ಹೇಗೆ ಅನುಸರಿಸುತ್ತೀರಿ ಎಂದು ಬರೆಯಿರಿ.",
+            "ta": "உங்கள் முன்மாதிரி நபரின் நல்ல பழக்கங்கள், ஒழுக்கம், உழைப்பு போன்றவற்றை நீங்கள் எப்படி பின்பற்றுகிறீர்கள் என்பதை எழுதுங்கள்.",
+            "en": "Write how you follow your role model’s good habits, discipline, and hard work in your life.",
+            "hi": "लिखें कि आप अपने आदर्श व्यक्ति की अच्छी आदतों, अनुशासन और कड़ी मेहनत का पालन अपने जीवन में कैसे करेंगे।"
+          },
+          "input_type": "textarea",
+          "display_type": "standard",
+          "remark": ""
+        }
+      ],
+      "summary": {
+        "title": {
+          "kn": "ಸಾರಾಂಶ: ನನ್ನ ಮುಂದಿನ ಯೋಜನೆ",
+          "ta": "சுருக்கம்: என் எதிர்கால திட்டம்",
+          "en": "Summary: My future plan",
+          "hi": ""
+        },
+        "subtitle": {
+          "kn": "",
+          "ta": "",
+          "en": "",
+          "hi": ""
+        },
+        "header": [
+          "",
+          "Kannada",
+          "Tamil",
+          "English",
+          "Hindi",
+          "Input Type",
+          "Display Type",
+          "Remark"
+        ],
+        "questions": [
+          {
+            "sno": 1,
+            "question": {
+              "kn": "ನಿಮ್ಮ ಆದರ್ಶ ವ್ಯಕ್ತಿಗಳೊಂದಿಗೆ ನಿಮ್ಮ ವೃತ್ತಿ ಮಾರ್ಗದರ್ಶನಕ್ಕಾಗಿ ನೀವು ಕೇಳಲು ಬಯಸುವ 5 ರಿಂದ 10 ಪ್ರಶ್ನೆಗಳನ್ನು ಬರೆಯಿರಿ.",
+              "ta": "உங்கள் முன்மாதிரி நபரிடம் உங்கள் தொழில் வழிகாட்டலுக்காக நீங்கள் கேட்க விரும்பும் 5 முதல் 10 கேள்விகளை எழுதுங்கள்.",
+              "en": "Write 5 to 10 questions you would like to ask your role model for career guidance.",
+              "hi": "अपने आदर्श व्यक्तियों (Role Models) से अपने करियर मार्गदर्शन के लिए आप जो 5 से 10 प्रश्न पूछना चाहते हैं, उन्हें लिखें।"
+            },
+            "input_type": "Text field",
+            "display_type": "Regular text",
+            "remark": ""
+          }
+        ]
+      },
+      "empty_cells": [
+        {
+          "location": "Row 27",
+          "field": "summary_title",
+          "lang": "hi"
+        }
+      ]
+    }
+  }
+}
