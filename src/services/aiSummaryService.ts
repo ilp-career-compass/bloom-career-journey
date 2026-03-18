@@ -2337,8 +2337,9 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
   async generateProfileCardKeywords(
     assessmentType: string,
     summaryText: string,
-    lang: string = 'en'
-  ): Promise<{ success: boolean; keywords?: string[]; error?: string }> {
+    lang: string = 'en',
+    assessmentResponses?: string
+  ): Promise<{ success: boolean; keywords?: Record<string, string>; error?: string }> {
     if (!this.isConfigured()) {
       return { success: false, error: 'Gemini API key is not configured' };
     }
@@ -2346,30 +2347,103 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
       return { success: false, error: 'No summary text provided' };
     }
 
-    const langInstruction = lang === 'kn'
-      ? 'Respond in Kannada.'
-      : lang === 'ta'
-        ? 'Respond in Tamil.'
-        : 'Respond in English.';
+    // Fetch profile card questions from content_translations
+    const resourceType = `profile_card_${assessmentType}`;
+    const questionKeys = Array.from({ length: 10 }, (_, i) => `question${i + 1}`);
+    const { data: qRows } = await supabase
+      .from('content_translations')
+      .select('resource_key,text')
+      .eq('resource_type', resourceType)
+      .eq('lang', lang)
+      .in('resource_key', questionKeys);
 
-    const prompt = `You are a career guidance counsellor for Indian students in grades 8-12.
-Given the following approved assessment summary for the "${assessmentType}" module, extract 3-5 concise keyword phrases that capture the student's key insights from this module.
+    if (!qRows || qRows.length === 0) {
+      // Fallback to English if no rows for requested lang
+      const { data: enRows } = await supabase
+        .from('content_translations')
+        .select('resource_key,text')
+        .eq('resource_type', resourceType)
+        .eq('lang', 'en')
+        .in('resource_key', questionKeys);
+      if (!enRows || enRows.length === 0) {
+        return { success: false, error: `No profile card questions found for ${assessmentType}` };
+      }
+      qRows?.splice(0, qRows.length, ...enRows);
+      if (!qRows || qRows.length === 0) {
+        // Direct assignment for when qRows was null
+        return this.generateProfileCardKeywordsWithQuestions(assessmentType, summaryText, lang, enRows, assessmentResponses);
+      }
+    }
+
+    return this.generateProfileCardKeywordsWithQuestions(assessmentType, summaryText, lang, qRows, assessmentResponses);
+  }
+
+  private async generateProfileCardKeywordsWithQuestions(
+    assessmentType: string,
+    summaryText: string,
+    lang: string,
+    qRows: { resource_key: string; text: string }[],
+    assessmentResponses?: string
+  ): Promise<{ success: boolean; keywords?: Record<string, string>; error?: string }> {
+    // Sort questions by key
+    const sortedQuestions = qRows
+      .filter(r => r.resource_key.startsWith('question'))
+      .sort((a, b) => {
+        const aNum = parseInt(a.resource_key.replace('question', ''));
+        const bNum = parseInt(b.resource_key.replace('question', ''));
+        return aNum - bNum;
+      });
+
+    const isKannada = lang === 'kn';
+    const isTamil = lang === 'ta';
+    const isHindi = lang === 'hi';
+
+    const langInstruction = isKannada
+      ? 'Respond in Kannada (ಕನ್ನಡ) script.'
+      : isTamil
+        ? 'Respond in Tamil (தமிழ்) script.'
+        : isHindi
+          ? 'Respond in Hindi (हिन्दी / Devanagari) script.'
+          : 'Respond in English.';
+
+    // Build questions list for prompt
+    const questionsBlock = sortedQuestions
+      .map(q => `${q.resource_key}: ${q.text}`)
+      .join('\n');
+
+    // Build JSON structure for expected output
+    const jsonStructure: Record<string, string> = {};
+    sortedQuestions.forEach(q => {
+      jsonStructure[q.resource_key] = '2-3 word answer';
+    });
+
+    const contextBlock = assessmentResponses
+      ? `\nAssessment Responses:\n${assessmentResponses}\n\nAssessment Summary:\n${summaryText}`
+      : `\nAssessment Summary:\n${summaryText}`;
+
+    const prompt = `${BASE_SYSTEM_PROMPT}
+
+Based on the student's assessment data below, answer each of the following profile card questions in exactly 2-3 words only.
+
+${langInstruction}
+
+Profile Card Questions:
+${questionsBlock}
+${contextBlock}
 
 Rules:
-- Each phrase should be 2-6 words.
-- Use age-appropriate, encouraging language.
-- ${langInstruction}
-- Return ONLY a JSON array of strings. No other text.
+- Each answer MUST be exactly 2-3 words. No more.
+- Use the student's own words where possible.
+- Be encouraging and age-appropriate.
+- Return ONLY a JSON object. No other text.
 
-Example output: ["Loves helping others", "Interested in science", "Creative problem solver"]
-
-Assessment Summary:
-${summaryText}`;
+Expected format:
+${JSON.stringify(jsonStructure, null, 2)}`;
 
     try {
       const requestBody = {
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.4, maxOutputTokens: 300 }
+        generationConfig: { temperature: 0.4, maxOutputTokens: 500 }
       };
 
       let response = await fetch(`${this.endpoint}?key=${this.apiKey}`, {
@@ -2393,13 +2467,13 @@ ${summaryText}`;
       const data = await response.json();
       const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
       const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-      const keywords: string[] = JSON.parse(cleaned);
+      const parsed = JSON.parse(cleaned);
 
-      if (!Array.isArray(keywords) || keywords.length === 0) {
-        return { success: false, error: 'Failed to parse keywords from AI response' };
+      if (!parsed || typeof parsed !== 'object' || !parsed.question1) {
+        return { success: false, error: 'Failed to parse profile card answers from AI response' };
       }
 
-      return { success: true, keywords: keywords.slice(0, 5) };
+      return { success: true, keywords: parsed as Record<string, string> };
     } catch (error) {
       logger.error('Error generating profile card keywords:', error);
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
@@ -2410,9 +2484,9 @@ ${summaryText}`;
    * Generate a career direction paragraph combining Dreams + Talents + Role Models keywords.
    */
   async generateCareerDirection(
-    dreamsKeywords: string[],
-    hobbiesKeywords: string[],
-    roleModelsKeywords: string[],
+    dreamsAnswers: Record<string, string>,
+    hobbiesAnswers: Record<string, string>,
+    roleModelsAnswers: Record<string, string>,
     studentName: string,
     lang: string = 'en'
   ): Promise<{ success: boolean; direction?: string; error?: string }> {
@@ -2421,22 +2495,28 @@ ${summaryText}`;
     }
 
     const langInstruction = lang === 'kn'
-      ? 'Respond in Kannada.'
+      ? 'Respond in Kannada (ಕನ್ನಡ) script.'
       : lang === 'ta'
-        ? 'Respond in Tamil.'
-        : 'Respond in English.';
+        ? 'Respond in Tamil (தமிழ்) script.'
+        : lang === 'hi'
+          ? 'Respond in Hindi (हिन्दी / Devanagari) script.'
+          : 'Respond in English.';
 
-    const prompt = `You are a warm, encouraging career guidance counsellor for Indian students in grades 8-12.
-Based on the student's self-assessment keywords below, write a single inspiring paragraph (60-100 words) that weaves together their dreams, talents, and role model inspirations into a cohesive career direction summary.
+    const formatAnswers = (answers: Record<string, string>) =>
+      Object.values(answers).filter(v => v && v.trim()).join(', ');
+
+    const prompt = `${BASE_SYSTEM_PROMPT}
+
+Based on the student's profile card answers below, write a single inspiring paragraph (60-100 words) that weaves together their dreams, talents, and role model inspirations into a cohesive career direction summary.
 
 ${langInstruction}
 Address the student by name: ${studentName}.
 Be encouraging, specific, and age-appropriate.
 Return ONLY the paragraph text, no JSON or formatting.
 
-Dreams keywords: ${dreamsKeywords.join(', ')}
-Talents & Hobbies keywords: ${hobbiesKeywords.join(', ')}
-Role Models keywords: ${roleModelsKeywords.join(', ')}`;
+Dreams: ${formatAnswers(dreamsAnswers)}
+Talents & Hobbies: ${formatAnswers(hobbiesAnswers)}
+Role Models: ${formatAnswers(roleModelsAnswers)}`;
 
     try {
       const requestBody = {
