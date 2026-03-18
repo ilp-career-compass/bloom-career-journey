@@ -2,7 +2,7 @@ import { logger } from '@/lib/logger';
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -31,6 +31,7 @@ import CareerChatSection from '@/components/student/CareerChatSection';
 export default function StudentDashboard() {
   const { userProfile, signOut } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { lang } = useLang();
   const resolvedLang = (lang || 'en') as StudentLang;
@@ -396,6 +397,36 @@ export default function StudentDashboard() {
     setHollandCodeCompleted(!!hollandCodeProgress?.completed_at);
     setCareerGuidanceToolsCompleted(!!careerGuidanceToolsProgress?.completed_at);
   }, [assessmentProgress, aboutMeProgress, dreamsProgress, stateLearningProgress, hobbiesProgress, roleModelsProgress, hollandCodeProgress, careerGuidanceToolsProgress]);
+
+  // ── Auto-open summary from URL params (e.g. from Profile Card click) ──
+  const autoOpenHandled = useRef(false);
+  useEffect(() => {
+    if (autoOpenHandled.current) return;
+    const assessment = searchParams.get('assessment');
+    const tab = searchParams.get('tab');
+    if (!assessment || tab !== 'summary') return;
+
+    const validTypes = ['inspiration', 'about_me', 'dreams', 'school_learning', 'hobbies', 'role_models'] as const;
+    type ValidType = typeof validTypes[number];
+    if (!validTypes.includes(assessment as ValidType)) return;
+
+    const summaryMap: Record<string, AssessmentSummary | null> = {
+      inspiration: inspirationSummary,
+      about_me: aboutMeSummary,
+      dreams: dreamsSummary,
+      school_learning: schoolLearningSummary,
+      hobbies: hobbiesSummary,
+      role_models: roleModelsSummary,
+    };
+
+    const summary = summaryMap[assessment];
+    if (summary) {
+      autoOpenHandled.current = true;
+      setSummaryType(assessment as ValidType);
+      setSummaryDialogOpen(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams, inspirationSummary, aboutMeSummary, dreamsSummary, schoolLearningSummary, hobbiesSummary, roleModelsSummary]);
 
   // ── Assessment helpers ────────────────────────────────────────────
 
