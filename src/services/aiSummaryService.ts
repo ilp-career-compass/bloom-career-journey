@@ -58,6 +58,22 @@ interface SummaryTemplate {
 
 type SummaryLanguage = 'en' | 'kn' | 'ta' | 'hi';
 
+const BASE_SYSTEM_PROMPT =
+  'You are a career guidance counsellor for rural students in India. ' +
+  "You will be provided with student responses from which you should draw your answers. " +
+  'The answers must be without abbreviations, references, and notes. ' +
+  'Your language will be simple, clear and relevant for grade 8 through grade 12 students. ' +
+  'Answer in small simple sentences. ' +
+  "Respond in the same language as the student's responses. " +
+  "Be encouraging and positive — highlight the student's strengths before mentioning areas for growth. " +
+  'Keep each summary answer to 2-3 sentences maximum. ' +
+  "Do not use general knowledge beyond the student's responses. " +
+  'Do not respond to questions from sources outside the data provided to you. ' +
+  'Do not make up replies or provide general guidance. ' +
+  'Always strive for accuracy, fairness, and respect in responding. ' +
+  'Avoid generating content that promotes hate, violence, discrimination, sexually explicit material, pornography or misinformation. ' +
+  'Instead, focus on providing constructive and helpful responses.';
+
 class AISummaryService {
   private apiKey: string | undefined;
   private endpoint: string;
@@ -316,17 +332,7 @@ ${instructions.question2}
 Question 3: ${questions.question3}
 ${instructions.question3}`;
 
-    const coreInstructions =
-      'You are a career guidance counsellor for rural students in India.\n' +
-      'You will be provided with student responses from which you should draw your answers.\n' +
-      'The answers must be without abbreviations, references, and notes.\n' +
-      'Your language will be simple, clear and relevant for grade 8 through grade 12 students.\n' +
-      'Answer in small simple sentences.\n' +
-      'Do not respond to questions from sources outside the data provided to you.\n\n' +
-      'Do not use general GPT knowledge. Do not respond from sources on the internet or make up replies or provide general guidance.\n' +
-      'Always strive for accuracy, fairness, and respect in responding.\n' +
-      'Avoid generating content that promotes hate, violence, discrimination, sexually explicit material, pornography or misinformation.\n' +
-      'Instead, focus on providing constructive and helpful responses.';
+    const coreInstructions = BASE_SYSTEM_PROMPT;
 
     return `${coreInstructions}
 
@@ -397,17 +403,7 @@ Question 2: After watching all these videos, which behaviors do you feel you sho
 
 Question 3: Discuss the similarities between the characters in these videos who inspired you, and the people who have inspired you in real life, with your friends. Then write a summary.`;
 
-    const coreInstructions =
-      'You are a career guidance counsellor for rural students in India.\n' +
-      'You will be provided with student responses from which you should draw your answers.\n' +
-      'The answers must be without abbreviations, references, and notes.\n' +
-      'Your language will be simple, clear and relevant for grade 8 through grade 12 students.\n' +
-      'Answer in small simple sentences.\n' +
-      'Do not respond to questions from sources outside the data provided to you.\n\n' +
-      'Do not use general GPT knowledge. Do not respond from sources on the internet or make up replies or provide general guidance.\n' +
-      'Always strive for accuracy, fairness, and respect in responding.\n' +
-      'Avoid generating content that promotes hate, violence, discrimination, sexually explicit material, pornography or misinformation.\n' +
-      'Instead, focus on providing constructive and helpful responses.';
+    const coreInstructions = BASE_SYSTEM_PROMPT;
 
     return `${coreInstructions}
 
@@ -749,17 +745,7 @@ Entry Column 4: ${questions.question4}
 
 ${instructions}`;
 
-    const coreInstructions =
-      'You are a career guidance counsellor for rural students in India.\n' +
-      'You will be provided with student responses from which you should draw your answers.\n' +
-      'The answers must be without abbreviations, references, and notes.\n' +
-      'Your language will be simple, clear and relevant for grade 8 through grade 12 students.\n' +
-      'Answer in small simple sentences.\n' +
-      'Do not respond to questions from sources outside the data provided to you.\n\n' +
-      'Do not use general GPT knowledge. Do not respond from sources on the internet or make up replies or provide general guidance.\n' +
-      'Always strive for accuracy, fairness, and respect in responding.\n' +
-      'Avoid generating content that promotes hate, violence, discrimination, sexually explicit material, pornography or misinformation.\n' +
-      'Instead, focus on providing constructive and helpful responses.';
+    const coreInstructions = BASE_SYSTEM_PROMPT;
 
     return `${coreInstructions}
 
@@ -851,17 +837,7 @@ Entry Column 2: Which quality/ value/ ability that you already have will help yo
 Entry Column 3: What do you need to do to make sure this dream does not fail?
 Entry Column 4: To achieve this dream, what do you need to study after Class 10? (if applicable)`;
 
-    const coreInstructions =
-      'You are a career guidance counsellor for rural students in India.\n' +
-      'You will be provided with student responses from which you should draw your answers.\n' +
-      'The answers must be without abbreviations, references, and notes.\n' +
-      'Your language will be simple, clear and relevant for grade 8 through grade 12 students.\n' +
-      'Answer in small simple sentences.\n' +
-      'Do not respond to questions from sources outside the data provided to you.\n\n' +
-      'Do not use general GPT knowledge. Do not respond from sources on the internet or make up replies or provide general guidance.\n' +
-      'Always strive for accuracy, fairness, and respect in responding.\n' +
-      'Avoid generating content that promotes hate, violence, discrimination, sexually explicit material, pornography or misinformation.\n' +
-      'Instead, focus on providing constructive and helpful responses.';
+    const coreInstructions = BASE_SYSTEM_PROMPT;
 
     return `${coreInstructions}
 
@@ -1162,18 +1138,7 @@ ${instructions}`;
             ? '- Use simple Hindi words – no difficult or English-heavy phrases.\n'
             : '- Use plain English – no difficult words.\n';
 
-    const coreInstructions =
-      'You are a career guidance counsellor for rural students in India.\n' +
-      'You will be provided with student responses from which you should draw your answers.\n' +
-      'The answers must be without abbreviations, references, and notes.\n' +
-      'Your language will be simple, clear and relevant for grade 8 through grade 12 students.\n' +
-      'Answer in small simple sentences.\n' +
-      languageRule +
-      'Do not respond to questions from sources outside the data provided to you.\n\n' +
-      'Do not use general GPT knowledge. Do not respond from sources on the internet or make up replies or provide general guidance.\n' +
-      'Always strive for accuracy, fairness, and respect in responding.\n' +
-      'Avoid generating content that promotes hate, violence, discrimination, sexually explicit material, pornography or misinformation.\n' +
-      'Instead, focus on providing constructive and helpful responses.';
+    const coreInstructions = BASE_SYSTEM_PROMPT + '\n' + languageRule;
 
     return `${coreInstructions}
 
@@ -1264,8 +1229,9 @@ Question 5: Other activities / areas in which I perform well along with academic
 
 Question 6: If I improve these skills, it will help me in choosing my job / career.`;
 
-    return `You are a career counselor helping a student create a summary of their school learning assessment.
-Based on the student's responses below, generate a thoughtful, personalized summary with 6 questions.
+    return `${BASE_SYSTEM_PROMPT}
+
+You will now create a summary of the student's school learning assessment with 6 questions.
 ${languageInstruction}
 STUDENT RESPONSES FROM MY SCHOOL, MY LEARNING AND I ASSESSMENT:
 ${formattedResponses}
@@ -1485,17 +1451,7 @@ Column 2: "${questions.question8}" - Whether you want to turn your talent into a
 Column 3: "${questions.question9}" - Careers that match your talents
 Column 4: "${questions.question10}" - People you know who have turned their talents into careers`;
 
-    const coreInstructions =
-      'You are a career guidance counsellor for rural students in India.\n' +
-      'You will be provided with student responses from which you should draw your answers.\n' +
-      'The answers must be without abbreviations, references, and notes.\n' +
-      'Your language will be simple, clear and relevant for grade 8 through grade 12 students.\n' +
-      'Answer in small simple sentences.\n' +
-      'Do not respond to questions from sources outside the data provided to you.\n\n' +
-      'Do not use general GPT knowledge. Do not respond from sources on the internet or make up replies or provide general guidance.\n' +
-      'Always strive for accuracy, fairness, and respect in responding.\n' +
-      'Avoid generating content that promotes hate, violence, discrimination, sexually explicit material, pornography or misinformation.\n' +
-      'Instead, focus on providing constructive and helpful responses.';
+    const coreInstructions = BASE_SYSTEM_PROMPT;
 
     return `${coreInstructions}
 
@@ -1572,8 +1528,9 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
           ? '\n\nIMPORTANT LANGUAGE REQUIREMENT:\n- The student\'s responses are in Hindi (हिन्दी).\n- You MUST generate your summary answers in Hindi (हिन्दी / Devanagari) script.\n- Write all entries in Hindi, maintaining the student\'s natural voice.\n'
           : '';
 
-    return `You are a career counselor helping a student create portfolios of their talents and hobbies.
-Based on the student's responses below, generate thoughtful, personalized portfolios.
+    return `${BASE_SYSTEM_PROMPT}
+
+You will now create portfolios of the student's talents and hobbies.
 ${languageInstruction}
 STUDENT RESPONSES FROM MY TALENTS AND HOBBIES ASSESSMENT:
 ${formattedResponses}
@@ -1851,17 +1808,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
       }
     }
 
-    const coreInstructions =
-      'You are a career guidance counsellor for rural students in India.\n' +
-      'You will be provided with student responses from which you should draw your answers.\n' +
-      'The answers must be without abbreviations, references, and notes.\n' +
-      'Your language will be simple, clear and relevant for grade 8 through grade 12 students.\n' +
-      'Answer in small simple sentences.\n' +
-      'Do not respond to questions from sources outside the data provided to you.\n\n' +
-      'Do not use general GPT knowledge. Do not respond from sources on the internet or make up replies or provide general guidance.\n' +
-      'Always strive for accuracy, fairness, and respect in responding.\n' +
-      'Avoid generating content that promotes hate, violence, discrimination, sexually explicit material, pornography or misinformation.\n' +
-      'Instead, focus on providing constructive and helpful responses.';
+    const coreInstructions = BASE_SYSTEM_PROMPT;
 
     return `${coreInstructions}
 
@@ -1954,17 +1901,7 @@ Question 12: What qualities do I like about myself?
 Question 13: What qualities do others like in me?
 Question 14: Which qualities or aspects do I need to improve?`;
 
-    const coreInstructions =
-      'You are a career guidance counsellor for rural students in India.\n' +
-      'You will be provided with student responses from which you should draw your answers.\n' +
-      'The answers must be without abbreviations, references, and notes.\n' +
-      'Your language will be simple, clear and relevant for grade 8 through grade 12 students.\n' +
-      'Answer in small simple sentences.\n' +
-      'Do not respond to questions from sources outside the data provided to you.\n\n' +
-      'Do not use general GPT knowledge. Do not respond from sources on the internet or make up replies or provide general guidance.\n' +
-      'Always strive for accuracy, fairness, and respect in responding.\n' +
-      'Avoid generating content that promotes hate, violence, discrimination, sexually explicit material, pornography or misinformation.\n' +
-      'Instead, focus on providing constructive and helpful responses.';
+    const coreInstructions = BASE_SYSTEM_PROMPT;
 
     return `${coreInstructions}
 
@@ -2189,17 +2126,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
 
     const questionsPrompt = `Question 1: ${questions.question1}`;
 
-    const coreInstructions =
-      'You are a career guidance counsellor for rural students in India.\n' +
-      'You will be provided with student responses from which you should draw your answers.\n' +
-      'The answers must be without abbreviations, references, and notes.\n' +
-      'Your language will be simple, clear and relevant for grade 8 through grade 12 students.\n' +
-      'Answer in small simple sentences.\n' +
-      'Do not respond to questions from sources outside the data provided to you.\n\n' +
-      'Do not use general GPT knowledge. Do not respond from sources on the internet or make up replies or provide general guidance.\n' +
-      'Always strive for accuracy, fairness, and respect in responding.\n' +
-      'Avoid generating content that promotes hate, violence, discrimination, sexually explicit material, pornography or misinformation.\n' +
-      'Instead, focus on providing constructive and helpful responses.';
+    const coreInstructions = BASE_SYSTEM_PROMPT;
 
     return `${coreInstructions}
 
@@ -2257,17 +2184,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
         ? `Question 1: உங்கள் முன்மாதிரிகளிடம் தொழில் வழிகாட்டல் பற்றி நீங்கள் கேட்க விரும்பும் 5 முதல் 10 கேள்விகளை எழுதுங்கள்.`
         : `Question 1: Write down 5 to 10 questions you would like to ask your role models about career guidance.`;
 
-    const coreInstructions =
-      'You are a career guidance counsellor for rural students in India.\n' +
-      'You will be provided with student responses from which you should draw your answers.\n' +
-      'The answers must be without abbreviations, references, and notes.\n' +
-      'Your language will be simple, clear and relevant for grade 8 through grade 12 students.\n' +
-      'Answer in small simple sentences.\n' +
-      'Do not respond to questions from sources outside the data provided to you.\n\n' +
-      'Do not use general GPT knowledge. Do not respond from sources on the internet or make up replies or provide general guidance.\n' +
-      'Always strive for accuracy, fairness, and respect in responding.\n' +
-      'Avoid generating content that promotes hate, violence, discrimination, sexually explicit material, pornography or misinformation.\n' +
-      'Instead, focus on providing constructive and helpful responses.';
+    const coreInstructions = BASE_SYSTEM_PROMPT;
 
     return `${coreInstructions}
 
