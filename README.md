@@ -1,73 +1,74 @@
-# Welcome to your Lovable project
+# Bloom Career Journey
 
-## Project info
+A career guidance and self-assessment platform for rural students in India (grades 8-12), built for the **India Literacy Project (ILP)**.
 
-**URL**: https://lovable.dev/projects/eb244e3a-2653-4b63-ae2f-43c2e9785539
+Bloom bridges the career-guidance gap by combining structured self-reflection exercises with AI-powered summarization and teacher-guided mentoring — in English, Kannada, Tamil, and Hindi.
 
-## How can I edit this code?
+## Features
 
-There are several ways of editing your application.
+- **8 Assessment Modules** — Inspiration, About Me, Dreams, School Learning, Talents & Hobbies, Role Models, Holland Code (RIASEC), Career Guidance Tools
+- **AI-Generated Summaries** — Google Gemini synthesizes student responses into concise, encouraging summaries
+- **Teacher Approval Workflow** — teachers review, edit, approve, or request revisions on AI summaries
+- **Multilingual Support** — English, Kannada, Tamil, Hindi with virtual keyboards (IndicKeyboard)
+- **Voice Input** — Speech-to-Text via Google Cloud, Azure Speech, and Sarvam API (streaming)
+- **Profile Card** — AI keyword summaries across all modules ("My Career Compass")
+- **Career Roadmap** — milestone-based career planning tracker (grades 9-10)
+- **AI Chatbot** — "Vidya Saathi" career guidance persona powered by Gemini
 
-**Use Lovable**
+## Tech Stack
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/eb244e3a-2653-4b63-ae2f-43c2e9785539) and start prompting.
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui |
+| Backend & DB | Supabase (Auth, PostgreSQL, Storage, RPC, RLS) |
+| AI | Google Gemini API (2.0 Flash) |
+| Speech-to-Text | Google Cloud STT, Azure Speech, Sarvam API |
+| Routing | React Router 6 |
+| State | TanStack React Query 5 |
 
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+## Getting Started
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# Clone and install
+git clone <repo-url>
+cd bloom-career-journey
+npm install
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Configure environment
+cp .env.example .env.local
+# Fill in:
+#   VITE_SUPABASE_URL
+#   VITE_SUPABASE_ANON_KEY
+#   VITE_GEMINI_API_KEY
+#   VITE_GOOGLE_SPEECH_API_KEY (optional)
+#   VITE_AZURE_SPEECH_KEY (optional)
 
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start dev server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## Project Structure
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```
+src/
+  pages/          — Route-level components (Student, Teacher, Admin dashboards)
+  components/     — UI components organized by feature (assessments/, teacher/, student/, chat/, ui/)
+  services/       — API & business logic (AI summaries, STT, assessments, notifications)
+  hooks/          — React hooks (auth, i18n, keyboard)
+  utils/          — Helpers (unlock logic, parsers, error handling)
+server/           — FastAPI WebSocket proxy for Sarvam streaming STT
+supabase/         — Migrations and config
+scripts/          — Data seeding and migration generation tools
+```
 
-**Use GitHub Codespaces**
+See [CLAUDE.md](./CLAUDE.md) for detailed architecture documentation.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Deployment
 
-## What technologies are used for this project?
+- **Hosting**: Vercel (`vercel.json` configured for SPA routing)
+- **Database**: Supabase (managed PostgreSQL with RLS)
+- **AI Services**: Google Gemini API (client-side, to be proxied before production)
 
-This project is built with:
+## License
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/eb244e3a-2653-4b63-ae2f-43c2e9785539) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+Built by **Harshini Murugadoss** for **India Literacy Project (ILP)**.
