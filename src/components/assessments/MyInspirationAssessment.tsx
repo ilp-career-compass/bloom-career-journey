@@ -1925,18 +1925,18 @@ export default function MyInspirationAssessment() {
             >
               {saving ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600 mr-2"></div>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
                   {t('saving')}
                 </>
               ) : isVideoSaved(currentVideoIndex) ? (
                 <>
                   <Save className="w-4 h-4 mr-2" />
-                  Save Progress
+                  {lang === 'kn' ? 'ಪ್ರಗತಿಯನ್ನು ಉಳಿಸಿ' : lang === 'ta' ? 'முன்னேற்றத்தை சேமி' : lang === 'hi' ? 'प्रगति सहेजें' : 'Save Progress'}
                 </>
               ) : (
                 <>
                   <Save className="w-4 h-4 mr-2" />
-                  Save Progress
+                  {lang === 'kn' ? 'ಪ್ರಗತಿಯನ್ನು ಉಳಿಸಿ' : lang === 'ta' ? 'முன்னேற்றத்தை சேமி' : lang === 'hi' ? 'प्रगति सहेजें' : 'Save Progress'}
                 </>
               )}
             </Button>

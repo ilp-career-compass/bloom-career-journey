@@ -275,7 +275,7 @@ export default function ProfileCardPage({ studentIdOverride, readOnly }: Profile
                 <span>{(SECTIONS_COMPLETE[lang] || SECTIONS_COMPLETE.en)(completedCount)}</span>
                 <span>{progressPercent}%</span>
               </div>
-              <div className="h-2.5 bg-white/20 rounded-full overflow-hidden">
+              <div className="h-2.5 bg-white/20 rounded-full overflow-hidden" role="progressbar" aria-valuenow={completedCount} aria-valuemin={0} aria-valuemax={6} aria-label="Profile completion progress">
                 <div
                   className="h-full bg-gradient-to-r from-green-400 to-emerald-400 rounded-full transition-all duration-500"
                   style={{ width: `${progressPercent}%` }}
@@ -300,8 +300,11 @@ export default function ProfileCardPage({ studentIdOverride, readOnly }: Profile
             return (
               <Card
                 key={mod.key}
-                className="rounded-xl shadow-md hover:shadow-lg border border-gray-100 bg-white transition-all duration-200 overflow-hidden cursor-pointer"
+                className="rounded-xl shadow-md hover:shadow-lg border border-gray-100 bg-white transition-all duration-200 overflow-hidden cursor-pointer focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:outline-none"
+                role="button"
+                tabIndex={0}
                 onClick={() => navigate(`/student?assessment=${mod.assessmentType}&tab=summary`)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/student?assessment=${mod.assessmentType}&tab=summary`); } }}
               >
                 {/* Colored top strip */}
                 <div className={`h-1 ${mod.stripColor}`} />

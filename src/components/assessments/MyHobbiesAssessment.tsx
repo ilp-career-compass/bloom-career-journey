@@ -1123,7 +1123,7 @@ export default function MyHobbiesAssessment() {
                     >
                       {savingSection ? (
                         <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-600 mr-2"></div>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
                           {lang === 'kn' ? 'ಉಳಿಸುತ್ತಿದೆ...' : lang === 'ta' ? 'சேமித்து கொண்டிருக்கிறது...' : 'Saving...'}
                         </>
                       ) : (

@@ -1111,7 +1111,7 @@ export default function MyRoleModelsAssessment() {
               disabled={saving || isReadOnly}
               className="w-full sm:w-auto border-purple-200 text-purple-700 hover:bg-purple-50"
             >
-              {saving ? 'Saving...' : (
+              {saving ? (lang === 'kn' ? 'ಉಳಿಸಲಾಗುತ್ತಿದೆ...' : lang === 'ta' ? 'சேமிக்கிறது...' : lang === 'hi' ? 'सहेजा जा रहा है...' : 'Saving...') : (
                 <>
                   <Save className="w-4 h-4 mr-2" />
                   {lang === 'kn' ? 'ಪ್ರಗತಿಯನ್ನು ಉಳಿಸಿ' : lang === 'ta' ? 'ಮುನ್ನೇற்றத்தைச் ಸೇಮಿ' : 'Save Progress'}

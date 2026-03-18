@@ -1779,7 +1779,7 @@ export default function MySchoolLearningAssessment() {
               className="w-full sm:w-auto border-green-200 text-green-700 hover:bg-green-50"
             >
               {savingSection === currentSection ? (
-                <>Saving...</>
+                <>{lang === 'kn' ? 'ಉಳಿಸಲಾಗುತ್ತಿದೆ...' : lang === 'ta' ? 'சேமிக்கிறது...' : lang === 'hi' ? 'सहेजा जा रहा है...' : 'Saving...'}</>
               ) : (
                 <>
                   <Save className="w-4 h-4 mr-2" />
