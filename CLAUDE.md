@@ -61,7 +61,7 @@ bloom-career-journey/
 │   ├── components/
 │   │   ├── assessments/           # 8 assessment components + DB variants + SummaryViewDialog
 │   │   ├── teacher/               # Teacher dashboard sub-components (6 files: Header, StatsCards, StudentsTab, StudentModals, AnalyticsTab, teacherStrings)
-│   │   ├── student/               # Student dashboard sub-components (5 files: Header, AssessmentGrid, ProgressSection, CareerChatSection, studentStrings)
+│   │   ├── student/               # Student dashboard sub-components (5 files: Header, AssessmentGrid, ProgressSection (unused), CareerChatSection, studentStrings)
 │   │   ├── chat/                  # Chat UI components
 │   │   ├── ui/                    # 53 shadcn/ui components
 │   │   ├── ProtectedRoute.tsx     # Role-based route guard
@@ -75,16 +75,16 @@ bloom-career-journey/
 │   ├── pages/
 │   │   ├── Index.tsx              # Landing page
 │   │   ├── AuthPage.tsx           # Login/Registration
-│   │   ├── StudentDashboard.tsx   # Student home (thin orchestrator)
+│   │   ├── StudentDashboard.tsx   # Student home (orchestrator, summary dialog, deep-link support)
 │   │   ├── TeacherDashboard.tsx   # Teacher home (thin orchestrator)
 │   │   ├── AdminDashboard.tsx     # Admin panel
 │   │   ├── HollandTest.tsx        # Standalone Holland test page
 │   │   ├── CareersExplore.tsx     # Career exploration page
-│   │   ├── ProfileCardPage.tsx    # My Career Compass — profile card with AI keywords
+│   │   ├── ProfileCardPage.tsx    # My Career Compass — profile card with question-driven answers from DB
 │   │   ├── CareerRoadmapPage.tsx  # Career Roadmap — milestone-based career tracker
 │   │   └── StudentSummary.tsx     # Teacher view of a student's summaries
 │   ├── services/
-│   │   ├── aiSummaryService.ts       # AI summary generation (2368 lines)
+│   │   ├── aiSummaryService.ts       # AI summary generation + profile card keyword extraction
 │   │   ├── aiChatService.ts          # AI chatbot service (Gemini)
 │   │   ├── speechToTextService.ts    # STT with Google/Azure/Gemini fallback
 │   │   ├── sarvamStreamingService.ts # Sarvam WebSocket streaming STT
@@ -171,10 +171,15 @@ Each assessment has a companion `*DB.tsx` component for DB operations. Responses
 **Summary tab**: Locked until all core questions answered. Uses `areCoreSectionsComplete()` per assessment. Unlocks progressively as student completes each section.
 
 ### AI Summary System (`src/services/aiSummaryService.ts`)
-- **API**: Google Gemini (primary: `gemini-2.0-flash-exp`, fallbacks: `gemini-exp-1206`, `gemini-1.5-flash`)
-- Per-assessment `generate*Summary()` methods + profile card methods (`generateProfileCardKeywords()`, `generateCareerDirection()`)
+- **API**: Google Gemini (primary: `gemini-2.0-flash`, fallback: `gemini-2.0-flash-lite`)
+- **`BASE_SYSTEM_PROMPT`**: Shared constant used by all 12 prompt builders — standardized career counsellor instructions with encouragement, language matching, and 2-3 sentence limits
+- Per-assessment `generate*Summary()` methods (6 assessments × 2: primary + fallback)
+- Profile card methods: `generateProfileCardKeywords()` (fetches questions from `content_translations`, returns `{question1: "2-3 words", ...}`) + `generateCareerDirection()` (synthesizes all modules into a paragraph)
 - Prompt templates from `summary_templates` table (cached); falls back to hardcoded prompts
 - `detectLanguage()` scans Unicode ranges for `en`/`kn`/`ta`/`hi`; output: structured JSON (`SummaryQuestions`)
+- `SummaryTemplate` interface supports `en`, `kn?`, `ta?`, `hi?` language blocks
+- All 6 assessments have Hindi `languageInstruction` blocks (Devanagari script instructions to Gemini)
+- Role Models `buildRoleModelsPrompt()` reads questions from DB template (not hardcoded)
 - Storage: `assessment_summaries` table; display priority: student edits > teacher edits > AI original
 
 ### Teacher Approval Workflow
@@ -191,7 +196,8 @@ Each assessment has a companion `*DB.tsx` component for DB operations. Responses
 - `aiChatService.ts` + `ChatbotDialog.tsx`; empathetic career guidance persona; same Gemini cascade fallback as summaries
 
 ### My Compass Feature
-- **Profile Card** (`/student/profile-card`): 6 module cards — always visible, never locked. Shows AI keyword bullets when complete, summary questions as preview when incomplete. 7th "My Career Direction" card synthesizes all 6. Keywords cached in `profile_card_cache`. Teachers view read-only at `/teacher/student-profile-card/:studentId`.
+- **Profile Card** (`/student/profile-card`): 6 module cards — always visible, never locked. Each card shows profile card questions (from `content_translations` with `resource_type: profile_card_{type}`) with 2-3 word AI-generated answers when complete, or blank labels with "Complete this module" nudge when incomplete. 7th "My Career Direction" card synthesizes all 6. Answers cached in `profile_card_cache` as JSON objects `{question1: "answer", ...}`. Clicking a card deep-links to `/student?assessment={type}&tab=summary` which auto-opens the `SummaryViewDialog`. Teachers view read-only at `/teacher/student-profile-card/:studentId`. Hindi support included in all UI strings.
+- **Profile Card Questions**: Stored in `content_translations` with `resource_type: profile_card_{assessment_type}` (e.g. `profile_card_inspiration`). Keys: `title`, `question1`, `question2`, etc. All 4 languages. Source: Google Sheet tab "Profile Card Questions - Grade". Holland Code section deferred.
 - **Career Roadmap** (`/student/career-roadmap`): 7 milestone rows × 4 columns (Milestone + Plan A/B/C). Top 3 rows editable (beginning/end of 9th, beginning of 10th), bottom 4 locked. Autosave with 1s debounce to `career_roadmap` table.
 
 ---
@@ -267,7 +273,7 @@ orgs (id, name)
 | read_at | timestamptz nullable (null = unread) |
 
 #### Compass Tables
-- **`profile_card_cache`**: `(student_id, assessment_type)` unique; `keywords` jsonb; special `assessment_type = 'career_direction'` stores AI paragraph
+- **`profile_card_cache`**: `(student_id, assessment_type)` unique; `keywords` jsonb stores `{question1: "2-3 word answer", question2: "..."}` for modules, `{direction: "paragraph"}` for `assessment_type = 'career_direction'`
 - **`career_roadmap`**: `(student_id, milestone)` unique; `plan_a/b/c` text; milestones: `beginning_9th`, `end_9th`, `beginning_10th`, `midterm_10th`, `post_exam_10th`, `before_results_10th`, `final_decision`
 
 #### Other Tables
@@ -277,7 +283,7 @@ orgs (id, name)
 - **`student_notes`**: teacher observations (types: observation/meeting/progress/concern/achievement/follow_up)
 - **`student_groups`**: teacher-created groups within states/classes
 - **`summary_templates`**: per-assessment-type Gemini prompt templates, multi-language
-- **`content_translations`**: UI text translations by `resource_type`, `resource_key`, `lang`
+- **`content_translations`**: UI text translations by `resource_type`, `resource_key`, `lang`. Includes `profile_card_{type}` entries for profile card questions (4 langs)
 - **`inspiration_sources`**: video URLs for My Inspiration assessment
 
 ### Relationships
@@ -293,16 +299,16 @@ students + teachers ──→ chat_channels ──1:N──→ chat_messages
 
 ## 6. Database Migrations
 
-See `supabase/migrations/` for full history (146+ files, Jan 2025 – Mar 2026).
+See `supabase/migrations/` for full history (147+ files, Jan 2025 – Mar 2026).
 
 ### Recent Migrations (last 5)
 | Date | Migration | What It Does |
 |------|-----------|--------------|
+| 2026-03-18 | `profile_card_questions` | Inserts profile card questions (22 questions + 6 titles × 4 languages) into `content_translations` from Google Sheet |
 | 2026-03-13 | `add_hindi_to_preferred_language` | Adds `hi` to `preferred_language` CHECK constraint (was enum, now CHECK) |
 | 2026-03-13 | `fix_role_models_rpc` | Creates `get_role_models_assessment_template` RPC (fixes 404 bug) |
 | 2026-03-13 | `fix_school_learning_summary_questions` | Fixes corrupted `question1` in school_learning summary questions |
-| 2026-03-13 | `move_summary_titles_to_db` | Moves summary section titles for 4 assessments + About Me section titles + School Learning method options to DB |
-| 2026-03-08 | `add_compass_tables` | Creates `profile_card_cache` and `career_roadmap` tables with RLS |
+| 2026-03-12 | `fix_hobbies_summary_template_keys` | Fixes hobbies summary template key formats |
 
 ### Notable Schema Notes
 - **Schools → States**: Renamed organizational unit to "state"
@@ -453,7 +459,10 @@ Frontend → Supabase directly (queries, RPCs, storage). AI/ML services are dire
 > **Sheet restructuring in progress**: Phases 2–3 (Google Sheets sync automation) paused until new sheet format is finalized by ILP.
 
 > [!NOTE]
-> **Assessment Progress Summary**: Section in student dashboard is placeholder — will be redesigned later.
+> **ProgressSection component unused**: `src/components/student/ProgressSection.tsx` is no longer rendered in StudentDashboard — can be deleted in a cleanup pass.
+
+> [!NOTE]
+> **Profile Card Holland Code section**: Google Sheet has "My Nature My Style (Holland Code)" with 2 questions, but not yet added to `content_translations` or `ProfileCardPage.tsx`. Deferred until Holland Code gets AI summary support.
 
 > [!NOTE]
 > **sync-questions**: `scripts/sync_questions.ts` and Google Sheets automation pending implementation.
@@ -471,4 +480,13 @@ Frontend → Supabase directly (queries, RPCs, storage). AI/ML services are dire
 | **4C** | Hindi language support across all services and components (English fallback strings) | ✅ |
 | **4D** | Remove unused `simple-keyboard` dependency | ✅ |
 | **4E** | Full verification: `tsc`, `vite build`, dependency audit — all passing | ✅ |
+| **5A** | Add `hi` to `SummaryTemplate` type, remove `(template as any)` casts | ✅ |
+| **5B** | Fix Role Models `buildRoleModelsPrompt()` to read questions from DB template | ✅ |
+| **5C** | Add Hindi `languageInstruction` blocks to all 12 prompt builders (6 assessments × primary + fallback) | ✅ |
+| **5D** | Create `BASE_SYSTEM_PROMPT` constant — standardized career counsellor system prompt for all AI summaries (-115 lines duplication) | ✅ |
+| **5E** | Profile card questions migration: 22 questions + 6 titles × 4 languages from Google Sheet → `content_translations` | ✅ |
+| **5F** | Rewrite `generateProfileCardKeywords()`: fetches questions from DB, returns `{question1: "2-3 words", ...}` instead of generic keyword array | ✅ |
+| **5G** | Rewrite `ProfileCardPage.tsx`: question label → answer display, clickable cards, Hindi support, deep-link to summary dialog | ✅ |
+| **5H** | Student dashboard: auto-open `SummaryViewDialog` from URL params (`?assessment=X&tab=summary`) | ✅ |
+| **5I** | Remove placeholder Assessment Progress Summary section from student dashboard | ✅ |
 | **2–3** | Google Sheets sync automation | ⏸️ Paused — sheet restructuring in progress |
