@@ -736,7 +736,7 @@ export default function MySchoolLearningAssessment() {
           responses: responses,
           completed_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
-        })
+        }, { onConflict: 'student_id,assessment_type' })
         .select()
         .single();
 

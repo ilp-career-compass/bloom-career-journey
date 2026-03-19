@@ -219,7 +219,7 @@ export default function AboutMeAssessmentDB() {
           responses,
           updated_at: new Date().toISOString(),
           completed_at: null
-        });
+        }, { onConflict: 'student_id,assessment_type' });
       } catch { }
     }, 800);
     return () => clearTimeout(t);
@@ -251,12 +251,12 @@ export default function AboutMeAssessmentDB() {
 
       await supabase.from('assessment_responses').upsert({
         student_id: studentId,
-        assessment_type: 'personality',
+        assessment_type: 'about_me',
         assessment_title: 'About Me',
         responses,
         completed_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
-      });
+      }, { onConflict: 'student_id,assessment_type' });
 
       setIsCompleted(true);
       toast({
