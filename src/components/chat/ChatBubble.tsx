@@ -221,10 +221,11 @@ export default function ChatBubble({ role, isOpen: controlledIsOpen, onOpenChang
   const markAsRead = async (channelId: string, userRole: 'student' | 'teacher') => {
     try {
       const field = userRole === 'student' ? 'student_last_read_at' : 'teacher_last_read_at';
-      await supabase
+      const { error } = await supabase
         .from('chat_channels')
         .update({ [field]: new Date().toISOString() })
         .eq('id', channelId);
+      if (error) logger.error('Error updating read timestamp:', error);
 
       setUnreadCount(0);
     } catch (error) {
@@ -249,10 +250,11 @@ export default function ChatBubble({ role, isOpen: controlledIsOpen, onOpenChang
       if (error) throw error;
 
       // Update last_message_at
-      await supabase
+      const { error: updateError } = await supabase
         .from('chat_channels')
         .update({ last_message_at: new Date().toISOString() })
         .eq('id', channelId);
+      if (updateError) logger.error('Error updating last_message_at:', updateError);
 
       setNewMessage('');
       await loadMessages(channelId);
@@ -392,12 +394,13 @@ export default function ChatBubble({ role, isOpen: controlledIsOpen, onOpenChang
     }
   }, [selectedStudentId]);
 
-  // Load unread count periodically
+  // Load unread count periodically — only poll when chat is open
   useEffect(() => {
     loadUnreadCount();
-    const interval = setInterval(loadUnreadCount, 30000); // Every 30 seconds
+    if (!isOpen) return;
+    const interval = setInterval(loadUnreadCount, 30000);
     return () => clearInterval(interval);
-  }, [userProfile]);
+  }, [userProfile, isOpen]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {

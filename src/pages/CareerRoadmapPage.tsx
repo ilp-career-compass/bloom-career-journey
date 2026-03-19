@@ -80,8 +80,8 @@ export default function CareerRoadmapPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
-  const { language } = useLang();
-  const lang = (language || 'en') as 'en' | 'kn' | 'ta' | 'hi';
+  const { lang: currentLang } = useLang();
+  const lang = (currentLang || 'en') as 'en' | 'kn' | 'ta' | 'hi';
   const { t } = useStudentStrings(lang);
   const studentId = user?.id || '';
 
@@ -97,6 +97,7 @@ export default function CareerRoadmapPage() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingSavesRef = useRef<Map<string, RoadmapRow>>(new Map());
+  const isSavingRef = useRef(false);
 
   const fetchData = useCallback(async () => {
     if (!studentId) return;
@@ -143,10 +144,12 @@ export default function CareerRoadmapPage() {
   const debouncedSave = useCallback(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
+      if (isSavingRef.current) return;
       const pending = new Map(pendingSavesRef.current);
       pendingSavesRef.current.clear();
       if (pending.size === 0) return;
 
+      isSavingRef.current = true;
       setSaveStatus('saving');
       try {
         const upserts = Array.from(pending.entries()).map(([milestone, row]) => ({
@@ -173,6 +176,8 @@ export default function CareerRoadmapPage() {
         logger.error('Save failed:', err);
         setSaveStatus('error');
         setTimeout(() => setSaveStatus('idle'), 2000);
+      } finally {
+        isSavingRef.current = false;
       }
     }, 1000);
   }, [studentId]);

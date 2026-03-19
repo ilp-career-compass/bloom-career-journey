@@ -1986,7 +1986,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
       logger.log('📡 Calling Gemini API for About Me summary:', this.endpoint);
 
       // Try primary endpoint
-      let response = await fetch(`${this.endpoint}?key = ${this.apiKey} `, {
+      let response = await fetch(`${this.endpoint}?key=${this.apiKey}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1998,7 +1998,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
       if (!response.ok && response.status === 404) {
         logger.warn('⚠️ Primary model not found, trying fallback:', this.fallbackEndpoint);
 
-        response = await fetch(`${this.fallbackEndpoint}?key = ${this.apiKey} `, {
+        response = await fetch(`${this.fallbackEndpoint}?key=${this.apiKey}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -2258,7 +2258,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
       logger.log('📡 Calling Gemini API for Role Models summary:', this.endpoint);
 
       // Try primary endpoint
-      let response = await fetch(`${this.endpoint}?key = ${this.apiKey} `, {
+      let response = await fetch(`${this.endpoint}?key=${this.apiKey}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -2270,7 +2270,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
       if (!response.ok && response.status === 404) {
         logger.warn('⚠️ Primary model not found, trying fallback:', this.fallbackEndpoint);
 
-        response = await fetch(`${this.fallbackEndpoint}?key = ${this.apiKey} `, {
+        response = await fetch(`${this.fallbackEndpoint}?key=${this.apiKey}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

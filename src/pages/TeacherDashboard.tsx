@@ -301,7 +301,7 @@ export default function TeacherDashboard() {
         return;
       }
       const studentIds = studs.map(s => s.id);
-      const { data: assessments } = await supabase.from('assessment_responses').select('id, student_id, assessment_type, assessment_title, review_status, completed_at').in('student_id', studentIds).order('completed_at', { ascending: false });
+      const { data: assessments } = await supabase.from('assessment_responses').select('id, student_id, assessment_type, assessment_title, review_status, completed_at').in('student_id', studentIds).order('completed_at', { ascending: false }).limit(500);
       if (!assessments) {
         setReviewOverview({ unreviewed_count: 0, reviewed_count: 0, needs_revision_count: 0, flagged_count: 0, followups_due_this_week: 0 });
         return;

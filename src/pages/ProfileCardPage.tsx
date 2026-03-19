@@ -65,11 +65,11 @@ interface ProfileCardPageProps {
 export default function ProfileCardPage({ studentIdOverride, readOnly }: ProfileCardPageProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { language } = useLang();
+  const { lang: currentLang } = useLang();
   const params = useParams<{ studentId?: string }>();
 
   const studentId = studentIdOverride || params.studentId || user?.id || '';
-  const lang = (language || 'en') as 'en' | 'kn' | 'ta' | 'hi';
+  const lang = (currentLang || 'en') as 'en' | 'kn' | 'ta' | 'hi';
   const { t } = useStudentStrings(lang);
 
   const [summaries, setSummaries] = useState<Record<string, AssessmentSummary | null>>({});
@@ -196,12 +196,13 @@ export default function ProfileCardPage({ studentIdOverride, readOnly }: Profile
       const result = await aiSummaryService.generateProfileCardKeywords(assessmentType, text, lang);
       if (result.success && result.keywords) {
         setAnswers(prev => ({ ...prev, [assessmentType]: result.keywords! }));
-        await supabase.from('profile_card_cache').upsert({
+        const { error } = await supabase.from('profile_card_cache').upsert({
           student_id: studentId,
           assessment_type: assessmentType,
           keywords: result.keywords,
           generated_at: new Date().toISOString(),
         }, { onConflict: 'student_id,assessment_type' });
+        if (error) logger.error('Profile card cache upsert error:', error);
       }
     } catch (err) {
       logger.error('Profile card answer generation failed for', assessmentType, err);
@@ -231,12 +232,13 @@ export default function ProfileCardPage({ studentIdOverride, readOnly }: Profile
       );
       if (result.success && result.direction) {
         setCareerDirection(result.direction);
-        await supabase.from('profile_card_cache').upsert({
+        const { error } = await supabase.from('profile_card_cache').upsert({
           student_id: studentId,
           assessment_type: 'career_direction',
           keywords: { direction: result.direction },
           generated_at: new Date().toISOString(),
         }, { onConflict: 'student_id,assessment_type' });
+        if (error) logger.error('Career direction cache upsert error:', error);
       }
     } catch (err) {
       logger.error('Career direction generation failed:', err);

@@ -47,6 +47,9 @@ export default function StudentDashboard() {
   const [mentorName, setMentorName] = useState<string | null>(null);
   const [mentorIds, setMentorIds] = useState<{ studentId: string | null; teacherId: string | null }>({ studentId: null, teacherId: null });
 
+  // ── Refresh guard ────────────────────────────────────────────────
+  const isRefreshingRef = useRef(false);
+
   // ── CareerChat LM ─────────────────────────────────────────────────
   type ChatMsg = { id: string; role: 'user' | 'model'; text: string };
   const [ccMessages, setCcMessages] = useState<ChatMsg[]>([]);
@@ -334,28 +337,31 @@ export default function StudentDashboard() {
   // Real-time subscription
   useEffect(() => {
     if (!userProfile?.id) return;
+    let isMounted = true;
     const channel = supabase
       .channel(`summary-status-updates-${userProfile.id}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'assessment_summaries', filter: `student_user_id=eq.${userProfile.id}` },
         async (payload) => {
+          if (!isMounted) return;
           const updatedSummary = payload.new as any;
           const targetId = updatedSummary.assessment_response_id as string | null;
           if (targetId) {
             const { data } = await supabase.from('assessment_responses').select('assessment_type').eq('id', targetId).maybeSingle();
+            if (!isMounted) return;
             if (data) {
               const at = data.assessment_type;
-              if (at === 'inspiration') { setInspirationSummary(null); await new Promise(r => setTimeout(r, 100)); await fetchInspirationSummary(targetId); }
-              else if (at === 'about_me') { setAboutMeSummary(null); await new Promise(r => setTimeout(r, 100)); await fetchAboutMeSummary(targetId); }
-              else if (at === 'dreams') { setDreamsSummary(null); await new Promise(r => setTimeout(r, 100)); await fetchSummary(targetId, 'dreams'); }
-              else if (at === 'school_learning') { setSchoolLearningSummary(null); await new Promise(r => setTimeout(r, 100)); await fetchSummary(targetId, 'school_learning'); }
-              else if (at === 'hobbies') { setHobbiesSummary(null); await new Promise(r => setTimeout(r, 100)); await fetchSummary(targetId, 'hobbies'); }
-              else if (at === 'role_models') { setRoleModelsSummary(null); await new Promise(r => setTimeout(r, 100)); await fetchSummary(targetId, 'role_models'); }
+              if (at === 'inspiration') { setInspirationSummary(null); await new Promise(r => setTimeout(r, 100)); if (isMounted) await fetchInspirationSummary(targetId); }
+              else if (at === 'about_me') { setAboutMeSummary(null); await new Promise(r => setTimeout(r, 100)); if (isMounted) await fetchAboutMeSummary(targetId); }
+              else if (at === 'dreams') { setDreamsSummary(null); await new Promise(r => setTimeout(r, 100)); if (isMounted) await fetchSummary(targetId, 'dreams'); }
+              else if (at === 'school_learning') { setSchoolLearningSummary(null); await new Promise(r => setTimeout(r, 100)); if (isMounted) await fetchSummary(targetId, 'school_learning'); }
+              else if (at === 'hobbies') { setHobbiesSummary(null); await new Promise(r => setTimeout(r, 100)); if (isMounted) await fetchSummary(targetId, 'hobbies'); }
+              else if (at === 'role_models') { setRoleModelsSummary(null); await new Promise(r => setTimeout(r, 100)); if (isMounted) await fetchSummary(targetId, 'role_models'); }
               else if (at === 'personality') checkHollandCodeProgress();
             }
           }
         })
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => { isMounted = false; supabase.removeChannel(channel); };
   }, [userProfile?.id, assessmentResponseId, aboutMeAssessmentResponseId, dreamsAssessmentResponseId, schoolLearningAssessmentResponseId, hobbiesAssessmentResponseId, roleModelsAssessmentResponseId, fetchInspirationSummary, fetchAboutMeSummary, fetchSummary]);
 
   useEffect(() => {
@@ -370,14 +376,20 @@ export default function StudentDashboard() {
   useEffect(() => {
     if (!userProfile?.id) return;
     const refreshSummaries = async () => {
-      if (assessmentResponseId) await fetchInspirationSummary(assessmentResponseId);
-      if (aboutMeAssessmentResponseId) await fetchAboutMeSummary(aboutMeAssessmentResponseId);
-      if (dreamsAssessmentResponseId) await fetchSummary(dreamsAssessmentResponseId, 'dreams');
-      if (schoolLearningAssessmentResponseId) await fetchSummary(schoolLearningAssessmentResponseId, 'school_learning');
-      if (hobbiesAssessmentResponseId) await fetchSummary(hobbiesAssessmentResponseId, 'hobbies');
-      if (roleModelsAssessmentResponseId) await fetchSummary(roleModelsAssessmentResponseId, 'role_models');
+      if (isRefreshingRef.current) return;
+      isRefreshingRef.current = true;
+      try {
+        if (assessmentResponseId) await fetchInspirationSummary(assessmentResponseId);
+        if (aboutMeAssessmentResponseId) await fetchAboutMeSummary(aboutMeAssessmentResponseId);
+        if (dreamsAssessmentResponseId) await fetchSummary(dreamsAssessmentResponseId, 'dreams');
+        if (schoolLearningAssessmentResponseId) await fetchSummary(schoolLearningAssessmentResponseId, 'school_learning');
+        if (hobbiesAssessmentResponseId) await fetchSummary(hobbiesAssessmentResponseId, 'hobbies');
+        if (roleModelsAssessmentResponseId) await fetchSummary(roleModelsAssessmentResponseId, 'role_models');
+      } finally {
+        isRefreshingRef.current = false;
+      }
     };
-    const interval = setInterval(refreshSummaries, 10000);
+    const interval = setInterval(refreshSummaries, 60000);
     const handleFocus = () => refreshSummaries();
     const handleVisibilityChange = () => { if (!document.hidden) refreshSummaries(); };
     window.addEventListener('focus', handleFocus);

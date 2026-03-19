@@ -145,6 +145,7 @@ export function AudioRecorder({
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const isRecordingRef = useRef<boolean>(false); // Track live state for async callbacks
+  const countdownRef = useRef<NodeJS.Timeout | null>(null);
 
   // Streaming Refs
   const processorRef = useRef<ScriptProcessorNode | AudioWorkletNode | null>(null);
@@ -459,6 +460,7 @@ export function AudioRecorder({
       if (mediaRecorderRef.current) mediaRecorderRef.current.stop();
       if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
       if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
+      if (countdownRef.current) clearInterval(countdownRef.current);
     };
   }, []);
 
@@ -473,11 +475,13 @@ export function AudioRecorder({
     setState(prev => ({ ...prev, countdownActive: true, countdownValue: 3 }));
 
     let count = 3;
-    const interval = setInterval(() => {
+    if (countdownRef.current) clearInterval(countdownRef.current);
+    countdownRef.current = setInterval(() => {
       count--;
       setState(prev => ({ ...prev, countdownValue: count }));
       if (count <= 0) {
-        clearInterval(interval);
+        if (countdownRef.current) clearInterval(countdownRef.current);
+        countdownRef.current = null;
         setState(prev => ({ ...prev, countdownActive: false, isRecording: true }));
         startActualRecording();
       }

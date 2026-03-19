@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { notificationService, AppNotification } from '@/services/notificationService';
 import { useNavigate } from 'react-router-dom';
+import { useLang } from '@/hooks/useLang';
 
 interface Props {
   userId: string;
@@ -15,6 +16,11 @@ export default function NotificationBell({ userId }: Props) {
   const [items, setItems] = useState<AppNotification[]>([]);
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
+  const { lang } = useLang();
+
+  const notifLabel = lang === 'kn' ? 'ಅಧಿಸೂಚನೆಗಳು' : lang === 'ta' ? 'அறிவிப்புகள்' : lang === 'hi' ? 'सूचनाएं' : 'Notifications';
+  const markAllLabel = lang === 'kn' ? 'ಎಲ್ಲವನ್ನೂ ಓದಿದಂತೆ ಗುರುತಿಸಿ' : lang === 'ta' ? 'அனைத்தையும் படித்ததாகக் குறி' : lang === 'hi' ? 'सभी पढ़ा हुआ चिह्नित करें' : 'Mark all read';
+  const noNewLabel = lang === 'kn' ? 'ಹೊಸ ಅಧಿಸೂಚನೆಗಳಿಲ್ಲ' : lang === 'ta' ? 'புதிய அறிவிப்புகள் இல்லை' : lang === 'hi' ? 'कोई नई सूचना नहीं' : 'No new notifications';
 
   // Close notifications when clicking outside
   useEffect(() => {
@@ -64,7 +70,7 @@ export default function NotificationBell({ userId }: Props) {
           setOpen(!open);
           if (!open) refresh();
         }}
-        aria-label="Notifications"
+        aria-label={notifLabel}
       >
         <Bell className="w-5 h-5 text-gray-700" />
         {count > 0 && (
@@ -77,21 +83,21 @@ export default function NotificationBell({ userId }: Props) {
       {open && (
         <div className="absolute right-0 top-full mt-2 w-80 z-50 bg-white border rounded-lg shadow-xl animate-in fade-in zoom-in duration-200 origin-top-right">
           <div className="flex items-center justify-between p-3 border-b bg-gray-50/50 rounded-t-lg">
-            <span className="text-sm font-semibold text-gray-900">Notifications</span>
+            <span className="text-sm font-semibold text-gray-900">{notifLabel}</span>
             <Button
               variant="ghost"
               size="sm"
               onClick={markAllRead}
               className="h-6 px-2 text-xs hover:bg-blue-50 hover:text-blue-600 transition-colors"
             >
-              <Check className="w-3 h-3 mr-1" /> Mark all read
+              <Check className="w-3 h-3 mr-1" /> {markAllLabel}
             </Button>
           </div>
           <div className="max-h-[80vh] overflow-y-auto">
             {items.length === 0 ? (
               <div className="p-8 text-center text-gray-500">
                 <Bell className="w-8 h-8 mx-auto mb-2 opacity-20" />
-                <p className="text-sm">No new notifications</p>
+                <p className="text-sm">{noNewLabel}</p>
               </div>
             ) : (
               items.map(n => (

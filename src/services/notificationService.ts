@@ -16,30 +16,33 @@ export interface AppNotification {
 
 class NotificationService {
   async getUnreadCount(userId: string): Promise<number> {
-    const { count } = await supabase
+    const { count, error } = await supabase
       .from('notifications')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
       .is('read_at', null);
+    if (error) logger.error('Notification getUnreadCount error:', error);
     return count || 0;
   }
 
   async list(userId: string, limit = 15): Promise<AppNotification[]> {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('notifications')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(limit);
+    if (error) logger.error('Notification list error:', error);
     return (data as AppNotification[]) || [];
   }
 
   async markRead(ids: string[]): Promise<void> {
     if (!ids.length) return;
-    await supabase
+    const { error } = await supabase
       .from('notifications')
       .update({ read_at: new Date().toISOString() })
       .in('id', ids);
+    if (error) logger.error('Notification markRead error:', error);
   }
 
   async create(params: {
