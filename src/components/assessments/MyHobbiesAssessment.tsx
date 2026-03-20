@@ -299,8 +299,7 @@ export default function MyHobbiesAssessment() {
         .select('id, responses')
         .eq('student_id', studentId)
         .eq('assessment_type', 'hobbies')
-        .eq('assessment_title', 'My Talents and Hobbies')
-        .order('updated_at', { ascending: false })
+                .order('updated_at', { ascending: false })
         .limit(1);
 
       if (fetchError) {
@@ -339,14 +338,14 @@ export default function MyHobbiesAssessment() {
         logger.log('📝 Creating new record with responses:', responses);
         const { error } = await supabase
           .from('assessment_responses')
-          .insert({
+          .upsert({
             student_id: studentId,
             assessment_type: 'hobbies',
             assessment_title: 'My Talents and Hobbies',
             responses,
             updated_at: new Date().toISOString(),
             completed_at: null
-          });
+          }, { onConflict: 'student_id,assessment_type' });
 
         if (error) {
           logger.error('❌ Error inserting new record:', error);
@@ -437,8 +436,7 @@ export default function MyHobbiesAssessment() {
         .select('*')
         .eq('student_id', studentId)
         .eq('assessment_type', 'hobbies')
-        .eq('assessment_title', 'My Talents and Hobbies')
-        .order('updated_at', { ascending: false })
+                .order('updated_at', { ascending: false })
         .limit(1);
 
       if (existingRecords && existingRecords.length > 0 && !error) {
@@ -551,8 +549,7 @@ export default function MyHobbiesAssessment() {
         .select('*')
         .eq('student_id', studentId)
         .eq('assessment_type', 'hobbies')
-        .eq('assessment_title', 'My Talents and Hobbies')
-        .order('updated_at', { ascending: false })
+                .order('updated_at', { ascending: false })
         .limit(1);
 
       if (fetchError) {
@@ -582,14 +579,14 @@ export default function MyHobbiesAssessment() {
         // Create new record if none exists
         const { data, error } = await supabase
           .from('assessment_responses')
-          .insert({
+          .upsert({
             student_id: studentId,
             assessment_type: 'hobbies',
             assessment_title: 'My Talents and Hobbies',
             responses: responses,
             completed_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
-          })
+          }, { onConflict: 'student_id,assessment_type' })
           .select()
           .single();
 

@@ -174,7 +174,6 @@ export default function AboutMeAssessmentDB() {
           .select('responses, completed_at')
           .eq('student_id', studentId)
           .eq('assessment_type', 'about_me')
-          .eq('assessment_title', 'About Me')
           .order('updated_at', { ascending: false })
           .limit(1)
           .maybeSingle();

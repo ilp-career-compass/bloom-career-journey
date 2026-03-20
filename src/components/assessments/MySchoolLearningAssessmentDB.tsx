@@ -120,7 +120,6 @@ export default function MySchoolLearningAssessmentDB() {
           .select('responses, completed_at')
           .eq('student_id', studentId)
           .eq('assessment_type', 'school_learning')
-          .eq('assessment_title', 'My School, My Learning and I')
           .order('updated_at', { ascending: false })
           .limit(1)
           .maybeSingle();
@@ -164,7 +163,7 @@ export default function MySchoolLearningAssessmentDB() {
           responses,
           updated_at: new Date().toISOString(),
           completed_at: null
-        });
+        }, { onConflict: 'student_id,assessment_type' });
       } catch {}
     }, 800);
     return () => clearTimeout(t);
@@ -218,7 +217,7 @@ export default function MySchoolLearningAssessmentDB() {
         responses,
         completed_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
-      });
+      }, { onConflict: 'student_id,assessment_type' });
 
       setIsCompleted(true);
       toast({

@@ -173,7 +173,6 @@ export default function MyInspirationAssessmentDB() {
           .select('id')
           .eq('student_id', studentId)
           .eq('assessment_type', 'inspiration')
-          .eq('assessment_title', 'My Inspiration')
           .order('updated_at', { ascending: false })
           .limit(1)
           .maybeSingle();
@@ -186,14 +185,14 @@ export default function MyInspirationAssessmentDB() {
         // Create a new placeholder record to attach audio responses
         const { data: inserted, error: insertError } = await supabase
           .from('assessment_responses')
-          .insert({
+          .upsert({
             student_id: studentId,
             assessment_type: 'inspiration',
             assessment_title: 'My Inspiration',
             responses,
             completed_at: null,
             updated_at: new Date().toISOString(),
-          })
+          }, { onConflict: 'student_id,assessment_type' })
           .select('id')
           .single();
 
@@ -258,7 +257,6 @@ export default function MyInspirationAssessmentDB() {
           .select('responses, completed_at')
           .eq('student_id', studentId)
           .eq('assessment_type', 'inspiration')
-          .eq('assessment_title', 'My Inspiration')
           .order('updated_at', { ascending: false })
           .limit(1)
           .maybeSingle();

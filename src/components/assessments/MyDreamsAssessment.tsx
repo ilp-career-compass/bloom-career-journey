@@ -386,7 +386,6 @@ export default function MyDreamsAssessment() {
         .select('*')
         .eq('student_id', studentId)
         .eq('assessment_type', 'dreams')
-        .eq('assessment_title', 'My Dreams')
         // Prefer the most recently updated/completed record
         .order('updated_at', { ascending: false })
         .limit(1);

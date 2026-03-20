@@ -293,7 +293,6 @@ export default function MyRoleModelsAssessment() {
         .select('*')
         .eq('student_id', studentId)
         .eq('assessment_type', 'role_models')
-        .eq('assessment_title', 'My Role Models')
         .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle();
