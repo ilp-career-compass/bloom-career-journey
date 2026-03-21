@@ -509,7 +509,7 @@ export default function AboutMeAssessment() {
       } as any;
       const { data: assessmentData, error } = await supabase
         .from('assessment_responses')
-        .upsert({ ...payload, updated_at: new Date().toISOString() })
+        .upsert({ ...payload, updated_at: new Date().toISOString() }, { onConflict: 'student_id,assessment_type' })
         .select()
         .single();
 

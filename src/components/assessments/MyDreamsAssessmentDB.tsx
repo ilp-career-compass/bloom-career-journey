@@ -1,4 +1,4 @@
-﻿import { logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -154,7 +154,7 @@ export default function MyDreamsAssessmentDB() {
           responses,
           updated_at: new Date().toISOString(),
           completed_at: null
-        });
+        }, { onConflict: 'student_id,assessment_type' });
       } catch {}
     }, 800);
     return () => clearTimeout(t);
@@ -195,7 +195,7 @@ export default function MyDreamsAssessmentDB() {
         responses,
         completed_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
-      });
+      }, { onConflict: 'student_id,assessment_type' });
 
       setIsCompleted(true);
       toast({
@@ -443,19 +443,6 @@ export default function MyDreamsAssessmentDB() {
                     <Button
                       onClick={nextSection}
                       disabled={!isCurrentSectionComplete()}
-                    >
-                      Next Section
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </div>
-  );
-}
                     >
                       Next Section
                     </Button>

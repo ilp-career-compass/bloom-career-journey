@@ -1,4 +1,4 @@
-﻿import { logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 import { useState, useEffect } from 'react';
 import { useLang } from '@/hooks/useLang';
 import { useAuth } from '@/hooks/useAuth';
@@ -164,7 +164,7 @@ export default function MyHobbiesAssessmentDB() {
           responses,
           updated_at: new Date().toISOString(),
           completed_at: null
-        });
+        }, { onConflict: 'student_id,assessment_type' });
       } catch { }
     }, 800);
     return () => clearTimeout(t);
@@ -225,7 +225,7 @@ export default function MyHobbiesAssessmentDB() {
         responses,
         completed_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
-      });
+      }, { onConflict: 'student_id,assessment_type' });
 
       setIsCompleted(true);
       toast({
