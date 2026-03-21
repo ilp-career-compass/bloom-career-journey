@@ -126,7 +126,11 @@ bloom-career-journey/
 │   ├── questions_snapshot.json       # Last known state of Google Sheet questions (pending)
 │   ├── seed_test_data.ts             # Creates test teacher + 3 students for E2E testing
 │   ├── generate_test_answers.ts      # Generates en/kn/ta test answers via Gemini API
-│   └── cleanup_test_data.ts          # Removes all seeded test data
+│   ├── cleanup_test_data.ts          # Removes all seeded test data
+│   ├── dump_sheets.ts                # Dumps Google Sheet tabs to console for inspection
+│   ├── generate_migration.ts         # Generates SQL migration from Google Sheet data
+│   ├── generate_correction_migration.ts # Generates correction migrations for key format fixes
+│   └── test_upsert.ts               # Tests assessment_responses upsert as authenticated user
 ├── docs/
 │   ├── E2E_test_report.md            # E2E test results
 │   ├── manual_test_checklist.md      # Manual test checklist
@@ -248,11 +252,12 @@ orgs (id, name)
 | Column | Type |
 |--------|------|
 | id | uuid PK |
-| student_id | FK → `students.user_id` |
-| assessment_type | enum: `inspiration`, `dreams`, `school_learning`, `role_models`, `hobbies`, `personality`, `career_aptitude` |
+| student_id | FK → `students.id` |
+| assessment_type | text NOT NULL |
 | responses | jsonb NOT NULL |
 | completed_at | timestamptz nullable (null = in progress) |
 | review_status | enum: `unreviewed`, `in_review`, `reviewed`, `needs_revision`, `flagged` |
+| | **UNIQUE (student_id, assessment_type)** — all writes must use `.upsert()` |
 
 #### `assessment_summaries`
 | Column | Type |
@@ -299,15 +304,15 @@ students + teachers ──→ chat_channels ──1:N──→ chat_messages
 
 ## 6. Database Migrations
 
-See `supabase/migrations/` for full history (147+ files, Jan 2025 – Mar 2026).
+See `supabase/migrations/` for full history (150+ files, Jan 2025 – Mar 2026).
 
 ### Recent Migrations (last 5)
 | Date | Migration | What It Does |
 |------|-----------|--------------|
+| 2026-03-20 | `drop_stale_assessment_responses_rls` | Drops legacy ALL RLS policy that compared `auth.uid() = student_id` directly (caused 409 on upsert) |
+| 2026-03-19 | `unique_student_assessment_responses` | Adds `UNIQUE (student_id, assessment_type)` constraint after deduplicating existing rows |
 | 2026-03-18 | `profile_card_questions` | Inserts profile card questions (22 questions + 6 titles × 4 languages) into `content_translations` from Google Sheet |
 | 2026-03-13 | `add_hindi_to_preferred_language` | Adds `hi` to `preferred_language` CHECK constraint (was enum, now CHECK) |
-| 2026-03-13 | `fix_role_models_rpc` | Creates `get_role_models_assessment_template` RPC (fixes 404 bug) |
-| 2026-03-13 | `fix_school_learning_summary_questions` | Fixes corrupted `question1` in school_learning summary questions |
 | 2026-03-12 | `fix_hobbies_summary_template_keys` | Fixes hobbies summary template key formats |
 
 ### Notable Schema Notes
@@ -315,6 +320,8 @@ See `supabase/migrations/` for full history (147+ files, Jan 2025 – Mar 2026).
 - **SQL Unicode rule**: All Kannada/Tamil/Hindi text in migrations must use PostgreSQL dollar-quoting (`$$...$$`)
 - **Bulk question update (Mar 2026)**: `about_me_fields.question11` deleted, `role_models_questions` shifted by 1, `question19` removed
 - **preferred_language (Mar 2026)**: Changed from enum to CHECK constraint to allow adding languages without migration complexity
+- **assessment_responses unique constraint (Mar 2026)**: `UNIQUE (student_id, assessment_type)` — all writes must use `.upsert({ onConflict: 'student_id,assessment_type' })`
+- **RLS on assessment_responses**: Enabled with 4 policies (`ar_select_student`, `ar_insert_student`, `ar_update_student`, `ar_select_teacher`) using `is_student_owned_by_auth()` function
 
 ---
 
@@ -418,6 +425,7 @@ Frontend → Supabase directly (queries, RPCs, storage). AI/ML services are dire
 - **Error handling**: `utils/errorHandler.ts`, `ErrorBoundary` class component, `sonner` toasts
 - **Assessment components**: always come in pairs — `*Assessment.tsx` (UI+logic) + `*AssessmentDB.tsx` (DB ops)
 - **SQL Unicode**: All Kannada/Tamil/Hindi text in migrations must use PostgreSQL dollar-quoting (`$$...$$`)
+- **assessment_responses writes**: ALWAYS use `.upsert({ ... }, { onConflict: 'student_id,assessment_type' })` — NEVER use bare `.insert()`. The table has a unique constraint and RLS policies that require upsert.
 - **Bug fixes**: documented in git commit messages only — not in this file
 
 ---
@@ -467,7 +475,7 @@ Frontend → Supabase directly (queries, RPCs, storage). AI/ML services are dire
 > [!NOTE]
 > **sync-questions**: `scripts/sync_questions.ts` and Google Sheets automation pending implementation.
 
-### Completed Work (Mar 2026 Session)
+### Completed Work (Mar 2026 Sessions)
 | Phase | Description | Status |
 |-------|-------------|--------|
 | **0A** | Fix corrupted `question1` in School Learning summary questions | ✅ |
@@ -489,4 +497,16 @@ Frontend → Supabase directly (queries, RPCs, storage). AI/ML services are dire
 | **5G** | Rewrite `ProfileCardPage.tsx`: question label → answer display, clickable cards, Hindi support, deep-link to summary dialog | ✅ |
 | **5H** | Student dashboard: auto-open `SummaryViewDialog` from URL params (`?assessment=X&tab=summary`) | ✅ |
 | **5I** | Remove placeholder Assessment Progress Summary section from student dashboard | ✅ |
+| **6A** | Clean slate content migration from restructured Google Sheets (about_me_fields, hobbies_questions updated) | ✅ |
+| **6B** | Content key format fixes: role_models underscore removal, about_me section key alignment | ✅ |
+| **6C** | Hobbies summary template key remapping (`question1-8` → `question1-10` to match new sheet) | ✅ |
+| **6D** | Assessment type/title mismatches fixed (About Me, School Learning, Hobbies components) | ✅ |
+| **6E** | Career roadmap: `midterm_9th` milestone added, auto-redirect on first assessment open | ✅ |
+| **6F** | UI consistency fixes: Tamil strings, Hindi auth page, footer year, translation spinners, accessibility | ✅ |
+| **6G** | Bug fixes — CRITICAL: API URL spaces, lang mismatch; HIGH: race conditions, error handling; MEDIUM: save guards, i18n, polling, timer cleanup | ✅ |
+| **6H** | Add `UNIQUE (student_id, assessment_type)` constraint on `assessment_responses` + deduplicate existing rows | ✅ |
+| **6I** | Convert ALL `.insert()` → `.upsert({ onConflict })` on `assessment_responses` across entire codebase (10 files, 0 bare inserts remain) | ✅ |
+| **6J** | Drop stale RLS policy "Students can manage their own assessment responses" (caused 409 on upsert) | ✅ |
+| **6K** | Re-enable RLS on `assessment_responses` with correct `ar_*` policies via `is_student_owned_by_auth()` | ✅ |
+| **6L** | E2E backend test: 42/42 pass | ✅ |
 | **2–3** | Google Sheets sync automation | ⏸️ Paused — sheet restructuring in progress |
