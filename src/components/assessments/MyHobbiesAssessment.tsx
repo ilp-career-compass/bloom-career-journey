@@ -1073,11 +1073,15 @@ export default function MyHobbiesAssessment() {
                 </CardHeader>
                 <CardContent className="p-6">
                   <div className="space-y-8">
-                    {sectionQuestions.map((q: any) => (
+                    {sectionQuestions.map((q: any, qIdx: number) => {
+                      const qText = sectionKey === 'summary' ? q.text : q.question_text;
+                      const hasNumber = /^\d+\.\s/.test(qText || '');
+                      const label = hasNumber ? qText : `${qIdx + 1}. ${qText}`;
+                      return (
                       <div key={q.id} className="space-y-3">
                         <div className="flex items-start justify-between gap-4">
                           <label className="text-base font-medium text-gray-800 leading-relaxed">
-                            {sectionKey === 'summary' ? q.text : q.question_text}
+                            {label}
                           </label>
                           {q.help_text && (
                             <Button
@@ -1107,7 +1111,8 @@ export default function MyHobbiesAssessment() {
                           readOnly={isReadOnly}
                         />
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
 
                   {/* Navigation Buttons */}

@@ -1733,7 +1733,7 @@ export default function MyInspirationAssessment() {
                           )}
                           <label className="block text-lg font-semibold text-gray-800 flex items-center gap-2 mb-3">
                             <IconComponent className={`w-5 h-5 ${colors.iconColor}`} />
-                            {sq.question_text}
+                            {/^\d+\.\s/.test(sq.question_text || '') ? sq.question_text : `${index + 1}. ${sq.question_text}`}
                             <span className="text-red-500 text-sm">*</span>
                           </label>
                           <Textarea
@@ -1823,7 +1823,7 @@ export default function MyInspirationAssessment() {
                         <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-3 gap-3">
                           <label className="block text-lg font-semibold text-gray-800 flex items-center gap-2">
                             <IconComponent className={`w-5 h-5 ${colors.iconColor}`} />
-                            {questionText}
+                            {/^\d+\.\s/.test(questionText) ? questionText : `${questionNum}. ${questionText}`}
                             <span className="text-red-500 text-sm">*</span>
                             <button
                               type="button"

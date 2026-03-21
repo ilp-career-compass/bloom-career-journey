@@ -516,8 +516,9 @@ export default function AboutMeAssessment() {
       if (error) throw error;
 
       toast({
-        title: complete ? 'Submitted!' : 'Saved',
-        description: complete ? 'About Me submitted successfully.' : 'Progress saved.'
+        title: complete
+          ? (lang === 'kn' ? 'ಮೌಲ್ಯಮಾಪನವನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಸಲ್ಲಿಸಲಾಗಿದೆ' : lang === 'ta' ? 'மதிப்பீடு வெற்றிகரமாக சமர்ப்பிக்கப்பட்டது' : lang === 'hi' ? 'मूल्यांकन सफलतापूर्वक जमा किया गया' : 'Assessment submitted successfully')
+          : (lang === 'kn' ? 'ಪ್ರಗತಿಯನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಉಳಿಸಲಾಗಿದೆ' : lang === 'ta' ? 'முன்னேற்றம் வெற்றிகரமாக சேமிக்கப்பட்டது' : lang === 'hi' ? 'प्रगति सफलतापूर्वक सहेजी गई' : 'Progress saved successfully'),
       });
 
       if (complete) {
@@ -598,7 +599,7 @@ export default function AboutMeAssessment() {
       }
     } catch (e) {
       logger.error('Error saving:', e);
-      toast({ title: 'Error', description: 'Unable to save. Please try again.', variant: 'destructive' });
+      toast({ title: lang === 'kn' ? 'ಉಳಿಸಲು ವಿಫಲವಾಗಿದೆ' : lang === 'ta' ? 'சேமிக்க இயலவில்லை' : lang === 'hi' ? 'सहेजने में विफल' : 'Error', description: lang === 'kn' ? 'ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.' : lang === 'ta' ? 'மீண்டும் முயற்சிக்கவும்.' : lang === 'hi' ? 'कृपया पुनः प्रयास करें।' : 'Unable to save. Please try again.', variant: 'destructive' });
     } finally {
       setSubmitting(false);
     }
@@ -984,7 +985,7 @@ export default function AboutMeAssessment() {
                     {submitting ? (
                       <div className="flex items-center gap-2">
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        <span>Submitting...</span>
+                        <span>{lang === 'kn' ? 'ಸಲ್ಲಿಸುತ್ತಿದೆ...' : lang === 'ta' ? 'சமர்ப்பிக்கிறது...' : lang === 'hi' ? 'जमा हो रहा है...' : 'Submitting...'}</span>
                       </div>
                     ) : (
                       <>
