@@ -1825,7 +1825,7 @@ IMPORTANT RULES:
 - Write like the student is talking (use "I" and "me")
 - Use plain English - no difficult words
 - The TOTAL length should be 200-300 words
-- For Question 1, make sure each category is on its own line following the "Category: What I said" pattern
+- For each question, write a brief 2-3 sentence answer directly. Do not include labels like "Category" or "What I said". Just write the answer.
 - Be short and clear
 - Use the student's own words from their answers
 - Write like the student himself/herself is writing
