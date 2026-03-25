@@ -372,8 +372,24 @@ export function AudioRecorder({
   };
 
   // --- PERMISSIONS & SETUP ---
-  // Request microphone permission
+  // Localized permission-denied messages
+  const micDeniedMessages: Record<string, string> = {
+    en: 'Microphone access denied. Please allow microphone access in your browser settings to record your answer. You can also type your answer instead.',
+    kn: 'ಮೈಕ್ರೋಫೋನ್ ಅನುಮತಿ ನಿರಾಕರಿಸಲಾಗಿದೆ. ದಯವಿಟ್ಟು ಬ್ರೌಸರ್ ಸೆಟ್ಟಿಂಗ್‌ಗಳಲ್ಲಿ ಮೈಕ್ರೋಫೋನ್ ಅನ್ನು ಅನುಮತಿಸಿ.',
+    ta: 'மைக்ரோஃபோன் அனுமதி மறுக்கப்பட்டது. உங்கள் பதிலை பதிவு செய்ய உலாவி அமைப்புகளில் மைக்ரோஃபோனை அனுமதிக்கவும்.',
+    hi: 'माइक्रोफ़ोन अनुमति अस्वीकृत। कृपया अपना उत्तर रिकॉर्ड करने के लिए ब्राउज़र सेटिंग्स में माइक्रोफ़ोन की अनुमति दें।',
+  };
+
+  // Request microphone permission (called lazily on first record click)
   const requestMicrophonePermission = useCallback(async () => {
+    // Check browser support first
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      const msg = 'Audio recording is not supported on this browser. You can type your answer instead.';
+      setErrorState('warning', msg);
+      toast({ title: t('error'), description: msg, variant: 'destructive' });
+      return false;
+    }
+
     try {
       logger.log('🎤 Requesting microphone permission...');
 
@@ -393,48 +409,38 @@ export function AudioRecorder({
       // Clean up the test stream
       stream.getTracks().forEach(track => track.stop());
 
-      toast({
-        title: "Microphone Access Granted",
-        description: "You can now record audio responses.",
-      });
-
       logger.log('✅ Microphone permission granted');
       return true;
     } catch (error) {
       logger.error('❌ Microphone permission denied:', error);
       setState(prev => ({ ...prev, hasPermission: false }));
 
-      let errorMessage = 'Microphone access is required to record audio responses.';
+      const baseLang = (lang || 'en').split('-')[0];
+      let errorMessage = micDeniedMessages[baseLang] || micDeniedMessages.en;
+
       if (error instanceof Error) {
-        if (error.name === 'NotAllowedError') {
-          errorMessage = 'Microphone access was denied. Please allow microphone access in your browser settings and try again.';
-        } else if (error.name === 'NotFoundError') {
+        if (error.name === 'NotFoundError') {
           errorMessage = 'No microphone found. Please connect a microphone and try again.';
         } else if (error.name === 'NotReadableError') {
           errorMessage = 'Microphone is being used by another application. Please close other applications and try again.';
         }
+        // NotAllowedError uses the localized message above
       }
 
-      setErrorState('error', errorMessage);
+      setErrorState('warning', errorMessage);
 
       toast({
-        title: "Microphone Access Denied",
+        title: t('error'),
         description: errorMessage,
-        variant: "destructive",
       });
 
       return false;
     }
-  }, [toast, setErrorState]);
+  }, [toast, setErrorState, lang, t]);
 
 
-  // Initialize
+  // Initialize audio response manager (no mic permission request on mount)
   useEffect(() => {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      setErrorState('error', 'Browser not supported');
-      return;
-    }
-
     if (studentId && assessmentId) {
       audioResponseManager.initialize({
         studentId, assessmentId, assessmentType: assessmentType!, assessmentTitle: assessmentTitle!,
@@ -442,19 +448,6 @@ export function AudioRecorder({
       });
       audioResponseManager.loadOfflineQueue();
     }
-
-    // Auto request
-    const req = async () => {
-      try {
-        const s = await navigator.mediaDevices.getUserMedia({ audio: true });
-        setState(prev => ({ ...prev, hasPermission: true }));
-        s.getTracks().forEach(t => t.stop());
-      } catch (e) {
-        setState(prev => ({ ...prev, hasPermission: false }));
-      }
-    };
-    req();
-
   }, [studentId, assessmentId, assessmentType, assessmentTitle, enableTranscription, enableOfflineMode, language]);
 
   // Clean up
@@ -658,10 +651,12 @@ export function AudioRecorder({
               {new Date(state.duration).toISOString().slice(14, 19)}
             </div>
 
-            {/* Error Message */}
+            {/* Error/Warning Message */}
             {state.errorMessage && (
-              <div className="text-red-500 text-sm flex items-center gap-2 bg-red-50 px-4 py-2 rounded-md">
-                <AlertCircle className="w-4 h-4" />
+              <div className={`text-sm flex items-center gap-2 px-4 py-2 rounded-md ${
+                state.errorState === 'error' ? 'text-red-500 bg-red-50' : 'text-amber-600 bg-amber-50'
+              }`}>
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 {state.errorMessage}
               </div>
             )}

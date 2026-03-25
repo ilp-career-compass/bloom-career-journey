@@ -553,11 +553,7 @@ export default function MyInspirationAssessment() {
         setAssessmentRecordId(inserted.id);
       } catch (e) {
         logger.error('❌ Failed to ensure assessment record for audio responses:', e);
-        toast({
-          title: t('error'),
-          description: lang === 'kn' ? "ಆಡಿಯೊ ರೆಕಾರ್ಡಿಂಗ್‌ಗಾಗಿ ಸಿದ್ಧಪಡಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ." : "Could not initialize audio recording system.",
-          variant: "destructive"
-        });
+        // Don't show error banner on page load — audio record will be created on first save if needed
       }
     };
 
