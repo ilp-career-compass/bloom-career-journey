@@ -82,6 +82,7 @@ bloom-career-journey/
 │   │   ├── CareersExplore.tsx     # Career exploration page
 │   │   ├── ProfileCardPage.tsx    # My Career Compass — profile card with question-driven answers from DB
 │   │   ├── CareerRoadmapPage.tsx  # Career Roadmap — milestone-based career tracker
+│   │   ├── ThingsInterestMePage.tsx # Things that Interest Me — editable interests table
 │   │   └── StudentSummary.tsx     # Teacher view of a student's summaries
 │   ├── services/
 │   │   ├── aiSummaryService.ts       # AI summary generation + profile card keyword extraction
@@ -202,7 +203,8 @@ Each assessment has a companion `*DB.tsx` component for DB operations. Responses
 ### My Compass Feature
 - **Profile Card** (`/student/profile-card`): 6 module cards — always visible, never locked. Each card shows profile card questions (from `content_translations` with `resource_type: profile_card_{type}`) with 2-3 word AI-generated answers when complete, or blank labels with "Complete this module" nudge when incomplete. 7th "My Career Direction" card synthesizes all 6. Answers cached in `profile_card_cache` as JSON objects `{question1: "answer", ...}`. Clicking a card deep-links to `/student?assessment={type}&tab=summary` which auto-opens the `SummaryViewDialog`. Teachers view read-only at `/teacher/student-profile-card/:studentId`. Hindi support included in all UI strings.
 - **Profile Card Questions**: Stored in `content_translations` with `resource_type: profile_card_{assessment_type}` (e.g. `profile_card_inspiration`). Keys: `title`, `question1`, `question2`, etc. All 4 languages. Source: Google Sheet tab "Profile Card Questions - Grade". Holland Code section deferred.
-- **Career Roadmap** (`/student/career-roadmap`): 7 milestone rows × 4 columns (Milestone + Plan A/B/C). Top 3 rows editable (beginning/end of 9th, beginning of 10th), bottom 4 locked. Autosave with 1s debounce to `career_roadmap` table.
+- **Things that Interest Me** (`/student/things-interest-me`): Editable table where students list things they're interested in. Accessible from compass menu in student dashboard header. Post-assessment completion redirects here to encourage reflection.
+- **Career Roadmap** (`/student/career-roadmap`): 7 milestone rows × 4 columns (Milestone + Plan A/B/C). Top 3 rows editable (beginning/end of 9th, beginning of 10th), bottom 4 locked. Autosave with 1s debounce to `career_roadmap` table. Midterm roadmap trigger moved from module 4 to module 5.
 
 ---
 
@@ -388,7 +390,7 @@ Frontend → Supabase directly (queries, RPCs, storage). AI/ML services are dire
 ### Frontend
 - **`ProtectedRoute.tsx`**: checks auth + role match; redirects to `/auth` or role dashboard
 - Role-based redirects: admin → `/admin`, teacher → `/teacher`, student → `/student`
-- Compass routes: `/student/profile-card`, `/student/career-roadmap`, `/teacher/student-profile-card/:studentId`
+- Compass routes: `/student/profile-card`, `/student/career-roadmap`, `/student/things-interest-me`, `/teacher/student-profile-card/:studentId`
 
 ### Backend (RLS)
 - Students: read/write own data only
@@ -509,4 +511,11 @@ Frontend → Supabase directly (queries, RPCs, storage). AI/ML services are dire
 | **6J** | Drop stale RLS policy "Students can manage their own assessment responses" (caused 409 on upsert) | ✅ |
 | **6K** | Re-enable RLS on `assessment_responses` with correct `ar_*` policies via `is_student_owned_by_auth()` | ✅ |
 | **6L** | E2E backend test: 42/42 pass | ✅ |
+| **7A** | "Things that Interest Me" page: editable table, compass menu entry, post-assessment redirect | ✅ |
+| **7B** | Mobile keyboard fixes: overlap/interaction, backdrop, body scroll lock | ✅ |
+| **7C** | Notification panel mobile alignment | ✅ |
+| **7D** | Audio recording transcription message change | ✅ |
+| **7E** | Lazy audio initialization: no page-load error banner, mic permission requested only on first record click, localized denial messages (en/kn/ta/hi) | ✅ |
+| **7F** | Career roadmap midterm trigger moved from module 4 to module 5 | ✅ |
+| **7G** | Remove Category/What I said labels from About Me AI summary prompt | ✅ |
 | **2–3** | Google Sheets sync automation | ⏸️ Paused — sheet restructuring in progress |
