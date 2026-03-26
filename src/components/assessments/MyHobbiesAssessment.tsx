@@ -90,12 +90,14 @@ export default function MyHobbiesAssessment() {
 
       if (!unlockResult.isUnlocked) {
         toast({
-          title: lang === 'kn' ? 'ಮೌಲ್ಯಮಾಪನ ಲಾಕ್ ಮಾಡಲಾಗಿದೆ' : lang === 'ta' ? 'செயல் பூட்டப்பட்டுள்ளது' : 'Assessment Locked',
+          title: lang === 'kn' ? 'ಮೌಲ್ಯಮಾಪನ ಲಾಕ್ ಮಾಡಲಾಗಿದೆ' : lang === 'ta' ? 'செயல் பூட்டப்பட்டுள்ளது' : lang === 'hi' ? 'मूल्यांकन लॉक है' : 'Assessment Locked',
           description: lang === 'kn'
             ? `ದಯವಿಟ್ಟು ಮೊದಲು "${unlockResult.missingPrerequisites.join(', ')}" ಪೂರ್ಣಗೊಳಿಸಿ.`
             : lang === 'ta'
               ? `"${unlockResult.missingPrerequisites.join(', ')}" செயல்களை முதலில் முடித்தால் இந்த பகுதி திறக்கும்.`
-              : `Please complete "${unlockResult.missingPrerequisites.join(', ')}" first.`,
+              : lang === 'hi'
+                ? `कृपया पहले "${unlockResult.missingPrerequisites.join(', ')}" पूरा करें।`
+                : `Please complete "${unlockResult.missingPrerequisites.join(', ')}" first.`,
           variant: 'destructive',
         });
         navigate('/student');
@@ -282,8 +284,8 @@ export default function MyHobbiesAssessment() {
     const studentId = await getStudentId();
     if (!studentId) {
       toast({
-        title: "Error",
-        description: "Student profile not found. Please contact your teacher or support.",
+        title: lang === 'kn' ? 'ದೋಷ' : lang === 'ta' ? 'பிழை' : lang === 'hi' ? 'त्रुटि' : 'Error',
+        description: lang === 'kn' ? 'ವಿದ್ಯಾರ್ಥಿ ಪ್ರೊಫೈಲ್ ಕಂಡುಬಂದಿಲ್ಲ.' : lang === 'ta' ? 'மாணவர் சுயவிவரம் காணப்படவில்லை.' : lang === 'hi' ? 'छात्र प्रोफ़ाइल नहीं मिली।' : 'Student profile not found. Please contact your teacher or support.',
         variant: "destructive",
       });
       return;
@@ -363,7 +365,7 @@ export default function MyHobbiesAssessment() {
 
       const sectionDisplayName =
         section === 'summary'
-          ? lang === 'kn' ? 'ಸಾರಾಂಶ' : lang === 'ta' ? 'சுருக்கம்' : 'Summary'
+          ? lang === 'kn' ? 'ಸಾರಾಂಶ' : lang === 'ta' ? 'சுருக்கம்' : lang === 'hi' ? 'सारांश' : 'Summary'
           : lang === 'kn'
             ? sectionNumber === '1'
               ? 'ಹವ್ಯಾಸಗಳು ಮತ್ತು ಆಸಕ್ತಿಗಳು'
@@ -380,7 +382,15 @@ export default function MyHobbiesAssessment() {
                   : sectionNumber === '3'
                     ? 'ஆதரவு மற்றும் தொழில் இணைப்பு'
                     : `பகுதி ${sectionNumber}`
-              : sectionNamesEn[sectionNumber] || section;
+              : lang === 'hi'
+                ? sectionNumber === '1'
+                  ? 'शौक और रुचियाँ'
+                  : sectionNumber === '2'
+                    ? 'प्रतिभाएँ और अभ्यास'
+                    : sectionNumber === '3'
+                      ? 'सहायता और करियर संबंध'
+                      : `भाग ${sectionNumber}`
+                : sectionNamesEn[sectionNumber] || section;
 
       toast({
         title:
@@ -388,13 +398,17 @@ export default function MyHobbiesAssessment() {
             ? 'ಭಾಗವು ಉಳಿಸಲಾಗಿದೆ! ✅'
             : lang === 'ta'
               ? 'பகுதி சேமிக்கப்பட்டது! ✅'
-              : 'Section Saved! ✅',
+              : lang === 'hi'
+                ? 'भाग सहेजा गया! ✅'
+                : 'Section Saved! ✅',
         description:
           lang === 'kn'
             ? `ನಿಮ್ಮ "${sectionDisplayName}" ವಿಭಾಗದ ಉತ್ತರಗಳನ್ನು ಉಳಿಸಲಾಗಿದೆ.`
             : lang === 'ta'
               ? `உங்கள் "${sectionDisplayName}" பகுதியின் பதில்கள் சேமிக்கப்பட்டுள்ளன.`
-              : `Your ${sectionDisplayName} responses have been saved.`,
+              : lang === 'hi'
+                ? `आपके "${sectionDisplayName}" भाग के उत्तर सहेजे गए हैं।`
+                : `Your ${sectionDisplayName} responses have been saved.`,
       });
     } catch (error) {
       logger.error('Error saving section:', error);
@@ -404,13 +418,17 @@ export default function MyHobbiesAssessment() {
             ? 'ದೋಷ'
             : lang === 'ta'
               ? 'பிழை'
-              : 'Error',
+              : lang === 'hi'
+                ? 'त्रुटि'
+                : 'Error',
         description:
           lang === 'kn'
             ? 'ಭಾಗವನ್ನು ಉಳಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.'
             : lang === 'ta'
               ? 'பகுதியை சேமிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.'
-              : 'Failed to save section. Please try again.',
+              : lang === 'hi'
+                ? 'भाग सहेजने में विफल। कृपया पुनः प्रयास करें।'
+                : 'Failed to save section. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -514,8 +532,8 @@ export default function MyHobbiesAssessment() {
     if (isReadOnly) return;
     if (!userProfile) {
       toast({
-        title: "Error",
-        description: "User profile not found. Please try logging in again.",
+        title: lang === 'kn' ? 'ದೋಷ' : lang === 'ta' ? 'பிழை' : lang === 'hi' ? 'त्रुटि' : 'Error',
+        description: lang === 'kn' ? 'ಬಳಕೆದಾರ ಪ್ರೊಫೈಲ್ ಕಂಡುಬಂದಿಲ್ಲ.' : lang === 'ta' ? 'பயனர் சுயவிவரம் காணப்படவில்லை.' : lang === 'hi' ? 'उपयोगकर्ता प्रोफ़ाइल नहीं मिली।' : 'User profile not found. Please try logging in again.',
         variant: "destructive",
       });
       return;
@@ -534,8 +552,8 @@ export default function MyHobbiesAssessment() {
 
     if (!studentId) {
       toast({
-        title: "Error",
-        description: "Student profile not found. Please contact your teacher or support.",
+        title: lang === 'kn' ? 'ದೋಷ' : lang === 'ta' ? 'பிழை' : lang === 'hi' ? 'त्रुटि' : 'Error',
+        description: lang === 'kn' ? 'ವಿದ್ಯಾರ್ಥಿ ಪ್ರೊಫೈಲ್ ಕಂಡುಬಂದಿಲ್ಲ.' : lang === 'ta' ? 'மாணவர் சுயவிவரம் காணப்படவில்லை.' : lang === 'hi' ? 'छात्र प्रोफ़ाइल नहीं मिली।' : 'Student profile not found. Please contact your teacher or support.',
         variant: "destructive",
       });
       return;
@@ -600,13 +618,17 @@ export default function MyHobbiesAssessment() {
             ? 'ಪ್ರತಿಭೆಗಳು ಮತ್ತು ಹವ್ಯಾಸಗಳ ಮೌಲ್ಯಮಾಪನ ಪೂರ್ಣಗೊಂಡಿದೆ! 🎨'
             : lang === 'ta'
               ? 'திறமைகள் மற்றும் பொழுதுபோக்குகள் மதிப்பீடு முடிந்தது! 🎨'
-              : 'Talents and Hobbies Assessment Completed! 🎨',
+              : lang === 'hi'
+                ? 'मूल्यांकन पूर्ण! 🎨'
+                : 'Talents and Hobbies Assessment Completed! 🎨',
         description:
           lang === 'kn'
             ? 'ನಿಮ್ಮ ಹವ್ಯಾಸಗಳು ಮತ್ತು ಪ್ರತಿಭೆಗಳು ಯಶಸ್ವಿಯಾಗಿ ದಾಖಲಿಸಲಾಗಿದೆ.'
             : lang === 'ta'
               ? 'உங்கள் பொழுதுபோக்குகள் மற்றும் திறமைகள் வெற்றிகரமாக பதிவு செய்யப்பட்டுள்ளன.'
-              : 'Your hobbies and talents have been captured successfully!',
+              : lang === 'hi'
+                ? 'आपकी प्रतिभाएँ और शौक सफलतापूर्वक दर्ज किए गए हैं!'
+                : 'Your hobbies and talents have been captured successfully!',
       });
 
       setIsCompleted(true);
@@ -619,7 +641,7 @@ export default function MyHobbiesAssessment() {
 
         if (aiSummaryService.isConfigured()) {
           logger.log('🤖 Generating AI summary for Hobbies assessment:', assessmentData.id);
-          const summaryResult = await aiSummaryService.generateHobbiesSummary(responses);
+          const summaryResult = await aiSummaryService.generateHobbiesSummary(responses, lang);
 
           if (summaryResult.success && summaryResult.summary) {
             // Save summary to database
@@ -637,13 +659,17 @@ export default function MyHobbiesAssessment() {
                     ? 'ಸಾರಾಂಶ ಸಿದ್ಧವಾಗಿದೆ! 📝'
                     : lang === 'ta'
                       ? 'சுருக்கம் உருவாக்கப்பட்டது! 📝'
-                      : 'Summary Generated! 📝',
+                      : lang === 'hi'
+                        ? 'सारांश तैयार! 📝'
+                        : 'Summary Generated! 📝',
                 description:
                   lang === 'kn'
                     ? 'ನಿಮ್ಮ ಹವ್ಯಾಸಗಳು ಮತ್ತು ಸಾಮರ್ಥ್ಯಗಳ ಸಾರಾಂಶ ಸಿದ್ಧವಾಗಿದೆ. ನಿಮ್ಮ ಶಿಕ್ಷಕರು ಅದನ್ನು ಪರಿಶೀಲಿಸುತ್ತಾರೆ.'
                     : lang === 'ta'
                       ? 'உங்கள் திறமைகள் மற்றும் பொழுதுபோக்குகள் பற்றிய சுருக்கம் உருவாக்கப்பட்டுள்ளது. உங்கள் ஆசிரியா் அதைப் பார்த்து மதிப்பாய்வு செய்வார்.'
-                      : 'Your talents and hobbies summary has been generated. Your teacher will review it.',
+                      : lang === 'hi'
+                        ? 'आपकी प्रतिभाओं और शौक का सारांश तैयार हो गया है। आपके शिक्षक इसकी समीक्षा करेंगे।'
+                        : 'Your talents and hobbies summary has been generated. Your teacher will review it.',
               });
 
               // Notify teacher(s) assigned to this student
@@ -661,12 +687,22 @@ export default function MyHobbiesAssessment() {
 
                   const teacherUserId = (studentRow as any)?.teachers?.user_id;
                   if (teacherUserId) {
+                    // Teacher notification stays in English
                     await notificationService.create({
                       userId: teacherUserId,
                       type: 'assessment_submitted',
                       title: `${userProfile?.full_name || 'Student'} completed My Talents and Hobbies assessment`,
                       message: 'A new My Talents and Hobbies assessment summary is ready for review.',
                       link: '/teacher/ai-summary-review'
+                    });
+                    // Student notification is language-aware
+                    const studentNotifTitle = lang === 'kn' ? 'ಪ್ರತಿಭೆ ಮತ್ತು ಹವ್ಯಾಸ ಸಲ್ಲಿಸಲಾಗಿದೆ' : lang === 'ta' ? 'திறமைகள் மற்றும் பொழுதுபோக்குகள் சமர்ப்பிக்கப்பட்டது' : lang === 'hi' ? 'प्रतिभा और शौक जमा किए गए' : 'Talents & Hobbies submitted';
+                    await notificationService.create({
+                      userId: userProfile.id,
+                      type: 'assessment_submitted',
+                      title: studentNotifTitle,
+                      message: lang === 'kn' ? 'ನಿಮ್ಮ ಮೌಲ್ಯಮಾಪನ ಸಲ್ಲಿಸಲಾಗಿದೆ.' : lang === 'ta' ? 'உங்கள் மதிப்பீடு சமர்ப்பிக்கப்பட்டது.' : lang === 'hi' ? 'आपका मूल्यांकन जमा किया गया है।' : 'Your assessment has been submitted.',
+                      link: '/student'
                     });
                   }
                 }
@@ -677,16 +713,16 @@ export default function MyHobbiesAssessment() {
             } else {
               logger.error('Failed to save summary:', saveResult.error);
               toast({
-                title: "Summary Generation Issue",
-                description: "Your assessment is saved, but summary generation needs attention.",
+                title: lang === 'kn' ? 'ಸಾರಾಂಶ ನಿರ್ಮಾಣ ಸಮಸ್ಯೆ' : lang === 'ta' ? 'சுருக்கம் உருவாக்க சிக்கல்' : lang === 'hi' ? 'सारांश निर्माण समस्या' : 'Summary Generation Issue',
+                description: lang === 'kn' ? 'ನಿಮ್ಮ ಮೌಲ್ಯಮಾಪನ ಉಳಿಸಲಾಗಿದೆ, ಆದರೆ ಸಾರಾಂಶಕ್ಕೆ ಗಮನ ಬೇಕಾಗಿದೆ.' : lang === 'ta' ? 'உங்கள் மதிப்பீடு சேமிக்கப்பட்டது, ஆனால் சுருக்கத்திற்கு கவனம் தேவை.' : lang === 'hi' ? 'आपका मूल्यांकन सहेजा गया है, लेकिन सारांश निर्माण में समस्या है।' : 'Your assessment is saved, but summary generation needs attention.',
                 variant: "destructive",
               });
             }
           } else {
             logger.error('Failed to generate summary:', summaryResult.error);
             toast({
-              title: "Summary Generation Issue",
-              description: "Your assessment is saved. Summary will be generated later.",
+              title: lang === 'kn' ? 'ಸಾರಾಂಶ ನಿರ್ಮಾಣ ಸಮಸ್ಯೆ' : lang === 'ta' ? 'சுருக்கம் உருவாக்க சிக்கல்' : lang === 'hi' ? 'सारांश निर्माण समस्या' : 'Summary Generation Issue',
+              description: lang === 'kn' ? 'ನಿಮ್ಮ ಮೌಲ್ಯಮಾಪನ ಉಳಿಸಲಾಗಿದೆ. ಸಾರಾಂಶ ನಂತರ ಸಿದ್ಧವಾಗಲಿದೆ.' : lang === 'ta' ? 'உங்கள் மதிப்பீடு சேமிக்கப்பட்டது. சுருக்கம் பின்னர் உருவாக்கப்படும்.' : lang === 'hi' ? 'आपका मूल्यांकन सहेजा गया है। सारांश बाद में तैयार किया जाएगा।' : 'Your assessment is saved. Summary will be generated later.',
               variant: "destructive",
             });
           }
@@ -700,8 +736,8 @@ export default function MyHobbiesAssessment() {
     } catch (error) {
       logger.error('Error submitting assessment:', error);
       toast({
-        title: "Error",
-        description: "Failed to submit assessment. Please try again.",
+        title: lang === 'kn' ? 'ದೋಷ' : lang === 'ta' ? 'பிழை' : lang === 'hi' ? 'त्रुटि' : 'Error',
+        description: lang === 'kn' ? 'ಮೌಲ್ಯಮಾಪನ ಸಲ್ಲಿಸಲು ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.' : lang === 'ta' ? 'மதிப்பீடு சமர்ப்பிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.' : lang === 'hi' ? 'मूल्यांकन जमा करने में विफल। कृपया पुनः प्रयास करें।' : 'Failed to submit assessment. Please try again.',
         variant: "destructive",
       });
     } finally {
@@ -715,7 +751,9 @@ export default function MyHobbiesAssessment() {
         ? 'ನಿಮ್ಮ ಆಸಕ್ತಿ ಮತ್ತು ಹವ್ಯಾಸಗಳ ಮೌಲ್ಯಮಾಪನವನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...'
         : lang === 'ta'
           ? 'உங்கள் திறமைகள் மற்றும் பொழுதுபோக்குகள் மதிப்பீடு ஏற்றப்படுகிறது...'
-          : 'Loading your hobbies assessment...';
+          : lang === 'hi'
+            ? 'आपकी प्रतिभा और शौक का मूल्यांकन लोड हो रहा है...'
+            : 'Loading your hobbies assessment...';
 
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-pink-100">
@@ -739,14 +777,18 @@ export default function MyHobbiesAssessment() {
                   ? 'ಪ್ರತಿಭೆಗಳು ಮತ್ತು ಹವ್ಯಾಸಗಳ ಮೌಲ್ಯಮಾಪನ ಪೂರ್ಣಗೊಂಡಿದೆ! 🎨'
                   : lang === 'ta'
                     ? 'திறமைகள் மற்றும் பொழுதுபோக்குகள் மதிப்பீடு முடிந்தது! 🎨'
-                    : 'Talents and Hobbies Assessment Completed! 🎨'}
+                    : lang === 'hi'
+                      ? 'प्रतिभा और शौक मूल्यांकन पूर्ण! 🎨'
+                      : 'Talents and Hobbies Assessment Completed! 🎨'}
               </CardTitle>
               <CardDescription className="text-orange-600">
                 {lang === 'kn'
                   ? 'ನೀವು ನಿಮ್ಮ ಹವ್ಯಾಸಗಳು ಮತ್ತು ಪ್ರತಿಭೆಗಳ ಬಗ್ಗೆ ಯಶಸ್ವಿಯಾಗಿ ಹಂಚಿಕೊಂಡಿದ್ದೀರಿ.'
                   : lang === 'ta'
                     ? 'உங்கள் பொழுதுபோக்குகள் மற்றும் திறமைகள் பற்றிய தகவலை நீங்கள் வெற்றிகரமாக பகிர்ந்துள்ளீர்கள்.'
-                    : "You've successfully shared your hobbies and talents"}
+                    : lang === 'hi'
+                      ? 'आपने अपनी प्रतिभाओं और शौक के बारे में सफलतापूर्वक जानकारी साझा की है।'
+                      : "You've successfully shared your hobbies and talents"}
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6">
@@ -756,7 +798,9 @@ export default function MyHobbiesAssessment() {
                     ? 'ನಿಮ್ಮ ಹವ್ಯಾಸಗಳು ಮತ್ತು ಪ್ರತಿಭೆಗಳ ಬಗ್ಗೆ ಹಂಚಿಕೊಂಡಿದ್ದಕ್ಕಾಗಿ ಧನ್ಯವಾದಗಳು! ನಿಮ್ಮ ಉತ್ತರಗಳು ಉಳಿಸಲಾಗಿದ್ದು, ನಿಮ್ಮ ಆಸಕ್ತಿಗಳನ್ನು ಆಧರಿಸಿ ಸಾಧ್ಯವಾದ ವೃತ್ತಿ ಮಾರ್ಗಗಳನ್ನು ಗುರುತಿಸಲು ನಿಮ್ಮ ಶಿಕ್ಷಕರು ಅವನ್ನು ಪರಿಶೀಲಿಸುತ್ತಾರೆ.'
                     : lang === 'ta'
                       ? 'உங்கள் பொழுதுபோக்குகள் மற்றும் திறமைகள் பற்றிய உங்கள் எண்ணங்களை திறந்த மனதுடன் பகிர்ந்ததற்கு நன்றி! உங்கள் பதில்கள் சேமிக்கப்பட்டுள்ளன; உங்கள் ஆர்வங்களை அடிப்படையாகக் கொண்டு உங்களுக்கு பொருந்தக்கூடிய தொழில் பாதைகளை கண்டறிய உங்கள் ஆசிரியா் அவற்றைப் பரிசீலிப்பார்.'
-                      : 'Thank you for sharing your hobbies and talents! Your responses have been saved and your teacher can now review them to help identify potential career paths based on your interests.'}
+                      : lang === 'hi'
+                        ? 'अपनी प्रतिभाओं और शौक को साझा करने के लिए धन्यवाद! आपके उत्तर सहेजे गए हैं और आपके शिक्षक अब आपकी रुचियों के आधार पर संभावित करियर मार्गों की पहचान करने में मदद करने के लिए उनकी समीक्षा कर सकते हैं।'
+                        : 'Thank you for sharing your hobbies and talents! Your responses have been saved and your teacher can now review them to help identify potential career paths based on your interests.'}
                 </p>
                 <div className="flex justify-center gap-4">
                   <Button
@@ -771,13 +815,13 @@ export default function MyHobbiesAssessment() {
                       navigate(`/student/assessment/hobbies?${params.toString()}`);
                     }}
                   >
-                    {lang === 'kn' ? 'ನನ್ನ ಉತ್ತರಗಳನ್ನು ವೀಕ್ಷಿಸಿ' : lang === 'ta' ? 'என் பதில்களை பார்' : 'View My Answers'}
+                    {lang === 'kn' ? 'ನನ್ನ ಉತ್ತರಗಳನ್ನು ವೀಕ್ಷಿಸಿ' : lang === 'ta' ? 'என் பதில்களை பார்' : lang === 'hi' ? 'मेरे उत्तर देखें' : 'View My Answers'}
                   </Button>
                   <Button
                     onClick={() => navigate('/student')}
                     className="bg-orange-600 hover:bg-orange-700"
                   >
-                    {lang === 'kn' ? 'ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ಗೆ ಹಿಂತಿರುಗಿ' : lang === 'ta' ? 'முதல் பக்கத்திற்கு போ' : 'Back to Dashboard'}
+                    {lang === 'kn' ? 'ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ಗೆ ಹಿಂತಿರುಗಿ' : lang === 'ta' ? 'முதல் பக்கத்திற்கு போ' : lang === 'hi' ? 'डैशबोर्ड पर वापस' : 'Back to Dashboard'}
                   </Button>
                 </div>
               </div>
@@ -805,7 +849,9 @@ export default function MyHobbiesAssessment() {
               ? '🎨 ನನ್ನ ಪ್ರತಿಭೆಗಳು ಮತ್ತು ಹವ್ಯಾಸಗಳು'
               : lang === 'ta'
                 ? '🎨 என் திறமைகள் மற்றும் பொழுதுபோக்குகள்'
-                : '🎨 My Talents and Hobbies')}
+                : lang === 'hi'
+                  ? '🎨 मेरी प्रतिभाएँ और शौक'
+                  : '🎨 My Talents and Hobbies')}
           </h1>
 
           {/* Description Text */}
@@ -860,7 +906,7 @@ export default function MyHobbiesAssessment() {
                     </ul>
                     <p className="mt-2 text-gray-600">
                       <strong>
-                        {lang === 'kn' ? 'ಉದಾಹರಣೆಗಳು:' : lang === 'ta' ? 'உதாரணங்கள்:' : 'Examples:'}
+                        {lang === 'kn' ? 'ಉದಾಹರಣೆಗಳು:' : lang === 'ta' ? 'உதாரணங்கள்:' : lang === 'hi' ? 'उदाहरण:' : 'Examples:'}
                       </strong>{' '}
                       {lang === 'kn'
                         ? 'ಚಿತ್ರ ಬಿಡಿಸುವುದು, ಹಾಡು ಹಾಡುವುದು, ಓದು, ನೃತ್ಯ, ಟಿವಿಯನ್ನು ನೋಡುವುದು, ತೋಟಗಾರಿಕೆ ಇತ್ಯಾದಿ.'
@@ -901,7 +947,7 @@ export default function MyHobbiesAssessment() {
                     </ul>
                     <p className="mt-2 text-gray-600">
                       <strong>
-                        {lang === 'kn' ? 'ಉದಾಹರಣೆಗಳು:' : lang === 'ta' ? 'ಉದಾಹರಣೆಗಳು:' : 'Examples:'}
+                        {lang === 'kn' ? 'ಉದಾಹರಣೆಗಳು:' : lang === 'ta' ? 'உதாரணங்கள்:' : lang === 'hi' ? 'उदाहरण:' : 'Examples:'}
                       </strong>{' '}
                       {lang === 'kn'
                         ? 'ಸುಲಭವಾಗಿ ಹಾಡುವಂತಹುದು, ಸ್ಪಷ್ಟವಾಗಿ ಭಾಷಣ ಮಾಡುವಂತಹುದು, ಗಣಿತದಲ್ಲಿ ವೇಗವಾಗಿ ಉತ್ತರ ನೀಡುವಂತಹುದು, ತ್ವರಿತವಾಗಿ ಕಲಿಯುವ ಸಾಮರ್ಥ್ಯ ಇತ್ಯಾದಿ.'
@@ -931,7 +977,9 @@ export default function MyHobbiesAssessment() {
                   ? `ವಿಭಾಗ ${sections.indexOf(currentSection) + 1} / ${sections.length} • ಒಟ್ಟು ${hobbiesQuestions.length} ಪ್ರಶ್ನೆಗಳು`
                   : lang === 'ta'
                     ? `பகுதி ${sections.indexOf(currentSection) + 1} / ${sections.length} • மொத்தம் ${hobbiesQuestions.length} கேள்விகள்`
-                    : `Section ${sections.indexOf(currentSection) + 1} of ${sections.length} • ${hobbiesQuestions.length} Questions Total`}
+                    : lang === 'hi'
+                      ? `भाग ${sections.indexOf(currentSection) + 1} / ${sections.length} • कुल ${hobbiesQuestions.length} प्रश्न`
+                      : `Section ${sections.indexOf(currentSection) + 1} of ${sections.length} • ${hobbiesQuestions.length} Questions Total`}
               </span>
             </div>
           </CardContent>
@@ -944,15 +992,15 @@ export default function MyHobbiesAssessment() {
               const sectionNumber = sections.indexOf(sectionKey) + 1;
               let sectionTitle = '';
               if (sectionKey === 'section1') {
-                sectionTitle = lang === 'kn' ? 'ಹವ್ಯಾಸಗಳು' : lang === 'ta' ? 'பொழுதுபோக்குகள்' : 'Hobbies';
+                sectionTitle = lang === 'kn' ? 'ಹವ್ಯಾಸಗಳು' : lang === 'ta' ? 'பொழுதுபோக்குகள்' : lang === 'hi' ? 'शौक' : 'Hobbies';
               } else if (sectionKey === 'section2') {
-                sectionTitle = lang === 'kn' ? 'ಸಾಮರ್ಥ್ಯಗಳು' : lang === 'ta' ? 'திறமைகள்' : 'Talents';
+                sectionTitle = lang === 'kn' ? 'ಸಾಮರ್ಥ್ಯಗಳು' : lang === 'ta' ? 'திறமைகள்' : lang === 'hi' ? 'प्रतिभाएँ' : 'Talents';
               } else if (sectionKey === 'section3') {
-                sectionTitle = lang === 'kn' ? 'ಬೆಂಬಲ' : lang === 'ta' ? 'ஆதரவு' : 'Support';
+                sectionTitle = lang === 'kn' ? 'ಬೆಂಬಲ' : lang === 'ta' ? 'ஆதரவு' : lang === 'hi' ? 'सहायता' : 'Support';
               } else if (sectionKey === 'summary') {
-                sectionTitle = lang === 'kn' ? 'ಸಾರಾಂಶ' : lang === 'ta' ? 'சுருக்கம்' : 'Summary';
+                sectionTitle = lang === 'kn' ? 'ಸಾರಾಂಶ' : lang === 'ta' ? 'சுருக்கம்' : lang === 'hi' ? 'सारांश' : 'Summary';
               } else {
-                sectionTitle = lang === 'kn' ? `ಭಾಗ ${sectionNumber}` : lang === 'ta' ? `பகுதி ${sectionNumber}` : `Section ${sectionNumber}`;
+                sectionTitle = lang === 'kn' ? `ಭಾಗ ${sectionNumber}` : lang === 'ta' ? `பகுதி ${sectionNumber}` : lang === 'hi' ? `भाग ${sectionNumber}` : `Section ${sectionNumber}`;
               }
 
               const isSummary = sectionKey === 'summary';
@@ -995,26 +1043,34 @@ export default function MyHobbiesAssessment() {
                 ? 'ಭಾಗ 1: ಹವ್ಯಾಸಗಳು ಮತ್ತು ಆಸಕ್ತಿಗಳು'
                 : lang === 'ta'
                   ? 'பகுதி 1: பொழுதுபோக்குகள் மற்றும் ஆர்வங்கள்'
-                  : 'Section 1: Hobbies & Interests';
+                  : lang === 'hi'
+                    ? 'भाग 1: शौक और रुचियाँ'
+                    : 'Section 1: Hobbies & Interests';
             sectionDescription =
               lang === 'kn'
                 ? 'ನಿಮ್ಮ ಹವ್ಯಾಸಗಳು ಮತ್ತು ಅವುಗಳಿಗೆ ಪ್ರೇರಣೆ ನೀಡುವ ವಿಷಯಗಳ ಬಗ್ಗೆ ಬರೆಯಿರಿ.'
                 : lang === 'ta'
                   ? 'உங்கள் பொழுதுபோக்குகள் மற்றும் அதற்கு உங்களை ஊக்கப்படுத்தும் விஷயங்களை பற்றி பகிருங்கள்.'
-                  : 'Share your thoughts about your hobbies and what inspires them';
+                  : lang === 'hi'
+                    ? 'अपने शौक और उन्हें प्रेरित करने वाली बातों के बारे में लिखें।'
+                    : 'Share your thoughts about your hobbies and what inspires them';
           } else if (sectionKey === 'section2') {
             sectionTitle =
               lang === 'kn'
                 ? 'ಭಾಗ 2: ಸಾಮರ್ಥ್ಯಗಳು ಮತ್ತು ಅಭ್ಯಾಸ'
                 : lang === 'ta'
                   ? 'பகுதி 2: திறமைகள் மற்றும் பயிற்சி'
-                  : 'Section 2: Talents & Practice';
+                  : lang === 'hi'
+                    ? 'भाग 2: प्रतिभाएँ और अभ्यास'
+                    : 'Section 2: Talents & Practice';
             sectionDescription =
               lang === 'kn'
                 ? 'ನಿಮ್ಮ ಸಹಜ ಸಾಮರ್ಥ್ಯಗಳು ಯಾವುವು ಮತ್ತು ಅವನ್ನು ಹೇಗೆ ಅಭ್ಯಾಸ ಮಾಡುತ್ತೀರಿ ಎಂಬುದನ್ನು ಅನ್ವೇಷಿಸಿ.'
                 : lang === 'ta'
                   ? 'உங்களிடம் உள்ள இயல்பான திறமைகள் என்ன, அதை நீங்கள் எப்படி வளர்த்துக் கொள்கிறீர்கள் என்பதை எழுதுங்கள்.'
-                  : 'Explore your natural talents and how you develop them';
+                  : lang === 'hi'
+                    ? 'अपनी प्राकृतिक प्रतिभाओं और उन्हें कैसे विकसित करते हैं, यह जानें।'
+                    : 'Explore your natural talents and how you develop them';
             headerColor = 'from-pink-50 to-purple-50';
             titleColor = 'text-pink-800';
             descColor = 'text-pink-600';
@@ -1024,13 +1080,17 @@ export default function MyHobbiesAssessment() {
                 ? 'ಭಾಗ 3: ಬೆಂಬಲ ಮತ್ತು ವೃತ್ತಿ ಸಂಪರ್ಕ'
                 : lang === 'ta'
                   ? 'பகுதி 3: ஆதரவு மற்றும் தொழில் இணைப்பு'
-                  : 'Section 3: Support & Career Connection';
+                  : lang === 'hi'
+                    ? 'भाग 3: सहायता और करियर संबंध'
+                    : 'Section 3: Support & Career Connection';
             sectionDescription =
               lang === 'kn'
                 ? 'ನಿಮ್ಮ ಹವ್ಯಾಸಗಳಿಗೆ ಕುಟುಂಬ/ಶಾಲೆಯಿಂದ ಸಿಗುವ ಬೆಂಬಲ ಮತ್ತು ಭವಿಷ್ಯದ ವೃತ್ತಿ ಅವಕಾಶಗಳ ಬಗ್ಗೆ ಚಿಂತಿಸಿ.'
                 : lang === 'ta'
                   ? 'உங்கள் பொழுதுபோக்குகளை வளர்க்க வீட்டிலும் பள்ளியிலும் கிடைக்கும் ஆதரவு மற்றும் அதிலிருந்து உருவாகும் தொழில் வாய்ப்புகளை பற்றி சிந்தியுங்கள்.'
-                  : 'Reflect on support systems and career possibilities from your hobbies';
+                  : lang === 'hi'
+                    ? 'अपने शौक के लिए परिवार/विद्यालय से मिलने वाले सहयोग और भविष्य के करियर अवसरों पर विचार करें।'
+                    : 'Reflect on support systems and career possibilities from your hobbies';
             headerColor = 'from-purple-50 to-indigo-50';
             titleColor = 'text-purple-800';
             descColor = 'text-purple-600';
@@ -1046,7 +1106,9 @@ export default function MyHobbiesAssessment() {
                 ? 'ನಿಮ್ಮ ಉತ್ತರಗಳನ್ನು ಇಲ್ಲಿ ಸಾರಾಂಶ ಮಾಡಿ.'
                 : lang === 'ta'
                   ? 'உங்கள் பதில்களை இங்கே ಕಾಣவும்.'
-                  : 'A summarized overview of your talents and hobbies responses.';
+                  : lang === 'hi'
+                    ? 'आपकी प्रतिभाओं और शौक के उत्तरों का सारांश।'
+                    : 'A summarized overview of your talents and hobbies responses.';
             headerColor = 'from-orange-50 to-amber-50';
             titleColor = 'text-orange-800';
             descColor = 'text-orange-600';
@@ -1061,8 +1123,10 @@ export default function MyHobbiesAssessment() {
               lang === 'kn'
                 ? 'ಈ ಭಾಗದಲ್ಲಿರುವ ಪ್ರಶ್ನೆಗಳಿಗೆ ನಿಮ್ಮ ಆಲೋಚನೆಗಳನ್ನು ಬರೆಯಿರಿ.'
                 : lang === 'ta'
-                  ? 'ಈ ಭಾಗದಲ್ಲಿರುವ ಪ್ರಶ್ನೆಗಳಿಗೆ ನಿಮ್ಮ ಆಲೋಚನೆಗಳನ್ನು ಬರೆಯಿರಿ.'
-                  : 'Answer the questions in this section';
+                  ? 'இந்த பகுதியில் உள்ள கேள்விகளுக்கு உங்கள் எண்ணங்களை எழுதுங்கள்.'
+                  : lang === 'hi'
+                    ? 'इस भाग के प्रश्नों का उत्तर दें।'
+                    : 'Answer the questions in this section';
           }
 
           return (
@@ -1092,20 +1156,20 @@ export default function MyHobbiesAssessment() {
                               className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 -mt-1 shrink-0"
                             >
                               <Lightbulb className="w-4 h-4 mr-1" />
-                              {lang === 'kn' ? 'ಸಹಾಯ' : lang === 'ta' ? 'உதவி' : 'Help'}
+                              {lang === 'kn' ? 'ಸಹಾಯ' : lang === 'ta' ? 'உதவி' : lang === 'hi' ? 'सहायता' : 'Help'}
                             </Button>
                           )}
                         </div>
 
                         {helpOpen[q.id] && q.help_text && (
                           <div className="bg-orange-50 p-4 rounded-md text-sm text-orange-800 border border-orange-100 animate-in fade-in slide-in-from-top-1">
-                            <p className="font-semibold mb-1">{lang === 'kn' ? 'ಸಲಹೆ:' : lang === 'ta' ? 'குறிப்பு:' : 'Tip:'}</p>
+                            <p className="font-semibold mb-1">{lang === 'kn' ? 'ಸಲಹೆ:' : lang === 'ta' ? 'குறிப்பு:' : lang === 'hi' ? 'सुझाव:' : 'Tip:'}</p>
                             <p>{q.help_text}</p>
                           </div>
                         )}
 
                         <Textarea
-                          placeholder={q.help_text || (lang === 'kn' ? 'ನಿಮ್ಮ ಉತ್ತರವನ್ನು ಇಲ್ಲಿ ಬರೆಯಿರಿ...' : lang === 'ta' ? 'உங்கள் பதிலை இங்கே எழுதுங்கள்...' : lang === 'hi' ? 'अपना उत्तर यहाँ लिखें...' : 'Type your answer here...')}
+                          placeholder={q.help_text || (lang === 'kn' ? 'ನಿಮ್ಮ ಉತ್ತರವನ್ನು ಇಲ್ಲಿ ಬರೆಯಿರಿ...' : lang === 'ta' ? 'உங்கள் பதிலை இங்கே எழுதுங்கள்...' : lang === 'hi' ? 'अपना उत्तर यहां लिखें...' : 'Type your answer here...')}
                           className="min-h-[120px] text-base border-orange-100 focus:border-orange-300 focus:ring-orange-200"
                           value={responses[sectionKey === 'summary' ? `summary_${q.sequence_number}` : q.id] || ''}
                           onChange={(e) => handleResponseChange(sectionKey === 'summary' ? `summary_${q.sequence_number}` : q.id, e.target.value)}
@@ -1127,12 +1191,12 @@ export default function MyHobbiesAssessment() {
                       {savingSection ? (
                         <>
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
-                          {lang === 'kn' ? 'ಉಳಿಸುತ್ತಿದೆ...' : lang === 'ta' ? 'சேமித்து கொண்டிருக்கிறது...' : 'Saving...'}
+                          {lang === 'kn' ? 'ಉಳಿಸುತ್ತಿದೆ...' : lang === 'ta' ? 'சேமித்து கொண்டிருக்கிறது...' : lang === 'hi' ? 'सहेजा जा रहा है...' : 'Saving...'}
                         </>
                       ) : (
                         <>
                           <CheckCircle className="w-4 h-4 mr-2" />
-                          {lang === 'kn' ? 'ಪ್ರಗತಿಯನ್ನು ಉಳಿಸಿ' : lang === 'ta' ? 'முன்னೇற்றத்தைச் சேಮಿ' : 'Save Progress'}
+                          {lang === 'kn' ? 'ಪ್ರಗತಿಯನ್ನು ಉಳಿಸಿ' : lang === 'ta' ? 'முன்னೇற்றத்தைச் சேಮಿ' : lang === 'hi' ? 'प्रगति सहेजें' : 'Save Progress'}
                         </>
                       )}
                     </Button>
@@ -1146,12 +1210,14 @@ export default function MyHobbiesAssessment() {
                             const nextSection = sections[idx + 1];
                             if (nextSection === 'summary' && !areCoreSectionsComplete()) {
                               toast({
-                                title: lang === 'kn' ? 'ಸಾರಾಂಶ ಲಾಕ್ ಆಗಿದೆ' : lang === 'ta' ? 'சுருக்கம் பூட்டப்பட்டுள்ளது' : 'Summary Locked',
+                                title: lang === 'kn' ? 'ಸಾರಾಂಶ ಲಾಕ್ ಆಗಿದೆ' : lang === 'ta' ? 'சுருக்கம் பூட்டப்பட்டுள்ளது' : lang === 'hi' ? 'सारांश लॉक है' : 'Summary Locked',
                                 description: lang === 'kn'
                                   ? 'ಸಾರಾಂಶವನ್ನು ವೀಕ್ಷಿಸಲು ದಯವಿಟ್ಟು ಎಲ್ಲಾ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ.'
                                   : lang === 'ta'
                                     ? 'சுருக்கத்தைப் பார்க்க அனைத்துக் கேள்விகளுக்கும் பதில் அளிக்கவும்.'
-                                    : 'Please answer all core questions to unlock the summary.',
+                                    : lang === 'hi'
+                                      ? 'सारांश अनलॉक करने के लिए कृपया सभी मुख्य प्रश्नों का उत्तर दें।'
+                                      : 'Please answer all core questions to unlock the summary.',
                                 variant: 'destructive',
                               });
                               return;
@@ -1162,7 +1228,7 @@ export default function MyHobbiesAssessment() {
                         }}
                         className="w-full sm:w-auto border-orange-200 text-orange-700 hover:bg-orange-50"
                       >
-                        {lang === 'kn' ? 'ಮುಂದಿನ ಭಾಗ' : lang === 'ta' ? 'அடுத்த பகுதி' : 'Next Section'}
+                        {lang === 'kn' ? 'ಮುಂದಿನ ಭಾಗ' : lang === 'ta' ? 'அடுத்த பகுதி' : lang === 'hi' ? 'अगला भाग' : 'Next Section'}
                       </Button>
                     ) : (
                       <Button
@@ -1197,49 +1263,51 @@ export default function MyHobbiesAssessment() {
               ? 'ಸಾಮಾನ್ಯ ಹವ್ಯಾಸ ವಿಭಾಗಗಳು'
               : lang === 'ta'
                 ? 'பொதுவான பொழுதுபோக்கு வகைகள்'
-                : 'Common Hobby Categories'}
+                : lang === 'hi'
+                  ? 'सामान्य शौक श्रेणियाँ'
+                  : 'Common Hobby Categories'}
           </h3>
           <div className="flex flex-wrap justify-center gap-6 text-gray-500">
             <div className="flex flex-col items-center gap-2">
               <Music className="w-8 h-8" />
               <span className="text-sm">
-                {lang === 'kn' ? 'ಸಂಗೀತ' : lang === 'ta' ? 'இசை' : 'Music'}
+                {lang === 'kn' ? 'ಸಂಗೀತ' : lang === 'ta' ? 'இசை' : lang === 'hi' ? 'संगीत' : 'Music'}
               </span>
             </div>
             <div className="flex flex-col items-center gap-2">
               <Camera className="w-8 h-8" />
               <span className="text-sm">
-                {lang === 'kn' ? 'ಛಾಯಾಗ್ರಹಣ' : lang === 'ta' ? 'புகைப்படம்' : 'Photography'}
+                {lang === 'kn' ? 'ಛಾಯಾಗ್ರಹಣ' : lang === 'ta' ? 'புகைப்படம்' : lang === 'hi' ? 'फोटोग्राफी' : 'Photography'}
               </span>
             </div>
             <div className="flex flex-col items-center gap-2">
               <BookOpen className="w-8 h-8" />
               <span className="text-sm">
-                {lang === 'kn' ? 'ಓದು' : lang === 'ta' ? 'ವಾಸಿಪ್ಪು' : 'Reading'}
+                {lang === 'kn' ? 'ಓದು' : lang === 'ta' ? 'வாசிப்பு' : lang === 'hi' ? 'पठन' : 'Reading'}
               </span>
             </div>
             <div className="flex flex-col items-center gap-2">
               <Gamepad2 className="w-8 h-8" />
               <span className="text-sm">
-                {lang === 'kn' ? 'ಗೇಮಿಂಗ್' : lang === 'ta' ? 'ವಿளையாட்டு (கேಮಿಂಗ್)' : 'Gaming'}
+                {lang === 'kn' ? 'ಗೇಮಿಂಗ್' : lang === 'ta' ? 'விளையாட்டு (கேமிங்)' : lang === 'hi' ? 'गेमिंग' : 'Gaming'}
               </span>
             </div>
             <div className="flex flex-col items-center gap-2">
               <Paintbrush className="w-8 h-8" />
               <span className="text-sm">
-                {lang === 'kn' ? 'ಕಲೆ' : lang === 'ta' ? 'ಕಲೆ' : 'Art'}
+                {lang === 'kn' ? 'ಕಲೆ' : lang === 'ta' ? 'கலை' : lang === 'hi' ? 'कला' : 'Art'}
               </span>
             </div>
             <div className="flex flex-col items-center gap-2">
               <Dumbbell className="w-8 h-8" />
               <span className="text-sm">
-                {lang === 'kn' ? 'ಕ್ರೀಡೆ' : lang === 'ta' ? 'ವಿளையாட்டு' : 'Sports'}
+                {lang === 'kn' ? 'ಕ್ರೀಡೆ' : lang === 'ta' ? 'விளையாட்டு' : lang === 'hi' ? 'खेल' : 'Sports'}
               </span>
             </div>
             <div className="flex flex-col items-center gap-2">
               <Code className="w-8 h-8" />
               <span className="text-sm">
-                {lang === 'kn' ? 'ತಂತ್ರಜ್ಞಾನ' : lang === 'ta' ? 'தொழಿಲ್நுட்பಂ' : 'Technology'}
+                {lang === 'kn' ? 'ತಂತ್ರಜ್ಞಾನ' : lang === 'ta' ? 'தொழில்நுட்பம்' : lang === 'hi' ? 'प्रौद्योगिकी' : 'Technology'}
               </span>
             </div>
           </div>

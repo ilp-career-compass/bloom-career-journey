@@ -314,7 +314,7 @@ export default function MyInspirationAssessment() {
     const loadVideosFromDatabase = async () => {
       try {
         // Pass language to RPC
-        const { data, error } = await supabase.rpc('get_inspiration_videos', { p_lang: lang === 'kn' ? 'kn' : lang === 'ta' ? 'ta' : 'en' });
+        const { data, error } = await supabase.rpc('get_inspiration_videos', { p_lang: lang === 'kn' ? 'kn' : lang === 'ta' ? 'ta' : lang === 'hi' ? 'hi' : 'en' });
 
         if (error) {
           handleDatabaseError(error, 'InspirationAssessment - Videos');
@@ -367,7 +367,7 @@ export default function MyInspirationAssessment() {
           ]
         };
 
-        const targetLang = lang === 'kn' ? 'kn' : lang === 'ta' ? 'ta' : 'en';
+        const targetLang = lang === 'kn' ? 'kn' : lang === 'ta' ? 'ta' : lang === 'hi' ? 'hi' : 'en';
         setDefaultVideos(kVideos[targetLang]);
 
       }
@@ -922,7 +922,9 @@ export default function MyInspirationAssessment() {
         ? 'ಆಡಿಯೊ ರೆಕಾರ್ಡ್ ಮಾಡಲಾಗಿದೆ — ಬರಹ ಲಭ್ಯವಿಲ್ಲ.'
         : lang === 'ta'
           ? 'ஆடியோ பதிவு செய்யப்பட்டது — எழுத்து வடிவம் இல்லை.'
-          : 'Audio recorded — transcription unavailable.';
+          : lang === 'hi'
+            ? 'ऑडियो रिकॉर्ड किया गया — ट्रांसक्रिप्शन उपलब्ध नहीं है।'
+            : 'Audio recorded — transcription unavailable.';
     const textToSet = (transcription && transcription.trim()) ? transcription : fallbackText;
 
     logger.log('📝 Setting text in textarea:', {
@@ -1067,8 +1069,8 @@ export default function MyInspirationAssessment() {
     if (readOnlyView) return;
     if (!userProfile) {
       toast({
-        title: "Error",
-        description: "User profile not found. Please try logging in again.",
+        title: lang === 'kn' ? 'ದೋಷ' : lang === 'ta' ? 'பிழை' : lang === 'hi' ? 'त्रुटि' : "Error",
+        description: lang === 'kn' ? 'ಬಳಕೆದಾರ ಪ್ರೊಫೈಲ್ ಕಂಡುಬಂದಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಲಾಗಿನ್ ಮಾಡಿ.' : lang === 'ta' ? 'பயனர் சுயவிவரம் கிடைக்கவில்லை. மீண்டும் உள்நுழையவும்.' : lang === 'hi' ? 'उपयोगकर्ता प्रोफ़ाइल नहीं मिली। कृपया पुनः लॉगिन करें।' : "User profile not found. Please try logging in again.",
         variant: "destructive",
       });
       return;
@@ -1076,13 +1078,15 @@ export default function MyInspirationAssessment() {
 
     if (!isVideoComplete(videoIndex)) {
       toast({
-        title: lang === 'kn' ? "ಇನ್ನೂ ಉಳಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ" : lang === 'ta' ? 'இப்போ சேமிக்க முடியாது' : "Cannot Save Yet",
+        title: lang === 'kn' ? "ಇನ್ನೂ ಉಳಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ" : lang === 'ta' ? 'இப்போ சேமிக்க முடியாது' : lang === 'hi' ? 'अभी सहेजा नहीं जा सकता' : "Cannot Save Yet",
         description:
           lang === 'kn'
             ? `ಉಳಿಸುವ ಮೊದಲು ಈ ವೀಡಿಯೊಗೆ ಎಲ್ಲಾ ${questionCount} ಪ್ರಶ್ನೆಗಳನ್ನು ಪೂರ್ಣಗೊಳಿಸಿ.`
             : lang === 'ta'
               ? `இந்த வீடியோவை சேமிக்க முன் இந்த வீடியோவுக்கான எல்லா ${questionCount} கேள்விகளுக்கும் பதில் எழுதுங்கள்.`
-              : `Please complete all ${questionCount} questions for this video before saving.`,
+              : lang === 'hi'
+                ? `कृपया सहेजने से पहले इस वीडियो के सभी ${questionCount} प्रश्नों का उत्तर दें।`
+                : `Please complete all ${questionCount} questions for this video before saving.`,
         variant: "destructive",
       });
       return;
@@ -1102,7 +1106,7 @@ export default function MyInspirationAssessment() {
     if (!studentId) {
       toast({
         title: t('errorSavingVideoProgress'),
-        description: lang === 'kn' ? "ವಿದ್ಯಾರ್ಥಿ ಪ್ರೊಫೈಲ್ ಕಂಡುಬಂದಿಲ್ಲ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಶಿಕ್ಷಕ ಅಥವಾ ಬೆಂಬಲವನ್ನು ಸಂಪರ್ಕಿಸಿ." : "Student profile not found. Please contact your teacher or support.",
+        description: lang === 'kn' ? "ವಿದ್ಯಾರ್ಥಿ ಪ್ರೊಫೈಲ್ ಕಂಡುಬಂದಿಲ್ಲ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಶಿಕ್ಷಕ ಅಥವಾ ಬೆಂಬಲವನ್ನು ಸಂಪರ್ಕಿಸಿ." : lang === 'ta' ? 'மாணவர் சுயவிவரம் கிடைக்கவில்லை. உங்கள் ஆசிரியரை தொடர்பு கொள்ளுங்கள்.' : lang === 'hi' ? 'विद्यार्थी प्रोफ़ाइल नहीं मिली। कृपया अपने शिक्षक या सहायता से संपर्क करें।' : "Student profile not found. Please contact your teacher or support.",
         variant: "destructive",
       });
       return;
@@ -1204,7 +1208,7 @@ export default function MyInspirationAssessment() {
 
       toast({
         title: t('videoProgressSaved'),
-        description: `Your responses for ${videoLabel} have been saved.`,
+        description: lang === 'kn' ? `${videoLabel} ಗಾಗಿ ನಿಮ್ಮ ಉತ್ತರಗಳನ್ನು ಉಳಿಸಲಾಗಿದೆ.` : lang === 'ta' ? `${videoLabel} க்கான உங்கள் பதில்கள் சேமிக்கப்பட்டன.` : lang === 'hi' ? `${videoLabel} के लिए आपके उत्तर सहेजे गए।` : `Your responses for ${videoLabel} have been saved.`,
       });
     } catch (error) {
       logger.error('Error saving video progress:', error);
@@ -1223,7 +1227,7 @@ export default function MyInspirationAssessment() {
     if (!userProfile) {
       toast({
         title: t('errorSavingVideoProgress'),
-        description: lang === 'kn' ? "ಬಳಕೆದಾರ ಪ್ರೊಫೈಲ್ ಕಂಡುಬಂದಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಲಾಗಿನ್ ಮಾಡಿ." : "User profile not found. Please try logging in again.",
+        description: lang === 'kn' ? "ಬಳಕೆದಾರ ಪ್ರೊಫೈಲ್ ಕಂಡುಬಂದಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಲಾಗಿನ್ ಮಾಡಿ." : lang === 'ta' ? 'பயனர் சுயவிவரம் கிடைக்கவில்லை. மீண்டும் உள்நுழையவும்.' : lang === 'hi' ? 'उपयोगकर्ता प्रोफ़ाइल नहीं मिली। कृपया पुनः लॉगिन करें।' : "User profile not found. Please try logging in again.",
         variant: "destructive",
       });
       return;
@@ -1232,10 +1236,14 @@ export default function MyInspirationAssessment() {
     if (!canSubmit()) {
       const requiredVideos = inspirationVideos.length || defaultVideos.length || 3;
       toast({
-        title: lang === 'kn' ? "ಇನ್ನೂ ಸಲ್ಲಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ" : "Cannot Submit Yet",
+        title: lang === 'kn' ? "ಇನ್ನೂ ಸಲ್ಲಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ" : lang === 'ta' ? 'இன்னும் சமர்ப்பிக்க முடியாது' : lang === 'hi' ? 'अभी जमा नहीं किया जा सकता' : "Cannot Submit Yet",
         description: lang === 'kn'
           ? `ಮೌಲ್ಯಮಾಪನವನ್ನು ಸಲ್ಲಿಸುವ ಮೊದಲು ಎಲ್ಲಾ ${requiredVideos} ವೀಡಿಯೊಗಳನ್ನು ಪೂರ್ಣಗೊಳಿಸಿ.`
-          : `Please complete all ${requiredVideos} videos before submitting the assessment.`,
+          : lang === 'ta'
+            ? `மதிப்பீட்டை சமர்ப்பிக்கும் முன் அனைத்து ${requiredVideos} வீடியோக்களையும் முடிக்கவும்.`
+            : lang === 'hi'
+              ? `कृपया मूल्यांकन जमा करने से पहले सभी ${requiredVideos} वीडियो पूरे करें।`
+              : `Please complete all ${requiredVideos} videos before submitting the assessment.`,
         variant: "destructive",
       });
       return;
@@ -1255,7 +1263,7 @@ export default function MyInspirationAssessment() {
     if (!studentId) {
       toast({
         title: t('errorSavingVideoProgress'),
-        description: lang === 'kn' ? "ವಿದ್ಯಾರ್ಥಿ ಪ್ರೊಫೈಲ್ ಕಂಡುಬಂದಿಲ್ಲ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಶಿಕ್ಷಕ ಅಥವಾ ಬೆಂಬಲವನ್ನು ಸಂಪರ್ಕಿಸಿ." : "Student profile not found. Please contact your teacher or support.",
+        description: lang === 'kn' ? "ವಿದ್ಯಾರ್ಥಿ ಪ್ರೊಫೈಲ್ ಕಂಡುಬಂದಿಲ್ಲ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಶಿಕ್ಷಕ ಅಥವಾ ಬೆಂಬಲವನ್ನು ಸಂಪರ್ಕಿಸಿ." : lang === 'ta' ? 'மாணவர் சுயவிவரம் கிடைக்கவில்லை. உங்கள் ஆசிரியரை தொடர்பு கொள்ளுங்கள்.' : lang === 'hi' ? 'विद्यार्थी प्रोफ़ाइल नहीं मिली। कृपया अपने शिक्षक या सहायता से संपर्क करें।' : "Student profile not found. Please contact your teacher or support.",
         variant: "destructive",
       });
       return;
@@ -1281,8 +1289,8 @@ export default function MyInspirationAssessment() {
 
       // Show success message for assessment submission
       toast({
-        title: "Assessment Completed! ✨",
-        description: "Generating your reflection summary...",
+        title: lang === 'kn' ? 'ಮೌಲ್ಯಮಾಪನ ಪೂರ್ಣ! ✨' : lang === 'ta' ? 'மதிப்பீடு முடிந்தது! ✨' : lang === 'hi' ? 'मूल्यांकन पूर्ण! ✨' : "Assessment Completed! ✨",
+        description: lang === 'kn' ? 'ನಿಮ್ಮ ಚಿಂತನ ಸಾರಾಂಶವನ್ನು ರಚಿಸಲಾಗುತ್ತಿದೆ...' : lang === 'ta' ? 'உங்கள் சிந்தனை சுருக்கம் உருவாக்கப்படுகிறது...' : lang === 'hi' ? 'आपका चिंतन सारांश तैयार हो रहा है...' : "Generating your reflection summary...",
       });
 
       // Notify student (self) and teacher of submission (best-effort)
@@ -1290,8 +1298,8 @@ export default function MyInspirationAssessment() {
         const studentNotifResult = await notificationService.create({
           userId: userProfile.id,
           type: 'system',
-          title: 'Inspiration submitted',
-          message: 'Your Inspiration assessment has been submitted.',
+          title: lang === 'kn' ? 'ಪ್ರೇರಣೆ ಸಲ್ಲಿಸಲಾಗಿದೆ' : lang === 'ta' ? 'உத்வேகம் சமர்ப்பிக்கப்பட்டது' : lang === 'hi' ? 'प्रेरणा जमा की गई' : 'Inspiration submitted',
+          message: lang === 'kn' ? 'ನಿಮ್ಮ ಪ್ರೇರಣೆ ಮೌಲ್ಯಮಾಪನವನ್ನು ಸಲ್ಲಿಸಲಾಗಿದೆ.' : lang === 'ta' ? 'உங்கள் உத்வேகம் மதிப்பீடு சமர்ப்பிக்கப்பட்டது.' : lang === 'hi' ? 'आपका प्रेरणा मूल्यांकन जमा किया गया है।' : 'Your Inspiration assessment has been submitted.',
           link: '/student'
         });
         if (!studentNotifResult.success) {
@@ -1327,7 +1335,7 @@ export default function MyInspirationAssessment() {
           const videoResponsesOnly = { ...responses };
           delete (videoResponsesOnly as any).summary;
 
-          const summaryResult = await aiSummaryService.generateInspirationSummary(videoResponsesOnly);
+          const summaryResult = await aiSummaryService.generateInspirationSummary(videoResponsesOnly, lang);
 
           if (summaryResult.success && summaryResult.summary) {
             // Save summary to database
@@ -1345,13 +1353,17 @@ export default function MyInspirationAssessment() {
                     ? 'ಸಾರಾಂಶ ಸಿದ್ಧವಾಗಿದೆ! 📝'
                     : lang === 'ta'
                       ? 'சுருக்கம் உருவாக்கப்பட்டது! 📝'
-                      : 'Summary Generated! 📝',
+                      : lang === 'hi'
+                        ? 'सारांश तैयार हो गया! 📝'
+                        : 'Summary Generated! 📝',
                 description:
                   lang === 'kn'
                     ? 'ನೀವು ಬರೆದ ಚಿಂತನೆಗಳ ಸಾರಾಂಶವನ್ನು ನಿಮ್ಮ ಶಿಕ್ಷಕರು ಪರಿಶೀಲಿಸಲಿದ್ದಾರೆ.'
                     : lang === 'ta'
                       ? 'நீங்கள் எழுதிய சிந்தனைச் சுருக்கத்தை உங்கள் ஆசிரியா் விரைவில் பார்வையிடுவார்.'
-                      : 'Your teacher will review your reflection summary.',
+                      : lang === 'hi'
+                        ? 'आपके शिक्षक आपके चिंतन सारांश की समीक्षा करेंगे।'
+                        : 'Your teacher will review your reflection summary.',
               });
 
               // Notify teacher that summary is ready for review
@@ -1381,24 +1393,24 @@ export default function MyInspirationAssessment() {
             } else {
               logger.error('Failed to save summary:', saveResult.error);
               toast({
-                title: "Summary Generation Issue",
-                description: "Your assessment is saved, but summary generation needs attention.",
+                title: lang === 'kn' ? 'ಸಾರಾಂಶ ರಚನೆ ಸಮಸ್ಯೆ' : lang === 'ta' ? 'சுருக்கம் உருவாக்க சிக்கல்' : lang === 'hi' ? 'सारांश निर्माण समस्या' : "Summary Generation Issue",
+                description: lang === 'kn' ? 'ನಿಮ್ಮ ಮೌಲ್ಯಮಾಪನ ಉಳಿಸಲಾಗಿದೆ, ಆದರೆ ಸಾರಾಂಶ ರಚನೆಗೆ ಗಮನ ಬೇಕು.' : lang === 'ta' ? 'உங்கள் மதிப்பீடு சேமிக்கப்பட்டது, ஆனால் சுருக்கம் உருவாக்கத்தில் கவனம் தேவை.' : lang === 'hi' ? 'आपका मूल्यांकन सहेजा गया है, लेकिन सारांश निर्माण में ध्यान देने की आवश्यकता है।' : "Your assessment is saved, but summary generation needs attention.",
                 variant: "destructive",
               });
             }
           } else {
             logger.error('Failed to generate summary:', summaryResult.error);
             toast({
-              title: "Summary Generation Issue",
-              description: "Your assessment is saved. Summary will be generated later.",
+              title: lang === 'kn' ? 'ಸಾರಾಂಶ ರಚನೆ ಸಮಸ್ಯೆ' : lang === 'ta' ? 'சுருக்கம் உருவாக்க சிக்கல்' : lang === 'hi' ? 'सारांश निर्माण समस्या' : "Summary Generation Issue",
+              description: lang === 'kn' ? 'ನಿಮ್ಮ ಮೌಲ್ಯಮಾಪನ ಉಳಿಸಲಾಗಿದೆ. ಸಾರಾಂಶ ನಂತರ ರಚಿಸಲಾಗುವುದು.' : lang === 'ta' ? 'உங்கள் மதிப்பீடு சேமிக்கப்பட்டது. சுருக்கம் பின்னர் உருவாக்கப்படும்.' : lang === 'hi' ? 'आपका मूल्यांकन सहेजा गया है। सारांश बाद में तैयार किया जाएगा।' : "Your assessment is saved. Summary will be generated later.",
               variant: "destructive",
             });
           }
         } else {
           logger.warn('⚠️ Gemini API not configured, skipping summary generation');
           toast({
-            title: "Assessment Saved! ✨",
-            description: "Your reflections have been captured successfully!",
+            title: lang === 'kn' ? 'ಮೌಲ್ಯಮಾಪನ ಉಳಿಸಲಾಗಿದೆ! ✨' : lang === 'ta' ? 'மதிப்பீடு சேமிக்கப்பட்டது! ✨' : lang === 'hi' ? 'मूल्यांकन सहेजा गया! ✨' : "Assessment Saved! ✨",
+            description: lang === 'kn' ? 'ನಿಮ್ಮ ಚಿಂತನೆಗಳನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಸೆರೆಹಿಡಿಯಲಾಗಿದೆ!' : lang === 'ta' ? 'உங்கள் சிந்தனைகள் வெற்றிகரமாக பதிவு செய்யப்பட்டன!' : lang === 'hi' ? 'आपके चिंतन सफलतापूर्वक दर्ज किए गए!' : "Your reflections have been captured successfully!",
           });
         }
       } catch (summaryError) {
@@ -1416,7 +1428,7 @@ export default function MyInspirationAssessment() {
       logger.error('Error submitting assessment:', error);
       toast({
         title: t('errorSavingVideoProgress'),
-        description: lang === 'kn' ? "ಮೌಲ್ಯಮಾಪನವನ್ನು ಸಲ್ಲಿಸಲು ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ." : "Failed to submit assessment. Please try again.",
+        description: lang === 'kn' ? "ಮೌಲ್ಯಮಾಪನವನ್ನು ಸಲ್ಲಿಸಲು ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ." : lang === 'ta' ? 'மதிப்பீட்டை சமர்ப்பிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.' : lang === 'hi' ? 'मूल्यांकन जमा करने में विफल। कृपया पुनः प्रयास करें।' : "Failed to submit assessment. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -1428,12 +1440,14 @@ export default function MyInspirationAssessment() {
     if (currentVideoIndex < inspirationVideos.length) {
       if (currentVideoIndex === inspirationVideos.length - 1 && !areAllVideosComplete()) {
         toast({
-          title: lang === 'kn' ? 'ಸಾರಾಂಶ ಲಾಕ್ ಆಗಿದೆ' : lang === 'ta' ? 'சுருக்கம் பூட்டப்பட்டுள்ளது' : 'Summary Locked',
+          title: lang === 'kn' ? 'ಸಾರಾಂಶ ಲಾಕ್ ಆಗಿದೆ' : lang === 'ta' ? 'சுருக்கம் பூட்டப்பட்டுள்ளது' : lang === 'hi' ? 'सारांश लॉक है' : 'Summary Locked',
           description: lang === 'kn'
             ? 'ಸಾರಾಂಶವನ್ನು ವೀಕ್ಷಿಸಲು ದಯವಿಟ್ಟು ಎಲ್ಲಾ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ.'
             : lang === 'ta'
               ? 'சுருக்கத்தைப் பார்க்க அனைத்துக் கேள்விகளுக்கும் பதில் அளிக்கவும்.'
-              : 'Please answer all core questions to unlock the summary.',
+              : lang === 'hi'
+                ? 'सारांश अनलॉक करने के लिए कृपया सभी मुख्य प्रश्नों का उत्तर दें।'
+                : 'Please answer all core questions to unlock the summary.',
           variant: 'destructive',
         });
         return;
@@ -1463,14 +1477,18 @@ export default function MyInspirationAssessment() {
         ? 'ನಿಮ್ಮ ಪ್ರೇರಣೆ ಮೌಲ್ಯಮಾಪನವನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...'
         : lang === 'ta'
           ? 'உங்கள் ஊக்கம் மதிப்பீடு ஏற்றப்படுகிறது...'
-          : 'Loading your inspiration assessment...';
+          : lang === 'hi'
+            ? 'आपका प्रेरणा मूल्यांकन लोड हो रहा है...'
+            : 'Loading your inspiration assessment...';
 
     const loadingProgressText =
       lang === 'kn'
         ? 'ನಿಮ್ಮ ಉಳಿಸಿದ ಪ್ರಗತಿಯನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...'
         : lang === 'ta'
           ? 'உங்கள் சேமிக்கப்பட்ட முன்னேற்றம் ஏற்றப்படுகிறது...'
-          : 'Loading your saved progress...';
+          : lang === 'hi'
+            ? 'आपकी सहेजी गई प्रगति लोड हो रही है...'
+            : 'Loading your saved progress...';
 
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -1496,14 +1514,18 @@ export default function MyInspirationAssessment() {
                   ? 'ಪ್ರೇರಣೆ ಮೌಲ್ಯಮಾಪನ ಪೂರ್ಣಗೊಂಡಿದೆ! ✨'
                   : lang === 'ta'
                     ? 'ஊக்கம் செயல்பாடு முடிந்தது! ✨'
-                    : 'Inspiration Assessment Completed! ✨'}
+                    : lang === 'hi'
+                      ? 'प्रेरणा मूल्यांकन पूर्ण! ✨'
+                      : 'Inspiration Assessment Completed! ✨'}
               </CardTitle>
               <CardDescription className="text-blue-600">
                 {lang === 'kn'
                   ? 'ಎಲ್ಲಾ ಪ್ರೇರಣಾದಾಯಕ ವೀಡಿಯೊಗಳ ಬಗ್ಗೆ ನೀವು ಯಶಸ್ವಿಯಾಗಿ ಚಿಂತಿಸಿದ್ದಾರೆ.'
                   : lang === 'ta'
                     ? 'அனைத்து ஊக்கமான வீடியோக்கள் பற்றியும் நீங்கள் வெற்றிகரமாக சிந்தித்து எழுதியுள்ளீர்கள்.'
-                    : "You've successfully reflected on all inspirational videos"}
+                    : lang === 'hi'
+                      ? 'आपने सभी प्रेरणादायक वीडियो पर सफलतापूर्वक चिंतन किया है।'
+                      : "You've successfully reflected on all inspirational videos"}
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6">
@@ -1513,7 +1535,9 @@ export default function MyInspirationAssessment() {
                     ? 'ಪ್ರೇರಣೆ ಮೌಲ್ಯಮಾಪನವನ್ನು ಪೂರ್ಣಗೊಳಿಸಿದಕ್ಕಾಗಿ ಧನ್ಯವಾದಗಳು! ನಿಮ್ಮ ಪ್ರೇರಣಾದಾಯಕ ವೀಡಿಯೊಗಳ ಬಗ್ಗೆ ಮಾಡಿದ ಬರಹಗಳನ್ನು ನಾವು ಉಳಿಸಿದ್ದೇವೆ. ಈಗ ನಿಮ್ಮ ಶಿಕ್ಷಕರು ಅವನ್ನು ಓದಿ, ನಿಮ್ಮ ವೃತ್ತಿ ಪ್ರಯಾಣಕ್ಕೆ ಮಾರ್ಗದರ್ಶನ ನೀಡಲು ಬಳಸಬಹುದು.'
                     : lang === 'ta'
                       ? 'இந்த ஊக்கம் செயல்பாட்டை முழுமையாக முடித்ததற்கு நன்றி! இந்த வீடியோக்கள் பற்றி நீங்கள் எழுதிய சிந்தனைகள் அனைத்தும் பாதுகாக்கப்பட்டுள்ளன. இப்போது உங்கள் ஆசிரியர் அவற்றை படித்து, உங்கள் தொழில் பயணத்திற்கு வழிகாட்ட உதவ முடியும்.'
-                      : 'Thank you for completing the inspiration assessment! Your reflections on the inspirational videos have been saved and your teacher can now review them to help guide your career journey.'}
+                      : lang === 'hi'
+                        ? 'प्रेरणा मूल्यांकन पूरा करने के लिए धन्यवाद! प्रेरणादायक वीडियो पर आपके चिंतन सहेजे गए हैं और आपके शिक्षक अब आपके करियर यात्रा में मार्गदर्शन के लिए उनकी समीक्षा कर सकते हैं।'
+                        : 'Thank you for completing the inspiration assessment! Your reflections on the inspirational videos have been saved and your teacher can now review them to help guide your career journey.'}
                 </p>
                 <div className="flex justify-center gap-4">
                   <Button
@@ -1528,13 +1552,13 @@ export default function MyInspirationAssessment() {
                       navigate(`/student/assessment/inspiration?${params.toString()}`);
                     }}
                   >
-                    {lang === 'kn' ? 'ನನ್ನ ಉತ್ತರಗಳನ್ನು ವೀಕ್ಷಿಸಿ' : lang === 'ta' ? 'என் பதில்களை பார்' : 'View My Answers'}
+                    {lang === 'kn' ? 'ನನ್ನ ಉತ್ತರಗಳನ್ನು ವೀಕ್ಷಿಸಿ' : lang === 'ta' ? 'என் பதில்களை பார்' : lang === 'hi' ? 'मेरे उत्तर देखें' : 'View My Answers'}
                   </Button>
                   <Button
                     onClick={() => navigate('/student')}
                     className="bg-blue-600 hover:bg-blue-700"
                   >
-                    {lang === 'kn' ? 'ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ಗೆ ಹಿಂತಿರುಗಿ' : lang === 'ta' ? 'முதல் பக்கத்திற்கு போ' : 'Back to Dashboard'}
+                    {lang === 'kn' ? 'ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ಗೆ ಹಿಂತಿರುಗಿ' : lang === 'ta' ? 'முதல் பக்கத்திற்கு போ' : lang === 'hi' ? 'डैशबोर्ड पर वापस' : 'Back to Dashboard'}
                   </Button>
                 </div>
               </div>
@@ -1653,12 +1677,12 @@ export default function MyInspirationAssessment() {
           <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
             <CardTitle className="text-xl text-blue-800">
               {currentVideoIndex === inspirationVideos.length
-                ? (dbSummaryTitle || 'Summary')
+                ? (dbSummaryTitle || (lang === 'kn' ? 'ಸಾರಾಂಶ' : lang === 'ta' ? 'சுருக்கம்' : lang === 'hi' ? 'सारांश' : 'Summary'))
                 : `${t('videoLabelN', '', currentVideoIndex + 1)}: ${currentVideo?.title}`}
             </CardTitle>
             <CardDescription className="text-blue-600">
               {currentVideoIndex === inspirationVideos.length
-                ? lang === 'kn' ? 'ಸಾರಾಂಶದ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ' : lang === 'ta' ? 'சுருக்கமான கேள்விகளுக்கு பதிலளிக்கவும்' : 'Please answer these final summary questions'
+                ? lang === 'kn' ? 'ಸಾರಾಂಶದ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ' : lang === 'ta' ? 'சுருக்கமான கேள்விகளுக்கு பதிலளிக்கவும்' : lang === 'hi' ? 'कृपया इन अंतिम सारांश प्रश्नों का उत्तर दें' : 'Please answer these final summary questions'
                 : t('watchAndAnswer')}
             </CardDescription>
           </CardHeader>
@@ -1701,7 +1725,7 @@ export default function MyInspirationAssessment() {
                           ? 'bg-green-100 text-green-700'
                           : 'bg-yellow-100 text-yellow-700'
                           }`}>
-                          {status.answered}/{status.total} questions answered
+                          {status.answered}/{status.total} {lang === 'kn' ? 'ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಲಾಗಿದೆ' : lang === 'ta' ? 'கேள்விகளுக்கு பதிலளிக்கப்பட்டது' : lang === 'hi' ? 'प्रश्नों के उत्तर दिए' : 'questions answered'}
                         </span>
                       );
                     })()}
@@ -1844,7 +1868,7 @@ export default function MyInspirationAssessment() {
                                   handleAudioResponse(getCurrentVideoKey() as any, questionKey, audioBlob, transcription);
                                 }}
                                 maxDuration={120000}
-                                language={lang === 'kn' ? 'kn-IN' : lang === 'ta' ? 'ta-IN' : 'en-IN'}
+                                language={lang === 'kn' ? 'kn-IN' : lang === 'ta' ? 'ta-IN' : lang === 'hi' ? 'hi-IN' : 'en-IN'}
                                 studentId={resolvedStudentId}
                                 assessmentId={assessmentRecordId}
                                 assessmentType="inspiration"
@@ -1858,7 +1882,7 @@ export default function MyInspirationAssessment() {
                                 compact={true}
                               />
                             ) : (
-                              <div className="text-sm text-gray-500">Loading...</div>
+                              <div className="text-sm text-gray-500">{lang === 'kn' ? 'ಲೋಡ್ ಆಗುತ್ತಿದೆ...' : lang === 'ta' ? 'ஏற்றுகிறது...' : lang === 'hi' ? 'लोड हो रहा है...' : 'Loading...'}</div>
                             )}
                           </div>
                         </div>
@@ -1888,7 +1912,7 @@ export default function MyInspirationAssessment() {
             disabled={currentVideoIndex === 0}
             className="border-blue-200 text-blue-700 hover:bg-blue-50"
           >
-            {lang === 'kn' ? 'ಹಿಂದಿನ ವೀಡಿಯೊ' : lang === 'ta' ? 'முந்தைய வீடியோ' : t('previousVideo')}
+            {lang === 'kn' ? 'ಹಿಂದಿನ ವೀಡಿಯೊ' : lang === 'ta' ? 'முந்தைய வீடியோ' : lang === 'hi' ? 'पिछला वीडियो' : t('previousVideo')}
           </Button>
 
           <div className="flex gap-2">
@@ -1922,7 +1946,7 @@ export default function MyInspirationAssessment() {
                 onClick={nextVideo}
                 className="border-blue-200 text-blue-700 hover:bg-blue-50"
               >
-                {lang === 'kn' ? 'ಮುಂದಿನ ವೀಡಿಯೊ' : lang === 'ta' ? 'அடுத்த வீடியோ' : t('nextVideo')}
+                {lang === 'kn' ? 'ಮುಂದಿನ ವೀಡಿಯೊ' : lang === 'ta' ? 'அடுத்த வீடியோ' : lang === 'hi' ? 'अगला वीडियो →' : t('nextVideo')}
               </Button>
             ) : (
               <Button

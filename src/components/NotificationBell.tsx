@@ -57,6 +57,7 @@ export default function NotificationBell({ userId }: Props) {
 
   const onClickItem = async (n: AppNotification) => {
     if (!n.read_at) await notificationService.markRead([n.id]);
+    setOpen(false);
     if (n.link) navigate(n.link);
     refresh();
   };

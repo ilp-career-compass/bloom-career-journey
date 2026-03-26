@@ -401,17 +401,16 @@ export default function SummaryApprovalCard({
           }
 
           // Get assessment title based on type
-          const assessmentTitles: Record<string, { en: string; kn: string; ta?: string }> = {
-            'inspiration': { en: 'My Inspiration', kn: 'ನನ್ನ ಪ್ರೇರಣೆ' },
-            'about_me': { en: 'About Me', kn: 'ನನ್ನ ಬಗ್ಗೆ', ta: 'என்னைப் பற்றி' },
-            'dreams': { en: 'My Dreams', kn: 'ನನ್ನ ಕನಸುಗಳು' },
-            'school_learning': { en: 'My School, My Learning and I', kn: 'ನನ್ನ ಶಾಲೆ, ನನ್ನ ಕಲಿಕೆ ಮತ್ತು ನಾನು' },
-            'hobbies': { en: 'My Talents and Hobbies', kn: 'ನನ್ನ ಪ್ರತಿಭೆಗಳು ಮತ್ತು ಹವ್ಯಾಸಗಳು', ta: 'என் திறமைகள் மற்றும் பொழுதுபோக்குகள்' },
-            'role_models': { en: 'My Role Models', kn: 'ನನ್ನ ಆದರ್ಶ ವ್ಯಕ್ತಿ ಯಾರು?', ta: 'என் முன்மாதிரி நபர்' }
+          const assessmentTitles: Record<string, { en: string; kn: string; ta?: string; hi?: string }> = {
+            'inspiration': { en: 'My Inspiration', kn: 'ನನ್ನ ಪ್ರೇರಣೆ', ta: 'என் உத்வேகம்', hi: 'मेरी प्रेरणा' },
+            'about_me': { en: 'About Me', kn: 'ನನ್ನ ಬಗ್ಗೆ', ta: 'என்னைப் பற்றி', hi: 'मेरे बारे में' },
+            'dreams': { en: 'My Dreams', kn: 'ನನ್ನ ಕನಸುಗಳು', ta: 'என் கனவுகள்', hi: 'मेरे सपने' },
+            'school_learning': { en: 'My School, My Learning and I', kn: 'ನನ್ನ ಶಾಲೆ, ನನ್ನ ಕಲಿಕೆ ಮತ್ತು ನಾನು', ta: 'என் பள்ளி, என் கற்றல் மற்றும் நான்', hi: 'मेरा स्कूल, मेरी पढ़ाई और मैं' },
+            'hobbies': { en: 'My Talents and Hobbies', kn: 'ನನ್ನ ಪ್ರತಿಭೆಗಳು ಮತ್ತು ಹವ್ಯಾಸಗಳು', ta: 'என் திறமைகள் மற்றும் பொழுதுபோக்குகள்', hi: 'मेरी प्रतिभाएँ और शौक' },
+            'role_models': { en: 'My Role Models', kn: 'ನನ್ನ ಆದರ್ಶ ವ್ಯಕ್ತಿ ಯಾರು?', ta: 'என் முன்மாதிரி நபர்', hi: 'मेरे आदर्श' }
           };
 
-          const titleMap = assessmentTitles[assessmentTypeToUse] || { en: 'Assessment', kn: 'ಮೌಲ್ಯಮಾಪನ' };
-          const assessmentTitle = titleMap.en; // Default to English for notification
+          const titleMap = assessmentTitles[assessmentTypeToUse] || { en: 'Assessment', kn: 'ಮೌಲ್ಯಮಾಪನ', ta: 'மதிப்பீடு', hi: 'मूल्यांकन' };
 
           let targetStudentUserId = summary.student_user_id;
 
@@ -432,11 +431,42 @@ export default function SummaryApprovalCard({
           if (!targetStudentUserId) {
             logger.warn('Unable to send approval notification: student_user_id is missing');
           } else {
+            // Fetch student's preferred language for localized notification
+            let studentLang: 'en' | 'kn' | 'ta' | 'hi' = 'en';
+            try {
+              const { data: userLangData } = await supabase
+                .from('users')
+                .select('preferred_language')
+                .eq('id', targetStudentUserId)
+                .maybeSingle();
+              if (userLangData?.preferred_language && ['en', 'kn', 'ta', 'hi'].includes(userLangData.preferred_language)) {
+                studentLang = userLangData.preferred_language as 'en' | 'kn' | 'ta' | 'hi';
+              }
+            } catch (langErr) {
+              logger.error('Failed to fetch student language for notification:', langErr);
+            }
+
+            const localizedAssessmentTitle = (titleMap as any)[studentLang] || titleMap.en;
+
+            const notifTitleMap: Record<string, string> = {
+              en: `${localizedAssessmentTitle} summary approved`,
+              kn: `${localizedAssessmentTitle} ಸಾರಾಂಶ ಅನುಮೋದಿಸಲಾಗಿದೆ`,
+              ta: `${localizedAssessmentTitle} சுருக்கம் ஒப்புதல் அளிக்கப்பட்டது`,
+              hi: `${localizedAssessmentTitle} सारांश स्वीकृत`
+            };
+
+            const notifMessageMap: Record<string, string> = {
+              en: 'Your mentor approved your AI summary. Tap to view.',
+              kn: 'ನಿಮ್ಮ ಮಾರ್ಗದರ್ಶಕರು ನಿಮ್ಮ AI ಸಾರಾಂಶವನ್ನು ಅನುಮೋದಿಸಿದ್ದಾರೆ. ವೀಕ್ಷಿಸಲು ಟ್ಯಾಪ್ ಮಾಡಿ.',
+              ta: 'உங்கள் வழிகாட்டி உங்கள் AI சுருக்கத்தை அங்கீகரித்தார். பார்க்க தட்டவும்.',
+              hi: 'आपके मार्गदर्शक ने आपके AI सारांश को स्वीकृत किया। देखने के लिए टैप करें।'
+            };
+
             const notifResult = await notificationService.create({
               userId: targetStudentUserId,
               type: 'summary_approved',
-              title: `${assessmentTitle} summary approved`,
-              message: 'Your mentor approved your AI summary. Tap to view.',
+              title: notifTitleMap[studentLang] || notifTitleMap.en,
+              message: notifMessageMap[studentLang] || notifMessageMap.en,
               link: '/student'
             });
 
@@ -601,21 +631,32 @@ export default function SummaryApprovalCard({
       logger.log('🔄 Regenerating summary for assessment type:', assessmentTypeToUse);
       logger.log('📊 Student responses:', studentResponses);
 
+      // Fetch student's preferred language for summary generation
+      let studentLang: string | undefined;
+      if (summary.student_user_id) {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('preferred_language')
+          .eq('id', summary.student_user_id)
+          .maybeSingle();
+        studentLang = userData?.preferred_language || undefined;
+      }
+
       // Determine which summary generator to use based on assessment type
       let summaryResult;
       if (assessmentTypeToUse === 'about_me') {
-        summaryResult = await aiSummaryService.generateAboutMeSummary(studentResponses);
+        summaryResult = await aiSummaryService.generateAboutMeSummary(studentResponses, studentLang);
       } else if (assessmentTypeToUse === 'dreams') {
-        summaryResult = await aiSummaryService.generateDreamsSummary(studentResponses);
+        summaryResult = await aiSummaryService.generateDreamsSummary(studentResponses, studentLang);
       } else if (assessmentTypeToUse === 'school_learning') {
-        summaryResult = await aiSummaryService.generateSchoolLearningSummary(studentResponses);
+        summaryResult = await aiSummaryService.generateSchoolLearningSummary(studentResponses, studentLang);
       } else if (assessmentTypeToUse === 'hobbies') {
-        summaryResult = await aiSummaryService.generateHobbiesSummary(studentResponses);
+        summaryResult = await aiSummaryService.generateHobbiesSummary(studentResponses, studentLang);
       } else if (assessmentTypeToUse === 'role_models') {
-        summaryResult = await aiSummaryService.generateRoleModelsSummary(studentResponses);
+        summaryResult = await aiSummaryService.generateRoleModelsSummary(studentResponses, studentLang);
       } else {
         // Default to inspiration summary
-        summaryResult = await aiSummaryService.generateInspirationSummary(studentResponses);
+        summaryResult = await aiSummaryService.generateInspirationSummary(studentResponses, studentLang);
       }
 
       if (!summaryResult.success || !summaryResult.summary) {

@@ -90,14 +90,14 @@ export default function MyDreamsAssessment() {
       if (error) throw error;
 
       toast({
-        title: lang === 'kn' ? 'ಪ್ರಗತಿಯನ್ನು ಉಳಿಸಲಾಗಿದೆ' : lang === 'ta' ? 'முன்னேற்றம் சேமிக்கப்பட்டது' : 'Progress Saved',
-        description: lang === 'kn' ? 'ನಿಮ್ಮ ಉತ್ತರಗಳನ್ನು ಉಳಿಸಲಾಗಿದೆ.' : lang === 'ta' ? 'உங்கள் பதில்கள் சேமிக்கப்பட்டன.' : 'Your answers have been saved.',
+        title: lang === 'kn' ? 'ಪ್ರಗತಿಯನ್ನು ಉಳಿಸಲಾಗಿದೆ' : lang === 'ta' ? 'முன்னேற்றம் சேமிக்கப்பட்டது' : lang === 'hi' ? 'प्रगति सहेजी गई' : 'Progress Saved',
+        description: lang === 'kn' ? 'ನಿಮ್ಮ ಉತ್ತರಗಳನ್ನು ಉಳಿಸಲಾಗಿದೆ.' : lang === 'ta' ? 'உங்கள் பதில்கள் சேமிக்கப்பட்டன.' : lang === 'hi' ? 'आपके उत्तर सहेजे गए हैं।' : 'Your answers have been saved.',
       });
     } catch (error) {
       logger.error('Error saving progress:', error);
       toast({
-        title: "Error",
-        description: "Failed to save progress.",
+        title: lang === 'kn' ? 'ದೋಷ' : lang === 'ta' ? 'பிழை' : lang === 'hi' ? 'त्रुटि' : 'Error',
+        description: lang === 'kn' ? 'ಪ್ರಗತಿ ಉಳಿಸಲು ವಿಫಲವಾಗಿದೆ.' : lang === 'ta' ? 'முன்னேற்றத்தை சேமிக்க முடியவில்லை.' : lang === 'hi' ? 'प्रगति सहेजने में विफल।' : 'Failed to save progress.',
         variant: "destructive"
       });
     } finally {
@@ -143,12 +143,14 @@ export default function MyDreamsAssessment() {
 
       if (!unlockResult.isUnlocked) {
         toast({
-          title: lang === 'kn' ? 'ಮೌಲ್ಯಮಾಪನ ಲಾಕ್ ಮಾಡಲಾಗಿದೆ' : lang === 'ta' ? 'செயல் பூட்டப்பட்டுள்ளது' : 'Assessment Locked',
+          title: lang === 'kn' ? 'ಮೌಲ್ಯಮಾಪನ ಲಾಕ್ ಮಾಡಲಾಗಿದೆ' : lang === 'ta' ? 'செயல் பூட்டப்பட்டுள்ளது' : lang === 'hi' ? 'मूल्यांकन लॉक है' : 'Assessment Locked',
           description: lang === 'kn'
             ? `ದಾಯವಿಟ್ಟು ಮೊದಲು "${unlockResult.missingPrerequisites.join(', ')}" ಪೂರ್ಣಗೊಳಿಸಿ.`
             : lang === 'ta'
               ? `"${unlockResult.missingPrerequisites.join(', ')}" செயல்களை முதலில் முடித்தால் இந்த பகுதி திறக்கும்.`
-              : `Please complete "${unlockResult.missingPrerequisites.join(', ')}" first.`,
+              : lang === 'hi'
+                ? `कृपया पहले "${unlockResult.missingPrerequisites.join(', ')}" पूरा करें।`
+                : `Please complete "${unlockResult.missingPrerequisites.join(', ')}" first.`,
           variant: 'destructive',
         });
         navigate('/student');
@@ -506,8 +508,8 @@ export default function MyDreamsAssessment() {
     if (isReadOnly) return;
     if (!userProfile) {
       toast({
-        title: "Error",
-        description: "User profile not found. Please try logging in again.",
+        title: lang === 'kn' ? 'ದೋಷ' : lang === 'ta' ? 'பிழை' : lang === 'hi' ? 'त्रुटि' : 'Error',
+        description: lang === 'kn' ? 'ಬಳಕೆದಾರ ಪ್ರೊಫೈಲ್ ಕಂಡುಬಂದಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಲಾಗಿನ್ ಮಾಡಿ.' : lang === 'ta' ? 'பயனர் சுயவிவரம் கிடைக்கவில்லை. மீண்டும் உள்நுழையவும்.' : lang === 'hi' ? 'उपयोगकर्ता प्रोफ़ाइल नहीं मिली। कृपया फिर से लॉगिन करें।' : 'User profile not found. Please try logging in again.',
         variant: "destructive",
       });
       return;
@@ -526,8 +528,8 @@ export default function MyDreamsAssessment() {
 
     if (!studentId) {
       toast({
-        title: "Error",
-        description: "Student profile not found. Please contact your teacher or support.",
+        title: lang === 'kn' ? 'ದೋಷ' : lang === 'ta' ? 'பிழை' : lang === 'hi' ? 'त्रुटि' : 'Error',
+        description: lang === 'kn' ? 'ವಿದ್ಯಾರ್ಥಿ ಪ್ರೊಫೈಲ್ ಕಂಡುಬಂದಿಲ್ಲ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಶಿಕ್ಷಕರನ್ನು ಸಂಪರ್ಕಿಸಿ.' : lang === 'ta' ? 'மாணவர் சுயவிவரம் கிடைக்கவில்லை. உங்கள் ஆசிரியரை தொடர்பு கொள்ளவும்.' : lang === 'hi' ? 'छात्र प्रोफ़ाइल नहीं मिली। कृपया अपने शिक्षक से संपर्क करें।' : 'Student profile not found. Please contact your teacher or support.',
         variant: "destructive",
       });
       return;
@@ -557,13 +559,17 @@ export default function MyDreamsAssessment() {
             ? 'ಕನಸುಗಳ ಮೌಲ್ಯಮಾಪನ ಪೂರ್ಣಗೊಂಡಿದೆ! ⭐'
             : lang === 'ta'
               ? 'கனவுகள் மதிப்பீடு முடிந்தது! ⭐'
-              : 'Dreams Assessment Completed! ⭐',
+              : lang === 'hi'
+                ? 'सपनों का मूल्यांकन पूर्ण! ⭐'
+                : 'Dreams Assessment Completed! ⭐',
         description:
           lang === 'kn'
             ? 'ನಿಮ್ಮ ಕನಸುಗಳು ಮತ್ತು ಆಶಯಗಳನ್ನು ಯಶಸ್ವಿಯಾಗಿ ದಾಖಲಿಸಲಾಗಿದೆ.'
             : lang === 'ta'
               ? 'உங்கள் கனவுகளும் எதிர்கால ஆசைகளும் வெற்றிகரமாக பதிவு செய்யப்பட்டுள்ளன.'
-              : 'Your dreams and aspirations have been captured successfully!',
+              : lang === 'hi'
+                ? 'आपके सपने और आकांक्षाएं सफलतापूर्वक दर्ज की गई हैं!'
+                : 'Your dreams and aspirations have been captured successfully!',
       });
 
       setIsCompleted(true);
@@ -576,7 +582,7 @@ export default function MyDreamsAssessment() {
 
         if (aiSummaryService.isConfigured()) {
           logger.log('🤖 Generating AI summary for Dreams assessment:', assessmentData.id);
-          const summaryResult = await aiSummaryService.generateDreamsSummary(responses);
+          const summaryResult = await aiSummaryService.generateDreamsSummary(responses, lang);
 
           if (summaryResult.success && summaryResult.summary) {
             // Save summary to database
@@ -594,13 +600,17 @@ export default function MyDreamsAssessment() {
                     ? 'ಸಾರಾಂಶ ಸಿದ್ಧವಾಗಿದೆ! 📝'
                     : lang === 'ta'
                       ? 'சுருக்கம் உருவாக்கப்பட்டது! 📝'
-                      : 'Summary Generated! 📝',
+                      : lang === 'hi'
+                        ? 'सारांश तैयार! 📝'
+                        : 'Summary Generated! 📝',
                 description:
                   lang === 'kn'
                     ? 'ನಿಮ್ಮ ಕನಸುಗಳ ಪೋರ್ಟ್ಫೋಲಿಯೊ ಸಿದ್ಧವಾಗಿದೆ. ನಿಮ್ಮ ಶಿಕ್ಷಕರು ಅದನ್ನು ಪರಿಶೀಲಿಸುತ್ತಾರೆ.'
                     : lang === 'ta'
                       ? 'உங்கள் கனவு குறிப்பேடு உருவாக்கப்பட்டுள்ளது. உங்கள் ஆசிரியா் அதைப் பார்த்து மதிப்பாய்வு செய்வார்.'
-                      : 'Your dream portfolio has been generated. Your teacher will review it.',
+                      : lang === 'hi'
+                        ? 'आपका सपनों का पोर्टफोलियो तैयार हो गया है। आपके शिक्षक इसकी समीक्षा करेंगे।'
+                        : 'Your dream portfolio has been generated. Your teacher will review it.',
               });
 
               // Notify teacher(s) assigned to this student
@@ -634,16 +644,16 @@ export default function MyDreamsAssessment() {
             } else {
               logger.error('Failed to save summary:', saveResult.error);
               toast({
-                title: "Summary Generation Issue",
-                description: "Your assessment is saved, but summary generation needs attention.",
+                title: lang === 'kn' ? 'ಸಾರಾಂಶ ರಚನೆ ಸಮಸ್ಯೆ' : lang === 'ta' ? 'சுருக்கம் உருவாக்க சிக்கல்' : lang === 'hi' ? 'सारांश निर्माण समस्या' : 'Summary Generation Issue',
+                description: lang === 'kn' ? 'ನಿಮ್ಮ ಮೌಲ್ಯಮಾಪನ ಉಳಿಸಲಾಗಿದೆ, ಆದರೆ ಸಾರಾಂಶ ರಚನೆಗೆ ಗಮನ ಬೇಕು.' : lang === 'ta' ? 'உங்கள் மதிப்பீடு சேமிக்கப்பட்டது, ஆனால் சுருக்கம் உருவாக்கத்தில் சிக்கல்.' : lang === 'hi' ? 'आपका मूल्यांकन सहेजा गया है, लेकिन सारांश निर्माण में समस्या है।' : 'Your assessment is saved, but summary generation needs attention.',
                 variant: "destructive",
               });
             }
           } else {
             logger.error('Failed to generate summary:', summaryResult.error);
             toast({
-              title: "Summary Generation Issue",
-              description: "Your assessment is saved. Summary will be generated later.",
+              title: lang === 'kn' ? 'ಸಾರಾಂಶ ರಚನೆ ಸಮಸ್ಯೆ' : lang === 'ta' ? 'சுருக்கம் உருவாக்க சிக்கல்' : lang === 'hi' ? 'सारांश निर्माण समस्या' : 'Summary Generation Issue',
+              description: lang === 'kn' ? 'ನಿಮ್ಮ ಮೌಲ್ಯಮಾಪನ ಉಳಿಸಲಾಗಿದೆ. ಸಾರಾಂಶ ನಂತರ ರಚನೆಯಾಗುತ್ತದೆ.' : lang === 'ta' ? 'உங்கள் மதிப்பீடு சேமிக்கப்பட்டது. சுருக்கம் பின்னர் உருவாக்கப்படும்.' : lang === 'hi' ? 'आपका मूल्यांकन सहेजा गया है। सारांश बाद में तैयार किया जाएगा।' : 'Your assessment is saved. Summary will be generated later.',
               variant: "destructive",
             });
           }
@@ -657,8 +667,8 @@ export default function MyDreamsAssessment() {
     } catch (error) {
       logger.error('Error submitting assessment:', error);
       toast({
-        title: "Error",
-        description: "Failed to submit assessment. Please try again.",
+        title: lang === 'kn' ? 'ದೋಷ' : lang === 'ta' ? 'பிழை' : lang === 'hi' ? 'त्रुटि' : 'Error',
+        description: lang === 'kn' ? 'ಮೌಲ್ಯಮಾಪನ ಸಲ್ಲಿಸಲು ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.' : lang === 'ta' ? 'மதிப்பீடு சமர்ப்பிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.' : lang === 'hi' ? 'मूल्यांकन जमा करने में विफल। कृपया पुनः प्रयास करें।' : 'Failed to submit assessment. Please try again.',
         variant: "destructive",
       });
     } finally {
@@ -672,7 +682,9 @@ export default function MyDreamsAssessment() {
         ? 'ನಿಮ್ಮ ಕನಸುಗಳ ಮೌಲ್ಯಮಾಪನವನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...'
         : lang === 'ta'
           ? 'உங்கள் கனவுகள் மதிப்பீடு ஏற்றப்படுகிறது...'
-          : 'Loading your dreams assessment...';
+          : lang === 'hi'
+            ? 'आपका सपनों का मूल्यांकन लोड हो रहा है...'
+            : 'Loading your dreams assessment...';
 
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -696,14 +708,18 @@ export default function MyDreamsAssessment() {
                   ? 'ಕನಸುಗಳ ಮೌಲ್ಯಮಾಪನ ಪೂರ್ಣಗೊಂಡಿದೆ! 🌟'
                   : lang === 'ta'
                     ? 'கனவுகள் மதிப்பீடு முடிந்தது! 🌟'
-                    : 'Dreams Assessment Completed! 🌟'}
+                    : lang === 'hi'
+                      ? 'सपनों का मूल्यांकन पूर्ण! 🌟'
+                      : 'Dreams Assessment Completed! 🌟'}
               </CardTitle>
               <CardDescription className="text-blue-600">
                 {lang === 'kn'
                   ? 'ನಿಮ್ಮ ಕನಸುಗಳು ಮತ್ತು ಆಶಯಗಳನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಹಂಚಿಕೊಂಡಿದ್ದೀರಿ.'
                   : lang === 'ta'
                     ? 'உங்கள் கனவுகளையும் எதிர்கால ஆசைகளையும் வெற்றிகரமாக பதிவு செய்துள்ளீர்கள்.'
-                    : "You've successfully captured your dreams and aspirations"}
+                    : lang === 'hi'
+                      ? 'आपके सपने और आकांक्षाएं सफलतापूर्वक दर्ज की गई हैं।'
+                      : "You've successfully captured your dreams and aspirations"}
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6">
@@ -713,7 +729,9 @@ export default function MyDreamsAssessment() {
                     ? 'ನಿಮ್ಮ ಕನಸುಗಳನ್ನು ಹಂಚಿಕೊಂಡದ್ದಕ್ಕೆ ಧನ್ಯವಾದಗಳು! ನಿಮ್ಮ ಉತ್ತರಗಳು ಉಳಿಸಲ್ಪಟ್ಟಿವೆ ಮತ್ತು ಈಗ ನಿಮ್ಮ ಶಿಕ್ಷಕರು ಅವುಗಳನ್ನು ನೋಡಿ ನಿಮ್ಮ ಪ್ರಯಾಣಕ್ಕೆ ಮಾರ್ಗದರ್ಶನ ನೀಡಬಹುದು.'
                     : lang === 'ta'
                       ? 'உங்கள் கனவுகளை பகிர்ந்ததற்கு நன்றி! உங்கள் பதில்கள் சேமிக்கப்பட்டுள்ளன; இப்போது உங்கள் ஆசிரியா் அவற்றைப் பார்த்து உங்கள் பயணத்துக்கு வழிகாட்ட முடியும்.'
-                      : 'Thank you for sharing your dreams! Your responses have been saved and your teacher can now review them to help guide your journey.'}
+                      : lang === 'hi'
+                        ? 'अपने सपने साझा करने के लिए धन्यवाद! आपके उत्तर सहेजे गए हैं और अब आपके शिक्षक आपकी यात्रा में मार्गदर्शन के लिए उनकी समीक्षा कर सकते हैं।'
+                        : 'Thank you for sharing your dreams! Your responses have been saved and your teacher can now review them to help guide your journey.'}
                 </p>
                 <div className="flex justify-center gap-4">
                   <Button
@@ -728,13 +746,13 @@ export default function MyDreamsAssessment() {
                       navigate(`/student/assessment/dreams?${params.toString()}`);
                     }}
                   >
-                    {lang === 'kn' ? 'ನನ್ನ ಉತ್ತರಗಳನ್ನು ವೀಕ್ಷಿಸಿ' : lang === 'ta' ? 'என் பதில்களை பார்' : 'View My Answers'}
+                    {lang === 'kn' ? 'ನನ್ನ ಉತ್ತರಗಳನ್ನು ವೀಕ್ಷಿಸಿ' : lang === 'ta' ? 'என் பதில்களை பார்' : lang === 'hi' ? 'मेरे उत्तर देखें' : 'View My Answers'}
                   </Button>
                   <Button
                     onClick={() => navigate('/student')}
                     className="bg-blue-600 hover:bg-blue-700"
                   >
-                    {lang === 'kn' ? 'ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ಗೆ ಹಿಂತಿರುಗಿ' : lang === 'ta' ? 'முதல் பக்கத்திற்கு போ' : 'Back to Dashboard'}
+                    {lang === 'kn' ? 'ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ಗೆ ಹಿಂತಿರುಗಿ' : lang === 'ta' ? 'முதல் பக்கத்திற்கு போ' : lang === 'hi' ? 'डैशबोर्ड पर वापस' : 'Back to Dashboard'}
                   </Button>
                 </div>
               </div>
@@ -773,24 +791,30 @@ export default function MyDreamsAssessment() {
               ? '🌟 ನನ್ನ ಕನಸುಗಳ ಮೌಲ್ಯಮಾಪನ'
               : lang === 'ta'
                 ? '🌟 என் கனவுகள் மதிப்பீடு'
-                : '🌟 My Dreams Assessment')}
+                : lang === 'hi'
+                  ? '🌟 मेरे सपनों का मूल्यांकन'
+                  : '🌟 My Dreams Assessment')}
           </h1>
 
           {/* Quote Box */}
           <div className="max-w-3xl mx-auto mb-6 p-4 md:p-6 border-2 border-gray-800 rounded-lg bg-white">
             <p className="text-lg font-bold text-gray-900 mb-2">
               {dbQuote || (lang === 'kn'
-                ? '“ನೀವು ನಿದ್ರಿಸುವಾಗ ಕಾಣುವದನ್ನು ಅಲ್ಲ ಕನಸು, ನಿಮ್ಮನ್ನು ನಿದ್ರಿಸದಂತೆ 만드는 ಆಲೋಚನೆಯೇ ನಿಜವಾದ ಕನಸು.”'
+                ? '”ನೀವು ನಿದ್ರಿಸುವಾಗ ಕಾಣುವದನ್ನು ಅಲ್ಲ ಕನಸು, ನಿಮ್ಮನ್ನು ನಿದ್ರಿಸದಂತೆ 만드는 ಆಲೋಚನೆಯೇ ನಿಜವಾದ ಕನಸು.”'
                 : lang === 'ta'
-                  ? '“நீங்கள் தூங்கும்போது காண்பது கனவு அல்ல; உங்களைத் தூங்க விடாமல் செய்யும் எண்ணங்களே உண்மையான கனவுகள்.”'
-                  : '“Dream is not that which you see while sleeping, it is something that does not let you sleep”.')}
+                  ? '”நீங்கள் தூங்கும்போது காண்பது கனவு அல்ல; உங்களைத் தூங்க விடாமல் செய்யும் எண்ணங்களே உண்மையான கனவுகள்.”'
+                  : lang === 'hi'
+                    ? '”सपना वह नहीं जो आप सोते हुए देखते हैं, सपना वह है जो आपको सोने नहीं देता।”'
+                    : '”Dream is not that which you see while sleeping, it is something that does not let you sleep”.')}
             </p>
             {!dbQuote && <p className="text-gray-700 italic">
               {lang === 'kn'
                 ? 'ಡಾ. ಎ. ಪಿ. ಜೇ. ಅಬ್ದುಲ್ ಕಲಾಂ'
                 : lang === 'ta'
                   ? 'டாக்டர் ஏ. பி. ஜே. அப்துல் கலாம்'
-                  : 'By Dr. A. P. J. Abdul Kalam'}
+                  : lang === 'hi'
+                    ? 'डॉ. ए. पी. जे. अब्दुल कलाम'
+                    : 'By Dr. A. P. J. Abdul Kalam'}
             </p>}
           </div>
 
@@ -801,14 +825,18 @@ export default function MyDreamsAssessment() {
                 ? 'ನಮ್ಮ ಭವಿಷ್ಯದ ಬಗ್ಗೆ ಪ್ರತಿಯೊಬ್ಬರಿಗೂ ಹಲವು ಕನಸುಗಳು ಇವೆ. ನಿಮ್ಮ ಕನಸುಗಳು ಯಾವುವು? ನಿಮಗೆ ಬಹಳ ಮುಖ್ಯವಾಗಿ ಅನಿಸುವ ಯಾವುದೇ ಗುರಿ ಅಥವಾ ಆಶೆ ಇದೆಯೇ?'
                 : lang === 'ta'
                   ? 'நாம் ஒவ்வொருவரும் எங்கள் எதிர்காலத்தைப் பற்றி பல கனவுகளை வைத்திருக்கிறோம். உங்கள் கனவுகள் என்ன? உங்களுக்கு மிகவும் நெருக்கமாக உணரப்படும் ஒரு இலக்கு அல்லது ஆசை இருக்கிறதா?'
-                  : 'We all hold dreams for our future. What are your dreams? Is there a particular goal or aspiration that resonates strongly with you?')}
+                  : lang === 'hi'
+                    ? 'हम सभी अपने भविष्य के लिए सपने रखते हैं। आपके सपने क्या हैं? क्या कोई विशेष लक्ष्य या आकांक्षा है जो आपको प्रेरित करती है?'
+                    : 'We all hold dreams for our future. What are your dreams? Is there a particular goal or aspiration that resonates strongly with you?')}
             </p>
             {!dbIntro && <p className="text-base leading-relaxed">
               {lang === 'kn'
                 ? 'ಈ பகுತಿಯಲ್ಲಿ, ನಿಮ್ಮ ಕನಸುಗಳು ಮತ್ತು ಆಶೆಗಳ ಪ್ರಪಂಚವನ್ನು ನಿಧಾನವಾಗಿ ಅನ್ವೇಷಿಸೋಣ.'
                 : lang === 'ta'
                   ? 'இந்த ஆராய்ச்சி பகுதியின் மூலம், உங்கள் கனவுகள் மற்றும் ஆசைகளின் உலகத்தை மெதுவாக ஆராயப் போகிறோம்.'
-                  : "In this exploratory section, we'll uncover your world of dreams and aspirations."}
+                  : lang === 'hi'
+                    ? 'इस खोज भाग में, हम आपके सपनों और आकांक्षाओं की दुनिया को धीरे-धीरे जानेंगे।'
+                    : "In this exploratory section, we'll uncover your world of dreams and aspirations."}
             </p>}
           </div>
         </div>
@@ -827,7 +855,9 @@ export default function MyDreamsAssessment() {
                   ? `ವಿಭಾಗ ${sections.indexOf(currentSection) + 1} / ${sections.length}`
                   : lang === 'ta'
                     ? `பகுதி ${sections.indexOf(currentSection) + 1} / ${sections.length}`
-                    : `Section ${sections.indexOf(currentSection) + 1} of ${sections.length}`}
+                    : lang === 'hi'
+                      ? `भाग ${sections.indexOf(currentSection) + 1} / ${sections.length}`
+                      : `Section ${sections.indexOf(currentSection) + 1} of ${sections.length}`}
               </span>
               <span>{Math.round(getProgressPercentage())}% {t('completeSuffix')}</span>
             </div>
@@ -847,35 +877,45 @@ export default function MyDreamsAssessment() {
                     ? 'ಭಾಗ 1: ನಿಮ್ಮ ಕನಸುಗಳು ಮತ್ತು ಭವಿಷ್ಯದ ಗುರಿಗಳು'
                     : lang === 'ta'
                       ? 'பகுதி 1: உங்கள் கனவுகள் மற்றும் எதிர்கால இலக்குகள்'
-                      : 'Section 1: Your Dreams & Future Goals';
+                      : lang === 'hi'
+                        ? 'भाग 1: आपके सपने और भविष्य के लक्ष्य'
+                        : 'Section 1: Your Dreams & Future Goals';
               } else if (sectionKey === 'section2') {
                 sectionTitle =
                   lang === 'kn'
                     ? 'ಭಾಗ 2: ವೃತ್ತಿ ಮತ್ತು ಜೀವನದ ಆಶೆಗಳು'
                     : lang === 'ta'
                       ? 'பகுதி 2: தொழில் மற்றும் வாழ்க்கை ஆசைகள்'
-                      : 'Section 2: Career & Life Aspirations';
+                      : lang === 'hi'
+                        ? 'भाग 2: करियर और जीवन की आकांक्षाएं'
+                        : 'Section 2: Career & Life Aspirations';
               } else if (sectionKey === 'section3') {
                 sectionTitle =
                   lang === 'kn'
                     ? 'ಭಾಗ 3: ಕನಸುಗಳನ್ನು ನಿಜವಾಗಿಸುವುದು'
                     : lang === 'ta'
                       ? 'பகுதி 3: கனவுகளை நனவாக்குதல்'
-                      : 'Section 3: Making Dreams Reality';
+                      : lang === 'hi'
+                        ? 'भाग 3: सपनों को साकार करना'
+                        : 'Section 3: Making Dreams Reality';
               } else if (sectionKey === 'Summary') {
                 sectionTitle =
                   lang === 'kn'
                     ? 'ಸಾರಾಂಶ'
                     : lang === 'ta'
                       ? 'சுருக்கம்'
-                      : 'Summary';
+                      : lang === 'hi'
+                        ? 'सारांश'
+                        : 'Summary';
               } else {
                 sectionTitle =
                   lang === 'kn'
                     ? `ಭಾಗ ${sectionNumber}`
                     : lang === 'ta'
                       ? `பகுதி ${sectionNumber}`
-                      : `Section ${sectionNumber}`;
+                      : lang === 'hi'
+                        ? `भाग ${sectionNumber}`
+                        : `Section ${sectionNumber}`;
               }
 
               const isSummary = sectionKey === 'Summary';
@@ -908,14 +948,16 @@ export default function MyDreamsAssessment() {
                 <Card className="border-0 shadow-lg">
                   <CardHeader className="bg-gradient-to-r from-teal-50 to-emerald-50">
                     <CardTitle className="text-xl text-teal-800">
-                      {dbSummaryTitle || 'Summary'}
+                      {dbSummaryTitle || (lang === 'kn' ? 'ಸಾರಾಂಶ' : lang === 'ta' ? 'சுருக்கம்' : lang === 'hi' ? 'सारांश' : 'Summary')}
                     </CardTitle>
                     <CardDescription className="text-teal-600">
                       {lang === 'kn'
                         ? 'ಮುಖ್ಯವಾದ ವಿಷಯಗಳನ್ನು ಸಂಕ್ಷಿಪ್ತವಾಗಿ ಬರೆಯಿರಿ'
                         : lang === 'ta'
                           ? 'முக்கியமான விஷயங்களை சுருக்கமாக எழுதுங்கள்'
-                          : 'Summarize your key points'}
+                          : lang === 'hi'
+                            ? 'अपने मुख्य बिंदुओं का सारांश लिखें'
+                            : 'Summarize your key points'}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="p-6">
@@ -957,26 +999,34 @@ export default function MyDreamsAssessment() {
                 ? 'ಭಾಗ 1: ನಿಮ್ಮ ಕನಸುಗಳು ಮತ್ತು ಭವಿಷ್ಯದ ಗುರಿಗಳು'
                 : lang === 'ta'
                   ? 'பகுதி 1: உங்கள் கனவுகள் மற்றும் எதிர்கால இலக்குகள்'
-                  : 'Section 1: Your Dreams & Future Goals';
+                  : lang === 'hi'
+                    ? 'भाग 1: आपके सपने और भविष्य के लक्ष्य'
+                    : 'Section 1: Your Dreams & Future Goals';
             sectionDescription =
               lang === 'kn'
                 ? 'ನಿಮ್ಮ ಭವಿಷ್ಯದ ಕನಸುಗಳು ಮತ್ತು ನೀವು ಸಾಧಿಸಲು ಬಯಸುವ ಗುರಿಗಳನ್ನು ಇಲ್ಲಿ ಬರೆಯಿರಿ.'
                 : lang === 'ta'
                   ? 'எதிர்காலத்தில் நீங்கள் அடைய விரும்பும் கனவுகளையும் இலக்குகளையும் இங்கே எழுதுங்கள்.'
-                  : 'Express your dreams for the future and what you aspire to achieve';
+                  : lang === 'hi'
+                    ? 'अपने भविष्य के सपनों और लक्ष्यों को यहां लिखें।'
+                    : 'Express your dreams for the future and what you aspire to achieve';
           } else if (sectionKey === 'section2') {
             sectionTitle =
               lang === 'kn'
                 ? 'ಭಾಗ 2: ವೃತ್ತಿ ಮತ್ತು ಜೀವನದ ಆಶೆಗಳು'
                 : lang === 'ta'
                   ? 'பகுதி 2: தொழில் மற்றும் வாழ்க்கை ஆசைகள்'
-                  : 'Section 2: Career & Life Aspirations';
+                  : lang === 'hi'
+                    ? 'भाग 2: करियर और जीवन की आकांक्षाएं'
+                    : 'Section 2: Career & Life Aspirations';
             sectionDescription =
               lang === 'kn'
                 ? 'ನೀವು ಯಾವ ವೃತ್ತಿಯಲ್ಲಿ/ಜೀವನ ಶೈಲಿಯಲ್ಲಿ ಇರಬೇಕೆಂದುಕೊಳ್ಳುತ್ತೀರಿ ಮತ್ತು ಸಮಾಜಕ್ಕೆ ಹೇಗೆ ಕೊಡುಗೆ ನೀಡಲು ಬಯಸುತ್ತೀರಿ ಎಂಬುದನ್ನು ಅನ್ವೇಷಿಸಿ.'
                 : lang === 'ta'
                   ? 'எந்த தொழிலில் செல்ல வேண்டும், எங்கு வாழ வேண்டும், சமுதாயத்திற்கு எப்படி பங்களிக்க வேண்டும் என்பதை இங்கே எண்ணிப் பார்க்கவும்.'
-                  : 'Explore your career and life goals, where you want to live, and how you want to contribute';
+                  : lang === 'hi'
+                    ? 'आप किस करियर/जीवनशैली में रहना चाहते हैं और समाज में कैसे योगदान देना चाहते हैं, यह जानें।'
+                    : 'Explore your career and life goals, where you want to live, and how you want to contribute';
             headerColor = 'from-purple-50 to-pink-50';
             titleColor = 'text-purple-800';
             descColor = 'text-purple-600';
@@ -986,13 +1036,17 @@ export default function MyDreamsAssessment() {
                 ? 'ಭಾಗ 3: ಕನಸುಗಳನ್ನು ನಿಜವಾಗಿಸುವುದು'
                 : lang === 'ta'
                   ? 'பகுதி 3: கனவுகளை நனவாக்குதல்'
-                  : 'Section 3: Making Dreams Reality';
+                  : lang === 'hi'
+                    ? 'भाग 3: सपनों को साकार करना'
+                    : 'Section 3: Making Dreams Reality';
             sectionDescription =
               lang === 'kn'
                 ? 'ನಿಮ್ಮ ಕನಸುಗಳನ್ನು ನಿಜವಾಗಿಸಲು ಬೇಕಾದ ಹೆಜ್ಜೆಗಳು ಮತ್ತು ಮಧ್ಯದಲ್ಲಿರಬಹುದಾದ ಅಡಚಣೆಗಳನ್ನು ಇಲ್ಲಿ ಯೋಜಿಸಿ.'
                 : lang === 'ta'
                   ? 'உங்கள் கனவுகளை நனவாக்க எவ்வாறு படிப்படியாக செயல்படலாம், வரும் சிரமங்களை எப்படி சமாளிக்கலாம் என்பதைக் குறித்து இங்கே திட்டமிடுங்கள்.'
-                  : 'Plan the steps needed to achieve your dreams and identify potential obstacles';
+                  : lang === 'hi'
+                    ? 'अपने सपनों को साकार करने के लिए आवश्यक कदमों और संभावित बाधाओं की योजना बनाएं।'
+                    : 'Plan the steps needed to achieve your dreams and identify potential obstacles';
             headerColor = 'from-green-50 to-emerald-50';
             titleColor = 'text-green-800';
             descColor = 'text-green-600';
@@ -1002,13 +1056,17 @@ export default function MyDreamsAssessment() {
                 ? `ಭಾಗ ${sectionNumber}`
                 : lang === 'ta'
                   ? `பகுதி ${sectionNumber}`
-                  : `Section ${sectionNumber}`;
+                  : lang === 'hi'
+                    ? `भाग ${sectionNumber}`
+                    : `Section ${sectionNumber}`;
             sectionDescription =
               lang === 'kn'
                 ? 'ಈ ಭಾಗದಲ್ಲಿನ ಪ್ರಶ್ನೆಗಳಿಗೆ ನಿಮ್ಮ ಆಲೋಚನೆಗಳನ್ನು ಬರೆಯಿರಿ.'
                 : lang === 'ta'
                   ? 'இந்த பகுதியில் உள்ள கேள்விகளுக்கு உங்கள் எண்ணங்களை எழுதுங்கள்.'
-                  : 'Answer the questions in this section';
+                  : lang === 'hi'
+                    ? 'इस भाग के प्रश्नों के उत्तर लिखें।'
+                    : 'Answer the questions in this section';
           }
 
           return (
@@ -1088,7 +1146,9 @@ export default function MyDreamsAssessment() {
               ? 'ಹಿಂದಿನ ಭಾಗ'
               : lang === 'ta'
                 ? 'முந்தைய பகுதி'
-                : 'Previous Section'}
+                : lang === 'hi'
+                  ? 'पिछला भाग'
+                  : 'Previous Section'}
           </Button>
 
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -1107,7 +1167,9 @@ export default function MyDreamsAssessment() {
                     ? 'ಪ್ರಗತಿಯನ್ನು ಉಳಿಸಿ'
                     : lang === 'ta'
                       ? 'முன்னேற்றத்தைச் சேமி'
-                      : 'Save Progress'}
+                      : lang === 'hi'
+                        ? 'प्रगति सहेजें'
+                        : 'Save Progress'}
                 </>
               )}
             </Button>
@@ -1120,12 +1182,14 @@ export default function MyDreamsAssessment() {
                   const nextSection = sections[currentIndex + 1];
                   if (nextSection === 'Summary' && !areCoreSectionsComplete()) {
                     toast({
-                      title: lang === 'kn' ? 'ಸಾರಾಂಶ ಲಾಕ್ ಆಗಿದೆ' : lang === 'ta' ? 'சுருக்கம் பூட்டப்பட்டுள்ளது' : 'Summary Locked',
+                      title: lang === 'kn' ? 'ಸಾರಾಂಶ ಲಾಕ್ ಆಗಿದೆ' : lang === 'ta' ? 'சுருக்கம் பூட்டப்பட்டுள்ளது' : lang === 'hi' ? 'सारांश लॉक है' : 'Summary Locked',
                       description: lang === 'kn'
                         ? 'ಸಾರಾಂಶವನ್ನು ವೀಕ್ಷಿಸಲು ದಯವಿಟ್ಟು ಎಲ್ಲಾ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ.'
                         : lang === 'ta'
                           ? 'சுருக்கத்தைப் பார்க்க அனைத்துக் கேள்விகளுக்கும் பதில் அளிக்கவும்.'
-                          : 'Please answer all core questions to unlock the summary.',
+                          : lang === 'hi'
+                            ? 'सारांश अनलॉक करने के लिए कृपया सभी मुख्य प्रश्नों का उत्तर दें।'
+                            : 'Please answer all core questions to unlock the summary.',
                       variant: 'destructive',
                     });
                     return;
@@ -1140,7 +1204,9 @@ export default function MyDreamsAssessment() {
                 ? 'ಮುಂದಿನ ಭಾಗ'
                 : lang === 'ta'
                   ? 'அடுத்த பகுதி'
-                  : 'Next Section'}
+                  : lang === 'hi'
+                    ? 'अगला भाग'
+                    : 'Next Section'}
             </Button>
 
             {sections.indexOf(currentSection) === sections.length - 1 && (

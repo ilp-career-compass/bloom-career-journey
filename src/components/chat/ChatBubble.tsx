@@ -664,7 +664,7 @@ export default function ChatBubble({ role, isOpen: controlledIsOpen, onOpenChang
               </>
             )}
           </CardContent>
-          {(lang === 'kn' || lang === 'ta') && <IndicKeyboard lang={lang} />}
+          {(lang === 'kn' || lang === 'ta' || lang === 'hi') && <IndicKeyboard lang={lang} />}
         </Card>
       )}
     </>

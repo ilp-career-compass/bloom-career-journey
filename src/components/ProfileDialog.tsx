@@ -351,7 +351,7 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
             </Button>
           </div>
         </div>
-        {(lang === 'kn' || lang === 'ta') && <IndicKeyboard lang={lang} />}
+        {(lang === 'kn' || lang === 'ta' || lang === 'hi') && <IndicKeyboard lang={lang} />}
       </DialogContent>
     </Dialog >
   );

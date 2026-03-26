@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Plus, Trash2, Loader2, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { IndicKeyboard } from '@/components/ui/IndicKeyboard';
 
 interface InterestRow {
   id?: string;
@@ -79,23 +80,23 @@ const STRINGS: Record<string, Record<string, string>> = {
     assessment_role_models: 'என் முன்மாதிரி நபர்',
   },
   hi: {
-    title: 'Things that Interest Me',
-    col_subject: 'Subject',
-    col_lesson: 'Lesson / Chapter',
-    col_why: 'Why or What factors led you to like this lesson/chapter?',
-    col_career: 'A compatible career',
-    add_row: 'Add Row',
-    saving: 'Saving...',
-    saved: 'Saved',
-    delete_confirm: 'Delete this row?',
-    empty: 'No entries yet. Add your first interest!',
-    from_banner: 'Based on your {name} responses, add any subjects or topics that interest you.',
-    assessment_inspiration: 'My Inspiration',
-    assessment_about_me: 'About Me',
-    assessment_dreams: 'My Dreams',
-    assessment_school_learning: 'My School, My Learning and I',
-    assessment_hobbies: 'My Talents and Hobbies',
-    assessment_role_models: 'My Role Models',
+    title: 'मुझे जिन चीज़ों में रुचि है',
+    col_subject: 'विषय',
+    col_lesson: 'पाठ / अध्याय',
+    col_why: 'इस पाठ/अध्याय को पसंद करने के क्या कारण हैं?',
+    col_career: 'एक उपयुक्त करियर',
+    add_row: 'पंक्ति जोड़ें',
+    saving: 'सहेजा जा रहा है...',
+    saved: 'सहेजा गया',
+    delete_confirm: 'इस पंक्ति को हटाएं?',
+    empty: 'अभी तक कोई प्रविष्टि नहीं। अपनी पहली रुचि जोड़ें!',
+    from_banner: 'आपके {name} उत्तरों के आधार पर, अपनी रुचि के विषय जोड़ें।',
+    assessment_inspiration: 'मेरी प्रेरणा',
+    assessment_about_me: 'मेरे बारे में',
+    assessment_dreams: 'मेरे सपने',
+    assessment_school_learning: 'मेरा विद्यालय, मेरी पढ़ाई और मैं',
+    assessment_hobbies: 'मेरी प्रतिभाएं और शौक',
+    assessment_role_models: 'मेरे आदर्श',
   },
 };
 
@@ -369,6 +370,7 @@ export default function ThingsInterestMePage() {
           </Button>
         </div>
       </div>
+      {(['kn', 'ta', 'hi'].includes(resolvedLang)) && <IndicKeyboard lang={resolvedLang} />}
     </div>
   );
 }

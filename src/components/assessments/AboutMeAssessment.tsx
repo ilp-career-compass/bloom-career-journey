@@ -247,12 +247,14 @@ export default function AboutMeAssessment() {
 
       if (!unlockResult.isUnlocked) {
         toast({
-          title: lang === 'kn' ? 'ಮೌಲ್ಯಮಾಪನ ಲಾಕ್ ಮಾಡಲಾಗಿದೆ' : lang === 'ta' ? 'செயல் பூட்டப்பட்டுள்ளது' : 'Assessment Locked',
+          title: lang === 'kn' ? 'ಮೌಲ್ಯಮಾಪನ ಲಾಕ್ ಮಾಡಲಾಗಿದೆ' : lang === 'ta' ? 'செயல் பூட்டப்பட்டுள்ளது' : lang === 'hi' ? 'मूल्यांकन लॉक है' : 'Assessment Locked',
           description: lang === 'kn'
             ? `ದಯವಿಟ್ಟು ಮೊದಲು "${unlockResult.missingPrerequisites.join(', ')}" ಪೂರ್ಣಗೊಳಿಸಿ.`
             : lang === 'ta'
               ? `"${unlockResult.missingPrerequisites.join(', ')}" செயல்களை முதலில் முடித்தால் இந்த பகுதி திறக்கும்.`
-              : `Please complete "${unlockResult.missingPrerequisites.join(', ')}" first.`,
+              : lang === 'hi'
+                ? `कृपया पहले "${unlockResult.missingPrerequisites.join(', ')}" पूरा करें।`
+                : `Please complete "${unlockResult.missingPrerequisites.join(', ')}" first.`,
           variant: 'destructive',
         });
         navigate('/student');
@@ -534,7 +536,7 @@ export default function AboutMeAssessment() {
             const coreResponses = { ...responses };
             delete (coreResponses as any).summary;
 
-            const summaryResult = await aiSummaryService.generateAboutMeSummary(coreResponses);
+            const summaryResult = await aiSummaryService.generateAboutMeSummary(coreResponses, lang);
 
             if (summaryResult.success && summaryResult.summary) {
               // Save summary to database
@@ -552,13 +554,17 @@ export default function AboutMeAssessment() {
                       ? 'ಸಾರಾಂಶ ಸಿದ್ಧವಾಗಿದೆ! 📝'
                       : lang === 'ta'
                         ? 'சுருக்கம் உருவாக்கப்பட்டது! 📝'
-                        : 'Summary Generated! 📝',
+                        : lang === 'hi'
+                          ? 'सारांश तैयार हो गया! 📝'
+                          : 'Summary Generated! 📝',
                   description:
                     lang === 'kn'
                       ? 'ನಿಮ್ಮ “ನನ್ನ ಬಗ್ಗೆ” ಉತ್ತರಗಳ ಸಾರಾಂಶವನ್ನು ನಿಮ್ಮ ಶಿಕ್ಷಕರು ಪರಿಶೀಲಿಸಲಿದ್ದಾರೆ.'
                       : lang === 'ta'
                         ? 'உங்கள் “என்னைப் பற்றி” பதில்களின் சுருக்கத்தை உங்கள் ஆசிரியா் விரைவில் பார்வையிடுவார்.'
-                        : 'Your teacher will review your reflection summary.',
+                        : lang === 'hi'
+                          ? 'आपके शिक्षक आपके “मेरे बारे में” उत्तरों के सारांश की समीक्षा करेंगे।'
+                          : 'Your teacher will review your reflection summary.',
                 });
 
                 // Notify teacher(s) assigned to this student
@@ -623,7 +629,11 @@ export default function AboutMeAssessment() {
                 <p className="text-gray-600">
                   {lang === 'kn'
                     ? 'ನನ್ನ ಬಗ್ಗೆ ಮೌಲ್ಯಮಾಪನವನ್ನು ಪೂರ್ಣಗೊಳಿಸಿದ್ದಕ್ಕಾಗಿ ಧನ್ಯವಾದಗಳು! ನಿಮ್ಮ ಯೋಚನೆಗಳನ್ನು ಉಳಿಸಲಾಗಿದೆ ಮತ್ತು ನಿಮ್ಮ ಶಿಕ್ಷಕರು ಈಗ ನಿಮ್ಮ ವೃತ್ತಿ ಪ್ರಯಾಣದಲ್ಲಿ ಸಹಾಯ ಮಾಡಲು ಅವುಗಳನ್ನು ವಿಮರ್ಶೆ ಮಾಡಬಹುದು.'
-                    : 'Thank you for completing the About Me assessment! Your reflections have been saved and your teacher can now review them to help guide your career journey.'}
+                    : lang === 'ta'
+                      ? '"என்னைப் பற்றி" மதிப்பீட்டை நிறைவு செய்ததற்கு நன்றி! உங்கள் பதில்கள் சேமிக்கப்பட்டுள்ளன, உங்கள் ஆசிரியர் உங்கள் தொழில் பயணத்தில் வழிகாட்ட அவற்றை மதிப்பாய்வு செய்வார்.'
+                      : lang === 'hi'
+                        ? '"मेरे बारे में" मूल्यांकन पूरा करने के लिए धन्यवाद! आपके विचार सहेजे गए हैं और आपके शिक्षक अब आपके करियर की यात्रा में मार्गदर्शन करने के लिए उनकी समीक्षा कर सकते हैं।'
+                        : 'Thank you for completing the About Me assessment! Your reflections have been saved and your teacher can now review them to help guide your career journey.'}
                 </p>
                 <div className="flex justify-center gap-4">
                   <Button
@@ -638,13 +648,13 @@ export default function AboutMeAssessment() {
                       navigate(`/student/assessment/about-me?${params.toString()}`);
                     }}
                   >
-                    {lang === 'kn' ? 'ನನ್ನ ಉತ್ತರಗಳನ್ನು ವೀಕ್ಷಿಸಿ' : lang === 'ta' ? 'என் பதில்களை பார்' : 'View My Answers'}
+                    {lang === 'kn' ? 'ನನ್ನ ಉತ್ತರಗಳನ್ನು ವೀಕ್ಷಿಸಿ' : lang === 'ta' ? 'என் பதில்களை பார்' : lang === 'hi' ? 'मेरे उत्तर देखें' : 'View My Answers'}
                   </Button>
                   <Button
                     onClick={() => navigate('/student')}
                     className="bg-blue-600 hover:bg-blue-700"
                   >
-                    {lang === 'kn' ? 'ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ಗೆ ಹಿಂತಿರುಗಿ' : lang === 'ta' ? 'முதல் பக்கத்திற்கு போ' : 'Back to Dashboard'}
+                    {lang === 'kn' ? 'ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ಗೆ ಹಿಂತಿರುಗಿ' : lang === 'ta' ? 'முதல் பக்கத்திற்கு போ' : lang === 'hi' ? 'डैशबोर्ड पर वापस' : 'Back to Dashboard'}
                   </Button>
                 </div>
               </div>
@@ -661,7 +671,9 @@ export default function AboutMeAssessment() {
         ? '"ನನ್ನ ಬಗ್ಗೆ" ಮೌಲ್ಯಮಾಪನವನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...'
         : lang === 'ta'
           ? '"என்னைப் பற்றி" மதிப்பீடு ஏற்றப்படுகிறது...'
-          : 'Loading About Me...';
+          : lang === 'hi'
+            ? '"मेरे बारे में" लोड हो रहा है...'
+            : 'Loading About Me...';
 
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -698,7 +710,7 @@ export default function AboutMeAssessment() {
             </div>
             <Progress value={getProgressPercentage()} className="h-3" />
             <div className="flex justify-between text-sm text-gray-600 mt-2">
-              <span>{lang === 'kn' ? 'ಒಂದೇ ಮಾಡ್ಯೂಲ್' : 'Single module'}</span>
+              <span>{lang === 'kn' ? 'ಒಂದೇ ಮಾಡ್ಯೂಲ್' : lang === 'ta' ? 'ஒற்றை தொகுதி' : lang === 'hi' ? 'एकल मॉड्यूल' : 'Single module'}</span>
               <span>{Math.round(getProgressPercentage())}% {t('completeSuffix')}</span>
             </div>
           </CardContent>
@@ -754,10 +766,10 @@ export default function AboutMeAssessment() {
                       <div key="summary-section" className="space-y-6 mt-0 animate-in fade-in duration-300">
                         <div className="mb-6 p-4 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
                           <h3 className="text-xl font-bold text-blue-800">
-                            {dbSummaryTitle || 'Summary'}
+                            {dbSummaryTitle || (lang === 'kn' ? 'ಸಾರಾಂಶ' : lang === 'ta' ? 'சுருக்கம்' : lang === 'hi' ? 'सारांश' : 'Summary')}
                           </h3>
                           <p className="text-blue-600 text-sm mt-1">
-                            {lang === 'kn' ? 'ಸಾರಾಂಶದ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ' : lang === 'ta' ? 'சுருக்கமான கேள்விகளுக்கு பதிலளிக்கவும்' : 'Please answer these final summary questions'}
+                            {lang === 'kn' ? 'ಸಾರಾಂಶದ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ' : lang === 'ta' ? 'சுருக்கமான கேள்விகளுக்கு பதிலளிக்கவும்' : lang === 'hi' ? 'कृपया इन अंतिम सारांश प्रश्नों का उत्तर दें' : 'Please answer these final summary questions'}
                           </p>
                         </div>
 
@@ -802,7 +814,8 @@ export default function AboutMeAssessment() {
                                     <h4 className="text-md font-semibold text-blue-700">
                                       {lang === 'kn' ? 'ವೈಯಕ್ತಿಕ ಪ್ರೊಫೈಲ್ ಅಥವಾ ನಿಮ್ಮದೇ ವ್ಯಕ್ತಿಚಿತ್ರ ಸಿದ್ಧಪಡಿಸಿ...' :
                                         lang === 'ta' ? 'ஒரு தனிப்பட்ட சுயவிவரம் அல்லது உங்கள் சொந்த சுயப்படத்தை தயாரிக்கவும்...' :
-                                          'Prepare a personal profile or your own self-portrait...'}
+                                          lang === 'hi' ? 'एक व्यक्तिगत प्रोफ़ाइल या अपना स्व-चित्र तैयार करें...' :
+                                            'Prepare a personal profile or your own self-portrait...'}
                                     </h4>
                                   </div>
                                 )}
@@ -959,12 +972,14 @@ export default function AboutMeAssessment() {
                         const nextSection = sections[idx + 1];
                         if (nextSection === 'Summary' && !areCoreSectionsComplete()) {
                           toast({
-                            title: lang === 'kn' ? 'ಸಾರಾಂಶ ಲಾಕ್ ಆಗಿದೆ' : lang === 'ta' ? 'சுருக்கம் பூட்டப்பட்டுள்ளது' : 'Summary Locked',
+                            title: lang === 'kn' ? 'ಸಾರಾಂಶ ಲಾಕ್ ಆಗಿದೆ' : lang === 'ta' ? 'சுருக்கம் பூட்டப்பட்டுள்ளது' : lang === 'hi' ? 'सारांश लॉक है' : 'Summary Locked',
                             description: lang === 'kn'
                               ? 'ಸಾರಾಂಶವನ್ನು ವೀಕ್ಷಿಸಲು ದಯವಿಟ್ಟು ಎಲ್ಲಾ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ.'
                               : lang === 'ta'
                                 ? 'சுருக்கத்தைப் பார்க்க அனைத்துக் கேள்விகளுக்கும் பதில் அளிக்கவும்.'
-                                : 'Please answer all core questions to unlock the summary.',
+                                : lang === 'hi'
+                                  ? 'सारांश अनलॉक करने के लिए कृपया सभी मुख्य प्रश्नों का उत्तर दें।'
+                                  : 'Please answer all core questions to unlock the summary.',
                             variant: 'destructive',
                           });
                           return;
@@ -986,7 +1001,7 @@ export default function AboutMeAssessment() {
                     {submitting ? (
                       <div className="flex items-center gap-2">
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        <span>{lang === 'kn' ? 'ಸಲ್ಲಿಸುತ್ತಿದೆ...' : lang === 'ta' ? 'சமர்ப்பிக்கிறது...' : lang === 'hi' ? 'जमा हो रहा है...' : 'Submitting...'}</span>
+                        <span>{lang === 'kn' ? 'ಸಲ್ಲಿಸುತ್ತಿದೆ...' : lang === 'ta' ? 'சமர்ப்பிக்கிறது...' : lang === 'hi' ? 'जमा किया जा रहा है...' : 'Submitting...'}</span>
                       </div>
                     ) : (
                       <>
@@ -1056,9 +1071,9 @@ function Question({ label, help, value, onChange, area, helpKey, open, onToggle,
 function TripleInput({ label, help, values, onChange, helpKey, open, onToggle, readOnly }: { label: string; help: string; values: Triple; onChange: (v: Triple) => void; helpKey: string; open: boolean; onToggle: () => void; readOnly?: boolean }) {
   const [a, b, c] = values;
   const { lang } = useLang();
-  const p1 = lang === 'kn' ? 'ಉತ್ತರ 1' : lang === 'ta' ? 'பதில் 1' : 'Answer 1';
-  const p2 = lang === 'kn' ? 'ಉತ್ತರ 2' : lang === 'ta' ? 'பதில் 2' : 'Answer 2';
-  const p3 = lang === 'kn' ? 'ಉತ್ತರ 3' : lang === 'ta' ? 'பதில் 3' : 'Answer 3';
+  const p1 = lang === 'kn' ? 'ಉತ್ತರ 1' : lang === 'ta' ? 'பதில் 1' : lang === 'hi' ? 'उत्तर 1' : 'Answer 1';
+  const p2 = lang === 'kn' ? 'ಉತ್ತರ 2' : lang === 'ta' ? 'பதில் 2' : lang === 'hi' ? 'उत्तर 2' : 'Answer 2';
+  const p3 = lang === 'kn' ? 'ಉತ್ತರ 3' : lang === 'ta' ? 'பதில் 3' : lang === 'hi' ? 'उत्तर 3' : 'Answer 3';
   return (
     <div>
       <label className="block text-base font-medium text-gray-800 mb-2 flex items-center gap-2">
@@ -1080,8 +1095,8 @@ function TripleInput({ label, help, values, onChange, helpKey, open, onToggle, r
 function DoubleInput({ label, help, values, onChange, helpKey, open, onToggle, readOnly }: { label: string; help: string; values: Double; onChange: (v: Double) => void; helpKey: string; open: boolean; onToggle: () => void; readOnly?: boolean }) {
   const [a, b] = values;
   const { lang } = useLang();
-  const p1 = lang === 'kn' ? 'ಉತ್ತರ 1' : lang === 'ta' ? 'பதில் 1' : 'Answer 1';
-  const p2 = lang === 'kn' ? 'ಉತ್ತರ 2' : lang === 'ta' ? 'பதில் 2' : 'Answer 2';
+  const p1 = lang === 'kn' ? 'ಉತ್ತರ 1' : lang === 'ta' ? 'பதில் 1' : lang === 'hi' ? 'उत्तर 1' : 'Answer 1';
+  const p2 = lang === 'kn' ? 'ಉತ್ತರ 2' : lang === 'ta' ? 'பதில் 2' : lang === 'hi' ? 'उत्तर 2' : 'Answer 2';
   return (
     <div>
       <label className="block text-base font-medium text-gray-800 mb-2 flex items-center gap-2">

@@ -138,12 +138,14 @@ export default function MyRoleModelsAssessment() {
 
       if (!unlockResult.isUnlocked) {
         toast({
-          title: lang === 'kn' ? 'ಮೌಲ್ಯಮಾಪನ ಲಾಕ್ ಮಾಡಲಾಗಿದೆ' : lang === 'ta' ? 'செயல் பூட்டப்பட்டுள்ளது' : 'Assessment Locked',
+          title: lang === 'kn' ? 'ಮೌಲ್ಯಮಾಪನ ಲಾಕ್ ಮಾಡಲಾಗಿದೆ' : lang === 'ta' ? 'செயல் பூட்டப்பட்டுள்ளது' : lang === 'hi' ? 'मूल्यांकन लॉक है' : 'Assessment Locked',
           description: lang === 'kn'
             ? `ದಯವಿಟ್ಟು ಮೊದಲು "${unlockResult.missingPrerequisites.join(', ')}" ಪೂರ್ಣಗೊಳಿಸಿ.`
             : lang === 'ta'
               ? `"${unlockResult.missingPrerequisites.join(', ')}" செயல்களை முதலில் முடித்தால் ಈ பகுதி திறக்கும்.`
-              : `Please complete "${unlockResult.missingPrerequisites.join(', ')}" first.`,
+              : lang === 'hi'
+                ? `कृपया पहले "${unlockResult.missingPrerequisites.join(', ')}" पूर्ण करें।`
+                : `Please complete "${unlockResult.missingPrerequisites.join(', ')}" first.`,
           variant: 'destructive',
         });
         navigate('/student');
@@ -346,7 +348,7 @@ export default function MyRoleModelsAssessment() {
       studentId = studentRow?.id;
     }
     if (!studentId) {
-      toast({ title: 'Error', description: 'Student profile not found.', variant: 'destructive' });
+      toast({ title: lang === 'kn' ? 'ದೋಷ' : lang === 'ta' ? 'பிழை' : lang === 'hi' ? 'त्रुटि' : 'Error', description: lang === 'hi' ? 'छात्र प्रोफ़ाइल नहीं मिली।' : 'Student profile not found.', variant: 'destructive' });
       return;
     }
 
@@ -365,8 +367,8 @@ export default function MyRoleModelsAssessment() {
       if (error) throw error;
 
       toast({
-        title: lang === 'kn' ? 'ಪ್ರಗತಿಯನ್ನು ಉಳಿಸಲಾಗಿದೆ' : lang === 'ta' ? 'முன்னேற்றம் சேமிக்கப்பட்டது' : 'Progress Saved',
-        description: lang === 'kn' ? 'ನಿಮ್ಮ ಉತ್ತರಗಳನ್ನು ಉಳಿಸಲಾಗಿದೆ.' : lang === 'ta' ? 'உங்கள் பதில்கள் சேமிக்கப்பட்டன.' : 'Your answers have been saved.',
+        title: lang === 'kn' ? 'ಪ್ರಗತಿಯನ್ನು ಉಳಿಸಲಾಗಿದೆ' : lang === 'ta' ? 'முன்னேற்றம் சேமிக்கப்பட்டது' : lang === 'hi' ? 'प्रगति सहेजी गई' : 'Progress Saved',
+        description: lang === 'kn' ? 'ನಿಮ್ಮ ಉತ್ತರಗಳನ್ನು ಉಳಿಸಲಾಗಿದೆ.' : lang === 'ta' ? 'உங்கள் பதில்கள் சேமிக்கப்பட்டன.' : lang === 'hi' ? 'आपके उत्तर सहेजे गए हैं।' : 'Your answers have been saved.',
       });
 
       // Update saved tabs timestamp if applicable, or just general success
@@ -374,7 +376,7 @@ export default function MyRoleModelsAssessment() {
         setSavedTabs(prev => ({ ...prev, [currentSection]: new Date().toISOString() }));
       }
     } catch (e) {
-      toast({ title: 'Error', description: 'Failed to save progress. Please try again.', variant: 'destructive' });
+      toast({ title: lang === 'kn' ? 'ದೋಷ' : lang === 'ta' ? 'பிழை' : lang === 'hi' ? 'त्रुटि' : 'Error', description: lang === 'hi' ? 'प्रगति सहेजने में विफल। कृपया पुनः प्रयास करें।' : 'Failed to save progress. Please try again.', variant: 'destructive' });
     } finally {
       setSaving(false);
     }
@@ -461,8 +463,8 @@ export default function MyRoleModelsAssessment() {
   const submitAssessment = async () => {
     if (!userProfile) {
       toast({
-        title: "Error",
-        description: "User profile not found. Please try logging in again.",
+        title: lang === 'kn' ? 'ದೋಷ' : lang === 'ta' ? 'பிழை' : lang === 'hi' ? 'त्रुटि' : 'Error',
+        description: lang === 'hi' ? 'उपयोगकर्ता प्रोफ़ाइल नहीं मिली। कृपया पुनः लॉगिन करें।' : 'User profile not found. Please try logging in again.',
         variant: "destructive",
       });
       return;
@@ -481,8 +483,8 @@ export default function MyRoleModelsAssessment() {
 
     if (!studentId) {
       toast({
-        title: "Error",
-        description: "Student profile not found. Please contact your teacher or support.",
+        title: lang === 'kn' ? 'ದೋಷ' : lang === 'ta' ? 'பிழை' : lang === 'hi' ? 'त्रुटि' : 'Error',
+        description: lang === 'hi' ? 'छात्र प्रोफ़ाइल नहीं मिली। कृपया अपने शिक्षक से संपर्क करें।' : 'Student profile not found. Please contact your teacher or support.',
         variant: "destructive",
       });
       return;
@@ -506,8 +508,8 @@ export default function MyRoleModelsAssessment() {
       if (error) throw error;
 
       toast({
-        title: "Role Models Assessment Completed! ❤️",
-        description: "Your role models and inspirations have been captured successfully!",
+        title: lang === 'kn' ? 'ಆದರ್ಶ ವ್ಯಕ್ತಿಗಳ ಮೌಲ್ಯಮಾಪನ ಪೂರ್ಣಗೊಂಡಿದೆ! ❤️' : lang === 'ta' ? 'முன்மாதிரி மதிப்பீடு முடிந்தது! ❤️' : lang === 'hi' ? 'मूल्यांकन पूर्ण! ❤️' : 'Role Models Assessment Completed! ❤️',
+        description: lang === 'kn' ? 'ನಿಮ್ಮ ಆದರ್ಶ ವ್ಯಕ್ತಿಗಳು ಮತ್ತು ಪ್ರೇರಣೆಗಳನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಸೆರೆಹಿಡಿಯಲಾಗಿದೆ!' : lang === 'ta' ? 'உங்கள் முன்மாதிரிகள் மற்றும் உத்வேகங்கள் வெற்றிகரமாக பதிவு செய்யப்பட்டன!' : lang === 'hi' ? 'आपके आदर्श और प्रेरणाएं सफलतापूर्वक दर्ज की गईं!' : 'Your role models and inspirations have been captured successfully!',
       });
 
       setIsCompleted(true);
@@ -520,7 +522,7 @@ export default function MyRoleModelsAssessment() {
 
         if (aiSummaryService.isConfigured() && assessmentData?.id) {
           logger.log('🤖 Generating AI summary for Role Models assessment:', assessmentData.id);
-          const summaryResult = await aiSummaryService.generateRoleModelsSummary(responses);
+          const summaryResult = await aiSummaryService.generateRoleModelsSummary(responses, lang);
 
           if (summaryResult.success && summaryResult.summary) {
             // Save summary to database
@@ -538,13 +540,17 @@ export default function MyRoleModelsAssessment() {
                     ? 'ಸಾರಾಂಶ ಸಿದ್ಧವಾಗಿದೆ! 📝'
                     : lang === 'ta'
                       ? 'சுருக்கம் உருவாக்கப்பட்டது! 📝'
-                      : 'Summary Generated! 📝',
+                      : lang === 'hi'
+                        ? 'सारांश तैयार हो गया! 📝'
+                        : 'Summary Generated! 📝',
                 description:
                   lang === 'kn'
                     ? 'ನಿಮ್ಮ ಆದರ್ಶ ವ್ಯಕ್ತಿಗಳ ಬಗ್ಗೆ ಬರೆದ ಉತ್ತರಗಳ ಸಾರಾಂಶ ಸಿದ್ಧವಾಗಿದೆ. ನಿಮ್ಮ ಶಿಕ್ಷಕರು ಅದನ್ನು ಪರಿಶೀಲಿಸುತ್ತಾರೆ.'
                     : lang === 'ta'
                       ? 'உங்கள் முன்னுதாரணங்கள் பற்றிய சுருக்கம் உருவாக்கப்பட்டுள்ளது. உங்கள் ஆசிரியா் அதைப் பார்த்து மதிப்பாய்வு செய்வார்.'
-                      : 'Your role models summary has been generated. Your teacher will review it.',
+                      : lang === 'hi'
+                        ? 'आपके आदर्शों का सारांश तैयार हो गया है। आपके शिक्षक इसकी समीक्षा करेंगे।'
+                        : 'Your role models summary has been generated. Your teacher will review it.',
               });
 
               // Notify teacher(s) assigned to this student
@@ -577,16 +583,16 @@ export default function MyRoleModelsAssessment() {
             } else {
               logger.error('Failed to save summary:', saveResult.error);
               toast({
-                title: "Summary Generation Issue",
-                description: "Your assessment is saved, but summary generation needs attention.",
+                title: lang === 'hi' ? 'सारांश निर्माण समस्या' : 'Summary Generation Issue',
+                description: lang === 'hi' ? 'आपका मूल्यांकन सहेजा गया है, लेकिन सारांश निर्माण में समस्या है।' : 'Your assessment is saved, but summary generation needs attention.',
                 variant: "destructive",
               });
             }
           } else {
             logger.error('Failed to generate summary:', summaryResult.error);
             toast({
-              title: "Summary Generation Issue",
-              description: "Your assessment is saved. Summary will be generated later.",
+              title: lang === 'hi' ? 'सारांश निर्माण समस्या' : 'Summary Generation Issue',
+              description: lang === 'hi' ? 'आपका मूल्यांकन सहेजा गया है। सारांश बाद में तैयार किया जाएगा।' : 'Your assessment is saved. Summary will be generated later.',
               variant: "destructive",
             });
           }
@@ -600,8 +606,8 @@ export default function MyRoleModelsAssessment() {
     } catch (error) {
       logger.error('Error submitting assessment:', error);
       toast({
-        title: "Error",
-        description: "Failed to submit assessment. Please try again.",
+        title: lang === 'kn' ? 'ದೋಷ' : lang === 'ta' ? 'பிழை' : lang === 'hi' ? 'त्रुटि' : 'Error',
+        description: lang === 'hi' ? 'मूल्यांकन जमा करने में विफल। कृपया पुनः प्रयास करें।' : 'Failed to submit assessment. Please try again.',
         variant: "destructive",
       });
     } finally {
@@ -615,7 +621,9 @@ export default function MyRoleModelsAssessment() {
         ? 'ನಿಮ್ಮ ಆದರ್ಶ ವ್ಯಕ್ತಿಗಳ ಮೌಲ್ಯಮಾಪನವನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...'
         : lang === 'ta'
           ? 'உங்கள் முன்மாதிரிகள் மதிப்பீடு ஏற்றப்படுகிறது...'
-          : 'Loading your role models assessment...';
+          : lang === 'hi'
+            ? 'आपका आदर्श मूल्यांकन लोड हो रहा है...'
+            : 'Loading your role models assessment...';
 
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-100">
@@ -639,14 +647,18 @@ export default function MyRoleModelsAssessment() {
                   ? 'ಆದರ್ಶ ವ್ಯಕ್ತಿಗಳ ಮೌಲ್ಯಮಾಪನ ಪೂರ್ಣಗೊಂಡಿದೆ! 🎯'
                   : lang === 'ta'
                     ? 'முன்மாதிரி மதிப்பீடு முடிந்துவிட்டது! 🎯'
-                    : 'Role Models Assessment Completed! 🎯'}
+                    : lang === 'hi'
+                      ? 'आदर्श मूल्यांकन पूर्ण! 🎯'
+                      : 'Role Models Assessment Completed! 🎯'}
               </CardTitle>
               <CardDescription className="text-purple-600">
                 {lang === 'kn'
                   ? 'ನೀವು ನಿಮ್ಮ ಆದರ್ಶ ವ್ಯಕ್ತಿಗಳನ್ನು ಗುರುತಿಸಿ, ಅವರ ಬಗ್ಗೆ ಮನನ ಮಾಡಿದ್ದಾರೆ.'
                   : lang === 'ta'
                     ? 'நீங்கள் உங்கள் முன்மாதிரி நபர்களை சிந்தித்து தேர்வு செய்து வெற்றிகரமாகப் பதிவு செய்துள்ளீர்கள்.'
-                    : "You've successfully identified and analyzed your role models"}
+                    : lang === 'hi'
+                      ? 'आपने अपने आदर्शों की सफलतापूर्वक पहचान और विश्लेषण किया है।'
+                      : "You've successfully identified and analyzed your role models"}
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6">
@@ -656,7 +668,9 @@ export default function MyRoleModelsAssessment() {
                     ? 'ನಿಮ್ಮ ಆದರ್ಶ ವ್ಯಕ್ತಿಗಳ ಬಗ್ಗೆ ನಿಮ್ಮ ಆಲೋಚನೆಗಳನ್ನು ಹಂಚಿಕೊಂಡಿದ್ದಕ್ಕಾಗಿ ಧನ್ಯವಾದಗಳು! ನಿಮ್ಮ ಉತ್ತರಗಳನ್ನು ಉಳಿಸಲಾಗಿದೆ ಮತ್ತು ಈಗ ನಿಮ್ಮ ಶಿಕ್ಷಕರು ಅವನ್ನು ಓದಿ ನಿಮ್ಮ ಭವಿಷ್ಯದ ಬೆಳವಣಿಗೆಗೆ ಮಾರ್ಗದರ್ಶನ ನೀಡಬಹುದು.'
                     : lang === 'ta'
                       ? 'உங்கள் முன்மாதிரி நபர்கள் பற்றிய உங்கள் எண்ணங்களை நேர்மையாக பகிர்ந்ததற்கு நன்றி! உங்கள் பதில்கள் அனைத்தும் சேமிக்கப்பட்டுள்ளன, இப்போது உங்கள் ஆசிரியை அவற்றைப் பார்த்து உங்கள் வளர்ச்சிக்கு உதவும் வழிகாட்டுதலை வழங்க முடியும்.'
-                      : 'Thank you for sharing your role model insights! Your responses have been saved and your teacher can now review them to help guide your personal development.'}
+                      : lang === 'hi'
+                        ? 'अपने आदर्शों के बारे में अपने विचार साझा करने के लिए धन्यवाद! आपके उत्तर सहेजे गए हैं और अब आपके शिक्षक आपके व्यक्तिगत विकास में मार्गदर्शन के लिए इनकी समीक्षा कर सकते हैं।'
+                        : 'Thank you for sharing your role model insights! Your responses have been saved and your teacher can now review them to help guide your personal development.'}
                 </p>
                 <div className="flex justify-center gap-4">
                   <Button
@@ -668,13 +682,13 @@ export default function MyRoleModelsAssessment() {
                     }}
                     className="border-purple-200 text-purple-700 hover:bg-purple-50"
                   >
-                    {lang === 'kn' ? 'ನನ್ನ ಉತ್ತರಗಳನ್ನು ವೀಕ್ಷಿಸಿ' : lang === 'ta' ? 'என் பதில்களை பார்' : 'View My Answers'}
+                    {lang === 'kn' ? 'ನನ್ನ ಉತ್ತರಗಳನ್ನು ವೀಕ್ಷಿಸಿ' : lang === 'ta' ? 'என் பதில்களை பார்' : lang === 'hi' ? 'मेरे उत्तर देखें' : 'View My Answers'}
                   </Button>
                   <Button
                     onClick={() => navigate('/student')}
                     className="bg-purple-600 hover:bg-purple-700"
                   >
-                    {lang === 'kn' ? 'ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ಗೆ ಹಿಂತಿರುಗಿ' : lang === 'ta' ? 'முதல் பக்கத்திற்கு போ' : 'Back to Dashboard'}
+                    {lang === 'kn' ? 'ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ಗೆ ಹಿಂತಿರುಗಿ' : lang === 'ta' ? 'முதல் பக்கத்திற்கு போ' : lang === 'hi' ? 'डैशबोर्ड पर वापस' : 'Back to Dashboard'}
                   </Button>
                 </div>
               </div>
@@ -701,7 +715,9 @@ export default function MyRoleModelsAssessment() {
               ? '🎯 6. ನನ್ನ ಆದರ್ಶ ವ್ಯಕ್ತಿ ಯಾರು?'
               : lang === 'ta'
                 ? '🎯 6. என் முன்மாதிரி நபர்'
-                : '🎯 6. My Role Models')}
+                : lang === 'hi'
+                  ? '🎯 6. मेरे आदर्श'
+                  : '🎯 6. My Role Models')}
           </h1>
           <div className="text-left max-w-4xl mx-auto space-y-4 text-gray-700">
             <p className="text-base leading-relaxed whitespace-pre-wrap">
@@ -709,7 +725,9 @@ export default function MyRoleModelsAssessment() {
                 ? 'ನಮ್ಮ ಜೀವನದಲ್ಲಿ, ನಾವು ಹಲವರಿಗೆ ಅವರ ಗುಣಗಳು ಮತ್ತು ವ್ಯಕ್ತಿತ್ವದ ಕಾರಣದಿಂದಾಗಿ ಆದರ್ಶ ವ್ಯಕ್ತಿಗಳೆಂದು ನೋಡುತ್ತೇವೆ. ಇಂತಹ ವ್ಯಕ್ತಿಗಳು – ಕುಟುಂಬದವರು, ಶಿಕ್ಷಕರು, ಅಥವಾ ಪ್ರೇರಣಾದಾಯಕ ವ್ಯಕ್ತಿಗಳು – ನಮ್ಮ ಸ್ವಭಾವ ಮತ್ತು ಆಲೋಚನೆಗಳನ್ನು ರೂಪಿಸುವಲ್ಲಿ ದೊಡ್ಡ ಪಾತ್ರವಹಿಸುತ್ತಾರೆ.'
                 : lang === 'ta'
                   ? 'நம் வாழ்க்கையில் சிலரை அவர்களின் குணநலன்களாலும் நடத்தைகளாலும் முன்னுதாரணமாக பார்க்கிறோம். குடும்பத்தினர், ஆசிரியர்கள், தெரிந்தவர்கள் அல்லது பிரபல நபர்கள் என்றாலும், அவர்கள் நம்முடைய சிந்தனை மற்றும் பண்புகளை உருவாக்க பெரும் தாக்கம் செலுத்துகிறார்கள்.'
-                  : 'In our lives, we often admire individuals for their personality traits, viewing them as role models. These individuals, be they influencers, inspiring figures, or those we know personally, contribute significantly to shaping our character.')}
+                  : lang === 'hi'
+                    ? 'हमारे जीवन में, हम अक्सर लोगों को उनके व्यक्तित्व गुणों के लिए सराहते हैं और उन्हें अपना आदर्श मानते हैं। ये व्यक्ति – चाहे परिवार के सदस्य हों, शिक्षक हों, या प्रेरणादायक हस्तियां – हमारे चरित्र को आकार देने में महत्वपूर्ण भूमिका निभाते हैं।'
+                    : 'In our lives, we often admire individuals for their personality traits, viewing them as role models. These individuals, be they influencers, inspiring figures, or those we know personally, contribute significantly to shaping our character.')}
             </p>
             {!dbIntro && (
               <>
@@ -718,7 +736,9 @@ export default function MyRoleModelsAssessment() {
                     ? 'ಈ ಭಾಗದಲ್ಲಿ, ನಿಮ್ಮ ವ್ಯಕ್ತಿತ್ವವನ್ನು ರೂಪಿಸಲು ಮಹತ್ವವಾದ ಪ್ರಭಾವ ಬೀರಿದ ವ್ಯಕ್ತಿಗಳ ಬಗ್ಗೆ ಆಲೋಚಿಸುತ್ತೀರಿ. ಇವರು ನಿಮ್ಮ ಬೆಳವಣಿಗೆಯ ಮೇಲೆ ತುಂಬಾ ಪ್ರಭಾವ ಬೀರಿದ್ದಾರೆ. ಅವರನ್ನು ನೀವು ಹತ್ತಿರದಿಂದ ನೋಡಲು ಸಾಧ್ಯವಾದರೆ ಇನ್ನೂ ಉತ್ತಮ; ಇಲ್ಲದಿದ್ದರೆ ಪ್ರೇರಣಾದಾಯಕ ವ್ಯಕ್ತಿಗಳು ಕೂಡ ನಿಮ್ಮ ಕಲಿಕೆಗೆ ಮಾದರಿಯಾಗಬಹುದು.'
                     : lang === 'ta'
                       ? 'இந்த பகுதியில், உங்கள் வாழ்க்கை மற்றும் நற்பண்புகளைக் கட்டியெழுப்ப முக்கிய பங்கு வகித்த முன்மாதிரி நபர்களைப் பற்றி சிந்திக்கப் போகிறீர்கள். அவர்களின் பயணம், போராட்டங்கள் மற்றும் வெற்றிகள், உங்களுக்கும் ஒரு வழிகாட்டியாக இருக்கலாம்.'
-                      : 'In this segment of our reflection, we will delve into the influential figures who have played a significant role in shaping our personalities. These individuals have contributed immensely to our development. If you happen to know such people personally, it\'s advantageous as you can observe them closely. Alternatively, you can also consider inspirational personalities as a source of inspiration and learning.'}
+                      : lang === 'hi'
+                        ? 'इस भाग में, आप उन प्रभावशाली व्यक्तियों के बारे में सोचेंगे जिन्होंने आपके व्यक्तित्व को आकार देने में महत्वपूर्ण भूमिका निभाई है। यदि आप ऐसे लोगों को व्यक्तिगत रूप से जानते हैं तो यह फायदेमंद है। वैकल्पिक रूप से, प्रेरणादायक हस्तियों को भी प्रेरणा के स्रोत के रूप में चुन सकते हैं।'
+                        : 'In this segment of our reflection, we will delve into the influential figures who have played a significant role in shaping our personalities. These individuals have contributed immensely to our development. If you happen to know such people personally, it\'s advantageous as you can observe them closely. Alternatively, you can also consider inspirational personalities as a source of inspiration and learning.'}
                 </p>
                 <p className="text-purple-600 italic mt-4">
                   <strong>
@@ -726,20 +746,26 @@ export default function MyRoleModelsAssessment() {
                       ? 'ಸೂಚನೆ:'
                       : lang === 'ta'
                         ? 'குறிப்பு:'
-                        : 'Suggestion:'}
+                        : lang === 'hi'
+                          ? 'सुझाव:'
+                          : 'Suggestion:'}
                   </strong>{' '}
                   {lang === 'kn'
                     ? 'ನೀವು ಆಸಕ್ತಿ ಹೊಂದಿರುವ ವೃತ್ತಿಯನ್ನು ಅನುಸರಿಸಿದ ಆದರ್ಶ ವ್ಯಕ್ತಿಯನ್ನು ಆಯ್ಕೆ ಮಾಡಿದರೆ ಉತ್ತಮ. ಅವರ ಅನುಭವಗಳು ಮತ್ತು ಪ್ರಯಾಣ ನಿಮ್ಮ ಭವಿಷ್ಯಕ್ಕೆ ಮಾರ್ಗದರ್ಶನ ಮತ್ತು ಪ್ರೇರಣೆ ನೀಡಬಹುದು.'
                     : lang === 'ta'
                       ? 'நீங்கள் விரும்பும் தொழிலை தொடர்ந்து சென்ற ஒருவர் உங்கள் முன்மாதிரியாக இருப்பது சிறந்தது. அவர்களின் பயணம், அனுபவங்கள் ಮತ್ತು முடிவுகள், உங்கள் எதிர்காலத் தேர்வுகளுக்கு நல்ல வழிகாட்டியாக இருக்கும்.'
-                      : 'If possible, it might be beneficial to select a role model who has pursued the profession you\'re interested in. Their journey could provide valuable insights and inspiration for your own path.'}
+                      : lang === 'hi'
+                        ? 'यदि संभव हो, तो ऐसे आदर्श चुनें जिन्होंने वह पेशा अपनाया है जिसमें आपकी रुचि है। उनकी यात्रा आपके अपने मार्ग के लिए मूल्यवान अंतर्दृष्टि और प्रेरणा प्रदान कर सकती है।'
+                        : 'If possible, it might be beneficial to select a role model who has pursued the profession you\'re interested in. Their journey could provide valuable insights and inspiration for your own path.'}
                 </p>
                 <p className="text-gray-700 mt-3 font-medium">
                   {lang === 'kn'
                     ? 'ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸುವಾಗ, ಅವರ ಗುಣಗಳು, ವರ್ತನೆಗಳು ಮತ್ತು ಪ್ರತಿಭೆಗಳ ಮೇಲೆ ವಿಶೇಷವಾಗಿ ಗಮನ ನೀಡಿ.'
                     : lang === 'ta'
                       ? 'கேள்விகளுக்குப் பதில் எழுதும்போது, அவர்கள் கொண்டிருக்கும் நல்ல குணங்கள், திறன்கள் மற்றும் முன்னுதாரணமான நடத்தைகளைப் பற்றி குறிப்பாக எழுதுங்கள்.'
-                      : 'When responding to the questions provided, focus on highlighting their qualities, traits, and talents.'}
+                      : lang === 'hi'
+                        ? 'प्रश्नों का उत्तर देते समय, उनके गुणों, विशेषताओं और प्रतिभाओं पर विशेष ध्यान दें।'
+                        : 'When responding to the questions provided, focus on highlighting their qualities, traits, and talents.'}
                 </p>
               </>
             )}
@@ -760,7 +786,9 @@ export default function MyRoleModelsAssessment() {
                   ? '3 ಆದರ್ಶ ವ್ಯಕ್ತಿಗಳು • ಪ್ರತಿ ವ್ಯಕ್ತಿಗೆ 11 ಪ್ರಶ್ನೆಗಳು • 2 ಸಾಮಾನ್ಯ ಪ್ರಶ್ನೆಗಳು'
                   : lang === 'ta'
                     ? '3 முன்மாதிரிகள் • ஒவ்வொருவருக்கும் 11 கேள்விகள் • 2 பொது கேள்விகள்'
-                    : '3 Role Models • 11 questions each • 2 General Questions'}
+                    : lang === 'hi'
+                      ? '3 आदर्श • प्रत्येक के 11 प्रश्न • 2 सामान्य प्रश्न'
+                      : '3 Role Models • 11 questions each • 2 General Questions'}
               </span>
               <span>{Math.round(getProgressPercentage())}% {t('completeSuffix')}</span>
             </div>
@@ -774,28 +802,28 @@ export default function MyRoleModelsAssessment() {
             onClick={() => setCurrentSection('roleModel1')}
             className={`border-purple-200 ${currentSection === 'roleModel1' ? 'bg-purple-600 hover:bg-purple-700' : 'text-purple-700 hover:bg-purple-50'}`}
           >
-            {dbTabs['tab_rm1'] || (lang === 'kn' ? 'ಮಾದರಿ ವ್ಯಕ್ತಿ 1' : lang === 'ta' ? 'முன்மாதிரி 1' : 'Role Model 1')}
+            {dbTabs['tab_rm1'] || (lang === 'kn' ? 'ಮಾದರಿ ವ್ಯಕ್ತಿ 1' : lang === 'ta' ? 'முன்மாதிரி 1' : lang === 'hi' ? 'आदर्श 1' : 'Role Model 1')}
           </Button>
           <Button
             variant={currentSection === 'roleModel2' ? 'default' : 'outline'}
             onClick={() => setCurrentSection('roleModel2')}
             className={`border-purple-200 ${currentSection === 'roleModel2' ? 'bg-purple-600 hover:bg-purple-700' : 'text-purple-700 hover:bg-purple-50'}`}
           >
-            {dbTabs['tab_rm2'] || (lang === 'kn' ? 'ಮಾದರಿ ವ್ಯಕ್ತಿ 2' : lang === 'ta' ? 'முன்மாதிரி 2' : 'Role Model 2')}
+            {dbTabs['tab_rm2'] || (lang === 'kn' ? 'ಮಾದರಿ ವ್ಯಕ್ತಿ 2' : lang === 'ta' ? 'முன்மாதிரி 2' : lang === 'hi' ? 'आदर्श 2' : 'Role Model 2')}
           </Button>
           <Button
             variant={currentSection === 'roleModel3' ? 'default' : 'outline'}
             onClick={() => setCurrentSection('roleModel3')}
             className={`border-purple-200 ${currentSection === 'roleModel3' ? 'bg-purple-600 hover:bg-purple-700' : 'text-purple-700 hover:bg-purple-50'}`}
           >
-            {dbTabs['tab_rm3'] || (lang === 'kn' ? 'ಮಾದರಿ ವ್ಯಕ್ತಿ 3' : lang === 'ta' ? 'முன்மாதிரி 3' : 'Role Model 3')}
+            {dbTabs['tab_rm3'] || (lang === 'kn' ? 'ಮಾದರಿ ವ್ಯಕ್ತಿ 3' : lang === 'ta' ? 'முன்மாதிரி 3' : lang === 'hi' ? 'आदर्श 3' : 'Role Model 3')}
           </Button>
           <Button
             variant={currentSection === 'reflection' ? 'default' : 'outline'}
             onClick={() => setCurrentSection('reflection')}
             className={`border-purple-200 ${currentSection === 'reflection' ? 'bg-purple-600 hover:bg-purple-700' : 'text-purple-700 hover:bg-purple-50'}`}
           >
-            {lang === 'kn' ? 'ಪ್ರತಿಫಲನೆ' : lang === 'ta' ? 'பிரதிபலிப்பு' : 'Reflection'}
+            {lang === 'kn' ? 'ಪ್ರತಿಫಲನೆ' : lang === 'ta' ? 'பிரதிபலிப்பு' : lang === 'hi' ? 'चिंतन' : 'Reflection'}
           </Button>
           <Button
             variant={currentSection === 'summary' ? 'default' : 'outline'}
@@ -817,7 +845,7 @@ export default function MyRoleModelsAssessment() {
             ) : (
               <Sparkles className="w-4 h-4 mr-2 text-yellow-500" />
             )}
-            {lang === 'kn' ? 'ಸಾರಾಂಶ' : lang === 'ta' ? 'சுருக்கம்' : 'Summary'}
+            {lang === 'kn' ? 'ಸಾರಾಂಶ' : lang === 'ta' ? 'சுருக்கம்' : lang === 'hi' ? 'सारांश' : 'Summary'}
           </Button>
         </div>
 
@@ -830,13 +858,13 @@ export default function MyRoleModelsAssessment() {
                 <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50">
                   <CardTitle className="text-xl text-purple-800">
                     {currentTab === 'roleModel1'
-                      ? dbTabs['tab_rm1'] || (lang === 'kn' ? 'ಮಾದರಿ ವ್ಯಕ್ತಿ - 1 (ಹತ್ತಿರದಿಂದ ಪರಿಚಿತರಾದ ವ್ಯಕ್ತಿ)' : lang === 'ta' ? 'முன்மாதிரி - 1 (அறிமுகமான / நெருக்கமாக அறிந்த நபர்)' : 'Role Model - 1 (Preferably Closely Known Person)')
+                      ? dbTabs['tab_rm1'] || (lang === 'kn' ? 'ಮಾದರಿ ವ್ಯಕ್ತಿ - 1 (ಹತ್ತಿರದಿಂದ ಪರಿಚಿತರಾದ ವ್ಯಕ್ತಿ)' : lang === 'ta' ? 'முன்மாதிரி - 1 (அறிமுகமான / நெருக்கமாக அறிந்த நபர்)' : lang === 'hi' ? 'आदर्श - 1 (निकट से परिचित व्यक्ति)' : 'Role Model - 1 (Preferably Closely Known Person)')
                       : currentTab === 'roleModel2'
-                        ? dbTabs['tab_rm2'] || (lang === 'kn' ? 'ಮಾದರಿ ವ್ಯಕ್ತಿ - 2 (ಪರಿಚಿತ ವ್ಯಕ್ತಿ)' : lang === 'ta' ? 'முன்மாதிரி - 2 (நீங்கள் நன்கு அறிந்த நபர்)' : 'Role Model - 2 (Known Person)')
-                        : dbTabs['tab_rm3'] || (lang === 'kn' ? 'ಮಾದರಿ ವ್ಯಕ್ತಿ - 3 (ಪರಿಚಿತ / ಪ್ರಸಿದ್ಧ ವ್ಯಕ್ತಿ)' : lang === 'ta' ? 'முன்மாதிரி - 3 (நீங்கள் அறிந்த / பிரபலமான நபர்)' : 'Role Model - 3 (Known/Famous Person)')}
+                        ? dbTabs['tab_rm2'] || (lang === 'kn' ? 'ಮಾದರಿ ವ್ಯಕ್ತಿ - 2 (ಪರಿಚಿತ ವ್ಯಕ್ತಿ)' : lang === 'ta' ? 'முன்மாதிரி - 2 (நீங்கள் நன்கு அறிந்த நபர்)' : lang === 'hi' ? 'आदर्श - 2 (परिचित व्यक्ति)' : 'Role Model - 2 (Known Person)')
+                        : dbTabs['tab_rm3'] || (lang === 'kn' ? 'ಮಾದರಿ ವ್ಯಕ್ತಿ - 3 (ಪರಿಚಿತ / ಪ್ರಸಿದ್ಧ ವ್ಯಕ್ತಿ)' : lang === 'ta' ? 'முன்மாதிரி - 3 (நீங்கள் அறிந்த / பிரபலமான நபர்)' : lang === 'hi' ? 'आदर्श - 3 (परिचित/प्रसिद्ध व्यक्ति)' : 'Role Model - 3 (Known/Famous Person)')}
                   </CardTitle>
                   <CardDescription className="text-purple-600">
-                    {lang === 'kn' ? 'ಈ ಮಾದರಿ ವ್ಯಕ್ತಿ ಕುರಿತಾಗಿ ಎಲ್ಲಾ 11 ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ.' : lang === 'ta' ? 'இந்த முன்மாதிரி நபரைப் பற்றி உள்ள 11 கேள்விகளுக்கும் பதில் எழுதுங்கள்.' : 'Answer all 11 questions for this role model'}
+                    {lang === 'kn' ? 'ಈ ಮಾದರಿ ವ್ಯಕ್ತಿ ಕುರಿತಾಗಿ ಎಲ್ಲಾ 11 ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ.' : lang === 'ta' ? 'இந்த முன்மாதிரி நபரைப் பற்றி உள்ள 11 கேள்விகளுக்கும் பதில் எழுதுங்கள்.' : lang === 'hi' ? 'इस आदर्श के लिए सभी 11 प्रश्नों का उत्तर दें' : 'Answer all 11 questions for this role model'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-6">
@@ -1014,7 +1042,7 @@ export default function MyRoleModelsAssessment() {
                 <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-100">
                   <CardTitle className="text-xl text-purple-800 flex items-center gap-2">
                     <Lightbulb className="w-5 h-5" />
-                    {lang === 'kn' ? 'ಪ್ರತಿಫಲನೆ ಮತ್ತು ಹೋಲಿಕೆ' : lang === 'ta' ? 'பிரதிபலிப்பு மற்றும் ஒப்பீடு' : 'Reflection & Comparison'}
+                    {lang === 'kn' ? 'ಪ್ರತಿಫಲನೆ ಮತ್ತು ಹೋಲಿಕೆ' : lang === 'ta' ? 'பிரதிபலிப்பு மற்றும் ஒப்பீடு' : lang === 'hi' ? 'चिंतन और तुलना' : 'Reflection & Comparison'}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-6">
@@ -1070,7 +1098,7 @@ export default function MyRoleModelsAssessment() {
                           {sq.question_text || sq.text}
                         </label>
                         <Textarea
-                          placeholder={lang === 'kn' ? 'ಇಲ್ಲಿ ಬರೆಯಿರಿ...' : lang === 'ta' ? 'இங்கே எழுதுங்கள்...' : 'Write here...'}
+                          placeholder={lang === 'kn' ? 'ಇಲ್ಲಿ ಬರೆಯಿರಿ...' : lang === 'ta' ? 'இங்கே எழுதுங்கள்...' : lang === 'hi' ? 'यहां लिखें...' : 'Write here...'}
                           value={responses[`summary_${sq.sequence_number}`] || ''}
                           onChange={(e) => setResponses(prev => ({ ...prev, [`summary_${sq.sequence_number}`]: e.target.value }))}
                           disabled={isReadOnly}
@@ -1101,7 +1129,7 @@ export default function MyRoleModelsAssessment() {
             disabled={currentSection === 'roleModel1'}
             className="w-full sm:w-auto border-purple-200 text-purple-700 hover:bg-purple-50"
           >
-            {lang === 'kn' ? 'ಹಿಂದಿನ ಭಾಗ' : lang === 'ta' ? 'முந்தைய பகுதி' : 'Previous Section'}
+            {lang === 'kn' ? 'ಹಿಂದಿನ ಭಾಗ' : lang === 'ta' ? 'முந்தைய பகுதி' : lang === 'hi' ? 'पिछला भाग' : 'Previous Section'}
           </Button>
 
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -1114,7 +1142,7 @@ export default function MyRoleModelsAssessment() {
               {saving ? (lang === 'kn' ? 'ಉಳಿಸಲಾಗುತ್ತಿದೆ...' : lang === 'ta' ? 'சேமிக்கிறது...' : lang === 'hi' ? 'सहेजा जा रहा है...' : 'Saving...') : (
                 <>
                   <Save className="w-4 h-4 mr-2" />
-                  {lang === 'kn' ? 'ಪ್ರಗತಿಯನ್ನು ಉಳಿಸಿ' : lang === 'ta' ? 'ಮುನ್ನೇற்றத்தைச் ಸೇಮಿ' : 'Save Progress'}
+                  {lang === 'kn' ? 'ಪ್ರಗತಿಯನ್ನು ಉಳಿಸಿ' : lang === 'ta' ? 'முன்னேற்றத்தைச் சேமி' : lang === 'hi' ? 'प्रगति सहेजें' : 'Save Progress'}
                 </>
               )}
             </Button>
@@ -1128,12 +1156,14 @@ export default function MyRoleModelsAssessment() {
                     const nextSection = sections[idx + 1];
                     if (nextSection === 'summary' && !areCoreSectionsComplete()) {
                       toast({
-                        title: lang === 'kn' ? 'ಸಾರಾಂಶ ಲಾಕ್ ಆಗಿದೆ' : lang === 'ta' ? 'சுருக்கம் பூட்டப்பட்டுள்ளது' : 'Summary Locked',
+                        title: lang === 'kn' ? 'ಸಾರಾಂಶ ಲಾಕ್ ಆಗಿದೆ' : lang === 'ta' ? 'சுருக்கம் பூட்டப்பட்டுள்ளது' : lang === 'hi' ? 'सारांश लॉक है' : 'Summary Locked',
                         description: lang === 'kn'
                           ? 'ಸಾರಾಂಶವನ್ನು ವೀಕ್ಷಿಸಲು ದಯವಿಟ್ಟು ಎಲ್ಲಾ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ.'
                           : lang === 'ta'
                             ? 'சுருக்கத்தைப் பார்க்க அனைத்துக் கேள்விகளுக்கும் பதில் அளிக்கவும்.'
-                            : 'Please answer all core questions to unlock the summary.',
+                            : lang === 'hi'
+                              ? 'सारांश अनलॉक करने के लिए कृपया सभी मुख्य प्रश्नों का उत्तर दें।'
+                              : 'Please answer all core questions to unlock the summary.',
                         variant: 'destructive',
                       });
                       return;
@@ -1144,7 +1174,7 @@ export default function MyRoleModelsAssessment() {
                 }}
                 className="w-full sm:w-auto border-purple-200 text-purple-700 hover:bg-purple-50"
               >
-                {lang === 'kn' ? 'ಮುಂದಿನ ಭಾಗ' : lang === 'ta' ? 'அடுத்த பகுதி' : 'Next Section'}
+                {lang === 'kn' ? 'ಮುಂದಿನ ಭಾಗ' : lang === 'ta' ? 'அடுத்த பகுதி' : lang === 'hi' ? 'अगला भाग' : 'Next Section'}
               </Button>
             ) : (
               <Button
@@ -1155,12 +1185,12 @@ export default function MyRoleModelsAssessment() {
                 {submitting ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    {lang === 'kn' ? 'ಸಲ್ಲಿಸುತ್ತಿದೆ...' : lang === 'ta' ? 'சமர்ப்பிக்கிறது...' : 'Submitting...'}
+                    {lang === 'kn' ? 'ಸಲ್ಲಿಸುತ್ತಿದೆ...' : lang === 'ta' ? 'சமர்ப்பிக்கிறது...' : lang === 'hi' ? 'जमा किया जा रहा है...' : 'Submitting...'}
                   </>
                 ) : (
                   <>
                     <Star className="w-4 h-4 mr-2" />
-                    {lang === 'kn' ? 'ಮೌಲ್ಯಮಾಪನವನ್ನು ಸಲ್ಲಿಸಿ' : lang === 'ta' ? 'மதிப்பீட்டை சமர்ப்பிக்கவும்' : 'Submit Assessment'}
+                    {lang === 'kn' ? 'ಮೌಲ್ಯಮಾಪನವನ್ನು ಸಲ್ಲಿಸಿ' : lang === 'ta' ? 'மதிப்பீட்டை சமர்ப்பிக்கவும்' : lang === 'hi' ? 'मूल्यांकन जमा करें' : 'Submit Assessment'}
                   </>
                 )}
               </Button>

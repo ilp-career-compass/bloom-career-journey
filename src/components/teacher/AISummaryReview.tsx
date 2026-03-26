@@ -259,7 +259,7 @@ export default function AISummaryReview({ selectedStudentId }: AISummaryReviewPr
       // Get student info
       const { data: studentData } = await supabase
         .from('students')
-        .select('id, user_id, users!inner(full_name)')
+        .select('id, user_id, users!inner(full_name, preferred_language)')
         .eq('id', studentId)
         .maybeSingle();
 
@@ -308,7 +308,8 @@ export default function AISummaryReview({ selectedStudentId }: AISummaryReviewPr
           ...ar,
           student_id: studentId,
           student_name: (studentData as any)?.users?.full_name || 'Unknown',
-          student_user_id: studentData?.user_id || null
+          student_user_id: studentData?.user_id || null,
+          student_preferred_language: (studentData as any)?.users?.preferred_language || null
         }));
 
       logger.log('⚠️ Assessments without summaries:', assessmentsNeedingSummaries.length);
@@ -366,20 +367,21 @@ export default function AISummaryReview({ selectedStudentId }: AISummaryReviewPr
           logger.log(`🤖 Generating summary for ${assessment.student_name} (${assessment.assessment_type})...`);
 
           // Determine which summary generator to use based on assessment type
+          const studentLang = assessment.student_preferred_language || undefined;
           let summaryResult;
           if (assessment.assessment_type === 'about_me') {
-            summaryResult = await aiSummaryService.generateAboutMeSummary(assessment.responses);
+            summaryResult = await aiSummaryService.generateAboutMeSummary(assessment.responses, studentLang);
           } else if (assessment.assessment_type === 'dreams') {
-            summaryResult = await aiSummaryService.generateDreamsSummary(assessment.responses);
+            summaryResult = await aiSummaryService.generateDreamsSummary(assessment.responses, studentLang);
           } else if (assessment.assessment_type === 'school_learning') {
-            summaryResult = await aiSummaryService.generateSchoolLearningSummary(assessment.responses);
+            summaryResult = await aiSummaryService.generateSchoolLearningSummary(assessment.responses, studentLang);
           } else if (assessment.assessment_type === 'hobbies') {
-            summaryResult = await aiSummaryService.generateHobbiesSummary(assessment.responses);
+            summaryResult = await aiSummaryService.generateHobbiesSummary(assessment.responses, studentLang);
           } else if (assessment.assessment_type === 'role_models') {
-            summaryResult = await aiSummaryService.generateRoleModelsSummary(assessment.responses);
+            summaryResult = await aiSummaryService.generateRoleModelsSummary(assessment.responses, studentLang);
           } else {
             // Default to inspiration summary
-            summaryResult = await aiSummaryService.generateInspirationSummary(assessment.responses);
+            summaryResult = await aiSummaryService.generateInspirationSummary(assessment.responses, studentLang);
           }
 
           if (summaryResult.success && summaryResult.summary) {

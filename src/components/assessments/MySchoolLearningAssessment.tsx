@@ -272,12 +272,14 @@ export default function MySchoolLearningAssessment() {
       const unlockResult = await checkAssessmentUnlock(studentId, 'school_learning');
       if (!unlockResult.isUnlocked) {
         toast({
-          title: lang === 'kn' ? 'ಮೌಲ್ಯಮಾಪನ ಲಾಕ್ ಮಾಡಲಾಗಿದೆ' : lang === 'ta' ? 'செயல் பூட்டப்பட்டுள்ளது' : 'Assessment Locked',
+          title: lang === 'kn' ? 'ಮೌಲ್ಯಮಾಪನ ಲಾಕ್ ಮಾಡಲಾಗಿದೆ' : lang === 'ta' ? 'செயல் பூட்டப்பட்டுள்ளது' : lang === 'hi' ? 'मूल्यांकन लॉक है' : 'Assessment Locked',
           description: lang === 'kn'
             ? `ದಯವಿಟ್ಟು ಮೊದಲು "${unlockResult.missingPrerequisites.join(', ')}" ಪೂರ್ಣಗೊಳಿಸಿ.`
             : lang === 'ta'
               ? `"${unlockResult.missingPrerequisites.join(', ')}" செயல்களை முதலில் முடித்தால் இந்த பகுதி திறக்கும்.`
-              : `Please complete "${unlockResult.missingPrerequisites.join(', ')}" first.`,
+              : lang === 'hi'
+                ? `कृपया पहले "${unlockResult.missingPrerequisites.join(', ')}" पूरा करें।`
+                : `Please complete "${unlockResult.missingPrerequisites.join(', ')}" first.`,
           variant: 'destructive',
         });
         navigate('/student');
@@ -482,13 +484,17 @@ export default function MySchoolLearningAssessment() {
             ? 'ಭಾಗವು ಉಳಿಸಲಾಗಿದೆ! ✅'
             : lang === 'ta'
               ? 'பகுதி சேமிக்கப்பட்டது! ✅'
-              : 'Section Saved! ✅',
+              : lang === 'hi'
+                ? 'भाग सहेजा गया! ✅'
+                : 'Section Saved! ✅',
         description:
           lang === 'kn'
             ? `ನಿಮ್ಮ ${section.replace('section', 'ಭಾಗ ')} ಉತ್ತರಗಳನ್ನು ಉಳಿಸಲಾಗಿದೆ.`
             : lang === 'ta'
               ? `உங்கள் ${section.replace('section', 'பகுதி ')} பதில்கள் சேமிக்கப்பட்டுள்ளன.`
-              : `Your ${section.replace('section', 'Section ')} responses have been saved.`,
+              : lang === 'hi'
+                ? `आपके ${section.replace('section', 'भाग ')} के उत्तर सहेजे गए हैं।`
+                : `Your ${section.replace('section', 'Section ')} responses have been saved.`,
       });
     } catch (error) {
       logger.error('Error saving section:', error);
@@ -498,13 +504,17 @@ export default function MySchoolLearningAssessment() {
             ? 'ದೋಷ'
             : lang === 'ta'
               ? 'பிழை'
-              : 'Error',
+              : lang === 'hi'
+                ? 'त्रुटि'
+                : 'Error',
         description:
           lang === 'kn'
             ? 'ಭಾಗವನ್ನು ಉಳಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.'
             : lang === 'ta'
               ? 'பகுதியை சேமிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.'
-              : 'Failed to save section. Please try again.',
+              : lang === 'hi'
+                ? 'भाग सहेजने में विफल। कृपया पुनः प्रयास करें।'
+                : 'Failed to save section. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -693,8 +703,8 @@ export default function MySchoolLearningAssessment() {
     }
     if (!studentId) {
       toast({
-        title: "Error",
-        description: "Student profile not found.",
+        title: lang === 'kn' ? 'ದೋಷ' : lang === 'ta' ? 'பிழை' : lang === 'hi' ? 'त्रुटि' : 'Error',
+        description: lang === 'kn' ? 'ವಿದ್ಯಾರ್ಥಿ ಪ್ರೊಫೈಲ್ ಕಂಡುಬಂದಿಲ್ಲ.' : lang === 'ta' ? 'மாணவர் சுயவிவரம் காணப்படவில்லை.' : lang === 'hi' ? 'छात्र प्रोफ़ाइल नहीं मिली।' : 'Student profile not found.',
         variant: "destructive",
       });
       return;
@@ -723,13 +733,17 @@ export default function MySchoolLearningAssessment() {
             ? 'ಮೌಲ್ಯಮಾಪನ ಪೂರ್ಣಗೊಂಡಿದೆ! 📚'
             : lang === 'ta'
               ? 'மதிப்பீடு முடிந்துவிட்டது! 📚'
-              : 'Assessment Completed! 📚',
+              : lang === 'hi'
+                ? 'मूल्यांकन पूर्ण! 📚'
+                : 'Assessment Completed! 📚',
         description:
           lang === 'kn'
             ? 'ನಿಮ್ಮ ಉತ್ತರಗಳನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಉಳಿಸಲಾಗಿದೆ!'
             : lang === 'ta'
               ? 'உங்கள் பதில்கள் வெற்றிகரமாக சேமிக்கப்பட்டுள்ளன!'
-              : 'Your responses have been saved successfully!',
+              : lang === 'hi'
+                ? 'आपके उत्तर सफलतापूर्वक सहेजे गए हैं!'
+                : 'Your responses have been saved successfully!',
       });
 
       setIsCompleted(true);
@@ -741,7 +755,7 @@ export default function MySchoolLearningAssessment() {
 
         if (aiSummaryService.isConfigured() && assessmentData?.id) {
           logger.log('🤖 Generating AI summary for School Learning assessment:', assessmentData.id);
-          const summaryResult = await aiSummaryService.generateSchoolLearningSummary(responses);
+          const summaryResult = await aiSummaryService.generateSchoolLearningSummary(responses, lang);
 
           if (summaryResult.success && summaryResult.summary) {
             const saveResult = await summaryDatabaseService.createAISummary(
@@ -757,14 +771,18 @@ export default function MySchoolLearningAssessment() {
                   lang === 'kn'
                     ? 'ಸಾರಾಂಶ ಸಿದ್ಧವಾಗಿದೆ! 📝'
                     : lang === 'ta'
-                      ? 'ಸುருக்கம் உருவாக்கப்பட்டது! 📝'
-                      : 'Summary Generated! 📝',
+                      ? 'சுருக்கம் உருவாக்கப்பட்டது! 📝'
+                      : lang === 'hi'
+                        ? 'सारांश तैयार! 📝'
+                        : 'Summary Generated! 📝',
                 description:
                   lang === 'kn'
                     ? 'ನಿಮ್ಮ “ನನ್ನ ಶಾಲೆ, ನನ್ನ ಕಲಿಕೆ ಮತ್ತು ನಾನು” ಮೌಲ್ಯಮಾಪನದ ಸಾರಾಂಶವನ್ನು ನಿಮ್ಮ ಶಿಕ್ಷಕರು ಪರಿಶೀಲಿಸಲಿದ್ದಾರೆ.'
                     : lang === 'ta'
-                      ? '“என் பள்ளி, என் படிப்பு மற்றும் நான்” மதிப்பீட்டின் சுருக்கத்தை உங்கள் ஆசிரியா் விரைவில் பார்வையிடுவார்.'
-                      : 'Your teacher will review it.',
+                      ? '”என் பள்ளி, என் படிப்பு மற்றும் நான்” மதிப்பீட்டின் சுருக்கத்தை உங்கள் ஆசிரியா் விரைவில் பார்வையிடுவார்.'
+                      : lang === 'hi'
+                        ? 'आपके शिक्षक इसकी समीक्षा करेंगे।'
+                        : 'Your teacher will review it.',
               });
 
               try {
@@ -778,12 +796,22 @@ export default function MySchoolLearningAssessment() {
 
                   const teacherUserId = (studentRow as any)?.teachers?.user_id;
                   if (teacherUserId) {
+                    // Teacher notification stays in English
                     await notificationService.create({
                       userId: teacherUserId,
                       type: 'assessment_submitted',
                       title: `${userProfile?.full_name || 'Student'} completed My School, My Learning and I assessment`,
                       message: 'A new assessment summary is ready for review.',
                       link: '/teacher/ai-summary-review'
+                    });
+                    // Student notification is language-aware
+                    const studentNotifTitle = lang === 'kn' ? 'ಶಾಲಾ ಕಲಿಕೆ ಸಲ್ಲಿಸಲಾಗಿದೆ' : lang === 'ta' ? 'பள்ளிக் கற்றல் சமர்ப்பிக்கப்பட்டது' : lang === 'hi' ? 'विद्यालय अध्ययन जमा किया गया' : 'School Learning submitted';
+                    await notificationService.create({
+                      userId: userProfile.id,
+                      type: 'assessment_submitted',
+                      title: studentNotifTitle,
+                      message: lang === 'kn' ? 'ನಿಮ್ಮ ಮೌಲ್ಯಮಾಪನ ಸಲ್ಲಿಸಲಾಗಿದೆ.' : lang === 'ta' ? 'உங்கள் மதிப்பீடு சமர்ப்பிக்கப்பட்டது.' : lang === 'hi' ? 'आपका मूल्यांकन जमा किया गया है।' : 'Your assessment has been submitted.',
+                      link: '/student'
                     });
                   }
                 }
@@ -799,8 +827,8 @@ export default function MySchoolLearningAssessment() {
     } catch (error) {
       logger.error('Error submitting assessment:', error);
       toast({
-        title: "Error",
-        description: "Failed to submit assessment. Please try again.",
+        title: lang === 'kn' ? 'ದೋಷ' : lang === 'ta' ? 'பிழை' : lang === 'hi' ? 'त्रुटि' : 'Error',
+        description: lang === 'kn' ? 'ಮೌಲ್ಯಮಾಪನ ಸಲ್ಲಿಸಲು ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.' : lang === 'ta' ? 'மதிப்பீடு சமர்ப்பிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.' : lang === 'hi' ? 'मूल्यांकन जमा करने में विफल। कृपया पुनः प्रयास करें।' : 'Failed to submit assessment. Please try again.',
         variant: "destructive",
       });
     } finally {
@@ -814,7 +842,9 @@ export default function MySchoolLearningAssessment() {
         ? '"ನನ್ನ ಶಾಲೆ, ನನ್ನ ಕಲಿಕೆ ಮತ್ತು ನಾನು" ಮೌಲ್ಯಮಾಪನವನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...'
         : lang === 'ta'
           ? '"என் பள்ளி, என் கற்றல் மற்றும் நான்" மதிப்பீடு ஏற்றப்படுகிறது...'
-          : 'Loading your school learning assessment...';
+          : lang === 'hi'
+            ? '"मेरा विद्यालय, मेरी शिक्षा और मैं" मूल्यांकन लोड हो रहा है...'
+            : 'Loading your school learning assessment...';
 
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-emerald-100">
@@ -838,7 +868,9 @@ export default function MySchoolLearningAssessment() {
                   ? 'ಮೌಲ್ಯಮಾಪನ ಪೂರ್ಣಗೊಂಡಿದೆ! 🏫'
                   : lang === 'ta'
                     ? 'மதிப்பீடு முடிந்துவிட்டது! 🏫'
-                    : 'Assessment Completed! 🏫'}
+                    : lang === 'hi'
+                      ? 'मूल्यांकन पूर्ण! 🏫'
+                      : 'Assessment Completed! 🏫'}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
@@ -848,7 +880,9 @@ export default function MySchoolLearningAssessment() {
                     ? 'ನಿಮ್ಮ ಆಲೋಚನೆಗಳನ್ನು ಹಂಚಿಕೊಂಡಿದ್ದಕ್ಕಾಗಿ ಧನ್ಯವಾದಗಳು!'
                     : lang === 'ta'
                       ? 'உங்கள் எண்ணங்களை எங்களுடன் பகிர்ந்ததற்கு நன்றி!'
-                      : 'Thank you for sharing your thoughts!'}
+                      : lang === 'hi'
+                        ? 'अपने विचार साझा करने के लिए धन्यवाद!'
+                        : 'Thank you for sharing your thoughts!'}
                 </p>
                 <div className="flex justify-center gap-4">
                   <Button
@@ -862,15 +896,19 @@ export default function MySchoolLearningAssessment() {
                     {lang === 'kn'
                       ? 'ನನ್ನ ಉತ್ತರಗಳನ್ನು ನೋಡಿ'
                       : lang === 'ta'
-                        ? 'என் பதில்களை ಕಾಣ'
-                        : 'View My Answers'}
+                        ? 'என் பதில்களை காண'
+                        : lang === 'hi'
+                          ? 'मेरे उत्तर देखें'
+                          : 'View My Answers'}
                   </Button>
                   <Button onClick={() => navigate('/student')} className="bg-green-600 hover:bg-green-700">
                     {lang === 'kn'
                       ? 'ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ಗೆ ಹಿಂತಿರುಗಿ'
                       : lang === 'ta'
                         ? 'டாஷ்போர்டுக்கு திரும்ப செல்ல'
-                        : 'Back to Dashboard'}
+                        : lang === 'hi'
+                          ? 'डैशबोर्ड पर वापस'
+                          : 'Back to Dashboard'}
                   </Button>
                 </div>
               </div>
@@ -906,14 +944,18 @@ export default function MySchoolLearningAssessment() {
               ? '🏫 ನನ್ನ ಶಾಲೆ, ನನ್ನ ಕಲಿಕೆ ಮತ್ತು ನಾನು'
               : lang === 'ta'
                 ? '🏫 என் பள்ளி, என் படிப்பு மற்றும் நான்'
-                : '🏫 My School, My Learning and I')}
+                : lang === 'hi'
+                  ? '🏫 मेरा विद्यालय, मेरी शिक्षा और मैं'
+                  : '🏫 My School, My Learning and I')}
           </h1>
           <p className="text-gray-700 mt-4 whitespace-pre-wrap">
             {dbIntro || (lang === 'kn'
               ? 'ಶಾಲೆ, ಕಲಿಕೆ ಮತ್ತು ನಿಮ್ಮ ಅನುಭವಗಳ ಬಗ್ಗೆ ನಿಮ್ಮ ಆಲೋಚನೆಗಳನ್ನು ಹಂಚಿಕೊಳ್ಳಿ. ನಿಧಾನವಾಗಿ ಯೋಚಿಸಿ, ಸತ್ಯವಾಗಿ ಉತ್ತರಿಸಿ.'
               : lang === 'ta'
                 ? 'பள்ளி, படிப்பு மற்றும் உங்கள் அனுபவங்களைப் பற்றி உங்கள் எண்ணங்களை பகிருங்கள். மெதுவாக யோசித்து நேர்மையாக பதில் எழுதுங்கள்.'
-                : 'Share your thoughts about school, learning, and your experiences. Take your time and answer honestly.')}
+                : lang === 'hi'
+                  ? 'विद्यालय, शिक्षा और अपने अनुभवों के बारे में अपने विचार साझा करें। समय लें और ईमानदारी से उत्तर दें।'
+                  : 'Share your thoughts about school, learning, and your experiences. Take your time and answer honestly.')}
           </p>
         </div>
 
@@ -935,14 +977,16 @@ export default function MySchoolLearningAssessment() {
 
             let label = '';
             if (sectionNumber === 6) {
-              label = lang === 'kn' ? 'ಸಾರಾಂಶ' : lang === 'ta' ? 'சுருக்கம்' : 'Summary';
+              label = lang === 'kn' ? 'ಸಾರಾಂಶ' : lang === 'ta' ? 'சுருக்கம்' : lang === 'hi' ? 'सारांश' : 'Summary';
             } else {
               label =
                 lang === 'kn'
                   ? `ಭಾಗ ${sectionNumber}`
                   : lang === 'ta'
                     ? `பகுதி ${sectionNumber}`
-                    : `Section ${sectionNumber}`;
+                    : lang === 'hi'
+                      ? `भाग ${sectionNumber}`
+                      : `Section ${sectionNumber}`;
             }
             const isSummary = sectionNumber === 6;
             const isLocked = isSummary && !areCoreSectionsComplete();
@@ -973,7 +1017,9 @@ export default function MySchoolLearningAssessment() {
                   ? 'ಭಾಗ 1: ಶಾಲಾ ಅನುಭವ'
                   : lang === 'ta'
                     ? 'பகுதி 1: பள்ளி அனுபவம்'
-                    : 'Section 1: School Experience'}
+                    : lang === 'hi'
+                      ? 'भाग 1: विद्यालय अनुभव'
+                      : 'Section 1: School Experience'}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
@@ -1097,7 +1143,9 @@ export default function MySchoolLearningAssessment() {
                   ? 'ಭಾಗ 2: ವಿಷಯಗಳು ಮತ್ತು ಕಲಿಕೆಯ ಮೆಚ್ಚುಗೆಗಳು'
                   : lang === 'ta'
                     ? 'பகுதி 2: பாடங்கள் மற்றும் கற்றல் விருப்பங்கள்'
-                    : 'Section 2: Subjects & Learning Preferences'}
+                    : lang === 'hi'
+                      ? 'भाग 2: विषय और सीखने की प्राथमिकताएँ'
+                      : 'Section 2: Subjects & Learning Preferences'}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
@@ -1221,7 +1269,9 @@ export default function MySchoolLearningAssessment() {
                   ? 'ಭಾಗ 3: ಶೈಕ್ಷಣಿಕ ಸಾಧನೆ ಮತ್ತು ಕಲಿಕೆಯ ವಿಧಾನಗಳು'
                   : lang === 'ta'
                     ? 'பகுதி 3: கல்வி முன்னேற்றம் மற்றும் கற்றல் முறைகள்'
-                    : 'Section 3: Academic Performance & Learning Methods'}
+                    : lang === 'hi'
+                      ? 'भाग 3: शैक्षणिक प्रदर्शन और सीखने के तरीके'
+                      : 'Section 3: Academic Performance & Learning Methods'}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
@@ -1337,14 +1387,18 @@ export default function MySchoolLearningAssessment() {
                           ? 'ಇನ್ನೊಂದು ವಿಧಾನ ಇದ್ದರೆ – ಅದರಿಂದ ನಾನು ಹೆಚ್ಚು ಚೆನ್ನಾಗಿ ಕಲಿಯುತ್ತೇನೆ (ವಿವರಿಸಿ)'
                           : lang === 'ta'
                             ? 'வேறு ஏதேனும் முறையில் நான் நன்றாக கற்றுக்கொள்கிறேன் – (அந்த முறையை எழுதுங்கள்)'
-                            : '____________________________ (Any other learning method applicable to you)'}
+                            : lang === 'hi'
+                              ? 'कोई अन्य तरीका जिससे मैं अच्छी तरह सीखता/सीखती हूँ (बताएं)'
+                              : '____________________________ (Any other learning method applicable to you)'}
                       </label>
                       <p className="text-xs text-gray-500">
                         {lang === 'kn'
                           ? ''
                           : lang === 'ta'
                             ? ''
-                            : 'Mention any other learning method that suits you.'}
+                            : lang === 'hi'
+                              ? 'आपके लिए उपयुक्त कोई अन्य सीखने का तरीका लिखें।'
+                              : 'Mention any other learning method that suits you.'}
                       </p>
 
                       {responses.section3.question11.other !== '' && (
@@ -1401,7 +1455,9 @@ export default function MySchoolLearningAssessment() {
                   ? 'ಭಾಗ 4: ಶಾಲೆಯ ಸಂಬಂಧಗಳು ಮತ್ತು ಅನುಭವಗಳು'
                   : lang === 'ta'
                     ? 'பகுதி 4: பள்ளியில் உள்ள உறவுகள் மற்றும் அனுபவங்கள்'
-                    : 'Section 4: School Relationships & Experiences'}
+                    : lang === 'hi'
+                      ? 'भाग 4: विद्यालय के संबंध और अनुभव'
+                      : 'Section 4: School Relationships & Experiences'}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
@@ -1526,7 +1582,9 @@ export default function MySchoolLearningAssessment() {
                   ? 'ಭಾಗ 5: ಭವಿಷ್ಯ ಮತ್ತು ಚಿಂತನೆ'
                   : lang === 'ta'
                     ? 'பகுதி 5: எதிர்காலம் மற்றும் சிந்தனை'
-                    : 'Section 5: Future & Reflection'}
+                    : lang === 'hi'
+                      ? 'भाग 5: भविष्य और चिंतन'
+                      : 'Section 5: Future & Reflection'}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
@@ -1677,7 +1735,9 @@ export default function MySchoolLearningAssessment() {
                   ? 'ಭಾಗ 6: ಸಾರಾಂಶ'
                   : lang === 'ta'
                     ? 'பகுதி 6: சுருக்கம்'
-                    : 'Section 6: Summary')}
+                    : lang === 'hi'
+                      ? 'भाग 6: सारांश'
+                      : 'Section 6: Summary')}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
@@ -1744,7 +1804,9 @@ export default function MySchoolLearningAssessment() {
               ? 'ಹಿಂದಿನ ಭಾಗ'
               : lang === 'ta'
                 ? 'முந்தைய பகுதி'
-                : 'Previous Section'}
+                : lang === 'hi'
+                  ? 'पिछला भाग'
+                  : 'Previous Section'}
           </Button>
 
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -1763,7 +1825,9 @@ export default function MySchoolLearningAssessment() {
                     ? 'ಪ್ರಗತಿಯನ್ನು ಉಳಿಸಿ'
                     : lang === 'ta'
                       ? 'முன்னேற்றத்தைச் சேமி'
-                      : 'Save Progress'}
+                      : lang === 'hi'
+                        ? 'प्रगति सहेजें'
+                        : 'Save Progress'}
                 </>
               )}
             </Button>
@@ -1777,12 +1841,14 @@ export default function MySchoolLearningAssessment() {
                     const nextSection = sectionOrder[currentIndex + 1];
                     if (nextSection === 'section6' && !areCoreSectionsComplete()) {
                       toast({
-                        title: lang === 'kn' ? 'ಸಾರಾಂಶ ಲಾಕ್ ಆಗಿದೆ' : lang === 'ta' ? 'சுருக்கம் பூட்டப்பட்டுள்ளது' : 'Summary Locked',
+                        title: lang === 'kn' ? 'ಸಾರಾಂಶ ಲಾಕ್ ಆಗಿದೆ' : lang === 'ta' ? 'சுருக்கம் பூட்டப்பட்டுள்ளது' : lang === 'hi' ? 'सारांश लॉक है' : 'Summary Locked',
                         description: lang === 'kn'
                           ? 'ಸಾರಾಂಶವನ್ನು ವೀಕ್ಷಿಸಲು ದಯವಿಟ್ಟು ಎಲ್ಲಾ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ.'
                           : lang === 'ta'
                             ? 'சுருக்கத்தைப் பார்க்க அனைத்துக் கேள்விகளுக்கும் பதில் அளிக்கவும்.'
-                            : 'Please answer all core questions to unlock the summary.',
+                            : lang === 'hi'
+                              ? 'सारांश अनलॉक करने के लिए कृपया सभी मुख्य प्रश्नों का उत्तर दें।'
+                              : 'Please answer all core questions to unlock the summary.',
                         variant: 'destructive',
                       });
                       return;
@@ -1797,7 +1863,9 @@ export default function MySchoolLearningAssessment() {
                   ? 'ಮುಂದಿನ ಭಾಗ'
                   : lang === 'ta'
                     ? 'அடுத்த பகுதி'
-                    : 'Next Section'}
+                    : lang === 'hi'
+                      ? 'अगला भाग'
+                      : 'Next Section'}
               </Button>
             ) : (
               <Button
@@ -1812,7 +1880,9 @@ export default function MySchoolLearningAssessment() {
                       ? 'ಸಲ್ಲಿಸುತ್ತಿದೆ...'
                       : lang === 'ta'
                         ? 'சமர்ப்பித்து கொண்டிருக்கிறது...'
-                        : 'Submitting...'}
+                        : lang === 'hi'
+                          ? 'जमा किया जा रहा है...'
+                          : 'Submitting...'}
                   </>
                 ) : (
                   <>
@@ -1821,7 +1891,9 @@ export default function MySchoolLearningAssessment() {
                       ? 'ಮೌಲ್ಯಮಾಪನವನ್ನು ಸಲ್ಲಿಸಿ'
                       : lang === 'ta'
                         ? 'மதிப்பீட்டை சமர்ப்பிக்கவும்'
-                        : 'Submit Assessment'}
+                        : lang === 'hi'
+                          ? 'मूल्यांकन जमा करें'
+                          : 'Submit Assessment'}
                   </>
                 )}
               </Button>
