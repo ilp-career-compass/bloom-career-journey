@@ -13,7 +13,7 @@
 | **Admins** | Platform administrators managing users, schools/states, assessment content, and system configuration |
 
 ### Regional/Language Context
-- Supports **English (`en`)**, **Kannada (`kn`)**, **Tamil (`ta`)**, and **Hindi (`hi`)** (Hindi in progress)
+- Supports **English (`en`)**, **Kannada (`kn`)**, **Tamil (`ta`)**, and **Hindi (`hi`)**
 - AI language detection at the Unicode level (Kannada: `0C80–0CFF`, Tamil: `0B80–0BFF`, Hindi: `0900–097F`)
 - Includes an **IndicKeyboard** component (`IndicKeyboard.tsx`) supporting Kannada, Tamil, and Hindi layouts with scroll compensation, enlarged touch targets, and haptic feedback
 - Speech-to-Text optimized for **Indian accents and rural pronunciation** with post-processing for common Indian-English phonetic spellings
@@ -120,7 +120,7 @@ bloom-career-journey/
 │   └── requirements.txt
 ├── supabase/
 │   ├── config.toml
-│   └── migrations/                   # 142 SQL migration files (Jan 2025–Mar 2026)
+│   └── migrations/                   # 145+ SQL migration files (Jan 2025–Mar 2026)
 ├── scripts/
 │   ├── parse_excel_questions.ts      # Parses xlsx → SQL migration
 │   ├── sync_questions.ts             # Syncs questions from Google Sheet → SQL migration (pending)
@@ -190,12 +190,14 @@ Each assessment has a companion `*DB.tsx` component for DB operations. Responses
 ### Teacher Approval Workflow
 - Teachers approve/reject/edit/request-revision on summaries via `SummaryApprovalCard.tsx`
 - Statuses: `pending_approval` → `approved` | `rejected` | `revision_requested`
-- On approval, notification sent to student via `create_notification_secure` RPC
+- On approval, language-aware notification sent to student (fetches `preferred_language` from `users` table) via `create_notification_secure` RPC
+- `AISummaryReview.tsx` passes student's `preferred_language` to AI summary generators (not just `detectLanguage`)
 
 ### Audio / Voice Features
 - **Batch STT** (`speechToTextService.ts`): Google Cloud → Azure → Gemini fallback; supports `en-IN`, `hi-IN`, `kn-IN`, `ta-IN`
 - **Streaming STT** (`sarvamStreamingService.ts`): Browser → WebSocket → FastAPI proxy → Sarvam API
 - Offline queue (`audioResponseManager.ts`) + resumable chunked uploads (`supabaseUploadService.ts`) for poor connectivity
+- **Lazy initialization**: mic permission requested only on first record click (not on page load); localized denial messages (en/kn/ta/hi)
 
 ### AI Chatbot ("Vidya Saathi")
 - `aiChatService.ts` + `ChatbotDialog.tsx`; empathetic career guidance persona; same Gemini cascade fallback as summaries
@@ -203,7 +205,7 @@ Each assessment has a companion `*DB.tsx` component for DB operations. Responses
 ### My Compass Feature
 - **Profile Card** (`/student/profile-card`): 6 module cards — always visible, never locked. Each card shows profile card questions (from `content_translations` with `resource_type: profile_card_{type}`) with 2-3 word AI-generated answers when complete, or blank labels with "Complete this module" nudge when incomplete. 7th "My Career Direction" card synthesizes all 6. Answers cached in `profile_card_cache` as JSON objects `{question1: "answer", ...}`. Clicking a card deep-links to `/student?assessment={type}&tab=summary` which auto-opens the `SummaryViewDialog`. Teachers view read-only at `/teacher/student-profile-card/:studentId`. Hindi support included in all UI strings.
 - **Profile Card Questions**: Stored in `content_translations` with `resource_type: profile_card_{assessment_type}` (e.g. `profile_card_inspiration`). Keys: `title`, `question1`, `question2`, etc. All 4 languages. Source: Google Sheet tab "Profile Card Questions - Grade". Holland Code section deferred.
-- **Things that Interest Me** (`/student/things-interest-me`): Editable table where students list things they're interested in. Accessible from compass menu in student dashboard header. Post-assessment completion redirects here to encourage reflection.
+- **Things that Interest Me** (`/student/things-interest-me`): Editable 4-column table (Subject, Lesson/Chapter, Why Factors, Compatible Career) where students list things they're interested in. Accessible from compass menu in student dashboard header. Post-assessment completion redirects here with `?from={assessment_type}` to encourage reflection. Auto-saves with 1s debounce. Fully translated in all 4 languages (en/kn/ta/hi). IndicKeyboard enabled for non-English users. Backed by `things_that_interest_me` table with RLS.
 - **Career Roadmap** (`/student/career-roadmap`): 7 milestone rows × 4 columns (Milestone + Plan A/B/C). Top 3 rows editable (beginning/end of 9th, beginning of 10th), bottom 4 locked. Autosave with 1s debounce to `career_roadmap` table. Midterm roadmap trigger moved from module 4 to module 5.
 
 ---
@@ -291,7 +293,8 @@ orgs (id, name)
 - **`student_groups`**: teacher-created groups within states/classes
 - **`summary_templates`**: per-assessment-type Gemini prompt templates, multi-language
 - **`content_translations`**: UI text translations by `resource_type`, `resource_key`, `lang`. Includes `profile_card_{type}` entries for profile card questions (4 langs)
-- **`inspiration_sources`**: video URLs for My Inspiration assessment
+- **`inspiration_sources`**: video URLs for My Inspiration assessment; `lang` column for per-language video sets (en/kn/ta/hi)
+- **`things_that_interest_me`**: `(student_id, row_order)` with `subject`, `lesson_chapter`, `why_factors`, `compatible_career`, `source_assessment`; RLS-protected
 
 ### Relationships
 ```
@@ -311,11 +314,11 @@ See `supabase/migrations/` for full history (150+ files, Jan 2025 – Mar 2026).
 ### Recent Migrations (last 5)
 | Date | Migration | What It Does |
 |------|-----------|--------------|
+| 2026-03-25 | `inspiration_videos_lang_and_hindi` | Adds `lang` column to `inspiration_sources`, inserts 3 videos × 4 languages (en/kn/ta/hi), recreates `get_inspiration_videos(p_lang)` RPC with language filter |
+| 2026-03-24 | `things_that_interest_me` | Creates `things_that_interest_me` table with RLS policies |
 | 2026-03-20 | `drop_stale_assessment_responses_rls` | Drops legacy ALL RLS policy that compared `auth.uid() = student_id` directly (caused 409 on upsert) |
 | 2026-03-19 | `unique_student_assessment_responses` | Adds `UNIQUE (student_id, assessment_type)` constraint after deduplicating existing rows |
 | 2026-03-18 | `profile_card_questions` | Inserts profile card questions (22 questions + 6 titles × 4 languages) into `content_translations` from Google Sheet |
-| 2026-03-13 | `add_hindi_to_preferred_language` | Adds `hi` to `preferred_language` CHECK constraint (was enum, now CHECK) |
-| 2026-03-12 | `fix_hobbies_summary_template_keys` | Fixes hobbies summary template key formats |
 
 ### Notable Schema Notes
 - **Schools → States**: Renamed organizational unit to "state"
@@ -324,6 +327,7 @@ See `supabase/migrations/` for full history (150+ files, Jan 2025 – Mar 2026).
 - **preferred_language (Mar 2026)**: Changed from enum to CHECK constraint to allow adding languages without migration complexity
 - **assessment_responses unique constraint (Mar 2026)**: `UNIQUE (student_id, assessment_type)` — all writes must use `.upsert({ onConflict: 'student_id,assessment_type' })`
 - **RLS on assessment_responses**: Enabled with 4 policies (`ar_select_student`, `ar_insert_student`, `ar_update_student`, `ar_select_teacher`) using `is_student_owned_by_auth()` function
+- **inspiration_sources lang (Mar 2026)**: `lang` column added; `get_inspiration_videos(p_lang)` RPC replaces parameterless version; 3 videos per language (en/kn/ta/hi)
 
 ---
 
@@ -341,6 +345,7 @@ See `supabase/migrations/` for full history (150+ files, Jan 2025 – Mar 2026).
 
 ### Key RPC Functions
 - `get_assessment_template(p_assessment_type)` — fetch template + questions
+- `get_inspiration_videos(p_lang)` — fetch inspiration videos filtered by language (en/kn/ta/hi)
 - `get_assessment_media_sources(p_assessment_type)` — fetch media for assessment
 - `get_student_assessment_responses(teacher_user_id, filter?)` — teacher access to responses
 - `get_review_overview(teacher_user_id)` — summary counts for teacher dashboard
@@ -457,9 +462,6 @@ Frontend → Supabase directly (queries, RPCs, storage). AI/ML services are dire
 > **Holland Code & Career Guidance Tools**: No AI summary or teacher approval wired — intentional for now.
 
 > [!NOTE]
-> **Hindi UI translations**: All Hindi strings are English fallback — pending ILP providing Hindi translations.
-
-> [!NOTE]
 > **Hindi content translations**: No `content_translations` rows for `hi` yet — pending ILP updating Google Sheet.
 
 > [!NOTE]
@@ -518,4 +520,12 @@ Frontend → Supabase directly (queries, RPCs, storage). AI/ML services are dire
 | **7E** | Lazy audio initialization: no page-load error banner, mic permission requested only on first record click, localized denial messages (en/kn/ta/hi) | ✅ |
 | **7F** | Career roadmap midterm trigger moved from module 4 to module 5 | ✅ |
 | **7G** | Remove Category/What I said labels from About Me AI summary prompt | ✅ |
+| **8A** | Comprehensive i18n: 100+ hardcoded English strings translated to Hindi across all 6 assessment components (buttons, labels, toasts, errors, completion screens) | ✅ |
+| **8B** | IndicKeyboard added to ThingsInterestMePage, Hindi added to ProfileDialog and ChatBubble keyboard conditions | ✅ |
+| **8C** | Inspiration videos: `lang` column on `inspiration_sources`, 3 videos × 4 languages (en/kn/ta/hi), `get_inspiration_videos(p_lang)` RPC with language filter, Hindi video 3: `youtu.be/-9OGDxKtUMI` | ✅ |
+| **8D** | SummaryApprovalCard notifications language-aware: fetches student's `preferred_language`, translates title/message to kn/ta/hi | ✅ |
+| **8E** | AISummaryReview passes student's `preferred_language` to AI summary generators (teacher-triggered summaries now respect student language) | ✅ |
+| **8F** | ThingsInterestMePage Hindi translations: all 17 strings translated from English fallback to proper Hindi | ✅ |
+| **8G** | NotificationBell: dropdown closes on item click | ✅ |
+| **8H** | Hobbies Hindi section names added to save-progress display (शौक और रुचियाँ, प्रतिभाएँ और अभ्यास, सहायता और करियर संबंध) | ✅ |
 | **2–3** | Google Sheets sync automation | ⏸️ Paused — sheet restructuring in progress |
