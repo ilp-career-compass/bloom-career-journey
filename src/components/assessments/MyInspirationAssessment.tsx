@@ -669,6 +669,10 @@ export default function MyInspirationAssessment() {
             const videoKey = `video${v}` as keyof AssessmentResponse;
             (mergedResponses as any)[videoKey] = mergeVideo((savedResponses as any)[videoKey] || {});
           }
+          // Restore summary responses if they exist
+          if ((savedResponses as any).summary) {
+            (mergedResponses as any).summary = (savedResponses as any).summary;
+          }
           logger.log('Loading saved responses:', mergedResponses);
           setResponses(mergedResponses);
 

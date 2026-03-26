@@ -458,6 +458,13 @@ export default function MyDreamsAssessment() {
           });
         }
 
+        // Restore summary responses (summary_q1, summary_q2, etc.)
+        Object.keys(saved).forEach((key) => {
+          if (key.startsWith('summary_q') && typeof saved[key] === 'string') {
+            initialResponses[key] = saved[key];
+          }
+        });
+
         setResponses((prev) => ({
           ...prev,
           ...initialResponses,
