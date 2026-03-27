@@ -67,6 +67,10 @@ const HINDI_LAYOUT = {
   numbers: ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'],
 };
 
+// Common rows shared across all scripts
+const COMMON_NUMBERS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+const COMMON_PUNCTUATION = [',', '.', '?', '!', ':', ';', '-', '/', '(', ')', '@'];
+
 export function IndicKeyboard({ targetInputId, targetElement, onInput, lang = 'en' }: IndicKeyboardProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isShift, setIsShift] = useState(false);
@@ -583,6 +587,38 @@ export function IndicKeyboard({ targetInputId, targetElement, onInput, lang = 'e
         </div>
 
         <div className="space-y-0.5">
+          {/* Common numbers row */}
+          <div className="flex flex-wrap gap-0.5 justify-center">
+            {COMMON_NUMBERS.map((char) => (
+              <button
+                key={`num-${char}`}
+                type="button"
+                onMouseDown={handleKeyButtonMouseDown}
+                onTouchStart={handleKeyButtonTouchStart}
+                onClick={() => handleKeyButtonClick(char)}
+                className="min-w-[32px] px-2 py-1.5 text-base font-medium bg-yellow-50 hover:bg-yellow-100 border border-yellow-200 rounded active:bg-yellow-200 transition-colors touch-manipulation"
+              >
+                {char}
+              </button>
+            ))}
+          </div>
+
+          {/* Common punctuation row */}
+          <div className="flex flex-wrap gap-0.5 justify-center">
+            {COMMON_PUNCTUATION.map((char) => (
+              <button
+                key={`punct-${char}`}
+                type="button"
+                onMouseDown={handleKeyButtonMouseDown}
+                onTouchStart={handleKeyButtonTouchStart}
+                onClick={() => handleKeyButtonClick(char)}
+                className="min-w-[32px] px-2 py-1.5 text-base font-medium bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded active:bg-orange-200 transition-colors touch-manipulation"
+              >
+                {char}
+              </button>
+            ))}
+          </div>
+
           {/* Vowels */}
           <div className="flex flex-wrap gap-0.5 justify-center">
             {layout.vowels.map((char) => (

@@ -834,7 +834,7 @@ export default function SummaryViewDialog({
             </div>
           </div>
         </div>
-        {(lang === 'kn' || lang === 'ta') && <IndicKeyboard lang={lang} />}
+        <IndicKeyboard lang={lang} />
       </DialogContent >
     </Dialog >
   );
