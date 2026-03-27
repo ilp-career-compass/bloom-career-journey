@@ -1,5 +1,5 @@
 import { logger } from '@/lib/logger';
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -13,9 +13,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import ProfileDialog from '@/components/ProfileDialog';
 import ChatBubble from '@/components/chat/ChatBubble';
-import SummaryViewDialog from '@/components/assessments/SummaryViewDialog';
-import { AssessmentSummary } from '@/types/assessmentSummary';
-import { summaryDatabaseService } from '@/services/summaryDatabaseService';
+// AI summary flow disabled — SummaryViewDialog, AssessmentSummary, summaryDatabaseService retained for potential re-enable
 import { IndicKeyboard } from '@/components/ui/IndicKeyboard';
 import { useLang } from '@/hooks/useLang';
 import { aiChatService } from '@/services/aiChatService';
@@ -48,7 +46,7 @@ export default function StudentDashboard() {
   const [mentorIds, setMentorIds] = useState<{ studentId: string | null; teacherId: string | null }>({ studentId: null, teacherId: null });
 
   // ── Refresh guard ────────────────────────────────────────────────
-  const isRefreshingRef = useRef(false);
+  // isRefreshingRef removed — summary polling disabled
 
   // ── CareerChat LM ─────────────────────────────────────────────────
   type ChatMsg = { id: string; role: 'user' | 'model'; text: string };
@@ -90,22 +88,7 @@ export default function StudentDashboard() {
     } finally { setCcLoading(false); }
   };
 
-  // ── Summary state ─────────────────────────────────────────────────
-  const [summaryDialogOpen, setSummaryDialogOpen] = useState(false);
-  const [summaryType, setSummaryType] = useState<'inspiration' | 'about_me' | 'dreams' | 'school_learning' | 'hobbies' | 'role_models' | null>(null);
-  const [inspirationSummary, setInspirationSummary] = useState<AssessmentSummary | null>(null);
-  const [aboutMeSummary, setAboutMeSummary] = useState<AssessmentSummary | null>(null);
-  const [dreamsSummary, setDreamsSummary] = useState<AssessmentSummary | null>(null);
-  const [schoolLearningSummary, setSchoolLearningSummary] = useState<AssessmentSummary | null>(null);
-  const [hobbiesSummary, setHobbiesSummary] = useState<AssessmentSummary | null>(null);
-  const [roleModelsSummary, setRoleModelsSummary] = useState<AssessmentSummary | null>(null);
-  const [assessmentResponseId, setAssessmentResponseId] = useState<string | null>(null);
-  const [aboutMeAssessmentResponseId, setAboutMeAssessmentResponseId] = useState<string | null>(null);
-  const [dreamsAssessmentResponseId, setDreamsAssessmentResponseId] = useState<string | null>(null);
-  const [schoolLearningAssessmentResponseId, setSchoolLearningAssessmentResponseId] = useState<string | null>(null);
-  const [hobbiesAssessmentResponseId, setHobbiesAssessmentResponseId] = useState<string | null>(null);
-  const [roleModelsAssessmentResponseId, setRoleModelsAssessmentResponseId] = useState<string | null>(null);
-  const [summaryNotified, setSummaryNotified] = useState(false);
+  // ── Summary state (disabled — AI summary flow disconnected) ──────
 
   // ── Language prompt ───────────────────────────────────────────────
   const [langPromptOpen, setLangPromptOpen] = useState(false);
@@ -159,55 +142,14 @@ export default function StudentDashboard() {
     return data?.id || null;
   };
 
-  // ── Summary fetching ──────────────────────────────────────────────
-
-  const fetchInspirationSummary = useCallback(async (rid: string) => {
-    if (!userProfile?.id || !rid) return;
-    try {
-      const result = await summaryDatabaseService.getSummaryByAssessment(rid, userProfile.id);
-      if (result.success && result.summary) setInspirationSummary(result.summary);
-      else setInspirationSummary(null);
-    } catch (error) { logger.error('Error fetching Inspiration summary:', error); setInspirationSummary(null); }
-  }, [userProfile?.id]);
-
-  const fetchAboutMeSummary = useCallback(async (rid: string) => {
-    if (!userProfile?.id) return;
-    try {
-      const result = await summaryDatabaseService.getSummaryByAssessment(rid, userProfile.id);
-      if (result.success && result.summary) setAboutMeSummary(result.summary);
-      else setAboutMeSummary(null);
-    } catch (error) { logger.error('Error fetching About Me summary:', error); }
-  }, [userProfile?.id]);
-
-  const fetchSummary = useCallback(async (rid: string, assessmentType: string) => {
-    if (!userProfile?.id) return;
-    try {
-      const result = await summaryDatabaseService.getSummaryByAssessment(rid, userProfile.id);
-      if (result.success && result.summary) {
-        switch (assessmentType) {
-          case 'inspiration': setInspirationSummary(result.summary); break;
-          case 'about_me': setAboutMeSummary(result.summary); break;
-          case 'dreams': setDreamsSummary(result.summary); break;
-          case 'school_learning': setSchoolLearningSummary(result.summary); break;
-          case 'hobbies': setHobbiesSummary(result.summary); break;
-          case 'role_models': setRoleModelsSummary(result.summary); break;
-        }
-      }
-    } catch (error) { logger.error(`Error fetching ${assessmentType} summary:`, error); }
-  }, [userProfile?.id]);
-
-  const handleViewSummary = (type: 'inspiration' | 'about_me' | 'dreams' | 'school_learning' | 'hobbies' | 'role_models') => {
-    setSummaryType(type);
-    setSummaryDialogOpen(true);
-  };
-
-  const handleSummaryUpdated = () => {
-    if (summaryType === 'inspiration' && assessmentResponseId) fetchInspirationSummary(assessmentResponseId);
-    else if (summaryType === 'about_me' && aboutMeAssessmentResponseId) fetchAboutMeSummary(aboutMeAssessmentResponseId);
-    else if (summaryType === 'dreams' && dreamsAssessmentResponseId) fetchSummary(dreamsAssessmentResponseId, 'dreams');
-    else if (summaryType === 'school_learning' && schoolLearningAssessmentResponseId) fetchSummary(schoolLearningAssessmentResponseId, 'school_learning');
-    else if (summaryType === 'hobbies' && hobbiesAssessmentResponseId) fetchSummary(hobbiesAssessmentResponseId, 'hobbies');
-    else if (summaryType === 'role_models' && roleModelsAssessmentResponseId) fetchSummary(roleModelsAssessmentResponseId, 'role_models');
+  // ── View Responses — navigates to assessment with summary tab open ──
+  const handleViewSummary = (type: string) => {
+    const routes: Record<string, string> = {
+      'inspiration': 'inspiration', 'about_me': 'about-me', 'dreams': 'dreams',
+      'school_learning': 'school-learning', 'role_models': 'role-models', 'hobbies': 'hobbies',
+    };
+    const route = routes[type];
+    if (route) navigate(`/student/assessment/${route}?lang=${resolvedLang}&tab=summary&readonly=1`);
   };
 
   // ── Progress checking ─────────────────────────────────────────────
@@ -219,7 +161,7 @@ export default function StudentDashboard() {
       const { data, error } = await supabase.from('assessment_responses').select('*')
         .eq('student_id', studentId).eq('assessment_type', 'inspiration').eq('assessment_title', 'My Inspiration')
         .order('completed_at', { ascending: false, nullsFirst: false }).order('updated_at', { ascending: false }).limit(1).maybeSingle();
-      if (data && !error) { setAssessmentProgress(data); setAssessmentResponseId(data.id); fetchInspirationSummary(data.id); }
+      if (data && !error) { setAssessmentProgress(data); }
     } catch { }
   };
 
@@ -230,7 +172,7 @@ export default function StudentDashboard() {
       const { data, error } = await supabase.from('assessment_responses').select('*')
         .eq('student_id', studentId).eq('assessment_type', 'about_me').eq('assessment_title', 'About Me')
         .order('completed_at', { ascending: false, nullsFirst: false }).order('updated_at', { ascending: false }).limit(1).maybeSingle();
-      if (data && !error) { setAboutMeProgress(data); setAboutMeAssessmentResponseId(data.id); fetchAboutMeSummary(data.id); }
+      if (data && !error) { setAboutMeProgress(data); }
     } catch { }
   };
 
@@ -241,7 +183,7 @@ export default function StudentDashboard() {
       const { data, error } = await supabase.from('assessment_responses').select('*')
         .eq('student_id', studentId).eq('assessment_type', 'dreams').eq('assessment_title', 'My Dreams')
         .order('completed_at', { ascending: false, nullsFirst: false }).order('updated_at', { ascending: false }).limit(1).maybeSingle();
-      if (data && !error) { setDreamsProgress(data); setDreamsAssessmentResponseId(data.id); fetchSummary(data.id, 'dreams'); }
+      if (data && !error) { setDreamsProgress(data); }
     } catch { }
   };
 
@@ -252,7 +194,7 @@ export default function StudentDashboard() {
       const { data, error } = await supabase.from('assessment_responses').select('*')
         .eq('student_id', studentId).eq('assessment_type', 'school_learning').eq('assessment_title', 'My School, My Learning and I')
         .order('completed_at', { ascending: false, nullsFirst: false }).order('updated_at', { ascending: false }).limit(1).maybeSingle();
-      if (data && !error) { setSchoolLearningProgress(data); setSchoolLearningAssessmentResponseId(data.id); fetchSummary(data.id, 'school_learning'); }
+      if (data && !error) { setSchoolLearningProgress(data); }
     } catch { }
   };
 
@@ -266,7 +208,7 @@ export default function StudentDashboard() {
       if (data && !error && data.length > 0) {
         const completedRecord = data.find(r => r.completed_at);
         const activeRecord = completedRecord || data[0];
-        setRoleModelsProgress(activeRecord); setRoleModelsAssessmentResponseId(activeRecord.id); fetchSummary(activeRecord.id, 'role_models');
+        setRoleModelsProgress(activeRecord);
       }
     } catch { }
   };
@@ -278,7 +220,7 @@ export default function StudentDashboard() {
       const { data, error } = await supabase.from('assessment_responses').select('*')
         .eq('student_id', studentId).eq('assessment_type', 'hobbies').eq('assessment_title', 'My Talents and Hobbies')
         .not('completed_at', 'is', null).order('completed_at', { ascending: false }).limit(1).maybeSingle();
-      if (data && !error) { setHobbiesProgress(data); setHobbiesAssessmentResponseId(data.id); fetchSummary(data.id, 'hobbies'); }
+      if (data && !error) { setHobbiesProgress(data); }
     } catch { }
   };
 
@@ -334,68 +276,7 @@ export default function StudentDashboard() {
     checkCareerGuidanceToolsProgress();
   }, [userProfile?.id]);
 
-  // Real-time subscription
-  useEffect(() => {
-    if (!userProfile?.id) return;
-    let isMounted = true;
-    const channel = supabase
-      .channel(`summary-status-updates-${userProfile.id}`)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'assessment_summaries', filter: `student_user_id=eq.${userProfile.id}` },
-        async (payload) => {
-          if (!isMounted) return;
-          const updatedSummary = payload.new as any;
-          const targetId = updatedSummary.assessment_response_id as string | null;
-          if (targetId) {
-            const { data } = await supabase.from('assessment_responses').select('assessment_type').eq('id', targetId).maybeSingle();
-            if (!isMounted) return;
-            if (data) {
-              const at = data.assessment_type;
-              if (at === 'inspiration') { setInspirationSummary(null); await new Promise(r => setTimeout(r, 100)); if (isMounted) await fetchInspirationSummary(targetId); }
-              else if (at === 'about_me') { setAboutMeSummary(null); await new Promise(r => setTimeout(r, 100)); if (isMounted) await fetchAboutMeSummary(targetId); }
-              else if (at === 'dreams') { setDreamsSummary(null); await new Promise(r => setTimeout(r, 100)); if (isMounted) await fetchSummary(targetId, 'dreams'); }
-              else if (at === 'school_learning') { setSchoolLearningSummary(null); await new Promise(r => setTimeout(r, 100)); if (isMounted) await fetchSummary(targetId, 'school_learning'); }
-              else if (at === 'hobbies') { setHobbiesSummary(null); await new Promise(r => setTimeout(r, 100)); if (isMounted) await fetchSummary(targetId, 'hobbies'); }
-              else if (at === 'role_models') { setRoleModelsSummary(null); await new Promise(r => setTimeout(r, 100)); if (isMounted) await fetchSummary(targetId, 'role_models'); }
-              else if (at === 'personality') checkHollandCodeProgress();
-            }
-          }
-        })
-      .subscribe();
-    return () => { isMounted = false; supabase.removeChannel(channel); };
-  }, [userProfile?.id, assessmentResponseId, aboutMeAssessmentResponseId, dreamsAssessmentResponseId, schoolLearningAssessmentResponseId, hobbiesAssessmentResponseId, roleModelsAssessmentResponseId, fetchInspirationSummary, fetchAboutMeSummary, fetchSummary]);
-
-  useEffect(() => {
-    if (assessmentResponseId && userProfile?.id) fetchInspirationSummary(assessmentResponseId);
-  }, [assessmentResponseId, userProfile?.id, fetchInspirationSummary]);
-
-  useEffect(() => {
-    if (aboutMeAssessmentResponseId && userProfile?.id) fetchAboutMeSummary(aboutMeAssessmentResponseId);
-  }, [aboutMeAssessmentResponseId, userProfile?.id, fetchAboutMeSummary]);
-
-  // Periodic refresh
-  useEffect(() => {
-    if (!userProfile?.id) return;
-    const refreshSummaries = async () => {
-      if (isRefreshingRef.current) return;
-      isRefreshingRef.current = true;
-      try {
-        if (assessmentResponseId) await fetchInspirationSummary(assessmentResponseId);
-        if (aboutMeAssessmentResponseId) await fetchAboutMeSummary(aboutMeAssessmentResponseId);
-        if (dreamsAssessmentResponseId) await fetchSummary(dreamsAssessmentResponseId, 'dreams');
-        if (schoolLearningAssessmentResponseId) await fetchSummary(schoolLearningAssessmentResponseId, 'school_learning');
-        if (hobbiesAssessmentResponseId) await fetchSummary(hobbiesAssessmentResponseId, 'hobbies');
-        if (roleModelsAssessmentResponseId) await fetchSummary(roleModelsAssessmentResponseId, 'role_models');
-      } finally {
-        isRefreshingRef.current = false;
-      }
-    };
-    const interval = setInterval(refreshSummaries, 60000);
-    const handleFocus = () => refreshSummaries();
-    const handleVisibilityChange = () => { if (!document.hidden) refreshSummaries(); };
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => { clearInterval(interval); window.removeEventListener('focus', handleFocus); document.removeEventListener('visibilitychange', handleVisibilityChange); };
-  }, [userProfile?.id, assessmentResponseId, aboutMeAssessmentResponseId, dreamsAssessmentResponseId, schoolLearningAssessmentResponseId, hobbiesAssessmentResponseId, roleModelsAssessmentResponseId, fetchInspirationSummary, fetchAboutMeSummary, fetchSummary]);
+  // Real-time summary subscription + periodic refresh disabled (AI summary flow disconnected)
 
   // Completion status
   useEffect(() => {
@@ -409,7 +290,7 @@ export default function StudentDashboard() {
     setCareerGuidanceToolsCompleted(!!careerGuidanceToolsProgress?.completed_at);
   }, [assessmentProgress, aboutMeProgress, dreamsProgress, stateLearningProgress, hobbiesProgress, roleModelsProgress, hollandCodeProgress, careerGuidanceToolsProgress]);
 
-  // ── Auto-open summary from URL params (e.g. from Profile Card click) ──
+  // ── Auto-open summary from URL params — redirects to assessment directly ──
   const autoOpenHandled = useRef(false);
   useEffect(() => {
     if (autoOpenHandled.current) return;
@@ -421,23 +302,10 @@ export default function StudentDashboard() {
     type ValidType = typeof validTypes[number];
     if (!validTypes.includes(assessment as ValidType)) return;
 
-    const summaryMap: Record<string, AssessmentSummary | null> = {
-      inspiration: inspirationSummary,
-      about_me: aboutMeSummary,
-      dreams: dreamsSummary,
-      school_learning: schoolLearningSummary,
-      hobbies: hobbiesSummary,
-      role_models: roleModelsSummary,
-    };
-
-    const summary = summaryMap[assessment];
-    if (summary) {
-      autoOpenHandled.current = true;
-      setSummaryType(assessment as ValidType);
-      setSummaryDialogOpen(true);
-      setSearchParams({}, { replace: true });
-    }
-  }, [searchParams, setSearchParams, inspirationSummary, aboutMeSummary, dreamsSummary, schoolLearningSummary, hobbiesSummary, roleModelsSummary]);
+    autoOpenHandled.current = true;
+    setSearchParams({}, { replace: true });
+    handleViewSummary(assessment);
+  }, [searchParams, setSearchParams]);
 
   // ── Assessment helpers ────────────────────────────────────────────
 
@@ -535,18 +403,13 @@ export default function StudentDashboard() {
   //  BUILD SUB-COMPONENT DATA
   // ═══════════════════════════════════════════════════════════════════
 
-  const getSummaryState = (summary: AssessmentSummary | null): SummaryState => {
-    if (!summary) return 'none';
-    return summary.approval_status === 'approved' ? 'approved' : 'pending';
-  };
-
   const assessmentCards: AssessmentCardData[] = [
-    { key: 'inspiration', number: 1, titleKey: 'assessment_inspiration', descriptionEn: 'Discover what inspires you', descriptionKn: 'ನಿಮ್ಮನ್ನು ಪ್ರೇರೇಪಿಸುವುವುದನ್ನು ಹುಡುಕಿ', descriptionTa: 'உங்களை ஊக்கப்படுத்தும் விஷயங்களை கண்டறியுங்கள்', assessmentStatus: getAssessmentStatus('inspiration'), isCompleted: getCompletionStatus('inspiration'), isUnlocked: isAssessmentUnlocked('inspiration'), hasProgress: !!assessmentProgress, summaryState: getSummaryState(inspirationSummary) },
-    { key: 'about_me', number: 2, titleKey: 'assessment_about_me', descriptionEn: 'Reflect about yourself and your strengths', descriptionKn: 'ನಿಮ್ಮ ಬಗ್ಗೆ ಮತ್ತು ನಿಮ್ಮ ಬಲಗಳನ್ನು ಆಲೋಚಿಸಿ', descriptionTa: 'உங்களைப் பற்றியும் உங்கள் பலங்களைப் பற்றியும் சிந்தியுங்கள்', assessmentStatus: getAssessmentStatus('about_me'), isCompleted: getCompletionStatus('about_me'), isUnlocked: isAssessmentUnlocked('about_me'), hasProgress: false, summaryState: getSummaryState(aboutMeSummary) },
-    { key: 'dreams', number: 3, titleKey: 'assessment_dreams', descriptionEn: 'Explore your future aspirations', descriptionKn: 'ನಿಮ್ಮ ಭವಿಷ್ಯದ ಆಸೆಗಳನ್ನು ಅನ್ವೇಷಿಸಿ', descriptionTa: 'உங்கள் எதிர்கால கனவுகள் மற்றும் இலக்குகளை ஆராயுங்கள்', assessmentStatus: getAssessmentStatus('dreams'), isCompleted: getCompletionStatus('dreams'), isUnlocked: isAssessmentUnlocked('dreams'), hasProgress: false, summaryState: getSummaryState(dreamsSummary) },
-    { key: 'school_learning', number: 4, titleKey: 'assessment_school_learning', descriptionEn: 'Reflect on your learning journey', descriptionKn: 'ನಿಮ್ಮ ಕಲಿಕೆಯ ಪ್ರಯಾಣದ ಬಗ್ಗೆ ಚಿಂತಿಸಿರಿ', descriptionTa: 'உங்கள் கற்றல் பயணத்தை பற்றிச் சிந்தியுங்கள்', assessmentStatus: getAssessmentStatus('school_learning'), isCompleted: getCompletionStatus('school_learning'), isUnlocked: isAssessmentUnlocked('school_learning'), hasProgress: false, summaryState: getSummaryState(schoolLearningSummary) },
-    { key: 'hobbies', number: 5, titleKey: 'assessment_hobbies', descriptionEn: 'Discover career paths from your interests', descriptionKn: 'ನಿಮ್ಮ ಆಸಕ್ತಿಗಳಿಂದ ವೃತ್ತಿ ಮಾರ್ಗಗಳನ್ನು ಅನ್ವೇಷಿಸಿ', descriptionTa: 'உங்கள் ஆர்வங்களிலிருந்து தொழில் பாதைகளை அறியுங்கள்', assessmentStatus: getAssessmentStatus('hobbies'), isCompleted: getCompletionStatus('hobbies'), isUnlocked: isAssessmentUnlocked('hobbies'), hasProgress: false, summaryState: getSummaryState(hobbiesSummary) },
-    { key: 'role_models', number: 6, titleKey: 'assessment_role_models', descriptionEn: 'Identify your inspiring role models', descriptionKn: 'ನಿಮ್ಮನ್ನು ಪ್ರೇರೇಪಿಸುವ ಮಾದರಿಗಳನ್ನು ಗುರುತಿಸಿ', descriptionTa: 'உங்களை ஊக்கப்படுத்தும் முன்னுதாரணங்களை கண்டறியுங்கள்', assessmentStatus: getAssessmentStatus('role_models'), isCompleted: getCompletionStatus('role_models'), isUnlocked: isAssessmentUnlocked('role_models'), hasProgress: false, summaryState: getSummaryState(roleModelsSummary) },
+    { key: 'inspiration', number: 1, titleKey: 'assessment_inspiration', descriptionEn: 'Discover what inspires you', descriptionKn: 'ನಿಮ್ಮನ್ನು ಪ್ರೇರೇಪಿಸುವುವುದನ್ನು ಹುಡುಕಿ', descriptionTa: 'உங்களை ஊக்கப்படுத்தும் விஷயங்களை கண்டறியுங்கள்', assessmentStatus: getAssessmentStatus('inspiration'), isCompleted: getCompletionStatus('inspiration'), isUnlocked: isAssessmentUnlocked('inspiration'), hasProgress: !!assessmentProgress, summaryState: 'none' as SummaryState },
+    { key: 'about_me', number: 2, titleKey: 'assessment_about_me', descriptionEn: 'Reflect about yourself and your strengths', descriptionKn: 'ನಿಮ್ಮ ಬಗ್ಗೆ ಮತ್ತು ನಿಮ್ಮ ಬಲಗಳನ್ನು ಆಲೋಚಿಸಿ', descriptionTa: 'உங்களைப் பற்றியும் உங்கள் பலங்களைப் பற்றியும் சிந்தியுங்கள்', assessmentStatus: getAssessmentStatus('about_me'), isCompleted: getCompletionStatus('about_me'), isUnlocked: isAssessmentUnlocked('about_me'), hasProgress: false, summaryState: 'none' as SummaryState },
+    { key: 'dreams', number: 3, titleKey: 'assessment_dreams', descriptionEn: 'Explore your future aspirations', descriptionKn: 'ನಿಮ್ಮ ಭವಿಷ್ಯದ ಆಸೆಗಳನ್ನು ಅನ್ವೇಷಿಸಿ', descriptionTa: 'உங்கள் எதிர்கால கனவுகள் மற்றும் இலக்குகளை ஆராயுங்கள்', assessmentStatus: getAssessmentStatus('dreams'), isCompleted: getCompletionStatus('dreams'), isUnlocked: isAssessmentUnlocked('dreams'), hasProgress: false, summaryState: 'none' as SummaryState },
+    { key: 'school_learning', number: 4, titleKey: 'assessment_school_learning', descriptionEn: 'Reflect on your learning journey', descriptionKn: 'ನಿಮ್ಮ ಕಲಿಕೆಯ ಪ್ರಯಾಣದ ಬಗ್ಗೆ ಚಿಂತಿಸಿರಿ', descriptionTa: 'உங்கள் கற்றல் பயணத்தை பற்றிச் சிந்தியுங்கள்', assessmentStatus: getAssessmentStatus('school_learning'), isCompleted: getCompletionStatus('school_learning'), isUnlocked: isAssessmentUnlocked('school_learning'), hasProgress: false, summaryState: 'none' as SummaryState },
+    { key: 'hobbies', number: 5, titleKey: 'assessment_hobbies', descriptionEn: 'Discover career paths from your interests', descriptionKn: 'ನಿಮ್ಮ ಆಸಕ್ತಿಗಳಿಂದ ವೃತ್ತಿ ಮಾರ್ಗಗಳನ್ನು ಅನ್ವೇಷಿಸಿ', descriptionTa: 'உங்கள் ஆர்வங்களிலிருந்து தொழில் பாதைகளை அறியுங்கள்', assessmentStatus: getAssessmentStatus('hobbies'), isCompleted: getCompletionStatus('hobbies'), isUnlocked: isAssessmentUnlocked('hobbies'), hasProgress: false, summaryState: 'none' as SummaryState },
+    { key: 'role_models', number: 6, titleKey: 'assessment_role_models', descriptionEn: 'Identify your inspiring role models', descriptionKn: 'ನಿಮ್ಮನ್ನು ಪ್ರೇರೇಪಿಸುವ ಮಾದರಿಗಳನ್ನು ಗುರುತಿಸಿ', descriptionTa: 'உங்களை ஊக்கப்படுத்தும் முன்னுதாரணங்களை கண்டறியுங்கள்', assessmentStatus: getAssessmentStatus('role_models'), isCompleted: getCompletionStatus('role_models'), isUnlocked: isAssessmentUnlocked('role_models'), hasProgress: false, summaryState: 'none' as SummaryState },
     { key: 'holland_code', number: 7, titleKey: 'assessment_holland_code', descriptionEn: 'Identify your personality type', descriptionKn: 'ನಿಮ್ಮ ವ್ಯಕ್ತಿತ್ವದ ಪ್ರಕಾರವನ್ನು ಗುರುತಿಸಿ', descriptionTa: 'உங்கள் நற்பண்பு வகையை அறியுங்கள்', assessmentStatus: getAssessmentStatus('holland_code'), isCompleted: getCompletionStatus('holland_code'), isUnlocked: isAssessmentUnlocked('holland_code'), hasProgress: false, summaryState: 'none' as SummaryState },
     { key: 'career_guidance_tools', number: 8, titleKey: 'assessment_career_guidance', descriptionEn: 'Explore career guidance tools and resources', descriptionKn: 'ವೃತ್ತಿ ಮಾರ್ಗದರ್ಶನ ಸಾಧನಗಳನ್ನು ಅನ್ವೇಷಿಸಿ', descriptionTa: 'தொழில் வழிகாட்டல் கருவிகள் மற்றும் ஆதாரங்களை ஆராயுங்கள்', assessmentStatus: getAssessmentStatus('career_guidance_tools'), isCompleted: getCompletionStatus('career_guidance_tools'), isUnlocked: isAssessmentUnlocked('career_guidance_tools'), hasProgress: false, summaryState: 'none' as SummaryState },
   ];
@@ -613,21 +476,7 @@ export default function StudentDashboard() {
       {(['kn', 'ta', 'hi'].includes(resolvedLang)) && <IndicKeyboard lang={resolvedLang} />}
       <ChatBubble role="student" isOpen={isChatOpen} onOpenChange={setIsChatOpen} hideTrigger={true} />
       <ProfileDialog open={isProfileOpen} onOpenChange={setIsProfileOpen} />
-      <SummaryViewDialog
-        open={summaryDialogOpen}
-        onOpenChange={setSummaryDialogOpen}
-        summary={
-          summaryType === 'inspiration' ? inspirationSummary :
-            summaryType === 'about_me' ? aboutMeSummary :
-              summaryType === 'dreams' ? dreamsSummary :
-                summaryType === 'school_learning' ? schoolLearningSummary :
-                  summaryType === 'hobbies' ? hobbiesSummary :
-                    summaryType === 'role_models' ? roleModelsSummary : null
-        }
-        studentUserId={userProfile?.id || ''}
-        onSummaryUpdated={handleSummaryUpdated}
-        assessmentType={summaryType || 'inspiration'}
-      />
+      {/* SummaryViewDialog removed from student flow — AI summary disabled */}
       <LanguageSelectionDialog open={langPromptOpen} onOpenChange={setLangPromptOpen} />
     </div>
   );

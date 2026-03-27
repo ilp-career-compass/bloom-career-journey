@@ -1,7 +1,7 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, Sparkles } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import StudentAssessmentReview from './StudentAssessmentReview';
-import AISummaryReview from './AISummaryReview';
+// AI Summary Review tab hidden — may re-enable later
+// import AISummaryReview from './AISummaryReview';
 
 interface AssessmentResponsesViewProps {
   onReviewUpdate?: () => void;
@@ -10,26 +10,11 @@ interface AssessmentResponsesViewProps {
 export default function AssessmentResponsesView({ onReviewUpdate }: AssessmentResponsesViewProps) {
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="student-review" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 max-w-md">
-          <TabsTrigger value="student-review" className="flex items-center gap-2">
-            <FileText className="w-4 h-4" />
-            Student Assessment Review
-          </TabsTrigger>
-          <TabsTrigger value="ai-summary" className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4" />
-            AI Summary Review
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="student-review" className="mt-6">
-          <StudentAssessmentReview onReviewUpdate={onReviewUpdate} />
-        </TabsContent>
-
-        <TabsContent value="ai-summary" className="mt-6">
-          <AISummaryReview />
-        </TabsContent>
-      </Tabs>
+      <div className="flex items-center gap-2 mb-4">
+        <FileText className="w-5 h-5 text-gray-600" />
+        <h2 className="text-lg font-semibold text-gray-800">Student Assessment Review</h2>
+      </div>
+      <StudentAssessmentReview onReviewUpdate={onReviewUpdate} />
     </div>
   );
 }

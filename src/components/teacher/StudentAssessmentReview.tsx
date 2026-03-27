@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { User, Calendar, CheckCircle, AlertCircle, Eye, Volume2 } from 'lucide-react';
+import { User, Calendar, CheckCircle, AlertCircle, Eye, Volume2, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface Student {
@@ -609,6 +609,31 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
       }
       return count;
     }, 0);
+  };
+
+  const renderSummaryTabSection = (summaryResponses: Record<string, any>) => {
+    const entries = Object.entries(summaryResponses).filter(([_, v]) => typeof v === 'string' && v.trim());
+    if (entries.length === 0) return null;
+    return (
+      <div className="mt-6 border-t pt-4">
+        <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+          <FileText className="w-4 h-4 text-purple-600" />
+          Summary Tab Responses
+        </h4>
+        <div className="space-y-3">
+          {entries.map(([key, value], index) => (
+            <div key={key} className="border-l-4 border-purple-400 pl-4">
+              <span className="text-xs font-semibold text-purple-600 bg-purple-50 px-2 py-1 rounded">
+                {key.replace(/question/, 'Q')}
+              </span>
+              <div className="mt-1 bg-white p-3 rounded border border-gray-200">
+                <p className="text-sm text-gray-600 whitespace-pre-wrap">{String(value)}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   };
 
   const renderAssessmentResponses = (assessment: Assessment) => {
@@ -1617,6 +1642,17 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
       );
     }
 
+    // Check for summary section in any assessment type
+    const summarySection = responses?.summary;
+    if (summarySection && typeof summarySection === 'object') {
+      return (
+        <div className="space-y-4">
+          <div className="text-sm text-gray-500 italic">No structured renderer for this assessment type.</div>
+          {renderSummaryTabSection(summarySection)}
+        </div>
+      );
+    }
+
     // For other assessments, render all responses dynamically in Q&A format
     if (!responses || typeof responses !== 'object') {
       return (
@@ -1814,6 +1850,7 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
                       {expandedAssessment === assessment.id && (
                         <div className="p-4 bg-white border-t">
                           {renderAssessmentResponses(assessment)}
+                          {assessment.responses?.summary && renderSummaryTabSection(assessment.responses.summary)}
                           <div className="mt-4 flex gap-2">
                             <Button
                               size="sm"

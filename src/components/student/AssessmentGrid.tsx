@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Sparkles, Clock } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import type { StudentLang } from './studentStrings';
 
 interface AssessmentStatus {
@@ -13,6 +13,7 @@ interface AssessmentStatus {
     descriptionColor: string;
 }
 
+// Kept for backward compatibility — not actively used in student flow
 export type SummaryState = 'approved' | 'pending' | 'none';
 
 export interface AssessmentCardData {
@@ -80,20 +81,13 @@ export default function AssessmentGrid({ cards, resolvedLang, t, onStartAssessme
 
                             {card.isCompleted && (
                                 <div className="border-t border-gray-100 mt-3 pt-3">
-                                    {card.summaryState === 'approved' ? (
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); onViewSummary(card.key); }}
-                                            className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 transition-colors"
-                                        >
-                                            <Sparkles className="h-3.5 w-3.5" />
-                                            {t('view_summary')}
-                                        </button>
-                                    ) : (
-                                        <span className="flex items-center justify-center gap-1.5 text-xs text-gray-400">
-                                            <Clock className="h-3 w-3" />
-                                            {t('summary_pending_short')}
-                                        </span>
-                                    )}
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); onViewSummary(card.key); }}
+                                        className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 transition-colors"
+                                    >
+                                        <Eye className="h-3.5 w-3.5" />
+                                        {t('view_responses')}
+                                    </button>
                                 </div>
                             )}
                         </CardContent>
