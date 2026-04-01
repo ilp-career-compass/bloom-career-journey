@@ -14,11 +14,13 @@ BEGIN;
 CREATE TABLE IF NOT EXISTS dreams_summary_questions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     question_text TEXT NOT NULL,
-    help_text TEXT,
     sequence_number INTEGER NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     is_active BOOLEAN DEFAULT true
 );
+
+-- Add help_text column if it doesn't exist (table may have been created without it)
+ALTER TABLE dreams_summary_questions ADD COLUMN IF NOT EXISTS help_text TEXT;
 
 ALTER TABLE dreams_summary_questions ENABLE ROW LEVEL SECURITY;
 
@@ -26,11 +28,16 @@ DROP POLICY IF EXISTS "Enable read access for authenticated users" ON dreams_sum
 CREATE POLICY "Enable read access for authenticated users" ON dreams_summary_questions
     FOR SELECT USING (auth.role() = 'authenticated');
 
-INSERT INTO dreams_summary_questions (question_text, help_text, sequence_number) VALUES
-('Dream', NULL, 1),
-('Qualities/abilities I already have to achieve my dream', NULL, 2),
-('What I need to do to ensure my dream does not fail', NULL, 3),
-('What I need to study after Class 10 to achieve this dream (if applicable)', NULL, 4);
+-- Only insert if table is empty (avoid duplicates on re-run)
+INSERT INTO dreams_summary_questions (question_text, sequence_number)
+SELECT q.question_text, q.sequence_number
+FROM (VALUES
+    ('Dream', 1),
+    ('Qualities/abilities I already have to achieve my dream', 2),
+    ('What I need to do to ensure my dream does not fail', 3),
+    ('What I need to study after Class 10 to achieve this dream (if applicable)', 4)
+) AS q(question_text, sequence_number)
+WHERE NOT EXISTS (SELECT 1 FROM dreams_summary_questions LIMIT 1);
 
 -- ============================================================
 -- 2. Insert dreams content_translations (all 4 languages)
