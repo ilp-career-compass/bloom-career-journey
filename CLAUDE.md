@@ -314,11 +314,11 @@ See `supabase/migrations/` for full history (150+ files, Jan 2025 – Mar 2026).
 ### Recent Migrations (last 5)
 | Date | Migration | What It Does |
 |------|-----------|--------------|
+| 2026-03-31 | `fix_summary_rpc_key_mismatch` | Recreates all 6 summary question RPCs to use `'summary_question' || N` key prefix (was `'question' || N`), fixing i18n fallback to English |
+| 2026-03-31 | `users_email_case_insensitive_unique` | Normalizes existing emails to lowercase, adds `UNIQUE INDEX users_email_lower_unique ON users (LOWER(email))` |
+| 2026-03-26 | `dreams_summary_questions_i18n` | Creates `dreams_summary_questions` table, inserts 4 questions × 4 languages into `content_translations` |
 | 2026-03-25 | `inspiration_videos_lang_and_hindi` | Adds `lang` column to `inspiration_sources`, inserts 3 videos × 4 languages (en/kn/ta/hi), recreates `get_inspiration_videos(p_lang)` RPC with language filter |
 | 2026-03-24 | `things_that_interest_me` | Creates `things_that_interest_me` table with RLS policies |
-| 2026-03-20 | `drop_stale_assessment_responses_rls` | Drops legacy ALL RLS policy that compared `auth.uid() = student_id` directly (caused 409 on upsert) |
-| 2026-03-19 | `unique_student_assessment_responses` | Adds `UNIQUE (student_id, assessment_type)` constraint after deduplicating existing rows |
-| 2026-03-18 | `profile_card_questions` | Inserts profile card questions (22 questions + 6 titles × 4 languages) into `content_translations` from Google Sheet |
 
 ### Notable Schema Notes
 - **Schools → States**: Renamed organizational unit to "state"
@@ -328,6 +328,8 @@ See `supabase/migrations/` for full history (150+ files, Jan 2025 – Mar 2026).
 - **assessment_responses unique constraint (Mar 2026)**: `UNIQUE (student_id, assessment_type)` — all writes must use `.upsert({ onConflict: 'student_id,assessment_type' })`
 - **RLS on assessment_responses**: Enabled with 4 policies (`ar_select_student`, `ar_insert_student`, `ar_update_student`, `ar_select_teacher`) using `is_student_owned_by_auth()` function
 - **inspiration_sources lang (Mar 2026)**: `lang` column added; `get_inspiration_videos(p_lang)` RPC replaces parameterless version; 3 videos per language (en/kn/ta/hi)
+- **users email unique index (Mar 2026)**: `UNIQUE INDEX users_email_lower_unique ON users (LOWER(email))` prevents case-insensitive email duplicates. All emails normalized to lowercase on insert.
+- **summary RPC key fix (Mar 2026)**: All 6 `get_*_summary_questions_i18n` RPCs updated to look up `'summary_question' || N` (was `'question' || N`) matching keys set by clean_slate + fix_content_key_formats migrations
 
 ---
 
@@ -462,7 +464,7 @@ Frontend → Supabase directly (queries, RPCs, storage). AI/ML services are dire
 > **Holland Code & Career Guidance Tools**: No AI summary or teacher approval wired — intentional for now.
 
 > [!NOTE]
-> **Hindi content translations**: No `content_translations` rows for `hi` yet — pending ILP updating Google Sheet.
+> **Hindi content translations**: Summary questions have Hindi translations for all 6 assessments. Some `content_translations` rows for `hi` still pending ILP updating Google Sheet for non-summary content.
 
 > [!NOTE]
 > **Career roadmap milestone labels**: Hardcoded in English/Kannada/Tamil only — no Hindi support. Pending decision on DB migration.
@@ -528,4 +530,14 @@ Frontend → Supabase directly (queries, RPCs, storage). AI/ML services are dire
 | **8F** | ThingsInterestMePage Hindi translations: all 17 strings translated from English fallback to proper Hindi | ✅ |
 | **8G** | NotificationBell: dropdown closes on item click | ✅ |
 | **8H** | Hobbies Hindi section names added to save-progress display (शौक और रुचियाँ, प्रतिभाएँ और अभ्यास, सहायता और करियर संबंध) | ✅ |
+| **9A** | About Me: add mandatory asterisks (*) to Question/TripleInput/DoubleInput sub-components | ✅ |
+| **9B** | Remove duplicate help text display (blue box + placeholder) across 4 assessments: About Me, Inspiration, Dreams, Role Models. Placeholder now generic translated prompt | ✅ |
+| **9C** | CSV bulk import (`ImportStudentsDialog`): `.insert()` → `.upsert({ onConflict: 'user_id' })` on students/credentials, check existing user before creating | ✅ |
+| **9D** | Case-insensitive email matching: `.eq('email')` → `.ilike('email')` in signUp, handleAddStudent, CSV import. Emails normalized to lowercase on insert. Migration: `UNIQUE INDEX users_email_lower_unique ON users (LOWER(email))` | ✅ |
+| **9E** | Bruno account merge: deleted duplicate user/student records created by case-sensitive email mismatch (`Bruno@gmail.com` vs `bruno@gmail.com`), normalized email to lowercase | ✅ |
+| **9F** | Summary RPC key mismatch: all 6 summary question RPCs updated from `'question' || N` → `'summary_question' || N` to match actual `content_translations` keys (clean_slate + fix_content_key_formats migration chain) | ✅ |
+| **9G** | NotificationBell: mobile full-width positioning (`fixed top-14 left-2 right-2` on mobile, `absolute right-0` on sm+) | ✅ |
+| **9H** | Teacher review: Hindi language detection in `detectLangKeyFromResponses` (U+0900-097F), Hindi translations loaded for all question fetch functions | ✅ |
+| **9I** | Teacher review: `renderSummaryTabSection` shows actual translated summary question text instead of raw "Q1"/"Q2" labels. Handles flat summary keys (`summary_qN`, `summary_N`) for Dreams/Hobbies/Role Models | ✅ |
+| **9J** | Teacher review: Inspiration questions translated via `get_inspiration_questions_i18n(p_lang)`, Dreams/About Me fallback branches show "Question N" instead of raw key names | ✅ |
 | **2–3** | Google Sheets sync automation | ⏸️ Paused — sheet restructuring in progress |
