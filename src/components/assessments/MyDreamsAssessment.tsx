@@ -1057,7 +1057,7 @@ export default function MyDreamsAssessment() {
         })}
 
         {/* Navigation and Submit */}
-        <div className="flex flex-col-reverse sm:flex-row justify-between items-center mt-8 gap-4 sm:gap-0">
+        <div className="flex flex-col-reverse sm:flex-row justify-between items-center mt-8 gap-4 sm:gap-0" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 1rem))' }}>
           <Button
             variant="outline"
             onClick={() => {

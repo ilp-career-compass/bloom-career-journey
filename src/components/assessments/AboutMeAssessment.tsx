@@ -872,7 +872,7 @@ export default function AboutMeAssessment() {
             }
 
 
-            <div className="flex flex-col-reverse sm:flex-row justify-between items-center mt-8 pt-4 border-t border-gray-200 gap-4 sm:gap-0">
+            <div className="flex flex-col-reverse sm:flex-row justify-between items-center mt-8 pt-4 border-t border-gray-200 gap-4 sm:gap-0" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 1rem))' }}>
               <Button
                 variant="outline"
                 onClick={() => {

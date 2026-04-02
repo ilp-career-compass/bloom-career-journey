@@ -1091,7 +1091,7 @@ export default function MyHobbiesAssessment() {
                   </div>
 
                   {/* Navigation Buttons */}
-                  <div className="mt-10 flex flex-col sm:flex-row justify-between items-center gap-4 border-t border-orange-100 pt-6">
+                  <div className="mt-10 flex flex-col sm:flex-row justify-between items-center gap-4 border-t border-orange-100 pt-6" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 1rem))' }}>
                     <Button
                       variant="outline"
                       onClick={() => saveSection(currentSection)}

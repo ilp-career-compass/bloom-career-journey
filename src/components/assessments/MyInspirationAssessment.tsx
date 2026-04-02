@@ -1754,32 +1754,27 @@ export default function MyInspirationAssessment() {
         </Card>
 
         {/* Footer Navigation */}
-        <div className="flex justify-between items-center mt-8">
+        <div className="flex flex-col-reverse sm:flex-row justify-between items-center mt-8 gap-4 sm:gap-0 pb-6" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom, 1.5rem))' }}>
           <Button
             variant="outline"
             onClick={previousVideo}
             disabled={currentVideoIndex === 0}
-            className="border-blue-200 text-blue-700 hover:bg-blue-50"
+            className="w-full sm:w-auto border-blue-200 text-blue-700 hover:bg-blue-50 whitespace-nowrap"
           >
             {lang === 'kn' ? 'ಹಿಂದಿನ ವೀಡಿಯೊ' : lang === 'ta' ? 'முந்தைய வீடியோ' : lang === 'hi' ? 'पिछला वीडियो' : t('previousVideo')}
           </Button>
 
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Button
               variant="outline"
               onClick={() => saveVideoProgress(currentVideoIndex)}
               disabled={!isVideoComplete(currentVideoIndex) || saving || readOnlyView}
-              className="border-green-200 text-green-700 hover:bg-green-50"
+              className="w-full sm:w-auto border-green-200 text-green-700 hover:bg-green-50 whitespace-nowrap"
             >
               {saving ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
                   {t('saving')}
-                </>
-              ) : isVideoSaved(currentVideoIndex) ? (
-                <>
-                  <Save className="w-4 h-4 mr-2" />
-                  {lang === 'kn' ? 'ಪ್ರಗತಿಯನ್ನು ಉಳಿಸಿ' : lang === 'ta' ? 'முன்னேற்றத்தை சேமி' : lang === 'hi' ? 'प्रगति सहेजें' : 'Save Progress'}
                 </>
               ) : (
                 <>
@@ -1793,17 +1788,17 @@ export default function MyInspirationAssessment() {
               <Button
                 variant="outline"
                 onClick={nextVideo}
-                className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                className="w-full sm:w-auto border-blue-200 text-blue-700 hover:bg-blue-50 whitespace-nowrap"
               >
                 {currentVideoIndex === inspirationVideos.length - 1
                   ? (lang === 'kn' ? 'ಸಾರಾಂಶ →' : lang === 'ta' ? 'சுருக்கம் →' : lang === 'hi' ? 'सारांश →' : 'Summary →')
-                  : (lang === 'kn' ? 'ಮುಂದಿನ ವೀಡಿಯೊ →' : lang === 'ta' ? 'அடுத்த வீடியோ →' : lang === 'hi' ? 'अगला वीडियो →' : t('nextVideo'))}
+                  : (lang === 'kn' ? 'ಮುಂದಿನ ವೀಡಿಯೊ →' : lang === 'ta' ? 'அடுத்த வீடியோ →' : lang === 'hi' ? 'अगला वीडியो →' : t('nextVideo'))}
               </Button>
             ) : (
               <Button
                 onClick={submitAssessment}
                 disabled={!canSubmit() || submitting || readOnlyView}
-                className="bg-blue-600 hover:bg-blue-700"
+                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 whitespace-nowrap"
               >
                 {submitting ? (
                   <>
