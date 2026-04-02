@@ -19,13 +19,14 @@ type Props = {
 export default function ProfileDialog({ open, onOpenChange }: Props) {
   const { userProfile, refreshUserProfile } = useAuth();
   const { toast } = useToast();
-  const { t, lang } = useLang();
+  const { t, lang, setLang } = useLang();
   const isTeacher = userProfile?.role === 'teacher';
 
   const [fullName, setFullName] = useState('');
   const [gender, setGender] = useState<'male' | 'female' | ''>('');
   const [goal, setGoal] = useState('');
   const [school, setSchool] = useState('');
+  const [selectedLang, setSelectedLang] = useState<'en' | 'kn' | 'ta' | 'hi'>('en');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [password, setPassword] = useState('');
   const [saving, setSaving] = useState(false);
@@ -38,6 +39,7 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
     setGender((userProfile as any).gender || '');
     setGoal((userProfile as any).career_goals || '');
     setSchool((userProfile as any).school || '');
+    setSelectedLang((userProfile.preferred_language as 'en' | 'kn' | 'ta' | 'hi') || 'en');
     // Load state label and contact
     (async () => {
       try {
@@ -144,7 +146,8 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
         gender: gender || null,
         school: school || null,
         profile_picture_url: avatarUrl,
-        career_goals: isTeacher ? (userProfile as any).career_goals || null : goal || null
+        career_goals: isTeacher ? (userProfile as any).career_goals || null : goal || null,
+        preferred_language: selectedLang,
       };
 
       logger.log('🔄 Updating user profile with data:', updateData);
@@ -182,7 +185,7 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
 
           logger.log('Student password updated successfully');
           toast({
-            title: lang === 'kn' ? "ಪಾಸ್ವರ್ಡ್ ನವೀಕರಿಸಲಾಗಿದೆ! 🔐" : lang === 'ta' ? "கடவுச்சொல் மாற்றப்பட்டது! 🔐" : "Password Updated! 🔐",
+            title: lang === 'kn' ? "ಪಾಸ್ವರ್ಡ್ ನವೀಕರಿಸಲಾಗಿದೆ! 🔐" : lang === 'ta' ? "கடவுச்சொல் மாற்றப்பட்டது! 🔐" : lang === 'hi' ? "पासवर्ड अपडेट हो गया! 🔐" : "Password Updated! 🔐",
             description: lang === 'kn' ? "ನಿಮ್ಮ ಪಾಸ್ವರ್ಡ್ ಯಶಸ್ವಿಯಾಗಿ ಬದಲಾಯಿಸಲಾಗಿದೆ. ಈಗ ನೀವು ನಿಮ್ಮ ಹೊಸ ಪಾಸ್ವರ್ಡ್‌ನೊಂದಿಗೆ ಲಾಗಿನ್ ಮಾಡಬಹುದು." : lang === 'ta' ? "உங்கள் கடவுச்சொல் மாற்றப்பட்டது. இப்போது புதிய கடவுச்சொல்லுடன் நுழையலாம்." : "Your password has been changed successfully. You can now login with your new password.",
           });
         } else {
@@ -193,7 +196,7 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
             throw new Error(`Failed to update password: ${pwErr.message}`);
           }
           toast({
-            title: lang === 'kn' ? "ಪಾಸ್ವರ್ಡ್ ನವೀಕರಿಸಲಾಗಿದೆ! 🔐" : lang === 'ta' ? "கடவுச்சொல் மாற்றப்பட்டது! 🔐" : "Password Updated! 🔐",
+            title: lang === 'kn' ? "ಪಾಸ್ವರ್ಡ್ ನವೀಕರಿಸಲಾಗಿದೆ! 🔐" : lang === 'ta' ? "கடவுச்சொல் மாற்றப்பட்டது! 🔐" : lang === 'hi' ? "पासवर्ड अपडेट हो गया! 🔐" : "Password Updated! 🔐",
             description: lang === 'kn' ? "ನಿಮ್ಮ ಪಾಸ್ವರ್ಡ್ ಯಶಸ್ವಿಯಾಗಿ ಬದಲಾಯಿಸಲಾಗಿದೆ." : lang === 'ta' ? "உங்கள் கடவுச்சொல் மாற்றப்பட்டது." : "Your password has been changed successfully.",
           });
         }
@@ -201,19 +204,27 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
 
       // Show success message
       toast({
-        title: lang === 'kn' ? "ಪ್ರೊಫೈಲ್ ನವೀಕರಿಸಲಾಗಿದೆ! ✨" : lang === 'ta' ? "சுயவிவரம் மாற்றப்பட்டது! ✨" : "Profile Updated! ✨",
-        description: lang === 'kn' ? "ನಿಮ್ಮ ಪ್ರೊಫೈಲ್ ಯಶಸ್ವಿಯಾಗಿ ನವೀಕರಿಸಲಾಗಿದೆ." : lang === 'ta' ? "உங்கள் சுயவிவரம் மாற்றப்பட்டது." : "Your profile has been updated successfully.",
+        title: lang === 'kn' ? "ಪ್ರೊಫೈಲ್ ನವೀಕರಿಸಲಾಗಿದೆ! ✨" : lang === 'ta' ? "சுயவிவரம் மாற்றப்பட்டது! ✨" : lang === 'hi' ? "प्रोफ़ाइल अपडेट हो गई! ✨" : "Profile Updated! ✨",
+        description: lang === 'kn' ? "ನಿಮ್ಮ ಪ್ರೊಫೈಲ್ ಯಶಸ್ವಿಯಾಗಿ ನವೀಕರಿಸಲಾಗಿದೆ." : lang === 'ta' ? "உங்கள் சுயவிவரம் மாற்றப்பட்டது." : lang === 'hi' ? "आपकी प्रोफ़ाइल सफलतापूर्वक अपडेट हो गई।" : "Your profile has been updated successfully.",
       });
 
+      // Sync language context immediately if changed
+      if (selectedLang !== lang) {
+        setLang(selectedLang);
+        const langNames: Record<string, Record<string, string>> = {
+          en: { en: 'Language updated', kn: 'Language updated', ta: 'Language updated', hi: 'Language updated' },
+          kn: { en: 'ಭಾಷೆ ನವೀಕರಿಸಲಾಗಿದೆ', kn: 'ಭಾಷೆ ನವೀಕರಿಸಲಾಗಿದೆ', ta: 'ಭಾಷೆ ನವೀಕರಿಸಲಾಗಿದೆ', hi: 'ಭಾಷೆ ನವೀಕರಿಸಲಾಗಿದೆ' },
+          ta: { en: 'மொழி புதுப்பிக்கப்பட்டது', kn: 'மொழி புதுப்பிக்கப்பட்டது', ta: 'மொழி புதுப்பிக்கப்பட்டது', hi: 'மொழி புதுப்பிக்கப்பட்டது' },
+          hi: { en: 'भाषा अपडेट हो गई', kn: 'भाषा अपडेट हो गई', ta: 'भाषा अपडेट हो गई', hi: 'भाषा अपडेट हो गई' },
+        };
+        toast({ title: (langNames[selectedLang] || langNames.en)[selectedLang] || 'Language updated' });
+      }
+
       // Small delay to ensure database update is complete
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-      // Refresh user profile to show updated picture
-      logger.log('🔄 Refreshing user profile after update...');
+      // Refresh user profile to show updated data
       await refreshUserProfile();
-
-      // Force re-render of profile dialog with fresh data
-      logger.log('🔄 Profile dialog will re-render with fresh data');
 
       onOpenChange(false);
     } catch (err: any) {
@@ -229,18 +240,22 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
             ? 'ಪ್ರೊಫೈಲ್ ಚಿತ್ರವನ್ನು ಈಗ ಅಪ್‌ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ. ದಯವಿಟ್ಟು ನಿರ್ವಾಹಕರು "avatars" ಸ್ಟೋರೇಜ್ ಬಕೆಟ್ ಅನ್ನು ಸೃಷ್ಟಿಸಲಿ.'
             : lang === 'ta'
               ? 'சுயவிவர படத்தை இப்போது பதிவேற்ற முடியவில்லை. நிர்வாகி "avatars" சேமிப்பு பக்கெட்டை உருவாக்க வேண்டும்.'
-              : 'We cannot upload your profile picture right now. Please ask your administrator to create the "avatars" storage bucket.';
+              : lang === 'hi'
+                ? 'अभी प्रोफ़ाइल फ़ोटो अपलोड नहीं हो सकी। कृपया व्यवस्थापक से "avatars" स्टोरेज बकेट बनाने को कहें।'
+                : 'We cannot upload your profile picture right now. Please ask your administrator to create the "avatars" storage bucket.';
       } else {
         description =
           lang === 'kn'
             ? 'ಪ್ರೊಫೈಲ್ ಅನ್ನು ನವೀಕರಿಸಲು ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.'
             : lang === 'ta'
               ? 'சுயவிவரத்தை மாற்ற முடியவில்லை. தயவு செய்து மீண்டும் முயற்சிக்கவும்.'
-              : 'Failed to update profile. Please try again.';
+              : lang === 'hi'
+                ? 'प्रोफ़ाइल अपडेट करने में विफल। कृपया पुनः प्रयास करें।'
+                : 'Failed to update profile. Please try again.';
       }
 
       toast({
-        title: lang === 'kn' ? "ನವೀಕರಣ ವಿಫಲವಾಗಿದೆ" : lang === 'ta' ? "மாற்ற முடியவில்லை" : "Update Failed",
+        title: lang === 'kn' ? "ನವೀಕರಣ ವಿಫಲವಾಗಿದೆ" : lang === 'ta' ? "மாற்ற முடியவில்லை" : lang === 'hi' ? "अपडेट विफल" : "Update Failed",
         description,
         variant: "destructive",
       });
@@ -253,12 +268,12 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto w-[95vw] md:w-full" lang={lang} dir="auto">
         <DialogHeader>
-          <DialogTitle>{lang === 'kn' ? 'ನನ್ನ ಪ್ರೊಫೈಲ್' : lang === 'ta' ? 'என் விவரம்' : 'My Profile'}</DialogTitle>
-          <DialogDescription>{lang === 'kn' ? 'ನಿಮ್ಮ ಪ್ರೊಫೈಲ್ ಮಾಹಿತಿಯನ್ನು ನವೀಕರಿಸಿ' : lang === 'ta' ? 'உங்கள் விவரத்தை மாற்றவும்' : 'Update your profile information'}</DialogDescription>
+          <DialogTitle>{lang === 'kn' ? 'ನನ್ನ ಪ್ರೊಫೈಲ್' : lang === 'ta' ? 'என் விவரம்' : lang === 'hi' ? 'मेरी प्रोफ़ाइल' : 'My Profile'}</DialogTitle>
+          <DialogDescription>{lang === 'kn' ? 'ನಿಮ್ಮ ಪ್ರೊಫೈಲ್ ಮಾಹಿತಿಯನ್ನು ನವೀಕರಿಸಿ' : lang === 'ta' ? 'உங்கள் விவரத்தை மாற்றவும்' : lang === 'hi' ? 'अपनी प्रोफ़ाइल जानकारी अपडेट करें' : 'Update your profile information'}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div>
-            <Label>{lang === 'kn' ? 'ಪೂರ್ಣ ಹೆಸರು' : lang === 'ta' ? 'முழு பெயர்' : 'Full Name'}</Label>
+            <Label>{lang === 'kn' ? 'ಪೂರ್ಣ ಹೆಸರು' : lang === 'ta' ? 'முழு பெயர்' : lang === 'hi' ? 'पूरा नाम' : 'Full Name'}</Label>
             <Input
               lang={lang}
               value={fullName}
@@ -266,88 +281,90 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
             />
           </div>
           <div>
-            <Label>{lang === 'kn' ? 'ಫೋನ್ / ಇಮೇಲ್' : lang === 'ta' ? 'தொலைபேசி / மின்னஞ்சல்' : 'Phone / Email'}</Label>
+            <Label>{lang === 'kn' ? 'ಫೋನ್ / ಇಮೇಲ್' : lang === 'ta' ? 'தொலைபேசி / மின்னஞ்சல்' : lang === 'hi' ? 'फ़ोन / ईमेल' : 'Phone / Email'}</Label>
             <Input value={contactLabel} disabled />
           </div>
           <div>
-            <Label>{lang === 'kn' ? 'ಲಿಂಗ' : lang === 'ta' ? 'பாலினம்' : 'Gender'}</Label>
+            <Label>{lang === 'kn' ? 'ಲಿಂಗ' : lang === 'ta' ? 'பாலினம்' : lang === 'hi' ? 'लिंग' : 'Gender'}</Label>
             <Select value={gender} onValueChange={(v: any) => setGender(v)}>
-              <SelectTrigger><SelectValue placeholder={lang === 'kn' ? 'ಲಿಂಗವನ್ನು ಆಯ್ಕೆಮಾಡಿ' : lang === 'ta' ? 'பாலினத்தைத் தேர்ந்தெடுக்கவும்' : 'Select gender'} /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder={lang === 'kn' ? 'ಲಿಂಗವನ್ನು ಆಯ್ಕೆಮಾಡಿ' : lang === 'ta' ? 'பாலினத்தைத் தேர்ந்தெடுக்கவும்' : lang === 'hi' ? 'लिंग चुनें' : 'Select gender'} /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="male">{lang === 'kn' ? 'ಪುರುಷ' : lang === 'ta' ? 'ஆண்' : 'Male'}</SelectItem>
-                <SelectItem value="female">{lang === 'kn' ? 'ಸ್ತ್ರೀ' : lang === 'ta' ? 'பெண்' : 'Female'}</SelectItem>
+                <SelectItem value="male">{lang === 'kn' ? 'ಪುರುಷ' : lang === 'ta' ? 'ஆண்' : lang === 'hi' ? 'पुरुष' : 'Male'}</SelectItem>
+                <SelectItem value="female">{lang === 'kn' ? 'ಸ್ತ್ರೀ' : lang === 'ta' ? 'பெண்' : lang === 'hi' ? 'महिला' : 'Female'}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           {/* State and School - Side by side */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <Label>{lang === 'kn' ? 'ರಾಜ್ಯ' : lang === 'ta' ? 'மாநிலம்' : 'State'}</Label>
+              <Label>{lang === 'kn' ? 'ರಾಜ್ಯ' : lang === 'ta' ? 'மாநிலம்' : lang === 'hi' ? 'राज्य' : 'State'}</Label>
               <Input value={meta?.state || ''} disabled />
             </div>
             <div>
-              <Label>{lang === 'kn' ? 'ಶಾಲೆ' : lang === 'ta' ? 'பள்ளி' : 'School'}</Label>
+              <Label>{lang === 'kn' ? 'ಶಾಲೆ' : lang === 'ta' ? 'பள்ளி' : lang === 'hi' ? 'स्कूल' : 'School'}</Label>
               <Input
                 lang={lang}
                 value={school}
                 onChange={(e) => setSchool(e.target.value)}
-                placeholder={lang === 'kn' ? 'ನಿಮ್ಮ ಶಾಲೆಯ ಹೆಸರನ್ನು ನಮೂದಿಸಿ' : lang === 'ta' ? 'உங்கள் பள்ளியின் பெயரை உள்ளிடவும்' : 'Enter your school name'}
+                placeholder={lang === 'kn' ? 'ನಿಮ್ಮ ಶಾಲೆಯ ಹೆಸರನ್ನು ನಮೂದಿಸಿ' : lang === 'ta' ? 'உங்கள் பள்ளியின் பெயரை உள்ளிடவும்' : lang === 'hi' ? 'अपने स्कूल का नाम दर्ज करें' : 'Enter your school name'}
               />
             </div>
           </div>
           {!isTeacher && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <Label>{lang === 'kn' ? 'ಶಿಕ್ಷಕ' : lang === 'ta' ? 'ஆசிரியர்' : 'Teacher'}</Label>
+                <Label>{lang === 'kn' ? 'ಶಿಕ್ಷಕ' : lang === 'ta' ? 'ஆசிரியர்' : lang === 'hi' ? 'शिक्षक' : 'Teacher'}</Label>
                 <Input value={meta?.teacherName || ''} disabled />
               </div>
               <div>
-                <Label>{lang === 'kn' ? 'ತರಗತಿ' : lang === 'ta' ? 'வகுப்பு' : 'Class'}</Label>
+                <Label>{lang === 'kn' ? 'ತರಗತಿ' : lang === 'ta' ? 'வகுப்பு' : lang === 'hi' ? 'कक्षा' : 'Class'}</Label>
                 <Input value={meta?.className || ''} disabled />
               </div>
             </div>
           )}
           {!isTeacher && (
             <div>
-              <Label>{lang === 'kn' ? 'ಆಸೆ / ವೃತ್ತಿ ಗುರಿ' : lang === 'ta' ? 'ஆசை / வாழ்க்கை இலக்கு' : 'Aspiration / Career Goal'}</Label>
+              <Label>{lang === 'kn' ? 'ಆಸೆ / ವೃತ್ತಿ ಗುರಿ' : lang === 'ta' ? 'ஆசை / வாழ்க்கை இலக்கு' : lang === 'hi' ? 'आकांक्षा / करियर लक्ष्य' : 'Aspiration / Career Goal'}</Label>
               <Input
                 lang={lang}
                 value={goal}
                 onChange={(e) => setGoal(e.target.value)}
-                placeholder={lang === 'kn' ? 'ನಿಮ್ಮ ವೃತ್ತಿ ಗುರಿ' : lang === 'ta' ? 'உங்கள் வாழ்க்கை இலக்கு' : 'Your career goal'}
+                placeholder={lang === 'kn' ? 'ನಿಮ್ಮ ವೃತ್ತಿ ಗುರಿ' : lang === 'ta' ? 'உங்கள் வாழ்க்கை இலக்கு' : lang === 'hi' ? 'आपका करियर लक्ष्य' : 'Your career goal'}
               />
             </div>
           )}
           <div>
-            <Label>{lang === 'kn' ? 'ಆಯ್ಕೆ ಮಾಡಿದ ಭಾಷೆ' : lang === 'ta' ? 'தேர்ந்தெடுக்கப்பட்ட மொழி' : 'Preferred Language'}</Label>
-            <Input
-              value={userProfile?.preferred_language === 'kn' ? (lang === 'kn' ? 'ಕನ್ನಡ' : 'Kannada') :
-                userProfile?.preferred_language === 'ta' ? (lang === 'ta' ? 'தமிழ்' : 'Tamil') :
-                  'English'}
-              disabled
-              className="bg-slate-50 opacity-80"
-            />
+            <Label>{lang === 'kn' ? 'ಆಯ್ಕೆ ಮಾಡಿದ ಭಾಷೆ' : lang === 'ta' ? 'தேர்ந்தெடுக்கப்பட்ட மொழி' : lang === 'hi' ? 'पसंदीदा भाषा' : 'Preferred Language'}</Label>
+            <Select value={selectedLang} onValueChange={(v: 'en' | 'kn' | 'ta' | 'hi') => setSelectedLang(v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="en">English</SelectItem>
+                <SelectItem value="kn">ಕನ್ನಡ (Kannada)</SelectItem>
+                <SelectItem value="ta">தமிழ் (Tamil)</SelectItem>
+                <SelectItem value="hi">हिन्दी (Hindi)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div>
-            <Label>{lang === 'kn' ? 'ಪ್ರೊಫೈಲ್ ಚಿತ್ರ' : lang === 'ta' ? 'படம்' : 'Profile Picture'}</Label>
+            <Label>{lang === 'kn' ? 'ಪ್ರೊಫೈಲ್ ಚಿತ್ರ' : lang === 'ta' ? 'படம்' : lang === 'hi' ? 'प्रोफ़ाइल फ़ोटो' : 'Profile Picture'}</Label>
             <Input type="file" accept="image/*" onChange={(e) => setAvatarFile(e.target.files?.[0] || null)} />
           </div>
           <div>
-            <Label>{lang === 'kn' ? 'ಪಾಸ್ವರ್ಡ್ ಬದಲಾಯಿಸಿ' : lang === 'ta' ? 'கடவுச்சொல் மாற்ற' : 'Change Password'}</Label>
+            <Label>{lang === 'kn' ? 'ಪಾಸ್ವರ್ಡ್ ಬದಲಾಯಿಸಿ' : lang === 'ta' ? 'கடவுச்சொல் மாற்ற' : lang === 'hi' ? 'पासवर्ड बदलें' : 'Change Password'}</Label>
             <Input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder={lang === 'kn' ? 'ಹೊಸ ಪಾಸ್ವರ್ಡ್' : lang === 'ta' ? 'புதிய கடவுச்சொல்' : 'New password'}
+              placeholder={lang === 'kn' ? 'ಹೊಸ ಪಾಸ್ವರ್ಡ್' : lang === 'ta' ? 'புதிய கடவுச்சொல்' : lang === 'hi' ? 'नया पासवर्ड' : 'New password'}
             />
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>
-              {lang === 'kn' ? 'ಮುಚ್ಚಿ' : lang === 'ta' ? 'மூடு' : 'Close'}
+              {lang === 'kn' ? 'ಮುಚ್ಚಿ' : lang === 'ta' ? 'மூடு' : lang === 'hi' ? 'बंद करें' : 'Close'}
             </Button>
             <Button className="bg-green-600 hover:bg-green-700" onClick={saveProfile} disabled={saving}>
-              {saving ? (lang === 'kn' ? 'ಉಳಿಸಲಾಗುತ್ತಿದೆ…' : lang === 'ta' ? 'சேமிக்கிறது…' : 'Saving…') : (lang === 'kn' ? 'ಉಳಿಸಿ' : lang === 'ta' ? 'சேமி' : 'Save')}
+              {saving ? (lang === 'kn' ? 'ಉಳಿಸಲಾಗುತ್ತಿದೆ…' : lang === 'ta' ? 'சேமிக்கிறது…' : lang === 'hi' ? 'सहेजा जा रहा है…' : 'Saving…') : (lang === 'kn' ? 'ಉಳಿಸಿ' : lang === 'ta' ? 'சேமி' : lang === 'hi' ? 'सहेजें' : 'Save')}
             </Button>
           </div>
         </div>
