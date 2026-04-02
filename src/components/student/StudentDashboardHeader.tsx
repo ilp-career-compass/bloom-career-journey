@@ -38,7 +38,7 @@ export default function StudentDashboardHeader({
                         <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
                             <Crown className="w-6 h-6 text-white" />
                         </div>
-                        <img src="/logo/ILP new logo.jpeg" alt="ILP" className="h-8 w-8 rounded-sm object-contain hidden sm:block" />
+                        <img src="/logo/ILP-new-logo.jpeg" alt="ILP" className="h-8 w-8 rounded-sm object-contain hidden sm:block" />
                         <div>
                             <h1 className="text-lg md:text-xl font-bold text-gray-800 truncate leading-tight">{t('brand')}</h1>
                             <p className="text-sm text-gray-500 leading-tight hidden sm:block">an <span className="font-semibold">India Literacy Project</span> initiative</p>
