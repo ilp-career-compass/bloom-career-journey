@@ -62,6 +62,11 @@ export interface Student {
     class?: {
         name: string;
     };
+    teacher?: {
+        users?: {
+            full_name: string;
+        };
+    };
 }
 
 interface StudentsTabProps {
@@ -92,17 +97,6 @@ function getStatusColor(status: string) {
         case 'graduated': return 'bg-blue-100 text-blue-800';
         case 'transferred': return 'bg-purple-100 text-purple-800';
         default: return 'bg-gray-100 text-gray-800';
-    }
-}
-
-function getPerformanceColor(performance?: string) {
-    switch (performance) {
-        case 'excellent': return 'text-green-600';
-        case 'good': return 'text-blue-600';
-        case 'average': return 'text-yellow-600';
-        case 'below_average': return 'text-orange-600';
-        case 'needs_improvement': return 'text-red-600';
-        default: return 'text-gray-600';
     }
 }
 
@@ -223,6 +217,7 @@ export default function StudentsTab({
                                         <th className="text-left py-3 px-4 font-medium text-gray-700">Grade</th>
                                         <th className="text-left py-3 px-4 font-medium text-gray-700">Status</th>
                                         <th className="text-left py-3 px-4 font-medium text-gray-700">Language</th>
+                                        <th className="text-left py-3 px-4 font-medium text-gray-700">Mentor</th>
                                         <th className="text-left py-3 px-4 font-medium text-gray-700">Enrolled</th>
                                         <th className="text-left py-3 px-4 font-medium text-gray-700">Actions</th>
                                     </tr>
@@ -258,6 +253,11 @@ export default function StudentsTab({
                                                         : student.user?.preferred_language === 'ta' ? 'தமிழ்'
                                                         : student.user?.preferred_language === 'hi' ? 'हिन्दी'
                                                         : 'English'}
+                                                </span>
+                                            </td>
+                                            <td className="py-4 px-4">
+                                                <span className="text-sm text-gray-700">
+                                                    {student.teacher?.users?.full_name || 'No Mentor'}
                                                 </span>
                                             </td>
                                             <td className="py-4 px-4">

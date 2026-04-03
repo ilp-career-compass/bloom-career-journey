@@ -20,7 +20,6 @@ import {
   AssessmentAnswersModal,
   AddExistingStudentModal,
 } from '@/components/teacher/StudentModals';
-// AnalyticsTab import removed — placeholder, not functional yet
 import AssessmentResponsesView from '@/components/teacher/AssessmentResponsesView';
 import ResourcesSection from '@/components/teacher/ResourcesSection';
 import ChatbotDialog from '@/components/ChatbotDialog';
@@ -157,7 +156,7 @@ export default function TeacherDashboard() {
       if (!teacherData) { logger.warn('Could not load teacher profile'); setLoading(false); return; }
 
       const { data, error } = await supabase
-        .from('students').select(`*, user:users(full_name, email, mobile, preferred_language), class:classes(name)`)
+        .from('students').select(`*, user:users(full_name, email, mobile, preferred_language), class:classes(name), teacher:teachers(users(full_name))`)
         .eq('teacher_id', teacherData.id).order('created_at', { ascending: false });
       if (error) throw error;
       setStudents(data || []);
