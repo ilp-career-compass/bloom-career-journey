@@ -1759,7 +1759,7 @@ export default function MyInspirationAssessment() {
             variant="outline"
             onClick={previousVideo}
             disabled={currentVideoIndex === 0}
-            className="w-full sm:w-auto border-blue-200 text-blue-700 hover:bg-blue-50 whitespace-nowrap"
+            className="w-full sm:w-auto border-blue-200 text-blue-700 hover:bg-blue-50"
           >
             {lang === 'kn' ? 'ಹಿಂದಿನ ವೀಡಿಯೊ' : lang === 'ta' ? 'முந்தைய வீடியோ' : lang === 'hi' ? 'पिछला वीडियो' : t('previousVideo')}
           </Button>
@@ -1769,7 +1769,7 @@ export default function MyInspirationAssessment() {
               variant="outline"
               onClick={() => saveVideoProgress(currentVideoIndex)}
               disabled={!isVideoComplete(currentVideoIndex) || saving || readOnlyView}
-              className="w-full sm:w-auto border-green-200 text-green-700 hover:bg-green-50 whitespace-nowrap"
+              className="w-full sm:w-auto border-green-200 text-green-700 hover:bg-green-50"
             >
               {saving ? (
                 <>
@@ -1788,7 +1788,7 @@ export default function MyInspirationAssessment() {
               <Button
                 variant="outline"
                 onClick={nextVideo}
-                className="w-full sm:w-auto border-blue-200 text-blue-700 hover:bg-blue-50 whitespace-nowrap"
+                className="w-full sm:w-auto border-blue-200 text-blue-700 hover:bg-blue-50"
               >
                 {currentVideoIndex === inspirationVideos.length - 1
                   ? (lang === 'kn' ? 'ಸಾರಾಂಶ →' : lang === 'ta' ? 'சுருக்கம் →' : lang === 'hi' ? 'सारांश →' : 'Summary →')
@@ -1798,7 +1798,7 @@ export default function MyInspirationAssessment() {
               <Button
                 onClick={submitAssessment}
                 disabled={!canSubmit() || submitting || readOnlyView}
-                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 whitespace-nowrap"
+                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700"
               >
                 {submitting ? (
                   <>
