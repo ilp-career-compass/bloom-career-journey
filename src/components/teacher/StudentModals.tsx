@@ -206,12 +206,12 @@ export function StudentDetailsModal({ open, onOpenChange, selectedStudent, activ
                     </div>
                 </div>
                 <div className="flex justify-end gap-2">
-                    {selectedStudent?.user_id && (
+                    {selectedStudent?.id && (
                         <Button
                             variant="outline"
                             onClick={() => {
                                 onOpenChange(false);
-                                navigate(`/teacher/student-profile-card/${selectedStudent.user_id}`);
+                                navigate(`/teacher/student-profile-card/${selectedStudent.id}`);
                             }}
                         >
                             <Compass className="w-4 h-4 mr-2" />

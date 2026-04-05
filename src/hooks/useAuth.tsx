@@ -1141,31 +1141,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 
   const signOut = async () => {
+    // Best-effort Supabase sign out — don't gate local cleanup on this
     const { error } = await supabase.auth.signOut();
     if (error) {
-      toast({
-        title: "Sign out failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      // Reset all auth state
-      setUser(null);
-      setSession(null);
-      setUserProfile(null);
-      setIsCustomAuth(false);
-      setLoading(false);
-
-      // Clear localStorage
-      localStorage.removeItem('customAuth');
-      localStorage.removeItem('customUser');
-      localStorage.removeItem('customProfile');
-
-      toast({
-        title: "Signed out",
-        description: "You have been signed out successfully",
-      });
+      logger.error('Supabase signOut error (non-blocking):', error.message);
     }
+
+    // Always clear local auth state regardless of Supabase result
+    setUser(null);
+    setSession(null);
+    setUserProfile(null);
+    setIsCustomAuth(false);
+    setLoading(false);
+
+    // Clear custom auth localStorage
+    localStorage.removeItem('customAuth');
+    localStorage.removeItem('customUser');
+    localStorage.removeItem('customProfile');
   };
 
   const refreshUserProfile = async () => {

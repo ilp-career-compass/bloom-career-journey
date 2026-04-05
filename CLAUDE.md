@@ -484,6 +484,9 @@ Frontend → Supabase directly (queries, RPCs, storage). AI/ML services are dire
 > [!NOTE]
 > **sync-questions**: `scripts/sync_questions.ts` and Google Sheets automation pending implementation.
 
+> [!CAUTION]
+> **Custom auth migration (Phase 2, pre-production)**: Teacher-created students currently use a mock session (`custom-auth-token`) that is never passed to `supabase.auth.setSession()`. This means `auth.uid()` returns NULL in RLS context for these students. All data access for custom-auth students bypasses RLS. Before scaling to production, migrate teacher-created students to real Supabase Auth using server-side `createUser` so `auth.uid()` works correctly and RLS protects their data properly.
+
 ### Completed Work (Mar–Apr 2026 Sessions)
 | Phase | Description | Status |
 |-------|-------------|--------|
@@ -550,4 +553,9 @@ Frontend → Supabase directly (queries, RPCs, storage). AI/ML services are dire
 | **10E** | Mobile button layout fix: safe-area padding, prevent text wrapping and bottom cut-off | ✅ |
 | **10F** | Analytics tab removed from teacher dashboard | ✅ |
 | **10G** | RLS enabled on 18 public content/question tables with authenticated read-only policies | ✅ |
-| **2–3** | Google Sheets sync automation | ⏸️ Paused — sheet restructuring in progress |
+| **11A** | Fix language change bug: `fetchUserProfile` had guard making `refreshUserProfile()` a no-op; `derivedLang` in `useLang.tsx` reverted to stale `preferred_language` after `setLang()`. Fix: added `forceRefresh` param, reordered `refreshUserProfile()` before `setLang()` in `ProfileDialog.tsx`, removed 500ms delay. Language priority: URL param → `userProfile.preferred_language` → `localStorage.lang` → `'en'` | ✅ |
+| **11B** | Fix Tamil button overflow in MyInspirationAssessment bottom nav: removed `whitespace-nowrap` from all 4 buttons (Previous, Save, Next, Submit). Layout (`flex-col-reverse sm:flex-row`, `w-full sm:w-auto`) unchanged | ✅ |
+| **11C** | Fix teacher career roadmap empty: `TeacherStudentRoadmapPage` was querying `career_roadmap` with `students.id` but `career_roadmap.student_id` references `users.id`. Fix: use `student.user_id` instead of URL param `studentId` | ✅ |
+| **11D** | Fix teacher interests empty: same `student_id` mismatch in `TeacherStudentInterestsPage`. Fix: use `student.user_id` for `things_that_interest_me` query | ✅ |
+| **11E** | Fix logout not working for custom-auth students: `supabase.auth.signOut()` fails for custom-auth (no real session), gating state clearing inside success branch meant localStorage/React state never cleared. Fix: moved all state clearing outside success gate — runs unconditionally. `supabase.auth.signOut()` now best-effort only. Removed duplicate success toast from `signOut()` | ✅ |
+| **2–3** | Google Sheets sync automation | ⏸�� Paused — sheet restructuring in progress |

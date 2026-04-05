@@ -70,14 +70,18 @@ export default function ProfileCardPage({ studentIdOverride, readOnly }: Profile
   const { lang: currentLang } = useLang();
   const params = useParams<{ studentId?: string }>();
 
-  // For assessment_responses & profile_card_cache queries we need the students table UUID,
-  // NOT the auth/users UUID.  studentIdOverride and params.studentId are already students.id.
+  // assessment_responses.student_id → students(id)
+  // profile_card_cache.student_id → users(id)
+  // These are different FKs, so we need separate IDs for each table.
   const studentId = studentIdOverride || params.studentId || userProfile?.studentProfile?.id || '';
-  // For the users-table name lookup we still need the auth user id
   const userId = user?.id || '';
   const lang = (currentLang || 'en') as 'en' | 'kn' | 'ta' | 'hi';
   const { t } = useStudentStrings(lang);
 
+  // cacheUserId is the users.id used for all profile_card_cache operations.
+  // Student view: userId (= user?.id = users.id) is available directly.
+  // Teacher view: resolved from students table in fetchData.
+  const [cacheUserId, setCacheUserId] = useState<string>('');
   const [completedModules, setCompletedModules] = useState<Record<string, { responses: any; updated_at: string } | null>>({});
   const [answers, setAnswers] = useState<Record<string, ProfileCardAnswers>>({});
   const [questionLabels, setQuestionLabels] = useState<Record<string, ProfileCardQuestionLabels>>({});
@@ -98,17 +102,22 @@ export default function ProfileCardPage({ studentIdOverride, readOnly }: Profile
     if (!studentId) return;
     setLoading(true);
     try {
-      // Look up name: for own card use auth userId; for teacher view resolve via students table
+      // Resolve users.id for profile_card_cache and student name
+      let resolvedCacheUserId = '';
       if (studentIdOverride || params.studentId) {
+        // Teacher view: params.studentId is students.id — resolve to users.id
         const { data: stu } = await supabase.from('students').select('user_id').eq('id', studentId).maybeSingle();
-        if (stu?.user_id) {
-          const { data: u } = await supabase.from('users').select('full_name').eq('id', stu.user_id).single();
-          if (u) setStudentName(u.full_name || '');
-        }
+        if (!stu?.user_id) { setLoading(false); return; }
+        resolvedCacheUserId = stu.user_id;
+        const { data: u } = await supabase.from('users').select('full_name').eq('id', stu.user_id).single();
+        if (u) setStudentName(u.full_name || '');
       } else {
+        // Student view: userId is already users.id
+        resolvedCacheUserId = userId;
         const { data: profile } = await supabase.from('users').select('full_name').eq('id', userId).single();
         if (profile) setStudentName(profile.full_name || '');
       }
+      setCacheUserId(resolvedCacheUserId);
 
       const responseMap: Record<string, { responses: any; updated_at: string } | null> = {};
       for (const mod of MODULES) {
@@ -130,7 +139,7 @@ export default function ProfileCardPage({ studentIdOverride, readOnly }: Profile
       const { data: cachedRows } = await supabase
         .from('profile_card_cache')
         .select('assessment_type, keywords, generated_at, approval_status, rejection_reason')
-        .eq('student_id', studentId);
+        .eq('student_id', resolvedCacheUserId);
 
       const answerMap: Record<string, ProfileCardAnswers> = {};
       const tsMap: Record<string, string> = {};
@@ -242,7 +251,7 @@ export default function ProfileCardPage({ studentIdOverride, readOnly }: Profile
         setAnswers(prev => ({ ...prev, [assessmentType]: result.keywords! }));
         setCacheTimestamps(prev => ({ ...prev, [assessmentType]: now }));
         const { error } = await supabase.from('profile_card_cache').upsert({
-          student_id: studentId,
+          student_id: cacheUserId,
           assessment_type: assessmentType,
           keywords: result.keywords,
           generated_at: now,
@@ -298,7 +307,7 @@ export default function ProfileCardPage({ studentIdOverride, readOnly }: Profile
         setCareerDirection(result.direction);
         setCacheTimestamps(prev => ({ ...prev, career_direction: now }));
         const { error } = await supabase.from('profile_card_cache').upsert({
-          student_id: studentId,
+          student_id: cacheUserId,
           assessment_type: 'career_direction',
           keywords: { direction: result.direction },
           generated_at: now,
@@ -323,7 +332,7 @@ export default function ProfileCardPage({ studentIdOverride, readOnly }: Profile
             approved_by: user.id,
             approved_at: new Date().toISOString(),
             rejection_reason: null,
-          } as any).eq('student_id', studentId).eq('assessment_type', mod.assessmentType);
+          } as any).eq('student_id', cacheUserId).eq('assessment_type', mod.assessmentType);
         }
       }
       // Also approve career_direction if it exists
@@ -333,7 +342,7 @@ export default function ProfileCardPage({ studentIdOverride, readOnly }: Profile
           approved_by: user.id,
           approved_at: new Date().toISOString(),
           rejection_reason: null,
-        } as any).eq('student_id', studentId).eq('assessment_type', 'career_direction');
+        } as any).eq('student_id', cacheUserId).eq('assessment_type', 'career_direction');
       }
       const newStatus: Record<string, string> = {};
       for (const mod of MODULES) {
@@ -358,7 +367,7 @@ export default function ProfileCardPage({ studentIdOverride, readOnly }: Profile
         approved_by: user.id,
         approved_at: new Date().toISOString(),
         rejection_reason: rejectReason || 'Changes requested',
-      } as any).eq('student_id', studentId).eq('assessment_type', rejectingModule);
+      } as any).eq('student_id', cacheUserId).eq('assessment_type', rejectingModule);
       setApprovalStatus(prev => ({ ...prev, [rejectingModule!]: 'rejected' }));
       setRejectionReasons(prev => ({ ...prev, [rejectingModule!]: rejectReason || 'Changes requested' }));
       setRejectingModule(null);
