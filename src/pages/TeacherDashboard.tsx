@@ -60,7 +60,7 @@ export default function TeacherDashboard() {
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
   const [isAddExistingOpen, setIsAddExistingOpen] = useState(false);
   const teacherLang = userProfile?.preferred_language || 'en';
-  const [newStudent, setNewStudent] = useState({ fullName: '', contact: '', grade: '', stateId: '', preferredLanguage: teacherLang });
+  const [newStudent, setNewStudent] = useState({ fullName: '', phone: '', grade: '', stateId: '', preferredLanguage: teacherLang });
   const [states, setStates] = useState<StateInfo[]>([]);
   const [classes, setClasses] = useState<SchoolClass[]>([]);
   const [loadingStates, setLoadingStates] = useState(false);
@@ -173,60 +173,31 @@ export default function TeacherDashboard() {
         .from('teachers').select('id, state_id').eq('user_id', userProfile?.id).single();
       if (teacherError) throw teacherError;
 
-      let classId = null;
-      if (newStudent.grade) {
-        const { data: classData, error: classError } = await supabase
-          .from('classes').select('id').eq('name', `Class ${newStudent.grade}`).eq('state_id', teacherData.state_id).single();
-        if (!classError && classData) classId = classData.id;
-        else logger.warn(`Class ${newStudent.grade} not found for state ${teacherData.state_id}`);
+      const { data: result, error: fnError } = await supabase.functions.invoke('create-student', {
+        body: {
+          students: [{
+            fullName: newStudent.fullName,
+            phone: newStudent.phone,
+            grade: newStudent.grade,
+            preferredLanguage: newStudent.preferredLanguage || teacherLang || 'en',
+            teacherId: teacherData.id,
+            stateId: teacherData.state_id,
+          }],
+          teacherUserId: userProfile?.id,
+        },
+      });
+
+      if (fnError) throw new Error(fnError.message || 'Edge Function call failed');
+
+      if (result.errors?.length > 0) {
+        toast({ title: "Error", description: result.errors[0].reason, variant: "destructive" });
       }
-
-      const isEmail = /@/.test(newStudent.contact);
-      let existingUser: any = null;
-      if (isEmail) {
-        const { data } = await supabase.from('users').select('id, full_name, email, mobile').ilike('email', newStudent.contact.trim().toLowerCase()).maybeSingle();
-        existingUser = data || null;
-      } else {
-        const { data } = await supabase.from('users').select('id, full_name, email, mobile').eq('mobile', newStudent.contact).maybeSingle();
-        existingUser = data || null;
+      if (result.created?.length > 0) {
+        toast({ title: "Student Added!", description: `${newStudent.fullName} has been successfully enrolled to Class ${newStudent.grade}.` });
+        setIsAddStudentOpen(false);
+        setNewStudent({ fullName: '', phone: '', grade: '', stateId: '', preferredLanguage: teacherLang });
+        loadStudents();
       }
-
-      if (existingUser) {
-        const { data: existingStudent } = await supabase.from('students').select('teacher_id').eq('user_id', existingUser.id).maybeSingle();
-        if (existingStudent && existingStudent.teacher_id !== teacherData.id) {
-          const { data: teacherInfo } = await supabase.from('teachers').select('is_default, users(full_name)').eq('id', existingStudent.teacher_id).single();
-          if (teacherInfo && !(teacherInfo as any).is_default) {
-            throw new Error(`This student is already mentored by ${(teacherInfo as any).users?.full_name || 'another teacher'}.`);
-          }
-        }
-      }
-
-      let userData: any = existingUser;
-      if (!userData) {
-        const insertRes = await supabase.from('users').insert({
-          full_name: newStudent.fullName, email: isEmail ? newStudent.contact.trim().toLowerCase() : null,
-          mobile: !isEmail ? newStudent.contact : null, state_id: teacherData.state_id, role: 'student', password_hash: 'temporary123',
-          preferred_language: newStudent.preferredLanguage || teacherLang || 'en'
-        }).select().single();
-        if (insertRes.error) throw insertRes.error;
-        userData = insertRes.data;
-      } else {
-        try { await supabase.from('users').update({ full_name: newStudent.fullName || userData.full_name, state_id: userData.state_id || teacherData.state_id, role: 'student' }).eq('id', userData.id); } catch { }
-      }
-
-      const { error: studentError } = await supabase.from('students').upsert({ user_id: userData.id, teacher_id: teacherData.id, class_id: classId, enrollment_status: 'active' } as any, { onConflict: 'user_id' as any });
-      if (studentError) throw studentError;
-
-      const { error: authError } = await supabase.from('student_auth_credentials').upsert({
-        user_id: userData.id, email: isEmail ? newStudent.contact : existingUser?.email || null,
-        mobile: !isEmail ? newStudent.contact : existingUser?.mobile || null, password_hash: 'temporary123', is_active: true
-      } as any, { onConflict: 'user_id' as any });
-      if (authError) logger.warn('Auth credentials creation failed, but student was created:', authError);
-
-      toast({ title: "Student Added! ✨", description: `${newStudent.fullName} has been successfully enrolled${classId ? ` to Class ${newStudent.grade}` : ''}. Login: ${newStudent.contact}, Password: temporary123` });
-      setIsAddStudentOpen(false);
-      setNewStudent({ fullName: '', contact: '', grade: '', stateId: '', preferredLanguage: teacherLang });
-      loadStudents();
     } catch (error: any) {
       logger.error('Error adding student:', error);
       toast({ title: "Error", description: `Failed to add student: ${error.message}`, variant: "destructive" });

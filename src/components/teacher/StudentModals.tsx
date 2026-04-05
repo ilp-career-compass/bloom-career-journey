@@ -46,12 +46,21 @@ const LANG_LABELS: Record<string, string> = { en: 'English', kn: 'ಕನ್ನ�
 interface AddStudentModalProps {
     open: boolean;
     onOpenChange: (v: boolean) => void;
-    newStudent: { fullName: string; contact: string; grade: string; stateId?: string; preferredLanguage?: string };
-    setNewStudent: React.Dispatch<React.SetStateAction<{ fullName: string; contact: string; grade: string; stateId?: string; preferredLanguage?: string }>>;
+    newStudent: { fullName: string; phone: string; grade: string; stateId?: string; preferredLanguage?: string };
+    setNewStudent: React.Dispatch<React.SetStateAction<{ fullName: string; phone: string; grade: string; stateId?: string; preferredLanguage?: string }>>;
     onSubmit: () => void;
 }
 
+function isValidPhone(phone: string): boolean {
+    if (!phone) return true; // empty is not an error (just not submittable)
+    return /^\+\d{10,15}$/.test(phone);
+}
+
 export function AddStudentModal({ open, onOpenChange, newStudent, setNewStudent, onSubmit }: AddStudentModalProps) {
+    const phoneError = newStudent.phone && !isValidPhone(newStudent.phone)
+        ? 'Phone must be in E.164 format (e.g. +919876543210)'
+        : '';
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -76,13 +85,15 @@ export function AddStudentModal({ open, onOpenChange, newStudent, setNewStudent,
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="contact">Mobile Number / Email *</Label>
+                                <Label htmlFor="phone">Mobile Number *</Label>
                                 <Input
-                                    id="contact"
-                                    value={newStudent.contact}
-                                    onChange={(e) => setNewStudent(prev => ({ ...prev, contact: e.target.value }))}
-                                    placeholder="Enter mobile number or email"
+                                    id="phone"
+                                    value={newStudent.phone}
+                                    onChange={(e) => setNewStudent(prev => ({ ...prev, phone: e.target.value }))}
+                                    placeholder="+91XXXXXXXXXX"
+                                    className={phoneError ? 'border-red-400' : ''}
                                 />
+                                {phoneError && <p className="text-xs text-red-500">{phoneError}</p>}
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="grade">Grade *</Label>
@@ -121,7 +132,7 @@ export function AddStudentModal({ open, onOpenChange, newStudent, setNewStudent,
                     <Button
                         onClick={onSubmit}
                         className="bg-green-600 hover:bg-green-700"
-                        disabled={!newStudent.fullName || !newStudent.contact || !newStudent.grade}
+                        disabled={!newStudent.fullName || !newStudent.phone || !newStudent.grade || !!phoneError}
                     >
                         <Plus className="w-4 h-4 mr-2" />
                         Add Student

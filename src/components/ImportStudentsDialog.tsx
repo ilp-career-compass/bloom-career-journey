@@ -29,6 +29,10 @@ function parseCSV(text: string): Array<Record<string, string>> {
   });
 }
 
+function isValidE164(phone: string): boolean {
+  return /^\+\d{10,15}$/.test(phone);
+}
+
 export default function ImportStudentsDialog({ open, onOpenChange, classes, teacherId, stateId, onImported }: Props) {
   const { userProfile } = useAuth();
   const [rows, setRows] = useState<Array<Record<string, string>>>([]);
@@ -55,6 +59,18 @@ export default function ImportStudentsDialog({ open, onOpenChange, classes, teac
     return new Map(pairs);
   }, [classes]);
 
+  // Extract grade number from class name like "Class 9" → "9"
+  const classIdToGrade = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const c of classes as any[]) {
+      const id = String((c as any).class_id ?? (c as any).id ?? '');
+      const name = String((c as any).class_name ?? (c as any).name ?? '');
+      const match = name.match(/Class\s+(\d+)/i);
+      if (id && match) map.set(id, match[1]);
+    }
+    return map;
+  }, [classes]);
+
   const onFile = async (file: File) => {
     const text = await file.text();
     const parsed = parseCSV(text);
@@ -62,7 +78,8 @@ export default function ImportStudentsDialog({ open, onOpenChange, classes, teac
     const normalized: Array<Record<string,string>> = [];
     parsed.forEach((r, idx) => {
       if (!r.full_name) { errs.push(`Row ${idx+2}: missing full_name`); return; }
-      if (!r.contact) { errs.push(`Row ${idx+2}: missing contact`); return; }
+      if (!r.phone) { errs.push(`Row ${idx+2}: missing phone`); return; }
+      if (!isValidE164(r.phone)) { errs.push(`Row ${idx+2}: invalid phone format "${r.phone}" — expected +91XXXXXXXXXX`); return; }
       // accept class_id or class_name
       let classId = r.class_id?.trim();
       if (!classId) {
@@ -70,14 +87,14 @@ export default function ImportStudentsDialog({ open, onOpenChange, classes, teac
         classId = nameToId.get(className) || '';
       }
       if (!classId || !classMap.has(classId)) { errs.push(`Row ${idx+2}: invalid class (provide class_id or class_name)`); return; }
-      normalized.push({ full_name: r.full_name, contact: r.contact, class_id: classId });
+      normalized.push({ full_name: r.full_name, phone: r.phone, class_id: classId });
     });
     setRows(normalized);
     setErrors(errs);
   };
 
   const downloadTemplate = () => {
-    const csv = 'full_name,contact,class_name\n';
+    const csv = 'full_name,phone,class_name\n';
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -89,78 +106,50 @@ export default function ImportStudentsDialog({ open, onOpenChange, classes, teac
   const doImport = async () => {
     if (rows.length === 0) return;
     setImporting(true);
-    const failed: string[] = [];
-    const reassigned: string[] = [];
-    for (let i = 0; i < rows.length; i++) {
-      const r = rows[i];
-      try {
-        const isEmail = /@/.test(r.contact);
 
-        // 1) Check if user already exists by email or mobile
-        let existingUser: any = null;
-        if (isEmail) {
-          const { data } = await supabase.from('users').select('id, full_name, email, mobile').ilike('email', r.contact.trim().toLowerCase()).maybeSingle();
-          existingUser = data || null;
-        } else {
-          const { data } = await supabase.from('users').select('id, full_name, email, mobile').eq('mobile', r.contact).maybeSingle();
-          existingUser = data || null;
-        }
+    try {
+      // Build the students array for the Edge Function
+      const students = rows.map(r => ({
+        fullName: r.full_name,
+        phone: r.phone,
+        grade: classIdToGrade.get(r.class_id) || '',
+        preferredLanguage: selectedLang,
+        teacherId,
+        stateId,
+      }));
 
-        let userData: any = existingUser;
-        if (!userData) {
-          // Create new user
-          const { data: userRow, error: userErr } = await supabase
-            .from('users')
-            .insert({
-              full_name: r.full_name,
-              email: isEmail ? r.contact.trim().toLowerCase() : null,
-              mobile: !isEmail ? r.contact : null,
-              role: 'student',
-              state_id: stateId,
-              password_hash: 'temporary123',
-              preferred_language: selectedLang
-            })
-            .select('id')
-            .single();
-          if (userErr || !userRow?.id) throw userErr || new Error('Could not create user');
-          userData = userRow;
-        } else {
-          reassigned.push(`Row ${i+2}: ${r.full_name} already exists — reassigned to your class.`);
-        }
+      const { data: result, error: fnError } = await supabase.functions.invoke('create-student', {
+        body: { students, teacherUserId: userProfile?.id },
+      });
 
-        // 2) Upsert student record (update teacher_id if already exists)
-        const { error: sErr } = await supabase
-          .from('students')
-          .upsert(
-            { user_id: userData.id, teacher_id: teacherId, class_id: r.class_id, enrollment_status: 'active' } as any,
-            { onConflict: 'user_id' as any }
-          );
-        if (sErr) throw sErr;
-
-        // 3) Upsert auth credentials
-        const { error: credErr } = await supabase
-          .from('student_auth_credentials')
-          .upsert({
-            user_id: userData.id,
-            email: isEmail ? r.contact : existingUser?.email || null,
-            mobile: !isEmail ? r.contact : existingUser?.mobile || null,
-            password_hash: 'temporary123',
-            is_active: true
-          } as any, { onConflict: 'user_id' as any });
-        if (credErr) throw credErr;
-      } catch (e: any) {
-        failed.push(`Row ${i+2}: ${e?.message || e}`);
+      if (fnError) {
+        setErrors([`Import failed: ${fnError.message}`]);
+        setImporting(false);
+        return;
       }
-    }
-    setImporting(false);
-    if (failed.length > 0) {
-      setErrors([...reassigned, ...failed]);
-    } else if (reassigned.length > 0) {
-      setErrors(reassigned);
-      onImported?.();
-    } else {
-      onOpenChange(false);
-      onImported?.();
+
+      const messages: string[] = [];
+      if (result.created?.length > 0) {
+        messages.push(`${result.created.length} student(s) imported successfully.`);
+      }
+      if (result.errors?.length > 0) {
+        for (const err of result.errors) {
+          messages.push(`${err.fullName} (${err.phone}): ${err.reason}`);
+        }
+      }
+
+      setErrors(messages);
+      setImporting(false);
+
+      if (result.created?.length > 0) {
+        onImported?.();
+      }
+      if (!result.errors?.length) {
+        onOpenChange(false);
+      }
+    } catch (e: any) {
+      setErrors([`Import failed: ${e?.message || e}`]);
+      setImporting(false);
     }
   };
 
@@ -169,7 +158,7 @@ export default function ImportStudentsDialog({ open, onOpenChange, classes, teac
       <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>Import Students (CSV)</DialogTitle>
-          <DialogDescription>Columns: full_name, contact, class_name</DialogDescription>
+          <DialogDescription>Columns: full_name, phone, class_name</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div className="flex gap-2">
@@ -180,7 +169,7 @@ export default function ImportStudentsDialog({ open, onOpenChange, classes, teac
           </div>
           <div className="text-xs text-gray-500">
             Example (CSV):
-            <pre className="bg-gray-50 border rounded p-2 mt-1 whitespace-pre-wrap">{`full_name,contact,class_name\nAsha Kumar,asha@example.com,Class 8\nRavi M,+919876543210,Class 9`}</pre>
+            <pre className="bg-gray-50 border rounded p-2 mt-1 whitespace-pre-wrap">{`full_name,phone,class_name\nAsha Kumar,+919876543210,Class 8\nRavi M,+919876543211,Class 9`}</pre>
           </div>
           <div className="space-y-1">
             <Label className="text-sm">Preferred Language for all students</Label>
@@ -210,5 +199,3 @@ export default function ImportStudentsDialog({ open, onOpenChange, classes, teac
     </Dialog>
   );
 }
-
-
