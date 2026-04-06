@@ -96,11 +96,12 @@ export default function SummaryApprovalCard({
   const isSchoolLearningAssessment = assessmentType === 'school_learning' || summary.summary_type === 'school_learning_edited';
   const isRoleModelsAssessment = assessmentType === 'role_models' || summary.summary_type === 'role_models_edited';
 
-  const detectLangKeyFromSummary = (): 'en' | 'ta' | 'kn' => {
+  const detectLangKeyFromSummary = (): 'en' | 'ta' | 'kn' | 'hi' => {
     try {
       const content = JSON.stringify(getDisplaySummary(summary));
       if (/[ಅ-ಹ]/u.test(content)) return 'kn';
       if (/[அ-ஹ]/u.test(content)) return 'ta';
+      if (/[\u0900-\u097F]/.test(content)) return 'hi';
     } catch {
       // Fallback to English
     }

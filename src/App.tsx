@@ -17,6 +17,7 @@ import CareerRoadmapPage from './pages/CareerRoadmapPage';
 import ThingsInterestMePage from './pages/ThingsInterestMePage';
 import TeacherStudentRoadmapPage from './pages/TeacherStudentRoadmapPage';
 import TeacherStudentInterestsPage from './pages/TeacherStudentInterestsPage';
+import TeacherStudentResponsesPage from './pages/TeacherStudentResponsesPage';
 import MyInspirationAssessment from './components/assessments/MyInspirationAssessment';
 import MyDreamsAssessment from './components/assessments/MyDreamsAssessment';
 import MySchoolLearningAssessment from './components/assessments/MySchoolLearningAssessment';
@@ -348,6 +349,14 @@ function App() {
                 element={
                   <ProtectedRoute allowedRoles={['teacher']}>
                     <TeacherStudentInterestsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/teacher/student-responses/:studentId"
+                element={
+                  <ProtectedRoute allowedRoles={['teacher']}>
+                    <TeacherStudentResponsesPage />
                   </ProtectedRoute>
                 }
               />

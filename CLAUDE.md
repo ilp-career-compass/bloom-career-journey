@@ -462,8 +462,8 @@ Frontend → Supabase directly (queries, RPCs, storage). AI/ML services are dire
 > [!WARNING]
 > **Assessment unlock bypassed**: `checkAssessmentUnlock()` hardcoded to return `true`. Re-enable before production.
 
-> [!CAUTION]
-> **API keys in client bundle**: `VITE_GEMINI_API_KEY` etc. exposed in browser. Must proxy through backend before production.
+> [!NOTE]
+> **API keys proxied**: Gemini API key moved to `gemini-proxy` Supabase Edge Function (Apr 2026). `VITE_GEMINI_API_KEY` and `VITE_GOOGLE_SPEECH_API_KEY` removed from client bundle.
 
 > [!NOTE]
 > **Holland Code & Career Guidance Tools**: No AI summary or teacher approval wired — intentional for now.
@@ -476,6 +476,9 @@ Frontend → Supabase directly (queries, RPCs, storage). AI/ML services are dire
 
 > [!NOTE]
 > **Sheet restructuring in progress**: Phases 2–3 (Google Sheets sync automation) paused until new sheet format is finalized by ILP.
+
+> [!NOTE]
+> **ResponseViewer duplicated**: `ResponseViewer` component exists in both `StudentSummary.tsx` and `TeacherStudentResponsesPage.tsx`. The `TeacherStudentResponsesPage` version is the correct one — it handles booleans as "Yes"/"No" explicitly. Extract to a shared component (e.g. `src/components/ui/ResponseViewer.tsx`) in a future cleanup pass.
 
 > [!NOTE]
 > **ProgressSection component unused**: `src/components/student/ProgressSection.tsx` is no longer rendered in StudentDashboard — can be deleted in a cleanup pass.
@@ -567,4 +570,6 @@ Frontend → Supabase directly (queries, RPCs, storage). AI/ML services are dire
 | **PR 2a-fix** | Profile card cache FK fix: `ProfileCardPage.tsx` + `StudentModals.tsx` + teacher view — all `profile_card_cache` queries/upserts now use `users.id` (not `students.id`); teacher view resolves `students.id → user_id` internally; `StudentModals.tsx` URL param convention corrected (`selectedStudent.id` → `selectedStudent.user_id`) | ✅ |
 | **PR 2b-temp** | Temp: show generated password in teacher toast for testing — `create-student` Edge Function returns `tempPassword` in response; `TeacherDashboard.tsx` success toast shows it; `ImportStudentsDialog.tsx` lists it per created student. All locations marked `// TEMP: remove in PR 2b` | ✅ |
 | **PR 2b-reg** | Re-enable student self-registration: new `create-student-self-register` Edge Function (`supabase/functions/create-student-self-register/index.ts`) — `auth.admin.createUser({ phone_confirm: true })`, inserts into `users` + `students` (`teacher_id: null`, `enrollment_status: pending`), no `student_auth_credentials` entry. `AuthPage.tsx`: role toggle (“I am a Teacher” / “I am a Student”), grade picker (static Class 8–12), student path calls new Edge Function then auto-signs in | ✅ |
+| **12A** | `TeacherStudentResponsesPage` (`/teacher/student-responses/:studentId`): 8-tab read-only view of all assessment responses. Generic `ResponseViewer` for inspiration/about_me/dreams/school_learning/career_guidance_tools (booleans → Yes/No). Custom renderers for hobbies (hobby cards), role_models (role model cards), personality/Holland Code (code + RIASEC score bars, raw answers hidden). “View Responses” added to student actions menu in StudentsTab after “Review Profile Card”. Student responses always display in the student's own language — no transformation applied. | ✅ |
+| **12B** | Fix Hindi detection in `SummaryApprovalCard.detectLangKeyFromSummary()`: added Devanagari range `/[\u0900-\u097F]/` check before English fallback. Return type widened to `'en' \| 'ta' \| 'kn' \| 'hi'`. Hindi summaries now load `questions.hi` template block. | ✅ |
 | **2–3** | Google Sheets sync automation | ⏸�� Paused — sheet restructuring in progress |

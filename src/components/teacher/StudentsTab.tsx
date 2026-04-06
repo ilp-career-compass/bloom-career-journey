@@ -31,6 +31,7 @@ import {
     Map,
     Heart,
     User,
+    ClipboardList,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -288,6 +289,10 @@ export default function StudentsTab({
                                                             <DropdownMenuItem onClick={() => navigate(`/teacher/student-profile-card/${student.id}`)}>
                                                                 <User className="w-4 h-4 mr-2" />
                                                                 Review Profile Card
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => navigate(`/teacher/student-responses/${student.id}`)}>
+                                                                <ClipboardList className="w-4 h-4 mr-2" />
+                                                                View Responses
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem onClick={() => navigate(`/teacher/student-roadmap/${student.id}`)}>
                                                                 <Map className="w-4 h-4 mr-2" />
