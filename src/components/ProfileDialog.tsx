@@ -160,41 +160,13 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
       }
 
       logger.log('✅ Database update successful:', updateResult);
-      // password change
+      // password change — all roles use Supabase Auth
       if (password) {
-        if (!isTeacher) {
-          // Custom-auth students: update student_auth_credentials
-          logger.log('Updating student password for user:', userProfile.id);
-
-          const { error: credErr } = await supabase
-            .from('student_auth_credentials')
-            .update({
-              password_hash: password,
-              is_active: true
-            })
-            .eq('user_id', userProfile.id);
-
-          if (credErr) {
-            logger.error('Password update error:', credErr);
-            throw new Error(`Failed to update password: ${credErr.message}`);
-          }
-
-          logger.log('Student password updated successfully');
-          toast({
-            title: lang === 'kn' ? "ಪಾಸ್ವರ್ಡ್ ನವೀಕರಿಸಲಾಗಿದೆ! 🔐" : lang === 'ta' ? "கடவுச்சொல் மாற்றப்பட்டது! 🔐" : lang === 'hi' ? "पासवर्ड अपडेट हो गया! 🔐" : "Password Updated! 🔐",
-            description: lang === 'kn' ? "ನಿಮ್ಮ ಪಾಸ್ವರ್ಡ್ ಯಶಸ್ವಿಯಾಗಿ ಬದಲಾಯಿಸಲಾಗಿದೆ. ಈಗ ನೀವು ನಿಮ್ಮ ಹೊಸ ಪಾಸ್ವರ್ಡ್‌ನೊಂದಿಗೆ ಲಾಗಿನ್ ಮಾಡಬಹುದು." : lang === 'ta' ? "உங்கள் கடவுச்சொல் மாற்றப்பட்டது. இப்போது புதிய கடவுச்சொல்லுடன் நுழையலாம்." : "Your password has been changed successfully. You can now login with your new password.",
-          });
+        const { error: pwErr } = await supabase.auth.updateUser({ password });
+        if (pwErr) {
+          toast({ title: t('error'), description: pwErr.message, variant: 'destructive' });
         } else {
-          // Supabase-auth users (teachers/admins)
-          const { error: pwErr } = await supabase.auth.updateUser({ password });
-          if (pwErr) {
-            logger.error('Password update error:', pwErr);
-            throw new Error(`Failed to update password: ${pwErr.message}`);
-          }
-          toast({
-            title: lang === 'kn' ? "ಪಾಸ್ವರ್ಡ್ ನವೀಕರಿಸಲಾಗಿದೆ! 🔐" : lang === 'ta' ? "கடவுச்சொல் மாற்றப்பட்டது! 🔐" : lang === 'hi' ? "पासवर्ड अपडेट हो गया! 🔐" : "Password Updated! 🔐",
-            description: lang === 'kn' ? "ನಿಮ್ಮ ಪಾಸ್ವರ್ಡ್ ಯಶಸ್ವಿಯಾಗಿ ಬದಲಾಯಿಸಲಾಗಿದೆ." : lang === 'ta' ? "உங்கள் கடவுச்சொல் மாற்றப்பட்டது." : "Your password has been changed successfully.",
-          });
+          toast({ title: t('success'), description: t('passwordUpdated') });
         }
       }
 

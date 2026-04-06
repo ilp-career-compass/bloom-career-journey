@@ -291,6 +291,13 @@ export default function TeacherDashboard() {
         else counts.unreviewed_count++;
       });
       setReviewOverview(counts);
+      const perStudent: Record<string, { reviewed: number; total: number }> = {};
+      uniqueAssessments.forEach(a => {
+        if (!perStudent[a.student_id]) perStudent[a.student_id] = { reviewed: 0, total: 0 };
+        perStudent[a.student_id].total++;
+        if ((a.review_status || 'unreviewed') === 'reviewed') perStudent[a.student_id].reviewed++;
+      });
+      setStudentReviewMap(perStudent);
     } catch (err) { logger.error('Error refreshing review overview:', err); }
   };
 
