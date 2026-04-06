@@ -15,23 +15,12 @@ export interface ChatResponse {
 }
 
 class AIChatService {
-  private apiKey: string | undefined;
-  private endpoint: string;
-  private fallbackEndpoint: string;
-  private backupEndpoint: string;
-
   constructor() {
-    this.apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-    // Primary: Gemini 2.0 Flash (Experimental) - Fast and capable
-    this.endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent';
-    // Fallback 1: Gemini Experimental 1206
-    this.fallbackEndpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-exp-1206:generateContent';
-    // Fallback 2: Gemini 1.5 Flash (Stable backup)
-    this.backupEndpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+    // API calls routed through gemini-proxy Edge Function — no client-side key needed
   }
 
   isConfigured(): boolean {
-    return !!this.apiKey && this.apiKey.trim().length > 0;
+    return true; // API calls routed through gemini-proxy Edge Function
   }
 
   async sendMessage(history: ChatMessage[], newMessage: string): Promise<ChatResponse> {
@@ -88,20 +77,13 @@ Your name is "Vidya Saathi".
         }
       };
 
-      // Attempt 1: Primary Endpoint
-      try {
-        return await this.callApi(this.endpoint, requestBody);
-      } catch (error) {
-        logger.warn('Primary model failed, trying fallback 1...', error);
-        
-        // Attempt 2: Fallback Endpoint
+      // Try models in order: 2.0-flash-exp → exp-1206 → 1.5-flash
+      for (const model of ['gemini-2.0-flash-exp', 'gemini-exp-1206', 'gemini-1.5-flash']) {
         try {
-            return await this.callApi(this.fallbackEndpoint, requestBody);
-        } catch (error2) {
-            logger.warn('Fallback 1 failed, trying backup...', error2);
-            
-            // Attempt 3: Backup Endpoint
-            return await this.callApi(this.backupEndpoint, requestBody);
+          return await this.callApi(model, requestBody);
+        } catch (error) {
+          logger.warn(`Model ${model} failed:`, error);
+          if (model === 'gemini-1.5-flash') throw error;
         }
       }
 
@@ -114,21 +96,14 @@ Your name is "Vidya Saathi".
     }
   }
 
-  private async callApi(url: string, body: any): Promise<ChatResponse> {
-    const response = await fetch(`${url}?key=${this.apiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body)
+  private async callApi(model: string, body: any): Promise<ChatResponse> {
+    const { data, error } = await supabase.functions.invoke('gemini-proxy', {
+      body: { model, contents: body.contents, generationConfig: body.generationConfig },
     });
 
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`API Error ${response.status}: ${errText}`);
+    if (error) {
+      throw new Error(error.message || `Gemini proxy error for model ${model}`);
     }
-
-    const data = await response.json();
     
     // Validate response structure
     if (!data.candidates || data.candidates.length === 0) {

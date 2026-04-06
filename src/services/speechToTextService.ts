@@ -1,4 +1,5 @@
 ﻿import { logger } from '@/lib/logger';
+import { supabase } from '@/integrations/supabase/client';
 
 // Speech-to-Text Service for Audio Responses
 // Supports Google Cloud Speech-to-Text with Azure fallback
@@ -40,26 +41,16 @@ export interface SpeechToTextConfig {
 class SpeechToTextService {
   private config: SpeechToTextConfig;
   private isOnline: boolean = navigator.onLine;
-  private geminiKey?: string;
 
   constructor(config?: SpeechToTextConfig) {
-    // If no config provided, load from environment variables (same pattern as Gemini)
+    // If no config provided, load from environment variables
     if (!config) {
-      // Read environment variables directly (same as Gemini does)
-      const googleApiKey = (import.meta.env as any).VITE_GOOGLE_SPEECH_API_KEY;
       const azureKey = (import.meta.env as any).VITE_AZURE_SPEECH_KEY;
 
-      // Log immediately when constructor runs
-      logger.log('🔑 [SpeechToText] Constructor called - Loading API keys from environment');
-      logger.log('🔑 [SpeechToText] Environment check:', {
-        googleApiKey: googleApiKey ? `${String(googleApiKey).substring(0, 15)}...` : '❌ NOT SET',
-        googleApiKeyLength: googleApiKey?.length || 0,
-        azureKey: azureKey ? 'SET' : 'NOT SET',
-        allEnvKeys: Object.keys(import.meta.env).filter(k => k.includes('GOOGLE') || k.includes('SPEECH')),
-      });
+      logger.log('🔑 [SpeechToText] Constructor called - Google Speech proxied, Azure optional');
 
       this.config = {
-        googleApiKey: googleApiKey ? String(googleApiKey).trim() : undefined,
+        // Google Speech API key no longer needed on client — routed through google-speech-proxy
         googleProjectId: (import.meta.env as any).VITE_GOOGLE_PROJECT_ID,
         googleServiceAccountEmail: (import.meta.env as any).VITE_GOOGLE_SERVICE_ACCOUNT_EMAIL,
         azureKey: azureKey ? String(azureKey).trim() : undefined,
@@ -67,14 +58,7 @@ class SpeechToTextService {
         fallbackEnabled: true,
       };
 
-      // Load Gemini key for fallback
-      this.geminiKey = (import.meta.env as any).VITE_GEMINI_API_KEY;
-
-      logger.log('🔑 [SpeechToText] Config initialized:', {
-        hasGoogleKey: !!this.config.googleApiKey,
-        googleKeyLength: this.config.googleApiKey?.length || 0,
-        hasAzureKey: !!this.config.azureKey,
-      });
+      // Gemini key no longer needed on client — routed through gemini-proxy
     } else {
       this.config = config;
     }
@@ -93,7 +77,7 @@ class SpeechToTextService {
    * Check if Google API is configured (same pattern as Gemini)
    */
   isGoogleConfigured(): boolean {
-    return !!this.config.googleApiKey && this.config.googleApiKey.trim().length > 0;
+    return true; // Google Speech API calls routed through google-speech-proxy Edge Function
   }
 
   /**
@@ -232,37 +216,22 @@ class SpeechToTextService {
         },
       };
 
-      logger.log('📤 [transcribeWithGoogle] Sending request to Google Speech API...');
-      const response = await fetch(
-        `https://speech.googleapis.com/v1/speech:recognize?key=${this.config.googleApiKey}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestBody),
-        }
-      );
-
-      logger.log('📥 [transcribeWithGoogle] Received response:', {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok
+      logger.log('📤 [transcribeWithGoogle] Sending request via google-speech-proxy...');
+      const { data, error: proxyError } = await supabase.functions.invoke('google-speech-proxy', {
+        body: requestBody,
       });
 
-      if (!response.ok) {
-        let errorData;
-        try {
-          errorData = await response.json();
-        } catch {
-          const errorText = await response.text();
-          errorData = { error: { message: errorText } };
-        }
-        logger.error('❌ [transcribeWithGoogle] API error response:', errorData);
-        throw new Error(`Google Speech API error: ${errorData.error?.message || 'Unknown error'}`);
+      logger.log('📥 [transcribeWithGoogle] Received proxy response');
+
+      if (proxyError || !data) {
+        logger.error('❌ [transcribeWithGoogle] Proxy error:', proxyError);
+        throw new Error(proxyError?.message || 'Google Speech proxy error');
       }
 
-      const data = await response.json();
+      if (data.error) {
+        logger.error('❌ [transcribeWithGoogle] API error response:', data.error);
+        throw new Error(`Google Speech API error: ${data.error?.message || 'Unknown error'}`);
+      }
       logger.log('✅ [transcribeWithGoogle] API response received:', {
         hasResults: !!data.results,
         resultsCount: data.results?.length || 0
@@ -521,11 +490,7 @@ class SpeechToTextService {
     audioBlob: Blob,
     options: TranscriptionOptions
   ): Promise<TranscriptionResult> {
-    if (!this.geminiKey) {
-      throw new Error('Gemini API key not configured');
-    }
-
-    logger.log('✨ [transcribeWithGemini] Starting Gemini transcription fallback...');
+    logger.log('✨ [transcribeWithGemini] Starting Gemini transcription fallback via proxy...');
 
     // Convert blob to base64
     const base64Audio = await this.blobToBase64(audioBlob);
@@ -533,7 +498,7 @@ class SpeechToTextService {
     // Prompt optimized for transcription of Indian accents
     const prompt = `
       Please transcribe this audio file accurately.
-      
+
       Context:
       - This is a student recovering from rural India speaking in English (or Hindi/Kannada mixed).
       - The topic is "My Inspiration" - responding to videos about career, values, and life lessons.
@@ -543,37 +508,28 @@ class SpeechToTextService {
     `;
 
     try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.geminiKey}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            contents: [{
-              parts: [
-                { text: prompt },
-                {
-                  inline_data: {
-                    mime_type: 'audio/mp3', // Gemini handles wav/mp3/webm indiscriminately mostly
-                    data: base64Audio
-                  }
+      const { data, error } = await supabase.functions.invoke('gemini-proxy', {
+        body: {
+          model: 'gemini-1.5-flash',
+          contents: [{
+            parts: [
+              { text: prompt },
+              {
+                inline_data: {
+                  mime_type: 'audio/mp3',
+                  data: base64Audio
                 }
-              ]
-            }],
-            generationConfig: {
-              temperature: 0.2, // Low temperature for accuracy
-            }
-          })
-        }
-      );
+              }
+            ]
+          }],
+          generationConfig: { temperature: 0.2 },
+        },
+      });
 
-      if (!response.ok) {
-        throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
+      if (error || !data) {
+        throw new Error(error?.message || 'Gemini proxy error');
       }
 
-      const data = await response.json();
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
       if (!text) {
@@ -629,14 +585,12 @@ class SpeechToTextService {
         }
       }
 
-      // Final fallback: Use Gemini 1.5 Flash if available
-      if (this.geminiKey) {
-        try {
-          return await this.transcribeWithGemini(audioBlob, finalOptions);
-        } catch (geminiError) {
-          logger.error('All transcription services failed (Google, Azure, Gemini):', geminiError);
-          throw new Error('Transcription failed on all services');
-        }
+      // Final fallback: Use Gemini 1.5 Flash via proxy
+      try {
+        return await this.transcribeWithGemini(audioBlob, finalOptions);
+      } catch (geminiError) {
+        logger.error('All transcription services failed (Google, Azure, Gemini):', geminiError);
+        throw new Error('Transcription failed on all services');
       }
 
       // If we reached here, it means Google failed, Azure was skipped or failed, and Gemini was skipped (no key).
@@ -954,7 +908,7 @@ class SpeechToTextService {
    * Check if transcription service is available
    */
   isAvailable(): boolean {
-    return this.isOnline && (!!this.config.googleApiKey || !!this.config.azureKey);
+    return this.isOnline; // Google Speech proxied — always available when online
   }
 
   /**
@@ -968,7 +922,7 @@ class SpeechToTextService {
   } {
     return {
       online: this.isOnline,
-      googleAvailable: !!this.config.googleApiKey,
+      googleAvailable: true, // proxied via google-speech-proxy
       azureAvailable: !!this.config.azureKey,
       fallbackEnabled: this.config.fallbackEnabled,
     };

@@ -75,24 +75,18 @@ const BASE_SYSTEM_PROMPT =
   'Instead, focus on providing constructive and helpful responses.';
 
 class AISummaryService {
-  private apiKey: string | undefined;
-  private endpoint: string;
-  private fallbackEndpoint: string;
+
   private templateCache: Map<string, SummaryTemplate> = new Map();
 
   constructor() {
-    this.apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-    // Use Gemini 2.0 Flash (Confirmed available via list_models.py)
-    this.endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
-    // Fallback to Flash-Lite if needed
-    this.fallbackEndpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent';
+    // API calls routed through gemini-proxy Edge Function — no client-side key needed
   }
 
   /*
    * Check if Gemini API is configured
    */
   isConfigured(): boolean {
-    return !!this.apiKey && this.apiKey.trim().length > 0;
+    return true; // API calls routed through gemini-proxy Edge Function
   }
 
   /**
@@ -558,59 +552,10 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
         ]
       };
 
-      logger.log('📡 Calling Gemini API:', this.endpoint);
-      logger.log('🔑 API Key configured:', !!this.apiKey);
+      logger.log('📡 Calling Gemini API via proxy (inspiration)');
       logger.log('📝 Request body:', JSON.stringify(requestBody));
 
-      // Try primary endpoint (gemini-1.5-flash-latest)
-      let response = await fetch(`${this.endpoint}?key=${this.apiKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody)
-      });
-
-      // If 404, try fallback endpoint (gemini-1.5-pro-latest)
-      if (!response.ok && response.status === 404) {
-        logger.warn('⚠️ Primary model not found, trying fallback:', this.fallbackEndpoint);
-
-        response = await fetch(`${this.fallbackEndpoint}?key=${this.apiKey}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestBody)
-        });
-      }
-
-      if (!response.ok) {
-        const errorData = await response.text();
-        logger.error('❌ Gemini API error (Full Response):', errorData);
-        logger.error('❌ Status:', response.status);
-        logger.error('❌ Status Text:', response.statusText);
-        logger.error('❌ Response Headers:', Object.fromEntries(response.headers.entries()));
-
-        // Try to parse error for more details
-        try {
-          const errorJson = JSON.parse(errorData);
-          logger.error('❌ Parsed Error:', JSON.stringify(errorJson, null, 2));
-
-          // Log suggested models if available
-          if (errorJson.error?.message) {
-            logger.error('❌ Error Message:', errorJson.error.message);
-          }
-        } catch (e) {
-          logger.error('❌ Could not parse error as JSON');
-        }
-
-        return {
-          success: false,
-          error: `API request failed: ${response.status} - ${response.statusText}`
-        };
-      }
-
-      const data = await response.json();
+      const data = await this.callGeminiProxy(requestBody) as any;
       logger.log('✅ Gemini API response received');
       logger.log('📊 Response structure:', {
         hasCandidates: !!data?.candidates,
@@ -927,40 +872,9 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
         ]
       };
 
-      logger.log('📡 Calling Gemini API for Dreams summary:', this.endpoint);
+      logger.log('📡 Calling Gemini API for Dreams summary:', 'gemini-proxy');
 
-      // Try primary endpoint
-      let response = await fetch(`${this.endpoint}?key=${this.apiKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody)
-      });
-
-      // If 404, try fallback endpoint
-      if (!response.ok && response.status === 404) {
-        logger.warn('⚠️ Primary model not found, trying fallback:', this.fallbackEndpoint);
-
-        response = await fetch(`${this.fallbackEndpoint}?key=${this.apiKey}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestBody)
-        });
-      }
-
-      if (!response.ok) {
-        const errorData = await response.text();
-        logger.error('❌ Gemini API error:', errorData);
-        return {
-          success: false,
-          error: `API request failed: ${response.status} - ${response.statusText}`
-        };
-      }
-
-      const data = await response.json();
+      const data = await this.callGeminiProxy(requestBody) as any;
       logger.log('✅ Gemini API response received for Dreams summary');
 
       const generatedText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -1305,40 +1219,9 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
         ]
       };
 
-      logger.log('📡 Calling Gemini API for School Learning summary:', this.endpoint);
+      logger.log('📡 Calling Gemini API for School Learning summary:', 'gemini-proxy');
 
-      // Try primary endpoint
-      let response = await fetch(`${this.endpoint}?key=${this.apiKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody)
-      });
-
-      // If 404, try fallback endpoint
-      if (!response.ok && response.status === 404) {
-        logger.warn('⚠️ Primary model not found, trying fallback:', this.fallbackEndpoint);
-
-        response = await fetch(`${this.fallbackEndpoint}?key=${this.apiKey}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestBody)
-        });
-      }
-
-      if (!response.ok) {
-        const errorData = await response.text();
-        logger.error('❌ Gemini API error:', errorData);
-        return {
-          success: false,
-          error: `API request failed: ${response.status} - ${response.statusText}`
-        };
-      }
-
-      const data = await response.json();
+      const data = await this.callGeminiProxy(requestBody) as any;
       logger.log('✅ Gemini API response received for School Learning summary');
 
       const generatedText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -1615,40 +1498,9 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
         ]
       };
 
-      logger.log('📡 Calling Gemini API for Hobbies summary:', this.endpoint);
+      logger.log('📡 Calling Gemini API for Hobbies summary:', 'gemini-proxy');
 
-      // Try primary endpoint
-      let response = await fetch(`${this.endpoint}?key=${this.apiKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody)
-      });
-
-      // If 404, try fallback endpoint
-      if (!response.ok && response.status === 404) {
-        logger.warn('⚠️ Primary model not found, trying fallback:', this.fallbackEndpoint);
-
-        response = await fetch(`${this.fallbackEndpoint}?key=${this.apiKey}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestBody)
-        });
-      }
-
-      if (!response.ok) {
-        const errorData = await response.text();
-        logger.error('❌ Gemini API error:', errorData);
-        return {
-          success: false,
-          error: `API request failed: ${response.status} - ${response.statusText}`
-        };
-      }
-
-      const data = await response.json();
+      const data = await this.callGeminiProxy(requestBody) as any;
       logger.log('✅ Gemini API response received for Hobbies summary');
 
       const generatedText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -1983,40 +1835,9 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
         ]
       };
 
-      logger.log('📡 Calling Gemini API for About Me summary:', this.endpoint);
+      logger.log('📡 Calling Gemini API for About Me summary:', 'gemini-proxy');
 
-      // Try primary endpoint
-      let response = await fetch(`${this.endpoint}?key=${this.apiKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody)
-      });
-
-      // If 404, try fallback endpoint
-      if (!response.ok && response.status === 404) {
-        logger.warn('⚠️ Primary model not found, trying fallback:', this.fallbackEndpoint);
-
-        response = await fetch(`${this.fallbackEndpoint}?key=${this.apiKey}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestBody)
-        });
-      }
-
-      if (!response.ok) {
-        const errorData = await response.text();
-        logger.error('❌ Gemini API error:', errorData);
-        return {
-          success: false,
-          error: `API request failed: ${response.status} - ${response.statusText} `
-        };
-      }
-
-      const data = await response.json();
+      const data = await this.callGeminiProxy(requestBody) as any;
       logger.log('✅ Gemini API response received for About Me');
 
       const generatedText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -2255,40 +2076,9 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
         ]
       };
 
-      logger.log('📡 Calling Gemini API for Role Models summary:', this.endpoint);
+      logger.log('📡 Calling Gemini API for Role Models summary:', 'gemini-proxy');
 
-      // Try primary endpoint
-      let response = await fetch(`${this.endpoint}?key=${this.apiKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody)
-      });
-
-      // If 404, try fallback endpoint
-      if (!response.ok && response.status === 404) {
-        logger.warn('⚠️ Primary model not found, trying fallback:', this.fallbackEndpoint);
-
-        response = await fetch(`${this.fallbackEndpoint}?key=${this.apiKey}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestBody)
-        });
-      }
-
-      if (!response.ok) {
-        const errorData = await response.text();
-        logger.error('❌ Gemini API error:', errorData);
-        return {
-          success: false,
-          error: `API request failed: ${response.status} - ${response.statusText} `
-        };
-      }
-
-      const data = await response.json();
+      const data = await this.callGeminiProxy(requestBody) as any;
       logger.log('✅ Gemini API response received for Role Models summary');
 
       const generatedText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -2446,25 +2236,7 @@ ${JSON.stringify(jsonStructure, null, 2)}`;
         generationConfig: { temperature: 0.4, maxOutputTokens: 500 }
       };
 
-      let response = await fetch(`${this.endpoint}?key=${this.apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
-      });
-
-      if (!response.ok && response.status === 404) {
-        response = await fetch(`${this.fallbackEndpoint}?key=${this.apiKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(requestBody)
-        });
-      }
-
-      if (!response.ok) {
-        return { success: false, error: `Gemini API returned ${response.status}` };
-      }
-
-      const data = await response.json();
+      const data = await this.callGeminiProxy(requestBody) as any;
       const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
       const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
       const parsed = JSON.parse(cleaned);
@@ -2524,25 +2296,7 @@ Role Models: ${formatAnswers(roleModelsAnswers)}`;
         generationConfig: { temperature: 0.7, maxOutputTokens: 500 }
       };
 
-      let response = await fetch(`${this.endpoint}?key=${this.apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
-      });
-
-      if (!response.ok && response.status === 404) {
-        response = await fetch(`${this.fallbackEndpoint}?key=${this.apiKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(requestBody)
-        });
-      }
-
-      if (!response.ok) {
-        return { success: false, error: `Gemini API returned ${response.status}` };
-      }
-
-      const data = await response.json();
+      const data = await this.callGeminiProxy(requestBody) as any;
       const direction = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
 
       if (!direction) {
@@ -2554,6 +2308,27 @@ Role Models: ${formatAnswers(roleModelsAnswers)}`;
       logger.error('Error generating career direction:', error);
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
+  }
+
+  /**
+   * Proxy all Gemini generateContent calls through the gemini-proxy Edge Function.
+   * Tries gemini-2.0-flash first, falls back to gemini-2.0-flash-lite on error.
+   */
+  private async callGeminiProxy(requestBody: { contents: unknown[]; generationConfig?: object }): Promise<unknown> {
+    const invoke = (model: string) =>
+      supabase.functions.invoke('gemini-proxy', {
+        body: { model, contents: requestBody.contents, ...(requestBody.generationConfig ? { generationConfig: requestBody.generationConfig } : {}) },
+      });
+
+    let result = await invoke('gemini-2.0-flash');
+    if (result.error) {
+      logger.warn('Primary Gemini model failed, trying fallback:', result.error);
+      result = await invoke('gemini-2.0-flash-lite');
+    }
+    if (result.error) {
+      throw new Error(result.error.message || 'Gemini proxy error');
+    }
+    return result.data;
   }
 }
 

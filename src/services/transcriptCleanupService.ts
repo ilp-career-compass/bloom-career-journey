@@ -1,6 +1,8 @@
 // Transcript Cleanup Service using Google Gemini
 // Applies light grammar/spell/punctuation cleanup while preserving meaning
 
+import { supabase } from '@/integrations/supabase/client';
+
 export interface CleanupResult {
   cleanedText: string;
   rawText: string;
@@ -8,15 +10,8 @@ export interface CleanupResult {
 }
 
 class TranscriptCleanupService {
-  private apiKey?: string;
-  private endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent';
-
-  constructor() {
-    this.apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY;
-  }
-
   isConfigured(): boolean {
-    return !!this.apiKey;
+    return true; // API calls routed through gemini-proxy Edge Function
   }
 
   async clean(rawText: string, languageCode: string = 'en-IN'): Promise<CleanupResult> {
@@ -57,20 +52,14 @@ class TranscriptCleanupService {
         },
       } as any;
 
-      const resp = await fetch(`${this.endpoint}?key=${this.apiKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
+      const { data, error } = await supabase.functions.invoke('gemini-proxy', {
+        body: { model: 'gemini-1.5-flash-latest', contents: body.contents, generationConfig: body.generationConfig },
       });
 
-      if (!resp.ok) {
-        // On failure, fall back to raw
+      if (error || !data) {
         return { cleanedText: rawText, rawText, model: 'gemini:failed' };
       }
 
-      const data = await resp.json();
       const cleaned = data?.candidates?.[0]?.content?.parts?.[0]?.text || rawText;
       return { cleanedText: cleaned, rawText, model: 'gemini-1.5-flash-latest' };
     } catch {
