@@ -32,6 +32,8 @@ const STRINGS: Record<string, Record<string, string>> = {
     saving: 'Saving...',
     saved: 'Saved',
     delete_confirm: 'Delete this row?',
+    save_failed: 'Save failed',
+    delete_failed: 'Delete failed',
     empty: 'No entries yet. Add your first interest!',
     from_banner: 'Based on your {name} responses, add any subjects or topics that interest you.',
     assessment_inspiration: 'My Inspiration',
@@ -51,6 +53,8 @@ const STRINGS: Record<string, Record<string, string>> = {
     saving: 'ಉಳಿಸಲಾಗುತ್ತಿದೆ...',
     saved: 'ಉಳಿಸಲಾಗಿದೆ',
     delete_confirm: 'ಈ ಸಾಲನ್ನು ಅಳಿಸುವುದೇ?',
+    save_failed: 'ಉಳಿಸಲು ವಿಫಲವಾಯಿತು',
+    delete_failed: 'ಅಳಿಸಲು ವಿಫಲವಾಯಿತು',
     empty: 'ಇನ್ನೂ ಯಾವುದೇ ನಮೂದುಗಳಿಲ್ಲ. ನಿಮ್ಮ ಮೊದಲ ಆಸಕ್ತಿಯನ್ನು ಸೇರಿಸಿ!',
     from_banner: 'ನಿಮ್ಮ {name} ಉತ್ತರಗಳ ಆಧಾರದ ಮೇಲೆ, ನಿಮಗೆ ಆಸಕ್ತಿ ಇರುವ ವಿಷಯಗಳನ್ನು ಸೇರಿಸಿ.',
     assessment_inspiration: 'ನನ್ನ ಪ್ರೇರಣೆ',
@@ -70,6 +74,8 @@ const STRINGS: Record<string, Record<string, string>> = {
     saving: 'சேமிக்கிறது...',
     saved: 'சேமிக்கப்பட்டது',
     delete_confirm: 'இந்த வரிசையை நீக்கவா?',
+    save_failed: 'சேமிக்க தவறியது',
+    delete_failed: 'நீக்கத் தவறியது',
     empty: 'இன்னும் எந்த பதிவும் இல்லை. உங்கள் முதல் ஆர்வத்தைச் சேர்க்கவும்!',
     from_banner: 'உங்கள் {name} பதில்களின் அடிப்படையில், உங்களுக்கு ஆர்வமான பாடங்களைச் சேர்க்கவும்.',
     assessment_inspiration: 'என் உத்வேகம்',
@@ -89,6 +95,8 @@ const STRINGS: Record<string, Record<string, string>> = {
     saving: 'सहेजा जा रहा है...',
     saved: 'सहेजा गया',
     delete_confirm: 'इस पंक्ति को हटाएं?',
+    save_failed: 'सहेजने में विफल',
+    delete_failed: 'हटाने में विफल',
     empty: 'अभी तक कोई प्रविष्टि नहीं। अपनी पहली रुचि जोड़ें!',
     from_banner: 'आपके {name} उत्तरों के आधार पर, अपनी रुचि के विषय जोड़ें।',
     assessment_inspiration: 'मेरी प्रेरणा',
@@ -192,7 +200,7 @@ export default function ThingsInterestMePage() {
       }
     } catch (err) {
       logger.error('Error saving interest row:', err);
-      toast({ title: 'Save failed', variant: 'destructive' });
+      toast({ title: t('save_failed'), variant: 'destructive' });
     } finally {
       setSavingIds(prev => { const n = new Set(prev); n.delete(index); return n; });
     }
@@ -230,7 +238,7 @@ export default function ThingsInterestMePage() {
         if (error) throw error;
       } catch (err) {
         logger.error('Error deleting interest row:', err);
-        toast({ title: 'Delete failed', variant: 'destructive' });
+        toast({ title: t('delete_failed'), variant: 'destructive' });
         return;
       }
     }

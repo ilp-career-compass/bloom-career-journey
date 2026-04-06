@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useLang } from '@/hooks/useLang';
+import { useToast } from '@/hooks/use-toast';
 import { Globe, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -16,6 +17,7 @@ interface Props {
 export default function LanguageSelectionDialog({ open, onOpenChange }: Props) {
     const { userProfile, refreshUserProfile } = useAuth();
     const { setLang } = useLang();
+    const { toast } = useToast();
     const [selected, setSelected] = useState<'en' | 'kn' | 'ta' | 'hi' | null>(null);
     const [saving, setSaving] = useState(false);
 
@@ -46,6 +48,11 @@ export default function LanguageSelectionDialog({ open, onOpenChange }: Props) {
             onOpenChange(false);
         } catch (err) {
             logger.error('Failed to save language selection:', err);
+            toast({
+                title: 'Error',
+                description: 'Could not save language preference. Please try again.',
+                variant: 'destructive',
+            });
         } finally {
             setSaving(false);
         }
