@@ -27,7 +27,7 @@ class AIChatService {
     if (!this.isConfigured()) {
       return {
         success: false,
-        error: 'Gemini API key is not configured. Please set VITE_GEMINI_API_KEY.'
+        error: 'AI chat service is not available. Please try again later.'
       };
     }
 

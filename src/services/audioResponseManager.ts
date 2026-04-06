@@ -195,16 +195,8 @@ class AudioResponseManager {
 
           // Log helpful error message for missing API keys
           if (error instanceof Error) {
-            if (error.message.includes('Google API key not configured')) {
-              logger.error('❌ Transcription Error: Google Speech-to-Text API key is not configured.');
-              logger.error('📝 To enable transcription, set VITE_GOOGLE_SPEECH_API_KEY in your .env file.');
-              logger.error('🔗 Get your API key from: https://console.cloud.google.com/apis/credentials');
-            } else if (error.message.includes('Azure Speech Services not configured')) {
-              logger.error('❌ Transcription Error: Azure Speech Services is not configured.');
-              logger.error('📝 To enable transcription fallback, set VITE_AZURE_SPEECH_KEY and VITE_AZURE_SPEECH_REGION in your .env file.');
-            } else if (error.message.includes('Transcription failed on all services')) {
-              logger.error('❌ Transcription Error: Both Google and Azure transcription services failed.');
-              logger.error('📝 Please configure at least one transcription service (Google or Azure) in your .env file.');
+            if (error.message.includes('Batch STT not available') || error.message.includes('Transcription failed')) {
+              logger.error('❌ Transcription Error: Batch STT not available — use Sarvam streaming for real-time transcription.');
             } else {
               // Log other transcription errors with full details
               logger.error('❌ Transcription Error Details:', {

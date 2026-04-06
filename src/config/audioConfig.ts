@@ -15,8 +15,7 @@ export const AUDIO_CONFIG = {
   offlineMode: import.meta.env.VITE_AUDIO_ENABLE_OFFLINE_MODE !== 'false',
   transcription: import.meta.env.VITE_AUDIO_ENABLE_TRANSCRIPTION !== 'false',
   
-  // API Keys
-  googleApiKey: import.meta.env.VITE_GOOGLE_SPEECH_API_KEY,
+  // API Keys (Google Speech proxied server-side; Azure optional fallback)
   azureKey: import.meta.env.VITE_AZURE_SPEECH_KEY,
   azureRegion: import.meta.env.VITE_AZURE_SPEECH_REGION,
   

@@ -21,7 +21,6 @@ export default function ChatbotDialog({ open, onOpenChange }: ChatbotDialogProps
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY as string | undefined;
   const listRef = useRef<HTMLDivElement | null>(null);
 
   const canSend = useMemo(() => !!input.trim() && !loading, [input, loading]);
@@ -42,12 +41,6 @@ export default function ChatbotDialog({ open, onOpenChange }: ChatbotDialogProps
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
     scrollToBottom();
-
-    if (!apiKey) {
-      const warn: Message = { id: crypto.randomUUID(), role: 'model', text: 'Gemini API key is not configured. Please set VITE_GEMINI_API_KEY in your .env file.' };
-      setMessages(prev => [...prev, warn]);
-      return;
-    }
 
     setLoading(true);
     try {

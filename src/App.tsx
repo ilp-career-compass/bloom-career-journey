@@ -81,7 +81,6 @@ function App() {
       NODE_ENV: import.meta.env.NODE_ENV,
       VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
       VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY,
-      VITE_GOOGLE_SPEECH_API_KEY: import.meta.env.VITE_GOOGLE_SPEECH_API_KEY ? `${import.meta.env.VITE_GOOGLE_SPEECH_API_KEY.substring(0, 15)}...` : '❌ NOT SET',
       VITE_AZURE_SPEECH_KEY: import.meta.env.VITE_AZURE_SPEECH_KEY ? 'SET' : 'NOT SET',
     });
     

@@ -336,7 +336,7 @@ export default function AISummaryReview({ selectedStudentId }: AISummaryReviewPr
     if (!aiSummaryService.isConfigured()) {
       toast({
         title: 'API Not Configured',
-        description: 'Gemini API key is not configured. Please add VITE_GEMINI_API_KEY to your .env file.',
+        description: 'AI summary service is not available. Please try again later.',
         variant: 'destructive'
       });
       return;
