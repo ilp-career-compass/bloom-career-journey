@@ -13,7 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { StateInfo, SchoolClass } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, Activity, BookOpen } from 'lucide-react';
+import { Users, Activity, BookOpen, UserCheck } from 'lucide-react';
 
 // Sub-components
 import { useTeacherStrings, TeacherLang } from '@/components/teacher/teacherStrings';
@@ -90,6 +90,7 @@ export default function TeacherDashboard() {
   // ── Reviews state ─────────────────────────────────────────────────
   const [reviewOverview, setReviewOverview] = useState<{ unreviewed_count: number; reviewed_count: number; needs_revision_count: number; flagged_count: number; followups_due_this_week: number }>({ unreviewed_count: 0, reviewed_count: 0, needs_revision_count: 0, flagged_count: 0, followups_due_this_week: 0 });
   const [studentReviewMap, setStudentReviewMap] = useState<Record<string, { reviewed: number; total: number }>>({});
+  const [pendingProfileCardStudents, setPendingProfileCardStudents] = useState<Array<{ studentId: string; name: string; className: string; pendingCount: number }>>([]);
 
   // ── Dialogs ───────────────────────────────────────────────────────
   const [contactOpen, setContactOpen] = useState(false);
@@ -308,6 +309,45 @@ export default function TeacherDashboard() {
     } catch (err) { logger.error('Error refreshing review overview:', err); }
   };
 
+  const refreshPendingProfileCards = async () => {
+    try {
+      if (!userProfile?.id) return;
+      const { data: teacherRecord } = await supabase.from('teachers').select('id').eq('user_id', userProfile.id).single();
+      if (!teacherRecord) { setPendingProfileCardStudents([]); return; }
+
+      const { data: studs } = await supabase
+        .from('students')
+        .select('id, user_id, user:users(full_name), class:classes(name)')
+        .eq('teacher_id', teacherRecord.id);
+      if (!studs || studs.length === 0) { setPendingProfileCardStudents([]); return; }
+
+      const userIds = studs.map((s: any) => s.user_id).filter(Boolean);
+      const { data: pendingCards } = await supabase
+        .from('profile_card_cache')
+        .select('student_id, assessment_type')
+        .eq('approval_status', 'pending')
+        .in('student_id', userIds);
+
+      if (!pendingCards || pendingCards.length === 0) { setPendingProfileCardStudents([]); return; }
+
+      const countByUserId: Record<string, number> = {};
+      pendingCards.forEach((c: any) => { countByUserId[c.student_id] = (countByUserId[c.student_id] || 0) + 1; });
+
+      const result = studs
+        .filter((s: any) => s.user_id && countByUserId[s.user_id])
+        .map((s: any) => ({
+          studentId: s.id,
+          name: s.user?.full_name || 'Unknown',
+          className: s.class?.name || '',
+          pendingCount: countByUserId[s.user_id] || 0,
+        }));
+
+      setPendingProfileCardStudents(result);
+    } catch (err) {
+      logger.error('Error fetching pending profile cards:', err);
+    }
+  };
+
   // ── Initial data load ─────────────────────────────────────────────
   useEffect(() => {
     if (!userProfile?.id) return;
@@ -316,6 +356,7 @@ export default function TeacherDashboard() {
     supabase.from('teachers').select('id, state_id').eq('user_id', userProfile.id).maybeSingle()
       .then(({ data }) => setTeacherRow((data as any) || null));
     refreshReviewOverview();
+    refreshPendingProfileCards();
   }, [userProfile]);
 
   useEffect(() => {
@@ -535,6 +576,42 @@ export default function TeacherDashboard() {
 
           <TabsContent value="reviews" className="space-y-6">
             <AssessmentResponsesView onReviewUpdate={refreshReviewOverview} />
+
+            {/* Profile Card Approvals */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <UserCheck className="w-5 h-5 text-purple-600" />
+                <h3 className="text-lg font-semibold text-gray-800">Profile Card Approvals</h3>
+                {pendingProfileCardStudents.length > 0 && (
+                  <span className="ml-auto bg-purple-100 text-purple-700 text-xs font-semibold px-2.5 py-1 rounded-full">
+                    {pendingProfileCardStudents.length} student{pendingProfileCardStudents.length !== 1 ? 's' : ''} pending
+                  </span>
+                )}
+              </div>
+              {pendingProfileCardStudents.length === 0 ? (
+                <p className="text-sm text-gray-500">No profile cards pending approval.</p>
+              ) : (
+                <div className="space-y-3">
+                  {pendingProfileCardStudents.map(student => (
+                    <div key={student.studentId} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 bg-gray-50">
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">{student.name}</p>
+                        <p className="text-xs text-gray-500">
+                          {student.className && <span>{student.className} · </span>}
+                          {student.pendingCount} module{student.pendingCount !== 1 ? 's' : ''} pending approval
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => navigate(`/teacher/student-profile-card/${student.studentId}`)}
+                        className="text-sm font-medium text-purple-600 hover:text-purple-800 underline underline-offset-2 whitespace-nowrap ml-4"
+                      >
+                        Review Profile Card
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </TabsContent>
 
           <TabsContent value="resources" className="space-y-6">
