@@ -30,7 +30,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLang } from '@/hooks/useLang';
 
-import { IndicKeyboard } from '@/components/ui/IndicKeyboard';
 import { checkAssessmentUnlock } from '@/utils/assessmentUnlock';
 
 interface RoleModel {
@@ -1119,7 +1118,6 @@ export default function MyRoleModelsAssessment() {
           </div>
         </div>
       </div>
-      <IndicKeyboard lang={lang} />
     </div>
   );
 }

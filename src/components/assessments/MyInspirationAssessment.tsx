@@ -35,7 +35,6 @@ import { AudioRecorder } from '@/components/ui/AudioRecorder';
 import { aiSummaryService } from '@/services/aiSummaryService';
 import { summaryDatabaseService } from '@/services/summaryDatabaseService';
 // notificationService import removed — AI summary notification flow disabled
-import { IndicKeyboard } from '@/components/ui/IndicKeyboard';
 
 interface InspirationVideo {
   id: number;
@@ -1818,7 +1817,6 @@ export default function MyInspirationAssessment() {
 
 
       </div>
-      <IndicKeyboard lang={lang} />
     </div >
   );
 }

@@ -14,7 +14,6 @@ import { useToast } from '@/hooks/use-toast';
 import ProfileDialog from '@/components/ProfileDialog';
 import ChatBubble from '@/components/chat/ChatBubble';
 // AI summary flow disabled — SummaryViewDialog, AssessmentSummary, summaryDatabaseService retained for potential re-enable
-import { IndicKeyboard } from '@/components/ui/IndicKeyboard';
 import { useLang } from '@/hooks/useLang';
 import { aiChatService } from '@/services/aiChatService';
 import LanguageSelectionDialog from '@/components/LanguageSelectionDialog';
@@ -474,7 +473,6 @@ export default function StudentDashboard() {
         />
       </div>
 
-      {(['kn', 'ta', 'hi'].includes(resolvedLang)) && <IndicKeyboard lang={resolvedLang} />}
       <ChatBubble role="student" isOpen={isChatOpen} onOpenChange={setIsChatOpen} hideTrigger={true} />
       <ProfileDialog open={isProfileOpen} onOpenChange={setIsProfileOpen} />
       {/* SummaryViewDialog removed from student flow — AI summary disabled */}

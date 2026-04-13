@@ -14,7 +14,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLang } from '@/hooks/useLang';
 import { fetchTranslations } from '@/services/translationService';
 
-import { IndicKeyboard } from '@/components/ui/IndicKeyboard';
 import { checkAssessmentUnlock } from '@/utils/assessmentUnlock';
 
 interface SchoolLearningAssessmentResponse {
@@ -1836,7 +1835,6 @@ export default function MySchoolLearningAssessment() {
         </div>
 
       </div >
-      <IndicKeyboard lang={lang} />
     </div >
   );
 }

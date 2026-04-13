@@ -23,7 +23,6 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useLang } from '@/hooks/useLang';
-import { IndicKeyboard } from '@/components/ui/IndicKeyboard';
 import { parseTalentsEntries, parseDreamEntries, parseHobbiesEntries, parseSchoolLearningEntries } from '../../utils/summaryParsers';
 import {
   AssessmentSummary,
@@ -834,7 +833,6 @@ export default function SummaryViewDialog({
             </div>
           </div>
         </div>
-        <IndicKeyboard lang={lang} />
       </DialogContent >
     </Dialog >
   );

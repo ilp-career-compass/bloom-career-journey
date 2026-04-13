@@ -9,7 +9,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useLang } from '@/hooks/useLang';
-import { IndicKeyboard } from '@/components/ui/IndicKeyboard';
 
 type Props = {
   open: boolean;
@@ -334,7 +333,6 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
             </Button>
           </div>
         </div>
-        {(lang === 'kn' || lang === 'ta' || lang === 'hi') && <IndicKeyboard lang={lang} />}
       </DialogContent>
     </Dialog >
   );

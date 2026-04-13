@@ -13,7 +13,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLang } from '@/hooks/useLang';
 
-import { IndicKeyboard } from '@/components/ui/IndicKeyboard';
 import { checkAssessmentUnlock } from '@/utils/assessmentUnlock';
 
 interface CareerGuidanceQuestion {
@@ -557,7 +556,6 @@ After your teacher guides you through the career chart, career guidance workbook
           </Button>
         </div>
 
-        <IndicKeyboard lang={lang} />
       </div>
     </div>
   );

@@ -7,7 +7,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Lock, Check, AlertCircle, Info, Loader2, ArrowRight } from 'lucide-react';
 import { useStudentStrings } from '@/components/student/studentStrings';
-import { IndicKeyboard } from '@/components/ui/IndicKeyboard';
 
 type MilestoneKey =
   | 'beginning_9th' | 'midterm_9th' | 'end_9th' | 'beginning_10th'
@@ -333,7 +332,6 @@ export default function CareerRoadmapPage() {
           </div>
         )}
       </div>
-      {(['kn', 'ta', 'hi'] as const).includes(lang) && <IndicKeyboard lang={lang} />}
     </div>
   );
 }

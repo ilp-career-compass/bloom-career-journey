@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Plus, Trash2, Loader2, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { IndicKeyboard } from '@/components/ui/IndicKeyboard';
 
 interface InterestRow {
   id?: string;
@@ -378,7 +377,6 @@ export default function ThingsInterestMePage() {
           </Button>
         </div>
       </div>
-      {(['kn', 'ta', 'hi'].includes(resolvedLang)) && <IndicKeyboard lang={resolvedLang} />}
     </div>
   );
 }
