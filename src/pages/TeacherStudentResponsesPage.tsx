@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Loader2, ClipboardList } from 'lucide-react';
-import ProfileCardModulesPanel from '@/components/teacher/ProfileCardModulesPanel';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -251,10 +249,8 @@ const NotCompleted = () => (
 export default function TeacherStudentResponsesPage() {
   const navigate = useNavigate();
   const { studentId } = useParams<{ studentId: string }>();
-  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [studentName, setStudentName] = useState('');
-  const [cacheUserId, setCacheUserId] = useState('');
   const [responseMap, setResponseMap] = useState<Partial<Record<AssessmentType, AssessmentRecord>>>({});
 
   useEffect(() => {
@@ -269,7 +265,6 @@ export default function TeacherStudentResponsesPage() {
         .eq('id', studentId)
         .maybeSingle();
       setStudentName((student as any)?.users?.full_name || 'Student');
-      setCacheUserId((student as any)?.user_id || '');
 
       // Fetch all assessment responses (student_id references students.id)
       const { data: records } = await supabase
@@ -326,18 +321,6 @@ export default function TeacherStudentResponsesPage() {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Profile Card Review */}
-      <div className="container mx-auto px-4 py-4">
-        <h2 className="text-lg font-semibold mb-3">Profile Card Review</h2>
-        {cacheUserId && (
-          <ProfileCardModulesPanel
-            studentId={studentId!}
-            cacheUserId={cacheUserId}
-            teacherUserId={user?.id || ''}
-          />
-        )}
       </div>
 
       {/* Tabs */}

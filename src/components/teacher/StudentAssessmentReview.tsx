@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { User, Calendar, CheckCircle, AlertCircle, Eye, Volume2, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import ProfileCardModulesPanel from '@/components/teacher/ProfileCardModulesPanel';
 
 interface Student {
   id: string;
@@ -1848,6 +1850,12 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
               <CardDescription>{selectedStudent.class_name}</CardDescription>
             </CardHeader>
             <CardContent>
+              <Tabs defaultValue="assessments">
+                <TabsList className="mb-4 w-full">
+                  <TabsTrigger value="assessments">Assessments</TabsTrigger>
+                  <TabsTrigger value="profile_card">Profile Card Review</TabsTrigger>
+                </TabsList>
+                <TabsContent value="assessments">
               {loadingAssessments ? (
                 <div className="text-center py-8 text-gray-500">Loading assessments...</div>
               ) : assessments.length === 0 ? (
@@ -1963,6 +1971,15 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
                   ))}
                 </div>
               )}
+                </TabsContent>
+                <TabsContent value="profile_card">
+                  <ProfileCardModulesPanel
+                    studentId={selectedStudent.id}
+                    cacheUserId={selectedStudent.user_id}
+                    teacherUserId={userProfile?.id || ''}
+                  />
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
         )}
