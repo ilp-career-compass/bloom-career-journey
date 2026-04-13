@@ -531,10 +531,9 @@ export default function AboutMeAssessment() {
       });
 
       if (complete) {
+        aiSummaryService.generateAndCacheProfileCardKeywords('about_me', responses, userProfile.id, lang);
         setIsCompleted(true);
         setTimeout(() => navigate('/student/things-interest-me?from=about_me'), 2000);
-
-        // AI summary generation disabled — may re-enable later
       }
     } catch (e) {
       logger.error('Error saving:', e);

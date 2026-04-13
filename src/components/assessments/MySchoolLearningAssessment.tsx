@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { aiSummaryService } from '@/services/aiSummaryService';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -753,10 +754,9 @@ export default function MySchoolLearningAssessment() {
                 : 'Your responses have been saved successfully!',
       });
 
+      aiSummaryService.generateAndCacheProfileCardKeywords('school_learning', responses, userProfile.id, lang);
       setIsCompleted(true);
       setTimeout(() => navigate('/student/things-interest-me?from=school_learning'), 2000);
-
-      // AI summary generation disabled — may re-enable later
     } catch (error) {
       logger.error('Error submitting assessment:', error);
       toast({

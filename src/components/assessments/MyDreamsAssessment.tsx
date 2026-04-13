@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { aiSummaryService } from '@/services/aiSummaryService';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -586,10 +587,9 @@ export default function MyDreamsAssessment() {
                 : 'Your dreams and aspirations have been captured successfully!',
       });
 
+      aiSummaryService.generateAndCacheProfileCardKeywords('dreams', responses, userProfile.id, lang);
       setIsCompleted(true);
       setTimeout(() => navigate('/student/things-interest-me?from=dreams'), 2000);
-
-      // AI summary generation disabled — may re-enable later
     } catch (error) {
       logger.error('Error submitting assessment:', error);
       toast({

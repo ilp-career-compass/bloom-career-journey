@@ -2347,6 +2347,47 @@ Role Models: ${formatAnswers(roleModelsAnswers)}`;
     }
     return result.data;
   }
+
+  /**
+   * Fire-and-forget: generate profile card keywords for one module and cache to DB.
+   * Called after assessment submission. Silently swallows errors.
+   */
+  async generateAndCacheProfileCardKeywords(
+    assessmentType: string,
+    responses: any,
+    userId: string,
+    lang: string
+  ): Promise<void> {
+    try {
+      const parts: string[] = [];
+      const extract = (obj: any) => {
+        for (const val of Object.values(obj)) {
+          if (typeof val === 'string' && (val as string).trim()) parts.push((val as string).trim());
+          else if (typeof val === 'object' && val !== null) extract(val);
+        }
+      };
+      if (responses && typeof responses === 'object') extract(responses);
+      const text = parts.join('\n');
+      if (!text) return;
+
+      const result = await this.generateProfileCardKeywords(assessmentType, text, lang);
+      if (result.success && result.keywords) {
+        const { error } = await supabase.from('profile_card_cache').upsert({
+          student_id: userId,
+          assessment_type: assessmentType,
+          keywords: result.keywords,
+          generated_at: new Date().toISOString(),
+          approval_status: 'pending',
+          approved_by: null,
+          approved_at: null,
+          rejection_reason: null,
+        } as any, { onConflict: 'student_id,assessment_type' });
+        if (error) logger.warn('generateAndCacheProfileCardKeywords: cache upsert failed:', error);
+      }
+    } catch (err) {
+      logger.warn('generateAndCacheProfileCardKeywords failed silently for', assessmentType, err);
+    }
+  }
 }
 
 // Export singleton instance

@@ -1270,6 +1270,7 @@ export default function MyInspirationAssessment() {
         description: lang === 'kn' ? 'ನಿಮ್ಮ ಉತ್ತರಗಳನ್ನು ಉಳಿಸಲಾಗಿದೆ.' : lang === 'ta' ? 'உங்கள் பதில்கள் சேமிக்கப்பட்டன.' : lang === 'hi' ? 'आपके उत्तर सहेजे गए।' : "Your responses have been saved.",
       });
 
+      aiSummaryService.generateAndCacheProfileCardKeywords('inspiration', responses, userProfile.id, lang);
       setIsCompleted(true);
       setTimeout(() => navigate('/student/things-interest-me?from=inspiration'), 2000);
     } catch (error) {

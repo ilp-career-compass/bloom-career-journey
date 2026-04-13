@@ -74,6 +74,7 @@ interface StudentsTabProps {
     students: Student[];
     filteredStudents: Student[];
     studentReviewMap: Record<string, { reviewed: number; total: number }>;
+    pendingProfileCardMap?: Record<string, number>;
     searchTerm: string;
     setSearchTerm: (v: string) => void;
     selectedGrade: string;
@@ -105,6 +106,7 @@ export default function StudentsTab({
     students,
     filteredStudents,
     studentReviewMap,
+    pendingProfileCardMap,
     searchTerm,
     setSearchTerm,
     selectedGrade,
@@ -230,10 +232,15 @@ export default function StudentsTab({
                                                 <div>
                                                     <p className="font-medium text-gray-900">{student.user?.full_name}</p>
                                                     <p className="text-sm text-gray-500">{student.user?.mobile}</p>
-                                                    <div className="mt-1">
+                                                    <div className="mt-1 flex flex-col gap-1">
                                                         <Badge variant="outline">
                                                             {studentReviewMap[student.id]?.reviewed || 0}/{studentReviewMap[student.id]?.total || 0} {t('reviewedLabel')}
                                                         </Badge>
+                                                        {(pendingProfileCardMap?.[student.id] ?? 0) > 0 && (
+                                                            <span className="text-xs text-amber-600 font-medium">
+                                                                {pendingProfileCardMap![student.id]} profile card module{pendingProfileCardMap![student.id] > 1 ? 's' : ''} pending approval
+                                                            </span>
+                                                        )}
                                                     </div>
                                                     {student.parent_guardian_name && (
                                                         <p className="text-xs text-gray-400">Parent: {student.parent_guardian_name}</p>

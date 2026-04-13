@@ -323,43 +323,6 @@ export default function ProfileCardPage({ studentIdOverride, readOnly }: Profile
     }
   };
 
-  const handleApproveAll = async () => {
-    if (!readOnly || !user?.id) return;
-    setSavingApproval(true);
-    try {
-      for (const mod of MODULES) {
-        if (answers[mod.key] && approvalStatus[mod.key] !== 'approved') {
-          await supabase.from('profile_card_cache').update({
-            approval_status: 'approved',
-            approved_by: user.id,
-            approved_at: new Date().toISOString(),
-            rejection_reason: null,
-          } as any).eq('student_id', cacheUserId).eq('assessment_type', mod.assessmentType);
-        }
-      }
-      // Also approve career_direction if it exists
-      if (careerDirection) {
-        await supabase.from('profile_card_cache').update({
-          approval_status: 'approved',
-          approved_by: user.id,
-          approved_at: new Date().toISOString(),
-          rejection_reason: null,
-        } as any).eq('student_id', cacheUserId).eq('assessment_type', 'career_direction');
-      }
-      const newStatus: Record<string, string> = {};
-      for (const mod of MODULES) {
-        if (answers[mod.key]) newStatus[mod.key] = 'approved';
-      }
-      if (careerDirection) newStatus['career_direction'] = 'approved';
-      setApprovalStatus(prev => ({ ...prev, ...newStatus }));
-      toast({ title: 'All modules approved' });
-    } catch (err) {
-      toast({ title: 'Approval failed', variant: 'destructive' });
-    } finally {
-      setSavingApproval(false);
-    }
-  };
-
   const handleReject = async () => {
     if (!rejectingModule || !user?.id) return;
     setSavingApproval(true);
@@ -611,20 +574,6 @@ export default function ProfileCardPage({ studentIdOverride, readOnly }: Profile
             </CardContent>
           </Card>
         </div>
-
-        {/* Teacher: Approve All button */}
-        {readOnly && (
-          <div className="mt-6 flex justify-center gap-3">
-            <Button
-              className="bg-green-600 hover:bg-green-700 text-white px-8"
-              onClick={handleApproveAll}
-              disabled={savingApproval}
-            >
-              <CheckCircle className="h-4 w-4 mr-2" />
-              {savingApproval ? 'Approving...' : 'Approve All Modules'}
-            </Button>
-          </div>
-        )}
 
         {/* Rejection reason dialog (inline) */}
         {rejectingModule && (
