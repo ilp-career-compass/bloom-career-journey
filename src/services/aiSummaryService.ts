@@ -2189,12 +2189,27 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
     const isHindi = lang === 'hi';
 
     const langInstruction = isKannada
-      ? 'Respond in Kannada (ಕನ್ನಡ) script.'
+      ? 'All keyword answers MUST be written in Kannada script (ಕನ್ನಡ). Not in English. Not in Roman letters.'
       : isTamil
-        ? 'Respond in Tamil (தமிழ்) script.'
+        ? 'All keyword answers MUST be written in Tamil script (தமிழ்). Not in English. Not in Roman letters.'
         : isHindi
-          ? 'Respond in Hindi (हिन्दी / Devanagari) script.'
-          : 'Respond in English.';
+          ? 'All keyword answers MUST be written in Hindi/Devanagari script (हिन्दी). Not in English. Not in Roman letters.'
+          : 'All keyword answers MUST be written in English.';
+
+    // BASE_SYSTEM_PROMPT contains "Respond in the same language as the student's responses" which
+    // is too permissive for profile card keywords (students may write in Tanglish/Roman script).
+    // tanglishInstruction below explicitly overrides that instruction for this function only.
+    const tanglishInstruction = `
+IMPORTANT — INPUT LANGUAGE NOTE:
+Students in rural India often write in Tanglish/Kanglish/Hinglish — their native language written in English/Roman letters.
+For example: "naa doctor aganum" means "I want to become a doctor" in Tamil.
+"nanna kನ್ನಡ school" is mixed Kannada-English.
+You must understand these Roman-script representations of Indian languages and extract their meaning correctly.
+
+IMPORTANT — OUTPUT LANGUAGE REQUIREMENT:
+Regardless of what language or script the student used in their responses, you MUST generate all keyword answers in the following script: ${langInstruction}
+This overrides all other language instructions. Do NOT mirror the student's input script. Do NOT output in English unless the dashboard language is English. Always output in the script specified above.
+`;
 
     // Build questions list for prompt
     const questionsBlock = sortedQuestions
@@ -2215,7 +2230,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
 
 Based on the student's assessment data below, answer each of the following profile card questions in exactly 2-3 words only.
 
-${langInstruction}
+${tanglishInstruction}
 
 Profile Card Questions:
 ${questionsBlock}
