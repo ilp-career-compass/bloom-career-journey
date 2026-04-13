@@ -25,7 +25,6 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-    console.log('[create-teacher] env check — SUPABASE_URL present:', !!supabaseUrl, '| SERVICE_ROLE_KEY present:', !!serviceRoleKey)
     if (!supabaseUrl || !serviceRoleKey) {
       return new Response(
         JSON.stringify({ error: 'Missing server configuration' }),
@@ -77,7 +76,6 @@ Deno.serve(async (req) => {
     }
 
     // 3. Create Supabase Auth user with phone + teacher's chosen password
-    console.log('[create-teacher] calling auth.admin.createUser for phone:', phone)
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       phone,
       password,
@@ -92,13 +90,10 @@ Deno.serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       )
     }
-    console.log('[create-teacher] auth user created, id:', authData.user.id)
-
     const authUserId = authData.user.id
 
     try {
       // 4. Insert into public.users
-      console.log('[create-teacher] inserting into public.users, id:', authUserId)
       const { error: userError } = await supabaseAdmin.from('users').insert({
         id: authUserId,
         full_name: fullName,
@@ -114,7 +109,6 @@ Deno.serve(async (req) => {
       }
 
       // 5. Insert into public.teachers
-      console.log('[create-teacher] inserting into public.teachers')
       const { error: teacherError } = await supabaseAdmin.from('teachers').insert({
         user_id: authUserId,
         state_id: stateId,

@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    const { model, contents, generationConfig } = await req.json()
+    const { model, contents, generationConfig, systemInstruction } = await req.json()
 
     if (!model || !contents) {
       return new Response(
@@ -28,13 +28,14 @@ Deno.serve(async (req) => {
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`
 
-    const body: Record<string, unknown> = { contents }
-    if (generationConfig) body.generationConfig = generationConfig
+    const geminiBody: any = { contents }
+    if (generationConfig) geminiBody.generationConfig = generationConfig
+    if (systemInstruction) geminiBody.systemInstruction = systemInstruction
 
     const upstream = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      body: JSON.stringify(geminiBody),
     })
 
     const data = await upstream.json()

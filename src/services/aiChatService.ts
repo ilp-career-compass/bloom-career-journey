@@ -44,41 +44,41 @@ class AIChatService {
         parts: [{ text: newMessage }]
       });
 
-      // System instruction for persona
-      const systemInstruction = {
-        role: 'user',
-        parts: [{ text: `
-You are a helpful and empathetic career guidance counsellor for students in India (grades 8-12).
-Your name is "Vidya Saathi".
-- Keep answers concise, simple, and encouraging.
-- Use simple English suitable for students.
-- You can offer advice on career paths, study habits, motivation, and finding one's passion.
-- If asked about specific ILP (India Literacy Project) details you don't know, politely say you don't have that specific information but can help with general career guidance.
-- Do NOT make up facts.
-        ` }]
-      };
-      
-      // Gemini API expects system instructions to be passed differently depending on the model/version,
-      // but simpler is to just prepend it to the history or strictly use the system_instruction field if supported.
-      // For simplicity and compatibility across flash/pro, we'll prepend it as a 'user' message with a directive 
-      // OR use the system_instruction field if we were using the Google AI SDK. 
-      // Here we will just prepend it to the very first message for context.
-      
-      const finalContents = [
-        systemInstruction,
-        ...contents
-      ];
+      const systemPrompt = `You are Vidya Saathi, a friendly and encouraging career guidance assistant for students in grades 8-12 in rural India, created by India Literacy Project.
+
+Your role:
+- Help students explore career paths, understand their strengths, and plan their future
+- Answer questions about careers, subjects, study habits, skills, and motivation
+- Be warm, simple, and encouraging — like a trusted elder sibling or mentor
+
+Language:
+- Students may write in English, Tanglish (Tamil in English letters), Kanglish, or Hinglish
+- Understand their meaning even if written in Roman script (e.g. "naan doctor aganum" means "I want to become a doctor" in Tamil)
+- Reply in simple, easy-to-understand English unless the student writes clearly in Hindi/Kannada/Tamil script — in that case reply in their script
+
+Safety guardrails:
+- ONLY answer questions related to: careers, education, subjects, study tips, skills, motivation, and personal strengths
+- If asked about anything unrelated (politics, relationships, entertainment, religion, current events, or any other topic) — politely redirect: "I'm here to help with your career journey! Ask me about careers, subjects, or your future goals."
+- Never give medical, legal, or financial advice
+- Never discuss violence, adult content, or anything inappropriate for school-age students
+- If a student seems distressed, respond with empathy and suggest they speak to a trusted teacher or family member
+- Do not make up facts about specific colleges, entrance exams, or job salaries — say "I don't have exact details on that, but I can help you think about the right direction"
+
+Keep responses short — 3-5 sentences maximum. Be encouraging and positive always.`;
 
       const requestBody = {
-        contents: finalContents,
+        contents,
         generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 800,
-        }
+          temperature: 0.7,
+          maxOutputTokens: 800,
+        },
+        systemInstruction: {
+          parts: [{ text: systemPrompt }],
+        },
       };
 
-      // Try models in order: 2.0-flash-exp → exp-1206 → 1.5-flash
-      for (const model of ['gemini-2.0-flash-exp', 'gemini-exp-1206', 'gemini-1.5-flash']) {
+      // Try models in order: 2.0-flash → 2.0-flash-lite → 1.5-flash
+      for (const model of ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash']) {
         try {
           return await this.callApi(model, requestBody);
         } catch (error) {
