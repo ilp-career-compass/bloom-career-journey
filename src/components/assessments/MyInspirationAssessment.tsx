@@ -538,7 +538,7 @@ export default function MyInspirationAssessment() {
 
   // Auto-save draft on changes (debounced)
   useEffect(() => {
-    if (loading || isCompleted) return;
+    if (loading || isCompleted || dataLoading) return;
     const t = setTimeout(async () => {
       try {
         if (!userProfile?.id) return;
@@ -563,7 +563,7 @@ export default function MyInspirationAssessment() {
       } catch { }
     }, 800);
     return () => clearTimeout(t);
-  }, [responses, loading, isCompleted, userProfile]);
+  }, [responses, loading, isCompleted, dataLoading, userProfile]);
 
 
   const checkExistingResponse = useCallback(async () => {
