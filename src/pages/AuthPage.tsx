@@ -14,8 +14,15 @@ import { StateInfo } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import IlpFooter from '@/components/IlpFooter';
 
+function toE164Indian(phone: string): string {
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length === 10) return `+91${digits}`;
+  if (digits.length === 12 && digits.startsWith('91')) return `+${digits}`;
+  return phone;
+}
+
 function isValidE164(phone: string): boolean {
-  return /^\+\d{10,15}$/.test(phone)
+  return /^\+91\d{10}$/.test(phone) || /^\d{10}$/.test(phone);
 }
 
 export default function AuthPage() {
@@ -122,7 +129,7 @@ export default function AuthPage() {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await signIn(signInForm.phone, signInForm.password);
+    const { error } = await signIn(toE164Indian(signInForm.phone), signInForm.password);
     setLoading(false);
     if (error) {
       logger.error('Sign in error:', error);
@@ -141,7 +148,7 @@ export default function AuthPage() {
     }
 
     if (!isValidE164(signUpForm.phone)) {
-      toast({ title: 'Sign Up Failed', description: 'Phone must be in E.164 format (e.g. +919876543210)', variant: 'destructive' });
+      toast({ title: 'Sign Up Failed', description: 'Please enter a 10-digit mobile number', variant: 'destructive' });
       setLoading(false);
       return;
     }
@@ -154,10 +161,11 @@ export default function AuthPage() {
       }
 
       // Student self-registration via create-student-self-register Edge Function
+      const normalizedPhone = toE164Indian(signUpForm.phone);
       const { data, error } = await supabase.functions.invoke('create-student-self-register', {
         body: {
           fullName: signUpForm.fullName,
-          phone: signUpForm.phone,
+          phone: normalizedPhone,
           password: signUpForm.password,
           grade: signUpForm.grade,
           stateId: signUpForm.stateId,
@@ -174,7 +182,7 @@ export default function AuthPage() {
       }
 
       // Sign in immediately after successful registration
-      const { error: signInError } = await signIn(signUpForm.phone, signUpForm.password);
+      const { error: signInError } = await signIn(normalizedPhone, signUpForm.password);
       setLoading(false);
       if (signInError) {
         toast({ title: 'Account created', description: 'Please sign in with your mobile number and password.', variant: 'default' });
@@ -183,10 +191,11 @@ export default function AuthPage() {
     }
 
     // Teacher self-registration via create-teacher Edge Function
+    const normalizedPhone = toE164Indian(signUpForm.phone);
     const { data, error } = await supabase.functions.invoke('create-teacher', {
       body: {
         fullName: signUpForm.fullName,
-        phone: signUpForm.phone,
+        phone: normalizedPhone,
         password: signUpForm.password,
         stateId: signUpForm.stateId,
         preferredLanguage: signUpForm.preferredLanguage,
@@ -202,7 +211,7 @@ export default function AuthPage() {
     }
 
     // Sign in immediately after successful registration
-    const { error: signInError } = await signIn(signUpForm.phone, signUpForm.password);
+    const { error: signInError } = await signIn(normalizedPhone, signUpForm.password);
     setLoading(false);
     if (signInError) {
       toast({ title: 'Account created', description: 'Please sign in with your mobile number and password.', variant: 'default' });
@@ -210,7 +219,7 @@ export default function AuthPage() {
   };
 
   const phoneError = signUpForm.phone && !isValidE164(signUpForm.phone)
-    ? 'Phone must be in E.164 format (e.g. +919876543210)'
+    ? 'Please enter a 10-digit mobile number'
     : '';
 
   return (
@@ -245,7 +254,7 @@ export default function AuthPage() {
                     <Input
                       id="signin-phone"
                       type="tel"
-                      placeholder="+91XXXXXXXXXX"
+                      placeholder="10-digit mobile number"
                       value={signInForm.phone}
                       onChange={(e) => setSignInForm({ ...signInForm, phone: e.target.value })}
                       required
@@ -304,7 +313,7 @@ export default function AuthPage() {
                     <Input
                       id="signup-phone"
                       type="tel"
-                      placeholder="+91XXXXXXXXXX"
+                      placeholder="10-digit mobile number"
                       value={signUpForm.phone}
                       onChange={(e) => setSignUpForm({ ...signUpForm, phone: e.target.value })}
                       className={phoneError ? 'border-red-400' : ''}

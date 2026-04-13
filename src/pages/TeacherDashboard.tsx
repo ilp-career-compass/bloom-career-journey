@@ -1,4 +1,11 @@
 ﻿import { logger } from '@/lib/logger';
+
+function toE164Indian(phone: string): string {
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length === 10) return `+91${digits}`;
+  if (digits.length === 12 && digits.startsWith('91')) return `+${digits}`;
+  return phone;
+}
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -177,7 +184,7 @@ export default function TeacherDashboard() {
         body: {
           students: [{
             fullName: newStudent.fullName,
-            phone: newStudent.phone,
+            phone: toE164Indian(newStudent.phone),
             grade: newStudent.grade,
             preferredLanguage: newStudent.preferredLanguage || teacherLang || 'en',
             teacherId: teacherData.id,

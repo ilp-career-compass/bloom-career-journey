@@ -53,12 +53,12 @@ interface AddStudentModalProps {
 
 function isValidPhone(phone: string): boolean {
     if (!phone) return true; // empty is not an error (just not submittable)
-    return /^\+\d{10,15}$/.test(phone);
+    return /^\+91\d{10}$/.test(phone) || /^\d{10}$/.test(phone);
 }
 
 export function AddStudentModal({ open, onOpenChange, newStudent, setNewStudent, onSubmit }: AddStudentModalProps) {
     const phoneError = newStudent.phone && !isValidPhone(newStudent.phone)
-        ? 'Phone must be in E.164 format (e.g. +919876543210)'
+        ? 'Please enter a 10-digit mobile number'
         : '';
 
     return (
@@ -90,7 +90,7 @@ export function AddStudentModal({ open, onOpenChange, newStudent, setNewStudent,
                                     id="phone"
                                     value={newStudent.phone}
                                     onChange={(e) => setNewStudent(prev => ({ ...prev, phone: e.target.value }))}
-                                    placeholder="+91XXXXXXXXXX"
+                                    placeholder="10-digit mobile number"
                                     className={phoneError ? 'border-red-400' : ''}
                                 />
                                 {phoneError && <p className="text-xs text-red-500">{phoneError}</p>}

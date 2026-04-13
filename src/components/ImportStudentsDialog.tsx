@@ -29,8 +29,15 @@ function parseCSV(text: string): Array<Record<string, string>> {
   });
 }
 
+function toE164Indian(phone: string): string {
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length === 10) return `+91${digits}`;
+  if (digits.length === 12 && digits.startsWith('91')) return `+${digits}`;
+  return phone;
+}
+
 function isValidE164(phone: string): boolean {
-  return /^\+\d{10,15}$/.test(phone);
+  return /^\+91\d{10}$/.test(phone) || /^\d{10}$/.test(phone);
 }
 
 export default function ImportStudentsDialog({ open, onOpenChange, classes, teacherId, stateId, onImported }: Props) {
@@ -79,7 +86,8 @@ export default function ImportStudentsDialog({ open, onOpenChange, classes, teac
     parsed.forEach((r, idx) => {
       if (!r.full_name) { errs.push(`Row ${idx+2}: missing full_name`); return; }
       if (!r.phone) { errs.push(`Row ${idx+2}: missing phone`); return; }
-      if (!isValidE164(r.phone)) { errs.push(`Row ${idx+2}: invalid phone format "${r.phone}" — expected +91XXXXXXXXXX`); return; }
+      const normalizedPhone = toE164Indian(r.phone.trim());
+      if (!isValidE164(normalizedPhone)) { errs.push(`Row ${idx+2}: invalid phone "${r.phone}" — expected 10-digit mobile number`); return; }
       // accept class_id or class_name
       let classId = r.class_id?.trim();
       if (!classId) {
@@ -87,7 +95,7 @@ export default function ImportStudentsDialog({ open, onOpenChange, classes, teac
         classId = nameToId.get(className) || '';
       }
       if (!classId || !classMap.has(classId)) { errs.push(`Row ${idx+2}: invalid class (provide class_id or class_name)`); return; }
-      normalized.push({ full_name: r.full_name, phone: r.phone, class_id: classId });
+      normalized.push({ full_name: r.full_name, phone: normalizedPhone, class_id: classId });
     });
     setRows(normalized);
     setErrors(errs);
@@ -173,7 +181,7 @@ export default function ImportStudentsDialog({ open, onOpenChange, classes, teac
           </div>
           <div className="text-xs text-gray-500">
             Example (CSV):
-            <pre className="bg-gray-50 border rounded p-2 mt-1 whitespace-pre-wrap">{`full_name,phone,class_name\nAsha Kumar,+919876543210,Class 8\nRavi M,+919876543211,Class 9`}</pre>
+            <pre className="bg-gray-50 border rounded p-2 mt-1 whitespace-pre-wrap">{`full_name,phone,class_name\nAsha Kumar,9876543210,Class 8\nRavi M,9876543211,Class 9`}</pre>
           </div>
           <div className="space-y-1">
             <Label className="text-sm">Preferred Language for all students</Label>
