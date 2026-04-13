@@ -19,7 +19,6 @@ import { checkAssessmentUnlock } from '@/utils/assessmentUnlock';
 import { fetchTranslations } from '@/services/translationService';
 import { aiSummaryService } from '@/services/aiSummaryService';
 import { summaryDatabaseService } from '@/services/summaryDatabaseService';
-import { notificationService } from '@/services/notificationService';
 
 interface AboutMeField {
   field_key: string;

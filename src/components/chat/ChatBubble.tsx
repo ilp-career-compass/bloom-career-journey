@@ -74,6 +74,7 @@ export default function ChatBubble({ role, isOpen: controlledIsOpen, onOpenChang
   const [channelId, setChannelId] = useState<string | null>(null);
   const [otherPartyName, setOtherPartyName] = useState<string>('');
   const [otherPartyAvatar, setOtherPartyAvatar] = useState<string | undefined>();
+  const [otherPartyUserId, setOtherPartyUserId] = useState<string | null>(null);
   const [noTeacherAssigned, setNoTeacherAssigned] = useState(false);
 
   // For teacher: student selection
@@ -100,7 +101,7 @@ export default function ChatBubble({ role, isOpen: controlledIsOpen, onOpenChang
         .from('students')
         .select(`
           id,
-          user:users(full_name, profile_picture_url)
+          user:users(id, full_name, profile_picture_url)
         `)
         .eq('teacher_id', teacherData.id);
 
@@ -120,7 +121,7 @@ export default function ChatBubble({ role, isOpen: controlledIsOpen, onOpenChang
         // Get student record
         const { data: studentData } = await supabase
           .from('students')
-          .select('id, teacher_id, teachers:teacher_id(id, users:user_id(full_name, profile_picture_url))')
+          .select('id, teacher_id, teachers:teacher_id(id, user_id, users:user_id(full_name, profile_picture_url))')
           .eq('user_id', userProfile.id)
           .single();
 
@@ -143,6 +144,7 @@ export default function ChatBubble({ role, isOpen: controlledIsOpen, onOpenChang
         const teacherInfo = studentData.teachers as any;
         setOtherPartyName(teacherInfo?.users?.full_name || 'Vidya Saathi');
         setOtherPartyAvatar(teacherInfo?.users?.profile_picture_url);
+        setOtherPartyUserId(teacherInfo?.user_id || null);
 
         await loadMessages(channelData.id);
         await markAsRead(channelData.id, 'student');
@@ -161,6 +163,7 @@ export default function ChatBubble({ role, isOpen: controlledIsOpen, onOpenChang
         if (selectedStudent) {
           setOtherPartyName(selectedStudent.user?.full_name || 'Student');
           setOtherPartyAvatar(selectedStudent.user?.profile_picture_url);
+          setOtherPartyUserId(selectedStudent.user?.id || null);
         }
 
         // Get or create channel
@@ -254,6 +257,20 @@ export default function ChatBubble({ role, isOpen: controlledIsOpen, onOpenChang
         .update({ last_message_at: new Date().toISOString() })
         .eq('id', channelId);
       if (updateError) logger.error('Error updating last_message_at:', updateError);
+
+      // Fire-and-forget: notify the other party
+      if (otherPartyUserId) {
+        const senderName = userProfile?.full_name || (role === 'student' ? 'Student' : 'Teacher');
+        supabase.rpc('create_notification_secure', {
+          p_user_id: otherPartyUserId,
+          p_type: 'chat_message',
+          p_title: 'New message',
+          p_message: `${senderName} sent you a message`,
+          p_link: null,
+        }).then(({ error: notifError }) => {
+          if (notifError) logger.error('Chat notification error:', notifError);
+        });
+      }
 
       setNewMessage('');
       await loadMessages(channelId);

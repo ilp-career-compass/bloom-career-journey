@@ -323,6 +323,39 @@ export default function ProfileCardPage({ studentIdOverride, readOnly }: Profile
     }
   };
 
+  const handleApproveModule = async (assessmentType: string) => {
+    if (!user?.id) return;
+    setSavingApproval(true);
+    try {
+      const { error } = await supabase.from('profile_card_cache').update({
+        approval_status: 'approved',
+        approved_by: user.id,
+        approved_at: new Date().toISOString(),
+        rejection_reason: null,
+      } as any).eq('student_id', cacheUserId).eq('assessment_type', assessmentType);
+      if (error) throw error;
+
+      setApprovalStatus(prev => ({ ...prev, [assessmentType]: 'approved' }));
+      toast({ title: 'Module approved' });
+
+      if (cacheUserId) {
+        supabase.rpc('create_notification_secure', {
+          p_user_id: cacheUserId,
+          p_type: 'profile_card_approved',
+          p_title: 'Profile card module approved',
+          p_message: 'Your teacher has approved a module in your Career Compass.',
+          p_link: '/student/profile-card',
+        }).then(({ error: notifError }) => {
+          if (notifError) logger.error('Profile card approval notification error:', notifError);
+        });
+      }
+    } catch (err) {
+      toast({ title: 'Approval failed', variant: 'destructive' });
+    } finally {
+      setSavingApproval(false);
+    }
+  };
+
   const handleReject = async () => {
     if (!rejectingModule || !user?.id) return;
     setSavingApproval(true);
@@ -517,17 +550,30 @@ export default function ProfileCardPage({ studentIdOverride, readOnly }: Profile
                     </>
                   )}
 
-                  {/* Teacher: per-module reject button */}
-                  {readOnly && isComplete && ans && status !== 'rejected' && !isRegenerating && (
-                    <div className="mt-3 pt-3 border-t border-gray-100">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-red-600 border-red-200 hover:bg-red-50 text-xs"
-                        onClick={(e) => { e.stopPropagation(); setRejectingModule(mod.assessmentType); }}
-                      >
-                        <XCircle className="h-3 w-3 mr-1" /> Request Changes
-                      </Button>
+                  {/* Teacher: per-module action buttons */}
+                  {readOnly && isComplete && ans && !isRegenerating && (
+                    <div className="mt-3 pt-3 border-t border-gray-100 flex gap-2">
+                      {status !== 'approved' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-green-600 border-green-200 hover:bg-green-50 text-xs"
+                          onClick={(e) => { e.stopPropagation(); handleApproveModule(mod.assessmentType); }}
+                          disabled={savingApproval}
+                        >
+                          <CheckCircle className="h-3 w-3 mr-1" /> Approve
+                        </Button>
+                      )}
+                      {status !== 'rejected' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-red-600 border-red-200 hover:bg-red-50 text-xs"
+                          onClick={(e) => { e.stopPropagation(); setRejectingModule(mod.assessmentType); }}
+                        >
+                          <XCircle className="h-3 w-3 mr-1" /> Request Changes
+                        </Button>
+                      )}
                     </div>
                   )}
                 </CardContent>
