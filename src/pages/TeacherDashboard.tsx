@@ -37,8 +37,6 @@ import IlpFooter from '@/components/IlpFooter';
 
 interface StudentStats {
   totalStudents: number;
-  activeStudents: number;
-  recentAdditions: number;
 }
 
 export default function TeacherDashboard() {
@@ -56,8 +54,9 @@ export default function TeacherDashboard() {
   // ── Student state ─────────────────────────────────────────────────
   const [students, setStudents] = useState<Student[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
-  const [studentStats, setStudentStats] = useState<StudentStats>({ totalStudents: 0, activeStudents: 0, recentAdditions: 0 });
+  const [studentStats, setStudentStats] = useState<StudentStats>({ totalStudents: 0 });
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('students');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGrade, setSelectedGrade] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
@@ -127,14 +126,8 @@ export default function TeacherDashboard() {
     try {
       const studentsToCount = studentsData || students;
       const totalStudents = studentsToCount.length;
-      const activeStudents = studentsToCount.filter(s => (s.enrollment_status === 'active' || !s.enrollment_status)).length;
-      const recentAdditions = studentsToCount.filter(s => {
-        const dateToUse = s.enrollment_date || s.created_at;
-        if (!dateToUse) return false;
-        return (Date.now() - new Date(dateToUse).getTime()) / (1000 * 60 * 60 * 24) <= 7;
-      }).length;
-      logger.log('📊 Student stats calculated:', { totalStudents, activeStudents, recentAdditions });
-      setStudentStats({ totalStudents, activeStudents, recentAdditions });
+      logger.log('📊 Student stats calculated:', { totalStudents });
+      setStudentStats({ totalStudents });
     } catch (error) {
       logger.error('Error loading stats:', error);
     }
@@ -501,10 +494,15 @@ export default function TeacherDashboard() {
           <p className="text-base md:text-xl text-gray-600 leading-relaxed">{t('manageStudents')}</p>
         </div>
 
-        <TeacherStatsCards studentStats={studentStats} reviewOverview={reviewOverview} t={t} />
+        <TeacherStatsCards
+          totalStudents={studentStats.totalStudents}
+          reviewOverview={reviewOverview}
+          pendingProfileCardMap={pendingProfileCardMap}
+          onTabChange={setActiveTab}
+        />
 
         {/* Main Content Tabs */}
-        <Tabs defaultValue="students" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 bg-white shadow-sm h-auto p-1">
             <TabsTrigger value="students" className="flex items-center space-x-2 py-2">
               <Users className="w-4 h-4" /><span>{t('studentsTab')}</span>
