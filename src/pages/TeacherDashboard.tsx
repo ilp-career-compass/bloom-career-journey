@@ -23,7 +23,6 @@ import StudentsTab, { Student } from '@/components/teacher/StudentsTab';
 import {
   AddStudentModal,
   StudentDetailsModal,
-  ViewProgressModal,
   AssessmentAnswersModal,
   AddExistingStudentModal,
 } from '@/components/teacher/StudentModals';
@@ -81,9 +80,7 @@ export default function TeacherDashboard() {
   // ── Student detail/progress state ─────────────────────────────────
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [isProgressOpen, setIsProgressOpen] = useState(false);
   const [isAnswersOpen, setIsAnswersOpen] = useState(false);
-  const [progressSummary, setProgressSummary] = useState<{ [k: string]: { count: number; last?: string } }>({});
   const [activityTimeline, setActivityTimeline] = useState<Array<{ id: string; title: string; seq: number; status: string; completed_at?: string }>>([]);
   const [assessmentAnswers, setAssessmentAnswers] = useState<any[]>([]);
 
@@ -398,26 +395,6 @@ export default function TeacherDashboard() {
     setIsDetailsOpen(true);
   };
 
-  const handleViewProgress = async (student: Student) => {
-    setSelectedStudent(student);
-    try {
-      const { data, error } = await supabase.from('assessment_responses').select('assessment_type, completed_at').eq('student_id', student.id);
-      if (error) throw error;
-      const summary: { [k: string]: { count: number; last?: string } } = {};
-      (data || []).forEach((r: any) => {
-        const t = r.assessment_type;
-        if (!summary[t]) summary[t] = { count: 0, last: undefined };
-        summary[t].count += 1;
-        if (!summary[t].last || new Date(r.completed_at) > new Date(summary[t].last!)) summary[t].last = r.completed_at;
-      });
-      setProgressSummary(summary);
-      setIsProgressOpen(true);
-    } catch (err) {
-      logger.error('Load progress error:', err);
-      toast({ title: 'Failed to load progress', variant: 'destructive' });
-    }
-  };
-
   const handleUnenroll = async (student: Student) => {
     if (!confirm('Unenroll this student from your list?')) return;
     try {
@@ -558,7 +535,6 @@ export default function TeacherDashboard() {
               onAddExisting={() => setIsAddExistingOpen(true)}
               onImportCsv={() => setImportOpen(true)}
               onViewDetails={handleViewDetails}
-              onViewProgress={handleViewProgress}
               onUnenroll={handleUnenroll}
               loadStudents={loadStudents}
             />
@@ -595,10 +571,6 @@ export default function TeacherDashboard() {
       <StudentDetailsModal
         open={isDetailsOpen} onOpenChange={setIsDetailsOpen}
         selectedStudent={selectedStudent} activityTimeline={activityTimeline}
-      />
-      <ViewProgressModal
-        open={isProgressOpen} onOpenChange={setIsProgressOpen}
-        selectedStudent={selectedStudent} progressSummary={progressSummary}
       />
       <AssessmentAnswersModal
         open={isAnswersOpen} onOpenChange={setIsAnswersOpen}

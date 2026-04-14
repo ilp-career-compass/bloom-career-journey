@@ -26,11 +26,9 @@ import {
     Plus,
     Upload,
     MoreHorizontal,
-    Activity,
     FileText,
     Map,
     Heart,
-    User,
     ClipboardList,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -86,7 +84,6 @@ interface StudentsTabProps {
     onAddExisting: () => void;
     onImportCsv: () => void;
     onViewDetails: (student: Student) => void;
-    onViewProgress: (student: Student) => void;
     onUnenroll: (student: Student) => void;
     loadStudents: () => void;
 }
@@ -118,7 +115,6 @@ export default function StudentsTab({
     onAddExisting,
     onImportCsv,
     onViewDetails,
-    onViewProgress,
     onUnenroll,
 }: StudentsTabProps) {
     const navigate = useNavigate();
@@ -288,14 +284,6 @@ export default function StudentsTab({
                                                             <DropdownMenuItem onClick={() => navigate(`/student/${student.id}/summary`)}>
                                                                 <FileText className="w-4 h-4 mr-2" />
                                                                 View Summary
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => onViewProgress(student)}>
-                                                                <Activity className="w-4 h-4 mr-2" />
-                                                                View Progress
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => navigate(`/teacher/student-profile-card/${student.id}`)}>
-                                                                <User className="w-4 h-4 mr-2" />
-                                                                Review Profile Card
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem onClick={() => navigate(`/teacher/student-responses/${student.id}`)}>
                                                                 <ClipboardList className="w-4 h-4 mr-2" />
