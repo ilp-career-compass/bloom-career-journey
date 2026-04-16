@@ -1105,7 +1105,7 @@ export default function MyHobbiesAssessment() {
                       ) : (
                         <>
                           <CheckCircle className="w-4 h-4 mr-2" />
-                          {lang === 'kn' ? 'ಪ್ರಗತಿಯನ್ನು ಉಳಿಸಿ' : lang === 'ta' ? 'முன்னೇற்றத்தைச் சேಮಿ' : lang === 'hi' ? 'प्रगति सहेजें' : 'Save Progress'}
+                          {t('saveProgress')}
                         </>
                       )}
                     </Button>

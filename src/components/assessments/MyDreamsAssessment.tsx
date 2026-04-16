@@ -1089,13 +1089,7 @@ export default function MyDreamsAssessment() {
               ) : (
                 <>
                   <Save className="w-4 h-4 mr-2" />
-                  {lang === 'kn'
-                    ? 'ಪ್ರಗತಿಯನ್ನು ಉಳಿಸಿ'
-                    : lang === 'ta'
-                      ? 'முன்னேற்றத்தைச் சேமி'
-                      : lang === 'hi'
-                        ? 'प्रगति सहेजें'
-                        : 'Save Progress'}
+                  {t('saveProgress')}
                 </>
               )}
             </Button>

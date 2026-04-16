@@ -270,6 +270,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       logger.log('🔐 Sign in attempt for phone:', phone);
 
+      const lang = (typeof window !== 'undefined' ? localStorage.getItem('lang') : null) || 'en';
+
+      const signInSuccessToasts: Record<string, { title: string; description: string }> = {
+        en: { title: 'Sign in successful! ✨', description: 'Welcome back!' },
+        ta: { title: 'வெற்றிகரமாக உள்நுழைந்தீர்கள்! ✨', description: 'மீண்டும் வரவேற்கிறோம்!' },
+        kn: { title: 'ಯಶಸ್ವಿಯಾಗಿ ಸೈನ್ ಇನ್ ಆಗಿದೆ! ✨', description: 'ಮತ್ತೆ ಸ್ವಾಗತ!' },
+        hi: { title: 'सफलतापूर्वक साइन इन! ✨', description: 'वापस स्वागत है!' },
+      };
+      const signInFailToasts: Record<string, { title: string }> = {
+        en: { title: 'Sign In Failed' },
+        ta: { title: 'உள்நுழைவு தோல்வியடைந்தது' },
+        kn: { title: 'ಸೈನ್ ಇನ್ ವಿಫಲವಾಗಿದೆ' },
+        hi: { title: 'साइन इन विफल' },
+      };
+
       const { data: signInData, error } = await supabase.auth.signInWithPassword({
         phone: phone.trim(),
         password,
@@ -277,8 +292,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (error) {
         logger.error('❌ Sign in error:', error);
+        const failMsg = signInFailToasts[lang] || signInFailToasts['en'];
         toast({
-          title: "Sign in failed",
+          title: failMsg.title,
           description: error.message || "Invalid mobile number or password",
           variant: "destructive",
         });
@@ -289,7 +305,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logger.log('✅ Supabase Auth successful:', signInData.user);
         setUser(signInData.user as AuthUser);
         await fetchUserProfile(signInData.user.id, signInData.user as AuthUser);
-        toast({ title: "Sign in successful! ✨", description: "Welcome back!" });
+        const successMsg = signInSuccessToasts[lang] || signInSuccessToasts['en'];
+        toast({ title: successMsg.title, description: successMsg.description });
         return { error: null };
       }
 

@@ -236,7 +236,14 @@ export default function TeacherDashboard() {
     try {
       await signOut();
       navigate('/auth');
-      toast({ title: "Logged Out", description: "You have been successfully logged out." });
+      const logoutToasts: Record<string, { title: string; description: string }> = {
+        en: { title: 'Logged Out', description: 'You have been successfully logged out.' },
+        ta: { title: 'வெளியேறினீர்கள்', description: 'நீங்கள் வெற்றிகரமாக வெளியேறினீர்கள்.' },
+        kn: { title: 'ಲಾಗ್ ಔಟ್ ಆಗಿದೆ', description: 'ನೀವು ಯಶಸ್ವಿಯಾಗಿ ಲಾಗ್ ಔಟ್ ಆಗಿದ್ದೀರಿ.' },
+        hi: { title: 'लॉग आउट', description: 'आप सफलतापूर्वक लॉग आउट हो गए हैं।' },
+      };
+      const logoutMsg = logoutToasts[lang] || logoutToasts['en'];
+      toast({ title: logoutMsg.title, description: logoutMsg.description });
     } catch (error) { logger.error('Logout error:', error); }
   };
 
