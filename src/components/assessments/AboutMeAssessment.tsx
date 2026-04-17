@@ -501,6 +501,23 @@ export default function AboutMeAssessment() {
     }
   }, [responses, aboutMeFields, readOnlyView, isCompleted, currentSection]);
 
+  // Auto-save drafts on changes (debounced)
+  useEffect(() => {
+    if (loading || isCompleted || readOnlyView || aboutMeFields.length === 0) return;
+    const studentId = userProfile?.studentProfile?.id;
+    if (!studentId) return;
+    const timer = setTimeout(async () => {
+      await supabase.from('assessment_responses').upsert({
+        student_id: studentId,
+        assessment_type: 'about_me',
+        responses,
+        completed_at: null,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'student_id,assessment_type' });
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [responses, loading, isCompleted, readOnlyView, aboutMeFields]);
+
   const save = async (complete: boolean) => {
     if (readOnlyView) return;
     if (!userProfile) return;

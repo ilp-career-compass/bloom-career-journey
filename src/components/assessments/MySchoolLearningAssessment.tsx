@@ -408,6 +408,23 @@ export default function MySchoolLearningAssessment() {
     }
   };
 
+  // Auto-save drafts on changes (debounced)
+  useEffect(() => {
+    if (loading || isCompleted || readOnlyView) return;
+    const studentId = userProfile?.studentProfile?.id;
+    if (!studentId) return;
+    const timer = setTimeout(async () => {
+      await supabase.from('assessment_responses').upsert({
+        student_id: studentId,
+        assessment_type: 'school_learning',
+        responses,
+        completed_at: null,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'student_id,assessment_type' });
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [responses, loading, isCompleted, readOnlyView]);
+
   const handleResponseChange = (section: keyof SchoolLearningAssessmentResponse, questionKey: string, value: string) => {
     setResponses(prev => ({
       ...prev,

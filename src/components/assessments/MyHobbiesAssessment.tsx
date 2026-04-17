@@ -274,6 +274,23 @@ export default function MyHobbiesAssessment() {
     }
   }, [lang]);
 
+  // Auto-save drafts on changes (debounced)
+  useEffect(() => {
+    if (loading || isCompleted || readOnlyView || Object.keys(responses).length === 0) return;
+    const timer = setTimeout(async () => {
+      const studentId = await getStudentId();
+      if (!studentId) return;
+      await supabase.from('assessment_responses').upsert({
+        student_id: studentId,
+        assessment_type: 'hobbies',
+        responses,
+        completed_at: null,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'student_id,assessment_type' });
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [responses, loading, isCompleted, readOnlyView]);
+
   // Save section function
   const saveSection = async (section: string) => {
     if (isReadOnly || !userProfile) return;
