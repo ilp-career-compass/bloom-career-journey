@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { StateInfo } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import IlpFooter from '@/components/IlpFooter';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 
 declare global {
   interface Window {
@@ -21,11 +22,16 @@ declare global {
       tokenAuth: string
       exposeMethods?: boolean
     }) => void
-    sendOtp: (
-      mobile: string,
+    // With exposeMethods:true, sendOtp only dispatches the SMS — no callbacks
+    sendOtp: (mobile: string) => void
+    // verifyOtp takes the code the user typed and returns access-token on success
+    verifyOtp: (
+      otp: string,
       success: (data: Record<string, unknown>) => void,
       failure: (error: unknown) => void
     ) => void
+    // retryOtp resends the OTP
+    retryOtp: (callback: ((data: Record<string, unknown>) => void) | null) => void
   }
 }
 
@@ -74,9 +80,16 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [states, setStates] = useState<StateInfo[]>([]);
   const [loadingStates, setLoadingStates] = useState(false);
+
+  // Sign Up OTP step: 'form' shows the registration form, 'otp' shows the OTP input
+  const [signUpStep, setSignUpStep] = useState<'form' | 'otp'>('form');
+  const [signUpOtp, setSignUpOtp] = useState('');
+
   const [signInMode, setSignInMode] = useState<'signin' | 'firstlogin'>('signin');
-  const [firstLoginStep, setFirstLoginStep] = useState<'phone' | 'setpassword'>('phone');
+  // First Login steps: phone → otp → setpassword
+  const [firstLoginStep, setFirstLoginStep] = useState<'phone' | 'otp' | 'setpassword'>('phone');
   const [firstLoginForm, setFirstLoginForm] = useState({ phone: '', newPassword: '', confirmPassword: '' });
+  const [firstLoginOtp, setFirstLoginOtp] = useState('');
 
   const accessTokenRef = useRef<string | null>(null);
 
@@ -175,6 +188,7 @@ export default function AuthPage() {
     }
   };
 
+  // Step 1 of Sign Up: validate form, dispatch OTP, show OTP input screen
   const handleSignUp = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -197,18 +211,34 @@ export default function AuthPage() {
       return;
     }
 
-    const normalizedPhone = toE164Indian(signUpForm.phone);
-    // MSG91 widget expects mobile as 91XXXXXXXXXX (country code, no '+')
-    const msg91Mobile = normalizedPhone.replace('+', '');
-
     if (typeof window.sendOtp !== 'function') {
       toast({ title: 'OTP Unavailable', description: 'OTP service unavailable. Please refresh and try again.', variant: 'destructive' });
       setLoading(false);
       return;
     }
 
-    window.sendOtp(
-      msg91Mobile,
+    // MSG91 expects 91XXXXXXXXXX (no '+')
+    const msg91Mobile = toE164Indian(signUpForm.phone).replace('+', '');
+    window.sendOtp(msg91Mobile);
+    setSignUpOtp('');
+    setSignUpStep('otp');
+    setLoading(false);
+  };
+
+  // Step 2 of Sign Up: verify the OTP the user typed, then create the account
+  const handleSignUpVerifyOtp = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (typeof window.verifyOtp !== 'function') {
+      toast({ title: 'OTP Unavailable', description: 'OTP service unavailable. Please refresh and try again.', variant: 'destructive' });
+      return;
+    }
+
+    setLoading(true);
+    const normalizedPhone = toE164Indian(signUpForm.phone);
+
+    window.verifyOtp(
+      signUpOtp,
       async (data: Record<string, unknown>) => {
         accessTokenRef.current = (data?.['access-token'] as string) ?? '';
 
@@ -271,7 +301,7 @@ export default function AuthPage() {
       (_error: unknown) => {
         toast({
           title: 'OTP Verification Failed',
-          description: 'Could not verify your mobile number. Please try again.',
+          description: 'The OTP you entered is incorrect. Please try again.',
           variant: 'destructive',
         });
         setLoading(false);
@@ -279,6 +309,7 @@ export default function AuthPage() {
     );
   };
 
+  // Step 1 of First Login: validate phone, dispatch OTP, show OTP input screen
   const handleFirstLoginOtp = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -287,18 +318,30 @@ export default function AuthPage() {
       return;
     }
 
-    setLoading(true);
-    const normalizedPhone = toE164Indian(firstLoginForm.phone);
-    const msg91Mobile = normalizedPhone.replace('+', '');
-
     if (typeof window.sendOtp !== 'function') {
       toast({ title: 'OTP Unavailable', description: 'OTP service unavailable. Please refresh and try again.', variant: 'destructive' });
-      setLoading(false);
       return;
     }
 
-    window.sendOtp(
-      msg91Mobile,
+    const msg91Mobile = toE164Indian(firstLoginForm.phone).replace('+', '');
+    window.sendOtp(msg91Mobile);
+    setFirstLoginOtp('');
+    setFirstLoginStep('otp');
+  };
+
+  // Step 2 of First Login: verify OTP, then show password setup screen
+  const handleFirstLoginVerifyOtp = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (typeof window.verifyOtp !== 'function') {
+      toast({ title: 'OTP Unavailable', description: 'OTP service unavailable. Please refresh and try again.', variant: 'destructive' });
+      return;
+    }
+
+    setLoading(true);
+
+    window.verifyOtp(
+      firstLoginOtp,
       (data: Record<string, unknown>) => {
         accessTokenRef.current = (data?.['access-token'] as string) ?? '';
         setFirstLoginStep('setpassword');
@@ -307,7 +350,7 @@ export default function AuthPage() {
       (_error: unknown) => {
         toast({
           title: 'OTP Verification Failed',
-          description: 'Could not verify your mobile number. Please try again.',
+          description: 'The OTP you entered is incorrect. Please try again.',
           variant: 'destructive',
         });
         setLoading(false);
@@ -362,6 +405,52 @@ export default function AuthPage() {
   const phoneError = signUpForm.phone && !isValidE164(signUpForm.phone)
     ? 'Please enter a 10-digit mobile number'
     : '';
+
+  // Shared OTP input UI used in both Sign Up and First Login flows
+  const OtpScreen = ({
+    phone,
+    otpValue,
+    onOtpChange,
+    onVerify,
+    verifyLoading,
+  }: {
+    phone: string
+    otpValue: string
+    onOtpChange: (v: string) => void
+    onVerify: (e: React.FormEvent) => void
+    verifyLoading: boolean
+  }) => (
+    <form onSubmit={onVerify} className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        Enter the 6-digit OTP sent to{' '}
+        <span className="font-medium">{toE164Indian(phone)}</span>
+      </p>
+      <div className="flex justify-center">
+        <InputOTP maxLength={6} value={otpValue} onChange={(v) => onOtpChange(v)}>
+          <InputOTPGroup>
+            <InputOTPSlot index={0} />
+            <InputOTPSlot index={1} />
+            <InputOTPSlot index={2} />
+            <InputOTPSlot index={3} />
+            <InputOTPSlot index={4} />
+            <InputOTPSlot index={5} />
+          </InputOTPGroup>
+        </InputOTP>
+      </div>
+      <Button type="submit" className="w-full" disabled={verifyLoading || otpValue.length < 6}>
+        {verifyLoading ? 'Verifying...' : 'Verify OTP'}
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full"
+        onClick={() => window.retryOtp(null)}
+        disabled={verifyLoading}
+      >
+        Resend OTP
+      </Button>
+    </form>
+  );
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-primary/5 via-background to-accent/5">
@@ -455,6 +544,14 @@ export default function AuthPage() {
                       {loading ? 'Sending OTP...' : 'Verify Mobile'}
                     </Button>
                   </form>
+                ) : firstLoginStep === 'otp' ? (
+                  <OtpScreen
+                    phone={firstLoginForm.phone}
+                    otpValue={firstLoginOtp}
+                    onOtpChange={setFirstLoginOtp}
+                    onVerify={handleFirstLoginVerifyOtp}
+                    verifyLoading={loading}
+                  />
                 ) : (
                   <form onSubmit={handleSetPassword} className="space-y-4">
                     <p className="text-sm text-muted-foreground">
@@ -490,135 +587,145 @@ export default function AuthPage() {
               </TabsContent>
 
               <TabsContent value="signup">
-                <form onSubmit={handleSignUp} className="space-y-4">
-                  {/* Role toggle */}
-                  <div className="flex rounded-lg border overflow-hidden">
-                    <button
-                      type="button"
-                      onClick={() => setSignUpForm({ ...signUpForm, role: 'teacher', grade: '' })}
-                      className={`flex-1 py-2 text-sm font-medium transition-colors ${signUpForm.role === 'teacher' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted'}`}
-                    >
-                      I am a Teacher
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSignUpForm({ ...signUpForm, role: 'student' })}
-                      className={`flex-1 py-2 text-sm font-medium transition-colors ${signUpForm.role === 'student' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted'}`}
-                    >
-                      I am a Student
-                    </button>
-                  </div>
+                {signUpStep === 'otp' ? (
+                  <OtpScreen
+                    phone={signUpForm.phone}
+                    otpValue={signUpOtp}
+                    onOtpChange={setSignUpOtp}
+                    onVerify={handleSignUpVerifyOtp}
+                    verifyLoading={loading}
+                  />
+                ) : (
+                  <form onSubmit={handleSignUp} className="space-y-4">
+                    {/* Role toggle */}
+                    <div className="flex rounded-lg border overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => setSignUpForm({ ...signUpForm, role: 'teacher', grade: '' })}
+                        className={`flex-1 py-2 text-sm font-medium transition-colors ${signUpForm.role === 'teacher' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted'}`}
+                      >
+                        I am a Teacher
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSignUpForm({ ...signUpForm, role: 'student' })}
+                        className={`flex-1 py-2 text-sm font-medium transition-colors ${signUpForm.role === 'student' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted'}`}
+                      >
+                        I am a Student
+                      </button>
+                    </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-name">{t('fullName')}</Label>
-                    <Input
-                      id="signup-name"
-                      type="text"
-                      placeholder="Enter your full name"
-                      value={signUpForm.fullName}
-                      onChange={(e) => setSignUpForm({ ...signUpForm, fullName: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-phone">{t('mobileNumber')}</Label>
-                    <Input
-                      id="signup-phone"
-                      type="tel"
-                      placeholder="10-digit mobile number"
-                      value={signUpForm.phone}
-                      onChange={(e) => setSignUpForm({ ...signUpForm, phone: e.target.value })}
-                      className={phoneError ? 'border-red-400' : ''}
-                      required
-                    />
-                    {phoneError && <p className="text-xs text-red-500">{phoneError}</p>}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password">{t('password')}</Label>
-                    <Input
-                      id="signup-password"
-                      type="password"
-                      placeholder={t('createPassword')}
-                      value={signUpForm.password}
-                      onChange={(e) => setSignUpForm({ ...signUpForm, password: e.target.value })}
-                      required
-                    />
-                  </div>
-                  {/* State Selection */}
-                  <div className="space-y-2">
-                    <Label htmlFor="state">{t('state')}</Label>
-                    <Select
-                      value={signUpForm.stateId}
-                      onValueChange={(value) => setSignUpForm({ ...signUpForm, stateId: value })}
-                      disabled={loadingStates}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder={loadingStates ? "Loading states..." : "Select your state"} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {states.length === 0 ? (
-                          <>
-                            {loadingStates ? null : (
-                              <div className="px-3 py-2 text-sm text-muted-foreground">No states available</div>
-                            )}
-                          </>
-                        ) : (
-                          states.map((state) => (
-                            <SelectItem key={state.state_id} value={state.state_id}>
-                              <div className="flex flex-col">
-                                <span className="font-medium">{state.state_name}</span>
-                                <span className="text-xs text-muted-foreground">{state.state_code}</span>
-                              </div>
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Grade picker — students only */}
-                  {signUpForm.role === 'student' && (
                     <div className="space-y-2">
-                      <Label htmlFor="grade">Grade *</Label>
+                      <Label htmlFor="signup-name">{t('fullName')}</Label>
+                      <Input
+                        id="signup-name"
+                        type="text"
+                        placeholder="Enter your full name"
+                        value={signUpForm.fullName}
+                        onChange={(e) => setSignUpForm({ ...signUpForm, fullName: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-phone">{t('mobileNumber')}</Label>
+                      <Input
+                        id="signup-phone"
+                        type="tel"
+                        placeholder="10-digit mobile number"
+                        value={signUpForm.phone}
+                        onChange={(e) => setSignUpForm({ ...signUpForm, phone: e.target.value })}
+                        className={phoneError ? 'border-red-400' : ''}
+                        required
+                      />
+                      {phoneError && <p className="text-xs text-red-500">{phoneError}</p>}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-password">{t('password')}</Label>
+                      <Input
+                        id="signup-password"
+                        type="password"
+                        placeholder={t('createPassword')}
+                        value={signUpForm.password}
+                        onChange={(e) => setSignUpForm({ ...signUpForm, password: e.target.value })}
+                        required
+                      />
+                    </div>
+                    {/* State Selection */}
+                    <div className="space-y-2">
+                      <Label htmlFor="state">{t('state')}</Label>
                       <Select
-                        value={signUpForm.grade}
-                        onValueChange={(value) => setSignUpForm({ ...signUpForm, grade: value })}
+                        value={signUpForm.stateId}
+                        onValueChange={(value) => setSignUpForm({ ...signUpForm, stateId: value })}
+                        disabled={loadingStates}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Select your grade" />
+                          <SelectValue placeholder={loadingStates ? "Loading states..." : "Select your state"} />
                         </SelectTrigger>
                         <SelectContent>
-                          {['8', '9', '10', '11', '12'].map((g) => (
-                            <SelectItem key={g} value={g}>Class {g}</SelectItem>
-                          ))}
+                          {states.length === 0 ? (
+                            <>
+                              {loadingStates ? null : (
+                                <div className="px-3 py-2 text-sm text-muted-foreground">No states available</div>
+                              )}
+                            </>
+                          ) : (
+                            states.map((state) => (
+                              <SelectItem key={state.state_id} value={state.state_id}>
+                                <div className="flex flex-col">
+                                  <span className="font-medium">{state.state_name}</span>
+                                  <span className="text-xs text-muted-foreground">{state.state_code}</span>
+                                </div>
+                              </SelectItem>
+                            ))
+                          )}
                         </SelectContent>
                       </Select>
                     </div>
-                  )}
 
-                  {/* Preferred Language */}
-                  <div className="space-y-2">
-                    <Label htmlFor="preferred-language">{t('preferredLanguage')}</Label>
-                    <Select
-                      value={signUpForm.preferredLanguage}
-                      onValueChange={(value: 'en' | 'kn' | 'ta' | 'hi') => setSignUpForm({ ...signUpForm, preferredLanguage: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="en">English</SelectItem>
-                        <SelectItem value="kn">Kannada</SelectItem>
-                        <SelectItem value="ta">Tamil</SelectItem>
-                        <SelectItem value="hi">Hindi</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                    {/* Grade picker — students only */}
+                    {signUpForm.role === 'student' && (
+                      <div className="space-y-2">
+                        <Label htmlFor="grade">Grade *</Label>
+                        <Select
+                          value={signUpForm.grade}
+                          onValueChange={(value) => setSignUpForm({ ...signUpForm, grade: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select your grade" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {['8', '9', '10', '11', '12'].map((g) => (
+                              <SelectItem key={g} value={g}>Class {g}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
 
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? 'Creating Account...' : t('createAccount')}
-                  </Button>
-                </form>
+                    {/* Preferred Language */}
+                    <div className="space-y-2">
+                      <Label htmlFor="preferred-language">{t('preferredLanguage')}</Label>
+                      <Select
+                        value={signUpForm.preferredLanguage}
+                        onValueChange={(value: 'en' | 'kn' | 'ta' | 'hi') => setSignUpForm({ ...signUpForm, preferredLanguage: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="en">English</SelectItem>
+                          <SelectItem value="kn">Kannada</SelectItem>
+                          <SelectItem value="ta">Tamil</SelectItem>
+                          <SelectItem value="hi">Hindi</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <Button type="submit" className="w-full" disabled={loading}>
+                      {loading ? 'Sending OTP...' : t('createAccount')}
+                    </Button>
+                  </form>
+                )}
               </TabsContent>
             </Tabs>
           </CardContent>
