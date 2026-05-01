@@ -255,6 +255,7 @@ students + teachers → chat_channels →1:N→ chat_messages
 - **summary RPC keys**: All 6 `get_*_summary_questions_i18n` RPCs use `'summary_question' || N` prefix (not `'question' || N`)
 - **inspiration_sources**: `lang` column; `get_inspiration_videos(p_lang)` RPC; 3 videos × 4 languages (en/kn/ta/hi)
 - **RLS on public tables (Apr 2026)**: 18 content/question tables have authenticated read-only policies; `SECURITY DEFINER` RPCs bypass RLS
+- **About Me question key mismatch (resolved)**: `about_me_fields` uses `field_key='question12'` for Section C question 5 ("List the activities that do not come naturally to you.") but `content_translations` had translations stored under `resource_key='question11'`. Migration `20260416000001_fix_about_me_question12.sql` copies question11 translations to question12. The question11 rows remain in `content_translations` as orphaned data but cause no harm — no `about_me_fields` row references question11.
 
 ---
 
@@ -466,3 +467,4 @@ students + teachers → chat_channels →1:N→ chat_messages
 | **12B** | Hindi detection fix in `SummaryApprovalCard.detectLangKeyFromSummary()` (Devanagari range) |
 | **PR 2b-sms** | `send-sms-hook` EF: MSG91 Flow API + HMAC-SHA256 verification; awaiting credentials |
 | **2–3** | Google Sheets sync automation — ⏸ paused (sheet restructuring in progress) |
+| **13A** | Language consistency fixes: sign-in/logout toasts translated for all 4 languages (useAuth reads localStorage lang; TeacherDashboard uses resolved lang); Save Progress button standardized across all 6 assessments via `t('saveProgress')` from DICT; About Me Section C Q5 (question12) now shows correctly in Tamil/Kannada/Hindi via migration |

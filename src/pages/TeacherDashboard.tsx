@@ -220,8 +220,7 @@ export default function TeacherDashboard() {
         toast({ title: "Error", description: result.errors[0].reason, variant: "destructive" });
       }
       if (result.created?.length > 0) {
-        const tempPassword = result.created[0].tempPassword; // TEMP: remove in PR 2b when OTP activation is implemented
-        toast({ title: "Student Added!", description: `Student added. Temporary password: ${tempPassword}` });
+        toast({ title: "Student Added!", description: "Student added successfully." });
         setIsAddStudentOpen(false);
         setNewStudent({ fullName: '', phone: '', grade: '', stateId: '', preferredLanguage: teacherLang });
         loadStudents();

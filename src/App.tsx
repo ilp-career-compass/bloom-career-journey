@@ -81,8 +81,7 @@ function App() {
     logger.log('Environment check:', {
       NODE_ENV: import.meta.env.NODE_ENV,
       VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
-      VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY,
-      VITE_AZURE_SPEECH_KEY: import.meta.env.VITE_AZURE_SPEECH_KEY ? 'SET' : 'NOT SET',
+      VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY ? 'SET' : 'NOT SET',
     });
     
     // Check all VITE_ env vars

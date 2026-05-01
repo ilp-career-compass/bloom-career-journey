@@ -15,10 +15,6 @@ export const AUDIO_CONFIG = {
   offlineMode: import.meta.env.VITE_AUDIO_ENABLE_OFFLINE_MODE !== 'false',
   transcription: import.meta.env.VITE_AUDIO_ENABLE_TRANSCRIPTION !== 'false',
   
-  // API Keys (Google Speech proxied server-side; Azure optional fallback)
-  azureKey: import.meta.env.VITE_AZURE_SPEECH_KEY,
-  azureRegion: import.meta.env.VITE_AZURE_SPEECH_REGION,
-  
   // Storage settings
   bucket: 'assessment-audio',
   maxRetries: 3,
@@ -43,8 +39,7 @@ export const AUDIO_FEATURES = {
   
   // Check if transcription is available
   isTranscriptionAvailable: () => {
-    return AUDIO_CONFIG.transcription && 
-           (!!AUDIO_CONFIG.googleApiKey || !!AUDIO_CONFIG.azureKey);
+    return AUDIO_CONFIG.transcription && !!AUDIO_CONFIG.googleApiKey;
   },
   
   // Check if offline mode is enabled
@@ -54,14 +49,12 @@ export const AUDIO_FEATURES = {
   getAvailableServices: () => {
     const services = [];
     if (AUDIO_CONFIG.googleApiKey) services.push('google');
-    if (AUDIO_CONFIG.azureKey) services.push('azure');
     return services;
   },
   
   // Get primary service
   getPrimaryService: () => {
     if (AUDIO_CONFIG.googleApiKey) return 'google';
-    if (AUDIO_CONFIG.azureKey) return 'azure';
     return null;
   },
 };

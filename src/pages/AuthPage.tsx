@@ -1,5 +1,5 @@
 import { logger } from '@/lib/logger';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,21 @@ import { supabase } from '@/integrations/supabase/client';
 import { StateInfo } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import IlpFooter from '@/components/IlpFooter';
+
+declare global {
+  interface Window {
+    initSendOTP: (config: {
+      widgetId: string
+      tokenAuth: string
+      exposeMethods?: boolean
+    }) => void
+    sendOtp: (
+      mobile: string,
+      success: (data: Record<string, unknown>) => void,
+      failure: (error: unknown) => void
+    ) => void
+  }
+}
 
 function toE164Indian(phone: string): string {
   const digits = phone.replace(/\D/g, '');
@@ -59,10 +74,33 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [states, setStates] = useState<StateInfo[]>([]);
   const [loadingStates, setLoadingStates] = useState(false);
+  const [signInMode, setSignInMode] = useState<'signin' | 'firstlogin'>('signin');
+  const [firstLoginStep, setFirstLoginStep] = useState<'phone' | 'setpassword'>('phone');
+  const [firstLoginForm, setFirstLoginForm] = useState({ phone: '', newPassword: '', confirmPassword: '' });
+
+  const accessTokenRef = useRef<string | null>(null);
 
   useEffect(() => {
     logger.log('AuthPage: useEffect triggered, calling loadStates');
     loadStates();
+  }, []);
+
+  // Load MSG91 OTP widget script and initialise with widget credentials
+  useEffect(() => {
+    const widgetId = import.meta.env.VITE_MSG91_WIDGET_ID as string;
+    const tokenAuth = import.meta.env.VITE_MSG91_TOKEN_AUTH as string;
+    if (!widgetId || !tokenAuth) return;
+
+    const script = document.createElement('script');
+    script.src = 'https://verify.msg91.com/otp-provider.js';
+    script.async = true;
+    script.onload = () => {
+      window.initSendOTP({ widgetId, tokenAuth, exposeMethods: true });
+    };
+    document.head.appendChild(script);
+    return () => {
+      if (document.head.contains(script)) document.head.removeChild(script);
+    };
   }, []);
 
   const loadStates = async () => {
@@ -137,7 +175,7 @@ export default function AuthPage() {
     }
   };
 
-  const handleSignUp = async (e: React.FormEvent) => {
+  const handleSignUp = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
@@ -153,68 +191,171 @@ export default function AuthPage() {
       return;
     }
 
-    if (signUpForm.role === 'student') {
-      if (!signUpForm.grade) {
-        toast({ title: 'Sign Up Failed', description: 'Please select your grade.', variant: 'destructive' });
-        setLoading(false);
-        return;
-      }
-
-      // Student self-registration via create-student-self-register Edge Function
-      const normalizedPhone = toE164Indian(signUpForm.phone);
-      const { data, error } = await supabase.functions.invoke('create-student-self-register', {
-        body: {
-          fullName: signUpForm.fullName,
-          phone: normalizedPhone,
-          password: signUpForm.password,
-          grade: signUpForm.grade,
-          stateId: signUpForm.stateId,
-          preferredLanguage: signUpForm.preferredLanguage,
-        },
-      });
-
-      if (error || data?.error) {
-        const msg = data?.error || error?.message || 'Could not create account. Please try again.';
-        logger.error('Student sign up error:', msg);
-        toast({ title: 'Sign Up Failed', description: msg, variant: 'destructive' });
-        setLoading(false);
-        return;
-      }
-
-      // Sign in immediately after successful registration
-      const { error: signInError } = await signIn(normalizedPhone, signUpForm.password);
+    if (signUpForm.role === 'student' && !signUpForm.grade) {
+      toast({ title: 'Sign Up Failed', description: 'Please select your grade.', variant: 'destructive' });
       setLoading(false);
-      if (signInError) {
-        toast({ title: 'Account created', description: 'Please sign in with your mobile number and password.', variant: 'default' });
-      }
       return;
     }
 
-    // Teacher self-registration via create-teacher Edge Function
     const normalizedPhone = toE164Indian(signUpForm.phone);
-    const { data, error } = await supabase.functions.invoke('create-teacher', {
+    // MSG91 widget expects mobile as 91XXXXXXXXXX (country code, no '+')
+    const msg91Mobile = normalizedPhone.replace('+', '');
+
+    if (typeof window.sendOtp !== 'function') {
+      toast({ title: 'OTP Unavailable', description: 'OTP service unavailable. Please refresh and try again.', variant: 'destructive' });
+      setLoading(false);
+      return;
+    }
+
+    window.sendOtp(
+      msg91Mobile,
+      async (data: Record<string, unknown>) => {
+        accessTokenRef.current = (data?.['access-token'] as string) ?? '';
+
+        if (signUpForm.role === 'student') {
+          // Student self-registration via create-student-self-register Edge Function
+          const { data: fnData, error } = await supabase.functions.invoke('create-student-self-register', {
+            body: {
+              fullName: signUpForm.fullName,
+              phone: normalizedPhone,
+              password: signUpForm.password,
+              grade: signUpForm.grade,
+              stateId: signUpForm.stateId,
+              preferredLanguage: signUpForm.preferredLanguage,
+            },
+          });
+
+          if (error || fnData?.error) {
+            const msg = fnData?.error || error?.message || 'Could not create account. Please try again.';
+            logger.error('Student sign up error:', msg);
+            toast({ title: 'Sign Up Failed', description: msg, variant: 'destructive' });
+            setLoading(false);
+            return;
+          }
+
+          // Sign in immediately after successful registration
+          const { error: signInError } = await signIn(normalizedPhone, signUpForm.password);
+          setLoading(false);
+          if (signInError) {
+            toast({ title: 'Account created', description: 'Please sign in with your mobile number and password.', variant: 'default' });
+          }
+          return;
+        }
+
+        // Teacher self-registration via create-teacher Edge Function
+        const { data: fnData, error } = await supabase.functions.invoke('create-teacher', {
+          body: {
+            fullName: signUpForm.fullName,
+            phone: normalizedPhone,
+            password: signUpForm.password,
+            stateId: signUpForm.stateId,
+            preferredLanguage: signUpForm.preferredLanguage,
+          },
+        });
+
+        if (error || fnData?.error) {
+          const msg = fnData?.error || error?.message || 'Could not create account. Please try again.';
+          logger.error('Teacher sign up error:', msg);
+          toast({ title: 'Sign Up Failed', description: msg, variant: 'destructive' });
+          setLoading(false);
+          return;
+        }
+
+        // Sign in immediately after successful registration
+        const { error: signInError } = await signIn(normalizedPhone, signUpForm.password);
+        setLoading(false);
+        if (signInError) {
+          toast({ title: 'Account created', description: 'Please sign in with your mobile number and password.', variant: 'default' });
+        }
+      },
+      (_error: unknown) => {
+        toast({
+          title: 'OTP Verification Failed',
+          description: 'Could not verify your mobile number. Please try again.',
+          variant: 'destructive',
+        });
+        setLoading(false);
+      }
+    );
+  };
+
+  const handleFirstLoginOtp = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!isValidE164(firstLoginForm.phone)) {
+      toast({ title: 'Invalid Mobile', description: 'Please enter a 10-digit mobile number.', variant: 'destructive' });
+      return;
+    }
+
+    setLoading(true);
+    const normalizedPhone = toE164Indian(firstLoginForm.phone);
+    const msg91Mobile = normalizedPhone.replace('+', '');
+
+    if (typeof window.sendOtp !== 'function') {
+      toast({ title: 'OTP Unavailable', description: 'OTP service unavailable. Please refresh and try again.', variant: 'destructive' });
+      setLoading(false);
+      return;
+    }
+
+    window.sendOtp(
+      msg91Mobile,
+      (data: Record<string, unknown>) => {
+        accessTokenRef.current = (data?.['access-token'] as string) ?? '';
+        setFirstLoginStep('setpassword');
+        setLoading(false);
+      },
+      (_error: unknown) => {
+        toast({
+          title: 'OTP Verification Failed',
+          description: 'Could not verify your mobile number. Please try again.',
+          variant: 'destructive',
+        });
+        setLoading(false);
+      }
+    );
+  };
+
+  const handleSetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!firstLoginForm.newPassword) {
+      toast({ title: 'Password Required', description: 'Please enter a new password.', variant: 'destructive' });
+      return;
+    }
+
+    if (firstLoginForm.newPassword.length < 6) {
+      toast({ title: 'Password Too Short', description: 'Password must be at least 6 characters.', variant: 'destructive' });
+      return;
+    }
+
+    if (firstLoginForm.newPassword !== firstLoginForm.confirmPassword) {
+      toast({ title: 'Password Mismatch', description: 'Passwords do not match. Please try again.', variant: 'destructive' });
+      return;
+    }
+
+    setLoading(true);
+    const normalizedPhone = toE164Indian(firstLoginForm.phone);
+
+    const { data, error } = await supabase.functions.invoke('set-first-password', {
       body: {
-        fullName: signUpForm.fullName,
-        phone: normalizedPhone,
-        password: signUpForm.password,
-        stateId: signUpForm.stateId,
-        preferredLanguage: signUpForm.preferredLanguage,
+        mobile: normalizedPhone,
+        newPassword: firstLoginForm.newPassword,
+        access_token: accessTokenRef.current ?? '',
       },
     });
 
     if (error || data?.error) {
-      const msg = data?.error || error?.message || 'Could not create account. Please try again.';
-      logger.error('Teacher sign up error:', msg);
-      toast({ title: 'Sign Up Failed', description: msg, variant: 'destructive' });
+      const msg = data?.error || error?.message || 'Could not set password. Please try again.';
+      logger.error('First login set-password error:', msg);
+      toast({ title: 'Error', description: msg, variant: 'destructive' });
       setLoading(false);
       return;
     }
 
-    // Sign in immediately after successful registration
-    const { error: signInError } = await signIn(normalizedPhone, signUpForm.password);
+    const { error: signInError } = await signIn(normalizedPhone, firstLoginForm.newPassword);
     setLoading(false);
     if (signInError) {
-      toast({ title: 'Account created', description: 'Please sign in with your mobile number and password.', variant: 'default' });
+      toast({ title: 'Password set', description: 'Please sign in with your mobile number and new password.', variant: 'default' });
     }
   };
 
@@ -248,33 +389,104 @@ export default function AuthPage() {
               </TabsList>
 
               <TabsContent value="signin">
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-phone">{t('mobileNumber')}</Label>
-                    <Input
-                      id="signin-phone"
-                      type="tel"
-                      placeholder="10-digit mobile number"
-                      value={signInForm.phone}
-                      onChange={(e) => setSignInForm({ ...signInForm, phone: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-password">{t('password')}</Label>
-                    <Input
-                      id="signin-password"
-                      type="password"
-                      placeholder="Enter your password"
-                      value={signInForm.password}
-                      onChange={(e) => setSignInForm({ ...signInForm, password: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? 'Signing In...' : t('signInBtn')}
-                  </Button>
-                </form>
+                {/* Sign In / First Login mode toggle */}
+                <div className="flex rounded-lg border overflow-hidden mb-4">
+                  <button
+                    type="button"
+                    onClick={() => { setSignInMode('signin'); setFirstLoginStep('phone'); }}
+                    className={`flex-1 py-2 text-sm font-medium transition-colors ${signInMode === 'signin' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted'}`}
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setSignInMode('firstlogin'); setFirstLoginStep('phone'); }}
+                    className={`flex-1 py-2 text-sm font-medium transition-colors ${signInMode === 'firstlogin' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted'}`}
+                  >
+                    First Login
+                  </button>
+                </div>
+
+                {signInMode === 'signin' ? (
+                  <form onSubmit={handleSignIn} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="signin-phone">{t('mobileNumber')}</Label>
+                      <Input
+                        id="signin-phone"
+                        type="tel"
+                        placeholder="10-digit mobile number"
+                        value={signInForm.phone}
+                        onChange={(e) => setSignInForm({ ...signInForm, phone: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="signin-password">{t('password')}</Label>
+                      <Input
+                        id="signin-password"
+                        type="password"
+                        placeholder="Enter your password"
+                        value={signInForm.password}
+                        onChange={(e) => setSignInForm({ ...signInForm, password: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <Button type="submit" className="w-full" disabled={loading}>
+                      {loading ? 'Signing In...' : t('signInBtn')}
+                    </Button>
+                  </form>
+                ) : firstLoginStep === 'phone' ? (
+                  <form onSubmit={handleFirstLoginOtp} className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      First time? Verify your mobile number to set a password.
+                    </p>
+                    <div className="space-y-2">
+                      <Label htmlFor="firstlogin-phone">{t('mobileNumber')}</Label>
+                      <Input
+                        id="firstlogin-phone"
+                        type="tel"
+                        placeholder="10-digit mobile number"
+                        value={firstLoginForm.phone}
+                        onChange={(e) => setFirstLoginForm({ ...firstLoginForm, phone: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <Button type="submit" className="w-full" disabled={loading}>
+                      {loading ? 'Sending OTP...' : 'Verify Mobile'}
+                    </Button>
+                  </form>
+                ) : (
+                  <form onSubmit={handleSetPassword} className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      Mobile verified: <span className="font-medium">{toE164Indian(firstLoginForm.phone)}</span>
+                    </p>
+                    <div className="space-y-2">
+                      <Label htmlFor="firstlogin-newpassword">New Password</Label>
+                      <Input
+                        id="firstlogin-newpassword"
+                        type="password"
+                        placeholder="Create a password"
+                        value={firstLoginForm.newPassword}
+                        onChange={(e) => setFirstLoginForm({ ...firstLoginForm, newPassword: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="firstlogin-confirmpassword">Confirm Password</Label>
+                      <Input
+                        id="firstlogin-confirmpassword"
+                        type="password"
+                        placeholder="Confirm your password"
+                        value={firstLoginForm.confirmPassword}
+                        onChange={(e) => setFirstLoginForm({ ...firstLoginForm, confirmPassword: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <Button type="submit" className="w-full" disabled={loading}>
+                      {loading ? 'Setting Password...' : 'Set Password & Login'}
+                    </Button>
+                  </form>
+                )}
               </TabsContent>
 
               <TabsContent value="signup">
