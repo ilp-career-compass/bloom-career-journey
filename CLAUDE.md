@@ -286,6 +286,8 @@ students + teachers → chat_channels →1:N→ chat_messages
 | `VITE_GOOGLE_SPEECH_API_KEY` | Google Cloud Speech-to-Text |
 | `VITE_AZURE_SPEECH_KEY` / `VITE_AZURE_SPEECH_REGION` | Azure Speech fallback |
 | `VITE_SARVAM_PROXY_URL` | Sarvam WS proxy (default: `ws://127.0.0.1:8000/ws/stream`) |
+| `VITE_MSG91_WIDGET_ID` | MSG91 OTP widget ID — mark **Sensitive** in Vercel (Production + Preview) |
+| `VITE_MSG91_TOKEN_AUTH` | MSG91 token auth — mark **Sensitive** in Vercel (Production + Preview) |
 | `GOOGLE_SERVICE_ACCOUNT_JSON` / `GOOGLE_SHEET_ID` | Google Sheets API (sync-questions) |
 
 ---
@@ -314,6 +316,40 @@ students + teachers → chat_channels →1:N→ chat_messages
 - Role routes: admin → `/admin`, teacher → `/teacher`, student → `/student`
 - Compass routes: `/student/profile-card`, `/student/career-roadmap`, `/student/things-interest-me`, `/teacher/student-profile-card/:studentId`, `/teacher/student-roadmap/:studentId`, `/teacher/student-interests/:studentId`
 - **RLS**: students own data only; teachers access their state's students; admins broader; RPCs use `SECURITY DEFINER` where needed
+
+### MSG91 OTP Integration
+
+Three scenarios require OTP verification before account creation or password setup:
+
+| Scenario | Triggered by |
+|----------|-------------|
+| Teacher self-registration | Sign Up tab → "I am a Teacher" |
+| Student self-registration | Sign Up tab → "I am a Student" |
+| First Login (set password) | Sign In tab → "First Login" mode — for teacher-created students who have no password |
+
+**Widget setup** (`AuthPage.tsx`):
+- Script loaded from `https://verify.msg91.com/otp-provider.js` via dynamic `<script>` tag
+- Initialized with `exposeMethods: true` + empty `success`/`failure` callbacks + `captchaRenderId: ''` to suppress the built-in MSG91 popup
+- `window.sendOtp(mobile)` — dispatches OTP SMS only; no callbacks (fire-and-forget); `mobile` must be `91XXXXXXXXXX` (no `+`)
+- `window.verifyOtp(otp, successCb, failureCb)` — verifies the user-typed code; `successCb` receives `{ 'access-token': string }`
+- `window.retryOtp(null)` — resends OTP
+
+**Custom OTP UI** — `OtpScreen` inner component in `AuthPage.tsx`:
+- Shared between Sign Up and First Login flows
+- Uses `InputOTP` / `InputOTPGroup` / `InputOTPSlot` (shadcn `input-otp`)
+- Shown when `signUpStep === 'otp'` (Sign Up) or `firstLoginStep === 'otp'` (First Login)
+- Sign Up state machine: `'form'` → `'otp'` (after `sendOtp`) → account created in `verifyOtp` success callback
+- First Login state machine: `'phone'` → `'otp'` (after `sendOtp`) → `'setpassword'` (after `verifyOtp`) → signs in
+
+**Edge Functions**:
+| Function | Purpose |
+|----------|---------|
+| `verify-msg91-token` | Validates MSG91 `access_token` via `https://api.msg91.com/api/v5/widget/verifyAccessToken`; reads `MSG91_AUTH_KEY` Supabase secret; returns `{ success, mobile }` |
+| `set-first-password` | Calls `verify-msg91-token` internally, cross-checks returned mobile, then calls `auth.admin.updateUserById` to set the student's chosen password |
+
+**Secrets & env vars**:
+- `VITE_MSG91_WIDGET_ID`, `VITE_MSG91_TOKEN_AUTH` — Vercel env vars, mark **Sensitive** for Production + Preview
+- `MSG91_AUTH_KEY` — Supabase secret only (`supabase secrets set MSG91_AUTH_KEY=...`); never in `.env` or client bundle
 
 ---
 
@@ -347,7 +383,7 @@ students + teachers → chat_channels →1:N→ chat_messages
 
 ## 12. Current Implementation Status
 
-**Last verified build:** 2026-04-05
+**Last verified build:** 2026-05-01
 
 ### Assessment Module Status
 | Assessment | UI | DB | AI Summary | Approval | Wired |
@@ -401,6 +437,15 @@ students + teachers → chat_channels →1:N→ chat_messages
 
 > [!NOTE]
 > **Profile card rejection audit trail**: Teacher feedback is consumed by Gemini during auto-regeneration but not persisted to DB after regen (`rejection_reason` set to `null` on upsert). No history of prior feedback rounds stored. Max 3 rejection rounds per module enforced client-side only (`rejectionCounts` state — resets on page reload).
+
+> [!NOTE]
+> **MSG91 OTP widget bypass**: Custom OTP screen (`signUpStep === 'otp'`) is correctly wired — `window.sendOtp` advances to OTP step synchronously, `window.verifyOtp` gates all account-creation Edge Function calls. Widget initialized with `exposeMethods: true` + empty `success`/`failure` callbacks + `captchaRenderId: ''` to suppress built-in popup. Despite this, the widget may auto-verify without showing the custom OTP input when using demo/test credentials. Suspected cause: MSG91 demo credentials auto-bypass OTP popup by design. Needs end-to-end testing with real credentials after DLT OTP template approval.
+
+> [!NOTE]
+> **TEMP markers (all removed)**: All 4 `// TEMP: remove in PR 2b` markers have been cleaned up — `create-student` Edge Function no longer returns `tempPassword`; `ImportStudentsDialog.tsx` no longer logs temp passwords; `TeacherDashboard.tsx` toast no longer exposes generated password. Completed May 2026.
+
+> [!NOTE]
+> **Security — API keys**: `VITE_GOOGLE_SPEECH_API_KEY` and `VITE_AZURE_SPEECH_KEY` removed from client bundle (proxied via Edge Functions). `VITE_MSG91_WIDGET_ID` and `VITE_MSG91_TOKEN_AUTH` marked Sensitive in Vercel for Production + Preview. `MSG91_AUTH_KEY` stored as Supabase secret only. `App.tsx` startup debug log masks key values instead of printing raw strings.
 
 ### Completed Work (Mar–Apr 2026)
 | Phase | Description |
@@ -468,3 +513,6 @@ students + teachers → chat_channels →1:N→ chat_messages
 | **PR 2b-sms** | `send-sms-hook` EF: MSG91 Flow API + HMAC-SHA256 verification; awaiting credentials |
 | **2–3** | Google Sheets sync automation — ⏸ paused (sheet restructuring in progress) |
 | **13A** | Language consistency fixes: sign-in/logout toasts translated for all 4 languages (useAuth reads localStorage lang; TeacherDashboard uses resolved lang); Save Progress button standardized across all 6 assessments via `t('saveProgress')` from DICT; About Me Section C Q5 (question12) now shows correctly in Tamil/Kannada/Hindi via migration |
+| **PR 2b-otp** | MSG91 OTP widget integration: `verify-msg91-token` + `set-first-password` Edge Functions; custom `OtpScreen` component (shared by Sign Up + First Login); `exposeMethods: true` with empty `success`/`failure` callbacks + `captchaRenderId: ''` to suppress built-in popup; Sign Up and First Login state machines wired correctly |
+| **PR 2b-temp-removed** | All 4 `// TEMP: remove in PR 2b` markers removed: `create-student` EF no longer returns `tempPassword`; `ImportStudentsDialog.tsx` and `TeacherDashboard.tsx` no longer expose generated passwords |
+| **PR 2b-security** | `VITE_AZURE_SPEECH_KEY` + `VITE_GOOGLE_SPEECH_API_KEY` removed from client bundle; `VITE_MSG91_WIDGET_ID` + `VITE_MSG91_TOKEN_AUTH` marked Sensitive in Vercel; `MSG91_AUTH_KEY` as Supabase secret only; `App.tsx` debug log masks key values |
