@@ -24,8 +24,11 @@ declare global {
       success?: (data: Record<string, unknown>) => void
       failure?: (error: unknown) => void
     }) => void
-    // With exposeMethods:true, sendOtp only dispatches the SMS — no callbacks
-    sendOtp: (mobile: string) => void
+    sendOtp: (
+      mobile: string,
+      success?: (data: Record<string, unknown>) => void,
+      failure?: (error: unknown) => void
+    ) => void
     // verifyOtp takes the code the user typed and returns access-token on success
     verifyOtp: (
       otp: string,
@@ -194,13 +197,6 @@ export default function AuthPage() {
         widgetId,
         tokenAuth,
         exposeMethods: true,
-        captchaRenderId: '',
-        success: (_data: Record<string, unknown>) => {
-          // intentionally empty — we handle success in verifyOtp callbacks
-        },
-        failure: (_error: unknown) => {
-          // intentionally empty — we handle failure in verifyOtp callbacks
-        },
       });
     };
     document.head.appendChild(script);
@@ -312,10 +308,24 @@ export default function AuthPage() {
 
     // MSG91 expects 91XXXXXXXXXX (no '+')
     const msg91Mobile = toE164Indian(signUpForm.phone).replace('+', '');
-    window.sendOtp(msg91Mobile);
-    setSignUpOtp('');
-    setSignUpStep('otp');
-    setLoading(false);
+    window.sendOtp(
+      msg91Mobile,
+      (data) => {
+        logger.log('MSG91 sendOtp success:', JSON.stringify(data));
+        setSignUpOtp('');
+        setSignUpStep('otp');
+        setLoading(false);
+      },
+      (error) => {
+        logger.error('MSG91 sendOtp failed:', JSON.stringify(error));
+        toast({
+          title: 'Failed to send OTP',
+          description: 'Could not send OTP to this number. Please check the number and try again.',
+          variant: 'destructive',
+        });
+        setLoading(false);
+      }
+    );
   };
 
   // Step 2 of Sign Up: verify the OTP the user typed, then create the account
@@ -333,12 +343,21 @@ export default function AuthPage() {
     window.verifyOtp(
       signUpOtp,
       async (data: Record<string, unknown>) => {
-        accessTokenRef.current = (data?.['access-token'] as string) ?? '';
+        console.log('MSG91 verifyOtp raw data:', JSON.stringify(data));
+        logger.log('MSG91 verifyOtp success data:', JSON.stringify(data));
+        // MSG91 may return the token under different key names depending on the plan/version
+        accessTokenRef.current = (
+          (data?.['access-token'] as string) ||
+          (data?.['access_token'] as string) ||
+          (data?.['accessToken'] as string) ||
+          (data?.['token'] as string) ||
+          ''
+        );
 
         if (!accessTokenRef.current) {
           toast({
             title: 'Verification Error',
-            description: 'OTP verified but no token received. Please try again.',
+            description: 'OTP verified but no access token was returned. Please try again.',
             variant: 'destructive',
           });
           setLoading(false);
@@ -429,9 +448,23 @@ export default function AuthPage() {
     }
 
     const msg91Mobile = toE164Indian(firstLoginForm.phone).replace('+', '');
-    window.sendOtp(msg91Mobile);
-    setFirstLoginOtp('');
-    setFirstLoginStep('otp');
+    window.sendOtp(
+      msg91Mobile,
+      (data) => {
+        logger.log('MSG91 sendOtp success:', JSON.stringify(data));
+        setFirstLoginOtp('');
+        setFirstLoginStep('otp');
+      },
+      (error) => {
+        logger.error('MSG91 sendOtp failed:', JSON.stringify(error));
+        toast({
+          title: 'Failed to send OTP',
+          description: 'Could not send OTP to this number. Please check the number and try again.',
+          variant: 'destructive',
+        });
+        setLoading(false);
+      }
+    );
   };
 
   // Step 2 of First Login: verify OTP, then show password setup screen
@@ -448,7 +481,26 @@ export default function AuthPage() {
     window.verifyOtp(
       firstLoginOtp,
       (data: Record<string, unknown>) => {
-        accessTokenRef.current = (data?.['access-token'] as string) ?? '';
+        console.log('MSG91 verifyOtp raw data:', JSON.stringify(data));
+        logger.log('MSG91 verifyOtp success data:', JSON.stringify(data));
+        accessTokenRef.current = (
+          (data?.['access-token'] as string) ||
+          (data?.['access_token'] as string) ||
+          (data?.['accessToken'] as string) ||
+          (data?.['token'] as string) ||
+          ''
+        );
+
+        if (!accessTokenRef.current) {
+          toast({
+            title: 'Verification Error',
+            description: 'OTP verified but no access token was returned. Please try again.',
+            variant: 'destructive',
+          });
+          setLoading(false);
+          return;
+        }
+
         setFirstLoginStep('setpassword');
         setLoading(false);
       },
