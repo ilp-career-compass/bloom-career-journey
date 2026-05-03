@@ -391,9 +391,6 @@ export default function AuthPage() {
               preferredLanguage: signUpForm.preferredLanguage,
               accessToken: accessTokenRef.current ?? '',
             },
-            headers: {
-              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-            },
           });
 
           if (error || fnData?.error) {
@@ -423,9 +420,6 @@ export default function AuthPage() {
             stateId: signUpForm.stateId,
             preferredLanguage: signUpForm.preferredLanguage,
             accessToken: accessTokenRef.current ?? '',
-          },
-          headers: {
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
           },
         });
 

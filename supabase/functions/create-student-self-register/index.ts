@@ -19,7 +19,7 @@ function isValidE164(phone: string): boolean {
   return /^\+\d{10,15}$/.test(phone)
 }
 
-Deno.serve(async (req) => {
+Deno.serve({ verify: false }, async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
