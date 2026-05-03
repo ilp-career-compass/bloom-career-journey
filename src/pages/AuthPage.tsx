@@ -26,8 +26,8 @@ declare global {
     }) => void
     sendOtp: (
       mobile: string,
-      success?: (data: Record<string, unknown>) => void,
-      failure?: (error: unknown) => void
+      success: (data: Record<string, unknown>) => void,
+      failure: (error: unknown) => void
     ) => void
     // verifyOtp takes the code the user typed and returns access-token on success
     verifyOtp: (
