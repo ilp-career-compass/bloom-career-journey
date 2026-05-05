@@ -59,6 +59,7 @@ function OtpScreen({
   onVerify,
   onResend,
   verifyLoading,
+  resendCooldown,
 }: {
   phone: string
   otpValue: string
@@ -66,25 +67,9 @@ function OtpScreen({
   onVerify: (e: React.FormEvent) => void
   onResend: () => void
   verifyLoading: boolean
+  resendCooldown: number
 }) {
   const inputRefs = useRef<(HTMLInputElement | null)[]>([null, null, null, null]);
-  const [resendCooldown, setResendCooldown] = useState(0);
-  const cooldownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    return () => { if (cooldownTimerRef.current) clearInterval(cooldownTimerRef.current); };
-  }, []);
-
-  const startCooldown = () => {
-    setResendCooldown(30);
-    if (cooldownTimerRef.current) clearInterval(cooldownTimerRef.current);
-    cooldownTimerRef.current = setInterval(() => {
-      setResendCooldown(prev => {
-        if (prev <= 1) { clearInterval(cooldownTimerRef.current!); cooldownTimerRef.current = null; return 0; }
-        return prev - 1;
-      });
-    }, 1000);
-  };
 
   const EXPIRY_SECONDS = 900; // 15 minutes — matches MSG91 widget config
   const [timeLeft, setTimeLeft] = useState(EXPIRY_SECONDS);
@@ -167,7 +152,7 @@ function OtpScreen({
         type="button"
         variant="outline"
         className="w-full"
-        onClick={() => { onResend(); startCooldown(); }}
+        onClick={onResend}
         disabled={verifyLoading || resendCooldown > 0}
       >
         {resendCooldown > 0 ? `Resend OTP (${resendCooldown}s)` : 'Resend OTP'}
@@ -224,6 +209,28 @@ export default function AuthPage() {
 
   const accessTokenRef = useRef<string | null>(null);
   const msg91MobileRef = useRef<string>('');
+
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const cooldownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startCooldown = () => {
+    setResendCooldown(30);
+    if (cooldownTimerRef.current) clearInterval(cooldownTimerRef.current);
+    cooldownTimerRef.current = setInterval(() => {
+      setResendCooldown(prev => {
+        if (prev <= 1) {
+          clearInterval(cooldownTimerRef.current!);
+          cooldownTimerRef.current = null;
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  useEffect(() => {
+    return () => { if (cooldownTimerRef.current) clearInterval(cooldownTimerRef.current); };
+  }, []);
 
   useEffect(() => {
     logger.log('AuthPage: useEffect triggered, calling loadStates');
@@ -748,7 +755,9 @@ export default function AuthPage() {
                     otpValue={firstLoginOtp}
                     onOtpChange={setFirstLoginOtp}
                     onVerify={handleFirstLoginVerifyOtp}
+                    resendCooldown={resendCooldown}
                     onResend={() => {
+                      startCooldown();
                       if (typeof window.sendOtp === 'function' && msg91MobileRef.current) {
                         window.sendOtp(
                           msg91MobileRef.current,
@@ -808,7 +817,9 @@ export default function AuthPage() {
                     otpValue={signUpOtp}
                     onOtpChange={setSignUpOtp}
                     onVerify={handleSignUpVerifyOtp}
+                    resendCooldown={resendCooldown}
                     onResend={() => {
+                      startCooldown();
                       if (typeof window.sendOtp === 'function' && msg91MobileRef.current) {
                         window.sendOtp(
                           msg91MobileRef.current,
