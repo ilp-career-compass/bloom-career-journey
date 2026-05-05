@@ -1,4 +1,4 @@
-import { logger } from '@/lib/logger';
+﻿import { logger } from '@/lib/logger';
 import { useState, useEffect, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -349,7 +349,8 @@ export default function AuthPage() {
       setLoading(false);
       return;
     }
-    if (!/^[a-zA-Zಀ-೿஀-௿ऀ-ॿ\s'-]+$/.test(trimmedName)) {
+    const nameRegex = /^[a-zA-Z\u0C80-\u0CFF\u0B80-\u0BFF\u0900-\u097F\s''-]+$/;
+    if (!nameRegex.test(trimmedName)) {
       toast({ title: 'Sign Up Failed', description: 'Full name should only contain letters and spaces.', variant: 'destructive' });
       setLoading(false);
       return;
