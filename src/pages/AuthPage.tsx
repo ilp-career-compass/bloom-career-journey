@@ -384,6 +384,13 @@ export default function AuthPage() {
     document.head.appendChild(script);
     return () => {
       if (document.head.contains(script)) document.head.removeChild(script);
+      // G5: remove window globals so stale MSG91 methods are not called after unmount/HMR
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const w = window as any;
+      delete w.initSendOTP;
+      delete w.sendOtp;
+      delete w.verifyOtp;
+      delete w.retryOtp;
     };
   }, []);
 
@@ -529,6 +536,7 @@ export default function AuthPage() {
     // is not guaranteed. The Edge Function (create-teacher / create-student-self-register) is
     // the authoritative gate for duplicate mobile detection.
 
+    const normalizedPhone = toE164Indian(signUpForm.phone);
     // MSG91 expects 91XXXXXXXXXX (no '+')
     const msg91Mobile = normalizedPhone.replace('+', '');
     msg91MobileRef.current = msg91Mobile;
@@ -613,17 +621,17 @@ export default function AuthPage() {
               return;
             }
 
-          // G12: clear sensitive state now that the token has been consumed
-          signUpAccessTokenRef.current = null;
-          setSignUpForm(prev => ({ ...prev, password: '', confirmPassword: '' }));
+            // G12: clear sensitive state now that the token has been consumed
+            signUpAccessTokenRef.current = null;
+            setSignUpForm(prev => ({ ...prev, password: '', confirmPassword: '' }));
 
-          // Sign in immediately after successful registration
-          const { error: signInError } = await signIn(normalizedPhone, signUpForm.password);
-          if (signInError) {
-            toast({ title: 'Account created', description: 'Please sign in with your mobile number and password.', variant: 'default' });
+            // Sign in immediately after successful registration
+            const { error: studentSignInError } = await signIn(normalizedPhone, signUpForm.password);
+            if (studentSignInError) {
+              toast({ title: 'Account created', description: 'Please sign in with your mobile number and password.', variant: 'default' });
+            }
+            return;
           }
-          return;
-        }
 
           // Teacher self-registration via create-teacher Edge Function
           const { data: fnData, error } = await supabase.functions.invoke('create-teacher', {
@@ -643,6 +651,10 @@ export default function AuthPage() {
             toast({ title: 'Sign Up Failed', description: msg, variant: 'destructive' });
             return;
           }
+
+          // G12: clear sensitive state now that the token has been consumed
+          signUpAccessTokenRef.current = null;
+          setSignUpForm(prev => ({ ...prev, password: '', confirmPassword: '' }));
 
           // Sign in immediately after successful registration
           const { error: signInError } = await signIn(normalizedPhone, signUpForm.password);
@@ -788,9 +800,12 @@ export default function AuthPage() {
       return;
     }
 
+    // G12: clear sensitive state now that the token has been consumed
+    firstLoginAccessTokenRef.current = null;
     const { error: signInError } = await signIn(normalizedPhone, firstLoginForm.newPassword);
     setLoading(false);
     if (signInError) {
+      setFirstLoginForm(prev => ({ ...prev, newPassword: '', confirmPassword: '' }));
       toast({ title: 'Password set', description: 'Please sign in with your mobile number and new password.', variant: 'default' });
     }
   };
