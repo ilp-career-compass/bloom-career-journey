@@ -51,6 +51,23 @@ function isValidE164(phone: string): boolean {
   return /^\+91\d{10}$/.test(phone) || /^\d{10}$/.test(phone);
 }
 
+function sendOtpWithTimeout(
+  mobile: string,
+  onSuccess: (data: Record<string, unknown>) => void,
+  onFailure: () => void,
+  timeoutMs = 15000,
+) {
+  let settled = false;
+  const timer = setTimeout(() => {
+    if (!settled) { settled = true; onFailure(); }
+  }, timeoutMs);
+  window.sendOtp(
+    mobile,
+    (data) => { if (!settled) { settled = true; clearTimeout(timer); onSuccess(data); } },
+    () => { if (!settled) { settled = true; clearTimeout(timer); onFailure(); } },
+  );
+}
+
 // Defined outside AuthPage so useRef is stable across parent re-renders
 function OtpScreen({
   phone,
@@ -58,6 +75,7 @@ function OtpScreen({
   onOtpChange,
   onVerify,
   onResend,
+  onBack,
   verifyLoading,
   resendCooldown,
 }: {
@@ -66,6 +84,7 @@ function OtpScreen({
   onOtpChange: (v: string) => void
   onVerify: (e: React.FormEvent) => void
   onResend: () => void
+  onBack?: () => void
   verifyLoading: boolean
   resendCooldown: number
 }) {
@@ -157,6 +176,17 @@ function OtpScreen({
       >
         {resendCooldown > 0 ? `Resend OTP (${resendCooldown}s)` : 'Resend OTP'}
       </Button>
+      {onBack && (
+        <Button
+          type="button"
+          variant="ghost"
+          className="w-full text-muted-foreground"
+          onClick={onBack}
+          disabled={verifyLoading}
+        >
+          ← Change number
+        </Button>
+      )}
     </form>
   );
 }
@@ -405,6 +435,12 @@ export default function AuthPage() {
       return;
     }
 
+    if (signUpForm.password.length < 6) {
+      toast({ title: 'Sign Up Failed', description: 'Password must be at least 6 characters.', variant: 'destructive' });
+      setLoading(false);
+      return;
+    }
+
     if (signUpForm.role === 'student' && !signUpForm.grade) {
       toast({ title: 'Sign Up Failed', description: 'Please select your grade.', variant: 'destructive' });
       setLoading(false);
@@ -438,17 +474,18 @@ export default function AuthPage() {
     // MSG91 expects 91XXXXXXXXXX (no '+')
     const msg91Mobile = normalizedPhone.replace('+', '');
     msg91MobileRef.current = msg91Mobile;
-    window.sendOtp(
+    sendOtpWithTimeout(
       msg91Mobile,
       (data) => {
         logger.log('MSG91 sendOtp success:', JSON.stringify(data));
         setSignUpOtp('');
         setSignUpStep('otp');
         setOtpSentCount(c => c + 1);
+        startSignUpCooldown();
         setLoading(false);
       },
-      (error) => {
-        logger.error('MSG91 sendOtp failed:', JSON.stringify(error));
+      () => {
+        logger.error('MSG91 sendOtp failed or timed out');
         toast({
           title: 'Failed to send OTP',
           description: 'Could not send OTP to this number. Please check the number and try again.',
@@ -580,17 +617,18 @@ export default function AuthPage() {
     setLoading(true);
     const msg91Mobile = toE164Indian(firstLoginForm.phone).replace('+', '');
     msg91MobileRef.current = msg91Mobile;
-    window.sendOtp(
+    sendOtpWithTimeout(
       msg91Mobile,
       (data) => {
         logger.log('MSG91 sendOtp success:', JSON.stringify(data));
         setFirstLoginOtp('');
         setFirstLoginStep('otp');
         setOtpSentCount(c => c + 1);
+        startFirstLoginCooldown();
         setLoading(false);
       },
-      (error) => {
-        logger.error('MSG91 sendOtp failed:', JSON.stringify(error));
+      () => {
+        logger.error('MSG91 sendOtp failed or timed out');
         toast({
           title: 'Failed to send OTP',
           description: 'Could not send OTP to this number. Please check the number and try again.',
@@ -726,14 +764,14 @@ export default function AuthPage() {
                 <div className="flex rounded-lg border overflow-hidden mb-4">
                   <button
                     type="button"
-                    onClick={() => { setSignInMode('signin'); setFirstLoginStep('phone'); }}
+                    onClick={() => { setSignInMode('signin'); setFirstLoginStep('phone'); accessTokenRef.current = null; msg91MobileRef.current = ''; }}
                     className={`flex-1 py-2 text-sm font-medium transition-colors ${signInMode === 'signin' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted'}`}
                   >
                     Sign In
                   </button>
                   <button
                     type="button"
-                    onClick={() => { setSignInMode('firstlogin'); setFirstLoginStep('phone'); }}
+                    onClick={() => { setSignInMode('firstlogin'); setFirstLoginStep('phone'); accessTokenRef.current = null; msg91MobileRef.current = ''; }}
                     className={`flex-1 py-2 text-sm font-medium transition-colors ${signInMode === 'firstlogin' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted'}`}
                   >
                     First Login
@@ -796,19 +834,20 @@ export default function AuthPage() {
                     onOtpChange={setFirstLoginOtp}
                     onVerify={handleFirstLoginVerifyOtp}
                     resendCooldown={firstLoginResendCooldown}
+                    onBack={() => { setFirstLoginStep('phone'); accessTokenRef.current = null; msg91MobileRef.current = ''; }}
                     onResend={() => {
-                      startFirstLoginCooldown();
-                      if (typeof window.sendOtp === 'function' && msg91MobileRef.current) {
-                        window.sendOtp(
+                      if (msg91MobileRef.current) {
+                        sendOtpWithTimeout(
                           msg91MobileRef.current,
                           (data) => {
                             logger.log('MSG91 resend OTP success:', data);
                             setFirstLoginOtp('');
                             setOtpSentCount(c => c + 1);
+                            startFirstLoginCooldown();
                             toast({ title: 'OTP Resent', description: 'A new OTP has been sent to your mobile number.' });
                           },
-                          (error) => {
-                            logger.error('MSG91 resend OTP failed:', error);
+                          () => {
+                            logger.error('MSG91 resend OTP failed or timed out');
                             toast({ title: 'Failed to Resend', description: 'Could not resend OTP. Please try again.', variant: 'destructive' });
                           }
                         );
@@ -859,19 +898,20 @@ export default function AuthPage() {
                     onOtpChange={setSignUpOtp}
                     onVerify={handleSignUpVerifyOtp}
                     resendCooldown={signUpResendCooldown}
+                    onBack={() => { setSignUpStep('form'); accessTokenRef.current = null; msg91MobileRef.current = ''; }}
                     onResend={() => {
-                      startSignUpCooldown();
-                      if (typeof window.sendOtp === 'function' && msg91MobileRef.current) {
-                        window.sendOtp(
+                      if (msg91MobileRef.current) {
+                        sendOtpWithTimeout(
                           msg91MobileRef.current,
                           (data) => {
                             logger.log('MSG91 resend OTP success:', data);
                             setSignUpOtp('');
                             setOtpSentCount(c => c + 1);
+                            startSignUpCooldown();
                             toast({ title: 'OTP Resent', description: 'A new OTP has been sent to your mobile number.' });
                           },
-                          (error) => {
-                            logger.error('MSG91 resend OTP failed:', error);
+                          () => {
+                            logger.error('MSG91 resend OTP failed or timed out');
                             toast({ title: 'Failed to Resend', description: 'Could not resend OTP. Please try again.', variant: 'destructive' });
                           }
                         );
