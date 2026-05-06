@@ -243,6 +243,23 @@ export default function AuthPage() {
     const tokenAuth = import.meta.env.VITE_MSG91_TOKEN_AUTH as string;
     if (!widgetId || !tokenAuth) return;
 
+    // Guard: don't load if already present
+    if (document.querySelector('script[src="https://verify.msg91.com/otp-provider.js"]')) {
+      // Script already loaded — just reinitialize
+      if (window.initSendOTP) {
+        window.initSendOTP({
+          widgetId,
+          tokenAuth,
+          exposeMethods: true,
+          success: (_data: unknown) => {},
+          failure: (error: unknown) => {
+            logger.log('MSG91 widget init failure:', error);
+          },
+        });
+      }
+      return;
+    }
+
     const script = document.createElement('script');
     script.src = 'https://verify.msg91.com/otp-provider.js';
     script.async = true;
