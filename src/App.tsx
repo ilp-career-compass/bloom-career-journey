@@ -108,14 +108,10 @@ function App() {
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<AuthPage />} />
               
-              {/* Audio Test Route */}
-              <Route path="/audio-test" element={<AudioTestPage />} />
-              
-              {/* Assessment Test Route */}
-              <Route path="/assessment-test" element={<AssessmentTestPage />} />
-              
-              {/* Database Test Route */}
-              <Route path="/database-test" element={<DatabaseTestPage />} />
+              {/* Test/debug routes — require authentication */}
+              <Route path="/audio-test" element={<ProtectedRoute allowedRoles={['admin']}><AudioTestPage /></ProtectedRoute>} />
+              <Route path="/assessment-test" element={<ProtectedRoute allowedRoles={['admin']}><AssessmentTestPage /></ProtectedRoute>} />
+              <Route path="/database-test" element={<ProtectedRoute allowedRoles={['admin']}><DatabaseTestPage /></ProtectedRoute>} />
               
               {/* Assessment Routes */}
               {/* Legacy direct assessment routes (kept for backward compatibility) */}

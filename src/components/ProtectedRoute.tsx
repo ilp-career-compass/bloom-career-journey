@@ -2,17 +2,26 @@
 import { useAuth } from '@/hooks/useAuth';
 import { Navigate, useLocation } from 'react-router-dom';
 import { LoaderCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
   allowedRoles?: ('admin' | 'teacher' | 'student')[];
 }
 
+const LOAD_TIMEOUT_MS = 10000;
+
 export default function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   const { user, loading, userProfile } = useAuth();
   const location = useLocation();
+  const [loadTimedOut, setLoadTimedOut] = useState(false);
 
-  // Debug logging
+  useEffect(() => {
+    if (!loading) { setLoadTimedOut(false); return; }
+    const timer = setTimeout(() => setLoadTimedOut(true), LOAD_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [loading]);
+
   logger.log('🔒 ProtectedRoute check:', {
     loading,
     hasUser: !!user,
@@ -20,21 +29,23 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
     userRole: userProfile?.role,
     allowedRoles,
     currentPath: location.pathname,
-    timestamp: new Date().toISOString(),
-    userDetails: user ? {
-      id: user.id,
-      email: user.email,
-      metadata: user.user_metadata
-    } : null,
-    profileDetails: userProfile ? {
-      id: userProfile.id,
-      role: userProfile.role,
-      full_name: userProfile.full_name
-    } : null
   });
 
   if (loading) {
     logger.log('🔒 ProtectedRoute: Still loading...');
+    if (loadTimedOut) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background">
+          <p className="text-muted-foreground text-sm">Taking too long to load. Please refresh the page.</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 text-sm rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            Reload
+          </button>
+        </div>
+      );
+    }
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <LoaderCircle className="w-8 h-8 animate-spin text-primary" />
@@ -44,27 +55,21 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
 
   if (!user || !userProfile) {
     logger.log('🔒 ProtectedRoute: Missing user or userProfile, redirecting to auth');
-    logger.log('🔒 User:', user);
-    logger.log('🔒 UserProfile:', userProfile);
-    logger.log('🔒 Loading state:', loading);
-    logger.log('🔒 Current path:', location.pathname);
-    logger.log('🔒 Allowed roles:', allowedRoles);
-    
-    // Add a small delay to prevent rapid redirects
-    setTimeout(() => {
-      logger.log('🔒 Redirecting to auth after delay');
-    }, 100);
-    
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
   if (allowedRoles && !allowedRoles.includes(userProfile.role)) {
-    logger.log('🔒 ProtectedRoute: Role mismatch, redirecting to appropriate dashboard');
-    // Redirect to appropriate dashboard based on role
-    const redirectPath = userProfile.role === 'admin' ? '/admin' 
-                        : userProfile.role === 'teacher' ? '/teacher'
-                        : `/student?lang=${userProfile.preferred_language || 'en'}`;
-    return <Navigate to={redirectPath} replace />;
+    logger.log('🔒 ProtectedRoute: Role mismatch for role:', userProfile.role);
+    const knownRoles = ['admin', 'teacher', 'student'];
+    if (!knownRoles.includes(userProfile.role)) {
+      logger.log('🔒 ProtectedRoute: Unknown role, redirecting to auth');
+      return <Navigate to="/auth" state={{ from: location }} replace />;
+    }
+    const lang = userProfile.preferred_language || 'en';
+    const redirectPath = userProfile.role === 'admin' ? `/admin?lang=${lang}`
+                        : userProfile.role === 'teacher' ? `/teacher?lang=${lang}`
+                        : `/student?lang=${lang}`;
+    return <Navigate to={redirectPath} state={{ from: location }} replace />;
   }
 
   logger.log('🔒 ProtectedRoute: Access granted');

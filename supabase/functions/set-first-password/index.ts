@@ -1,8 +1,11 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+function getCorsHeaders(req: Request): Record<string, string> {
+  const allowedOrigin = Deno.env.get('ALLOWED_ORIGIN')
+  const base = { 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' }
+  if (!allowedOrigin) return { ...base, 'Access-Control-Allow-Origin': '*' }
+  const origin = req.headers.get('Origin') ?? ''
+  return { ...base, 'Access-Control-Allow-Origin': origin === allowedOrigin ? origin : allowedOrigin, 'Vary': 'Origin' }
 }
 
 function isValidE164(phone: string): boolean {
@@ -10,6 +13,7 @@ function isValidE164(phone: string): boolean {
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req)
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -41,6 +45,14 @@ Deno.serve(async (req) => {
       )
     }
 
+    // G18: Enforce minimum password length server-side (client validation alone is bypassable)
+    if (typeof newPassword !== 'string' || newPassword.length < 6) {
+      return new Response(
+        JSON.stringify({ error: 'Password must be at least 6 characters' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
+    }
+
     if (!isValidE164(mobile)) {
       return new Response(
         JSON.stringify({ error: 'Invalid mobile format — expected E.164 like +91XXXXXXXXXX' }),
@@ -48,34 +60,38 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Verify the MSG91 access token via our verify-msg91-token Edge Function
-    const verifyResponse = await fetch(`${supabaseUrl}/functions/v1/verify-msg91-token`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${serviceRoleKey}`,
-      },
-      body: JSON.stringify({ access_token }),
-    })
+    // G25: skip OTP verification in dev/staging when MSG91_AUTH_KEY is not configured —
+    // matches the bypass behaviour of create-teacher and create-student-self-register.
+    const msg91AuthKey = Deno.env.get('MSG91_AUTH_KEY')
+    if (msg91AuthKey) {
+      const verifyResponse = await fetch(`${supabaseUrl}/functions/v1/verify-msg91-token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${serviceRoleKey}`,
+        },
+        body: JSON.stringify({ access_token }),
+      })
 
-    const verifyData = await verifyResponse.json()
+      const verifyData = await verifyResponse.json()
 
-    if (!verifyData?.success) {
-      return new Response(
-        JSON.stringify({ error: 'OTP verification failed — please verify your mobile number again' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      )
-    }
+      if (!verifyData?.success) {
+        return new Response(
+          JSON.stringify({ error: 'OTP verification failed — please verify your mobile number again' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        )
+      }
 
-    // Confirm the verified mobile matches the one the student entered.
-    // Only cross-check if MSG91 returned a mobile — if empty, token validity alone is sufficient.
-    // Use last-10-digits normalization to handle varying formats (91XXXXXXXXXX, +91XXXXXXXXXX, XXXXXXXXXX).
-    const normalize = (m: string) => (m || '').replace(/\D/g, '').slice(-10)
-    if (verifyData.mobile && normalize(verifyData.mobile) !== normalize(mobile)) {
-      return new Response(
-        JSON.stringify({ error: 'Mobile number does not match OTP verification' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      )
+      // Cross-check the verified mobile against the one the caller supplied.
+      // verify-msg91-token guarantees a non-empty mobile on success (G23), so this check is always active.
+      // Use last-10-digits normalization to handle format variants (91XXXXXXXXXX, +91XXXXXXXXXX, XXXXXXXXXX).
+      const normalize = (m: string) => (m || '').replace(/\D/g, '').slice(-10)
+      if (normalize(verifyData.mobile) !== normalize(mobile)) {
+        return new Response(
+          JSON.stringify({ error: 'Mobile number does not match OTP verification' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        )
+      }
     }
 
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
@@ -85,14 +101,33 @@ Deno.serve(async (req) => {
     // Look up the user in public.users by mobile (stored as E.164)
     const { data: userRow, error: userError } = await supabaseAdmin
       .from('users')
-      .select('id')
+      .select('id, role')
       .eq('mobile', mobile)
       .maybeSingle()
 
-    if (userError || !userRow) {
+    // G20: maybeSingle() returns PGRST116 when multiple rows match — surface a clear 409
+    if (userError) {
+      const isDuplicate = (userError as { code?: string }).code === 'PGRST116'
+      return new Response(
+        JSON.stringify({ error: isDuplicate
+          ? 'Multiple accounts found for this number — please contact support'
+          : 'No account found for this mobile number' }),
+        { status: isDuplicate ? 409 : 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
+    }
+    if (!userRow) {
       return new Response(
         JSON.stringify({ error: 'No account found for this mobile number' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
+    }
+
+    // G19: First Login is only for students — teachers/admins must not be able to bypass
+    // their current password via OTP alone.
+    if (userRow.role !== 'student') {
+      return new Response(
+        JSON.stringify({ error: 'This flow is only available for student accounts' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       )
     }
 

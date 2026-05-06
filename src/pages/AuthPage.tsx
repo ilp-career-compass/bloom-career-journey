@@ -48,7 +48,8 @@ function toE164Indian(phone: string): string {
 }
 
 function isValidE164(phone: string): boolean {
-  return /^\+91\d{10}$/.test(phone) || /^\d{10}$/.test(phone);
+  // Accept: +91XXXXXXXXXX (E.164), bare 10 digits, or 91XXXXXXXXXX (12-digit without +)
+  return /^\+91\d{10}$/.test(phone) || /^\d{10}$/.test(phone) || /^91\d{10}$/.test(phone);
 }
 
 function sendOtpWithTimeout(
@@ -69,6 +70,22 @@ function sendOtpWithTimeout(
   );
 }
 
+// Must match the expiry configured in the MSG91 widget dashboard (default: 15 min)
+const OTP_EXPIRY_SECONDS = 900;
+
+function passwordStrength(pw: string): { label: string; color: string } {
+  if (pw.length === 0) return { label: '', color: '' };
+  if (pw.length < 6) return { label: 'Too short', color: 'text-red-500' };
+  const hasLetter = /[a-zA-Z]/.test(pw);
+  const hasDigit = /\d/.test(pw);
+  const isAllSame = pw.split('').every(c => c === pw[0]);
+  if (isAllSame || (!hasLetter && !hasDigit)) return { label: 'Very weak', color: 'text-red-500' };
+  if (pw.length >= 8 && hasLetter && hasDigit) return { label: 'Strong', color: 'text-green-600' };
+  return { label: 'Fair', color: 'text-yellow-600' };
+}
+// Must match the OTP length configured in the MSG91 widget dashboard (set via VITE_MSG91_OTP_LENGTH)
+const OTP_LENGTH = Number(import.meta.env.VITE_MSG91_OTP_LENGTH) || 4;
+
 // Defined outside AuthPage so useRef is stable across parent re-renders
 function OtpScreen({
   phone,
@@ -79,6 +96,8 @@ function OtpScreen({
   onBack,
   verifyLoading,
   resendCooldown,
+  otpLength = OTP_LENGTH,
+  initialTimeLeft = OTP_EXPIRY_SECONDS,
 }: {
   phone: string
   otpValue: string
@@ -88,11 +107,13 @@ function OtpScreen({
   onBack?: () => void
   verifyLoading: boolean
   resendCooldown: number
+  otpLength?: number
+  initialTimeLeft?: number
 }) {
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([null, null, null, null]);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>(Array.from({ length: otpLength }, () => null));
 
-  const EXPIRY_SECONDS = 900; // 15 minutes — matches MSG91 widget config
-  const [timeLeft, setTimeLeft] = useState(EXPIRY_SECONDS);
+  // G10: initialise from parent-supplied timestamp so the countdown is accurate after tab switches
+  const [timeLeft, setTimeLeft] = useState(initialTimeLeft);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -112,15 +133,15 @@ function OtpScreen({
 
   const handleChange = (index: number, value: string) => {
     const digit = value.replace(/\D/g, '').slice(-1);
-    const chars = Array.from({ length: 4 }, (_, i) => otpValue[i] ?? '');
+    const chars = Array.from({ length: otpLength }, (_, i) => otpValue[i] ?? '');
     chars[index] = digit;
     onOtpChange(chars.join(''));
-    if (digit && index < 3) inputRefs.current[index + 1]?.focus();
+    if (digit && index < otpLength - 1) inputRefs.current[index + 1]?.focus();
   };
 
   const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Backspace' && !(otpValue[index] ?? '') && index > 0) {
-      const chars = Array.from({ length: 4 }, (_, i) => otpValue[i] ?? '');
+      const chars = Array.from({ length: otpLength }, (_, i) => otpValue[i] ?? '');
       chars[index - 1] = '';
       onOtpChange(chars.join(''));
       inputRefs.current[index - 1]?.focus();
@@ -129,20 +150,20 @@ function OtpScreen({
 
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
-    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 4);
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, otpLength);
     if (!pasted) return;
     onOtpChange(pasted);
-    inputRefs.current[Math.min(pasted.length, 3)]?.focus();
+    inputRefs.current[Math.min(pasted.length, otpLength - 1)]?.focus();
   };
 
   return (
     <form onSubmit={onVerify} className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Enter the 4-digit OTP sent to{' '}
+        Enter the {otpLength}-digit OTP sent to{' '}
         <span className="font-medium">{toE164Indian(phone)}</span>
       </p>
       <div className="flex justify-center gap-3">
-        {Array.from({ length: 4 }, (_, i) => (
+        {Array.from({ length: otpLength }, (_, i) => (
           <input
             key={i}
             ref={(el) => { inputRefs.current[i] = el; }}
@@ -166,7 +187,7 @@ function OtpScreen({
           <span className="text-destructive font-medium">OTP expired. Please request a new one.</span>
         )}
       </p>
-      <Button type="submit" className="w-full" disabled={verifyLoading || otpValue.length < 4 || timeLeft === 0}>
+      <Button type="submit" className="w-full" disabled={verifyLoading || otpValue.length < otpLength || timeLeft === 0}>
         {verifyLoading ? 'Verifying...' : 'Verify OTP'}
       </Button>
       <Button
@@ -219,6 +240,7 @@ export default function AuthPage() {
     role: 'teacher' as 'teacher' | 'student',
     phone: '',
     password: '',
+    confirmPassword: '',
     fullName: '',
     stateId: '',
     grade: '',
@@ -227,6 +249,27 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [states, setStates] = useState<StateInfo[]>([]);
   const [loadingStates, setLoadingStates] = useState(false);
+  const [statesLoadError, setStatesLoadError] = useState(false);
+
+  // Client-side sign-in rate limiting: lock after 5 consecutive failures
+  const [signInFailCount, setSignInFailCount] = useState(0);
+  const [signInLockCountdown, setSignInLockCountdown] = useState(0);
+  const signInLockTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startSignInLockout = () => {
+    setSignInLockCountdown(60);
+    if (signInLockTimerRef.current) clearInterval(signInLockTimerRef.current);
+    signInLockTimerRef.current = setInterval(() => {
+      setSignInLockCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(signInLockTimerRef.current!);
+          signInLockTimerRef.current = null;
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
 
   // Sign Up OTP step: 'form' shows the registration form, 'otp' shows the OTP input
   const [signUpStep, setSignUpStep] = useState<'form' | 'otp'>('form');
@@ -239,8 +282,11 @@ export default function AuthPage() {
   const [firstLoginOtp, setFirstLoginOtp] = useState('');
   const [otpSentCount, setOtpSentCount] = useState(0);
 
-  const accessTokenRef = useRef<string | null>(null);
+  const signUpAccessTokenRef = useRef<string | null>(null);
+  const firstLoginAccessTokenRef = useRef<string | null>(null);
   const msg91MobileRef = useRef<string>('');
+  // G10: track when OTP was dispatched so OtpScreen initialises its countdown accurately on remount
+  const otpSentAtRef = useRef<number | null>(null);
 
   const [signUpResendCooldown, setSignUpResendCooldown] = useState(0);
   const [firstLoginResendCooldown, setFirstLoginResendCooldown] = useState(0);
@@ -281,6 +327,7 @@ export default function AuthPage() {
     return () => {
       if (signUpCooldownTimerRef.current) clearInterval(signUpCooldownTimerRef.current);
       if (firstLoginCooldownTimerRef.current) clearInterval(firstLoginCooldownTimerRef.current);
+      if (signInLockTimerRef.current) clearInterval(signInLockTimerRef.current);
     };
   }, []);
 
@@ -295,19 +342,30 @@ export default function AuthPage() {
     const tokenAuth = import.meta.env.VITE_MSG91_TOKEN_AUTH as string;
     if (!widgetId || !tokenAuth) return;
 
-    // Guard: don't load if already present
-    if (document.querySelector('script[src="https://verify.msg91.com/otp-provider.js"]')) {
-      // Script already loaded — just reinitialize
-      if (window.initSendOTP) {
+    const doInit = () => {
+      if (!window.initSendOTP) return;
+      try {
         window.initSendOTP({
           widgetId,
           tokenAuth,
           exposeMethods: true,
+          captchaRenderId: '',        // G1: suppress the built-in MSG91 captcha/popup
           success: (_data: unknown) => {},
-          failure: (error: unknown) => {
-            logger.log('MSG91 widget init failure:', error);
-          },
+          failure: (_error: unknown) => {},
         });
+      } catch (err) {
+        logger.error('MSG91 initSendOTP threw:', err);
+      }
+    };
+
+    // G4: check existing script tag — it may still be loading even if the tag is in the DOM
+    const existing = document.querySelector<HTMLScriptElement>('script[src="https://verify.msg91.com/otp-provider.js"]');
+    if (existing) {
+      if (window.initSendOTP) {
+        doInit();  // already loaded, reinit immediately
+      } else {
+        // G4: script tag present but still loading — defer init until it fires
+        existing.addEventListener('load', doInit, { once: true });
       }
       return;
     }
@@ -316,18 +374,12 @@ export default function AuthPage() {
     script.src = 'https://verify.msg91.com/otp-provider.js';
     script.async = true;
     script.onload = () => {
-      logger.log('MSG91 init config:', { widgetId, tokenAuth, hasWidgetId: !!widgetId, hasTokenAuth: !!tokenAuth });
-      try {
-        window.initSendOTP({
-          widgetId,
-          tokenAuth,
-          exposeMethods: true,
-          success: (_data: unknown) => {},
-          failure: (_error: unknown) => {},
-        });
-      } catch (err) {
-        logger.error('MSG91 initSendOTP threw:', err);
-      }
+      logger.log('MSG91 script loaded, initialising widget');
+      doInit();
+    };
+    // G3: surface CDN failures early so developers can diagnose
+    script.onerror = () => {
+      logger.error('MSG91 OTP provider script failed to load — OTP will be unavailable');
     };
     document.head.appendChild(script);
     return () => {
@@ -338,6 +390,7 @@ export default function AuthPage() {
   const loadStates = async () => {
     logger.log('Loading states...');
     setLoadingStates(true);
+    setStatesLoadError(false);
     try {
       let { data, error } = await supabase
         .from('states')
@@ -354,12 +407,8 @@ export default function AuthPage() {
       }
       if (error) {
         logger.error('State query failed after retry:', error);
-        setStates([
-          { state_id: 'fallback-1', state_name: 'ILP-Tamil Nadu', state_code: 'ILP-TN', org_name: 'ILP Foundation' },
-          { state_id: 'fallback-2', state_name: 'ILP-Telangana', state_code: 'ILP-TG', org_name: 'ILP Foundation' },
-          { state_id: 'fallback-3', state_name: 'ILP-Karnataka', state_code: 'ILP-KA', org_name: 'ILP Foundation' },
-          { state_id: 'fallback-4', state_name: 'ILP-Maharashtra', state_code: 'ILP-MH', org_name: 'ILP Foundation' },
-        ]);
+        setStates([]);
+        setStatesLoadError(true);
         return;
       }
       const rawStates = (data || []).filter((s: any) => s && s.id && s.state_name);
@@ -374,6 +423,7 @@ export default function AuthPage() {
     } catch (error) {
       logger.error('Error loading states:', error);
       setStates([]);
+      setStatesLoadError(true);
     } finally {
       setLoadingStates(false);
     }
@@ -389,21 +439,35 @@ export default function AuthPage() {
   }, [user, userProfile]);
 
   if (user && userProfile) {
-    const redirectPath = userProfile.role === 'admin' ? '/admin'
-      : userProfile.role === 'teacher' ? '/teacher'
-        : `/student?lang=${userProfile.preferred_language || 'en'}`;
+    const lang = userProfile.preferred_language || 'en';
+    const redirectPath = userProfile.role === 'admin' ? `/admin?lang=${lang}`
+      : userProfile.role === 'teacher' ? `/teacher?lang=${lang}`
+        : `/student?lang=${lang}`;
     logger.log('AuthPage: Redirecting to:', redirectPath);
     return <Navigate to={redirectPath} replace />;
   }
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (signInLockCountdown > 0) return;
+    if (!isValidE164(signInForm.phone)) {
+      toast({ title: 'Sign In Failed', description: 'Please enter a valid 10-digit mobile number.', variant: 'destructive' });
+      return;
+    }
     setLoading(true);
     const { error } = await signIn(toE164Indian(signInForm.phone), signInForm.password);
     setLoading(false);
     if (error) {
       logger.error('Sign in error:', error);
-      toast({ title: 'Sign In Failed', description: error.message || 'Invalid mobile number or password. Please try again.', variant: 'destructive' });
+      const nextCount = signInFailCount + 1;
+      setSignInFailCount(nextCount);
+      if (nextCount >= 5) {
+        setSignInFailCount(0);
+        startSignInLockout();
+        toast({ title: 'Too many failed attempts', description: 'Please wait 60 seconds before trying again.', variant: 'destructive' });
+      }
+    } else {
+      setSignInFailCount(0);
     }
   };
 
@@ -443,6 +507,12 @@ export default function AuthPage() {
       return;
     }
 
+    if (signUpForm.password !== signUpForm.confirmPassword) {
+      toast({ title: 'Sign Up Failed', description: 'Passwords do not match.', variant: 'destructive' });
+      setLoading(false);
+      return;
+    }
+
     if (signUpForm.role === 'student' && !signUpForm.grade) {
       toast({ title: 'Sign Up Failed', description: 'Please select your grade.', variant: 'destructive' });
       setLoading(false);
@@ -455,23 +525,9 @@ export default function AuthPage() {
       return;
     }
 
-    // Check if mobile already registered before sending OTP
-    const normalizedPhone = toE164Indian(signUpForm.phone);
-    const { data: existingUser } = await supabase
-      .from('users')
-      .select('id')
-      .eq('mobile', normalizedPhone)
-      .maybeSingle();
-
-    if (existingUser) {
-      toast({
-        title: 'Already Registered',
-        description: 'This mobile number is already registered. Please sign in instead.',
-        variant: 'destructive',
-      });
-      setLoading(false);
-      return;
-    }
+    // Pre-OTP duplicate check removed: it depended on anon RLS access to users.mobile which
+    // is not guaranteed. The Edge Function (create-teacher / create-student-self-register) is
+    // the authoritative gate for duplicate mobile detection.
 
     // MSG91 expects 91XXXXXXXXXX (no '+')
     const msg91Mobile = normalizedPhone.replace('+', '');
@@ -480,6 +536,7 @@ export default function AuthPage() {
       msg91Mobile,
       (data) => {
         logger.log('MSG91 sendOtp success:', JSON.stringify(data));
+        otpSentAtRef.current = Date.now();
         setSignUpOtp('');
         setSignUpStep('otp');
         setOtpSentCount(c => c + 1);
@@ -513,88 +570,96 @@ export default function AuthPage() {
     window.verifyOtp(
       signUpOtp,
       async (data: Record<string, unknown>) => {
-        // MSG91 may return the token under different key names depending on the plan/version
-        accessTokenRef.current = (
-          (data?.['access-token'] as string) ||
-          (data?.['access_token'] as string) ||
-          (data?.['accessToken'] as string) ||
-          (data?.['token'] as string) ||
-          (data?.['message'] as string) ||
-          ''
-        );
+        // G9: wrap the entire async callback in try/catch/finally so setLoading(false)
+        // is always called and unexpected throws surface as a toast rather than a frozen UI.
+        try {
+          // MSG91 may return the token under different key names depending on the plan/version
+          signUpAccessTokenRef.current = (
+            (data?.['access-token'] as string) ||
+            (data?.['access_token'] as string) ||
+            (data?.['accessToken'] as string) ||
+            (data?.['token'] as string) ||
+            (data?.['message'] as string) ||
+            ''
+          );
 
-        if (!accessTokenRef.current) {
-          toast({
-            title: 'Verification Error',
-            description: 'OTP verified but no access token was returned. Please try again.',
-            variant: 'destructive',
-          });
-          setLoading(false);
-          return;
-        }
-
-        if (signUpForm.role === 'student') {
-          // Student self-registration via create-student-self-register Edge Function
-          const { data: fnData, error } = await supabase.functions.invoke('create-student-self-register', {
-            body: {
-              fullName: signUpForm.fullName,
-              phone: normalizedPhone,
-              password: signUpForm.password,
-              grade: signUpForm.grade,
-              stateId: signUpForm.stateId,
-              preferredLanguage: signUpForm.preferredLanguage,
-              accessToken: accessTokenRef.current ?? '',
-            },
-          });
-
-          if (error || fnData?.error) {
-            const msg = fnData?.error || error?.message || 'Could not create account. Please try again.';
-            logger.error('Student sign up error:', msg);
-            toast({ title: 'Sign Up Failed', description: msg, variant: 'destructive' });
-            setLoading(false);
+          if (!signUpAccessTokenRef.current) {
+            toast({
+              title: 'Verification Error',
+              description: 'OTP verified but no access token was returned. Please try again.',
+              variant: 'destructive',
+            });
             return;
           }
 
+          if (signUpForm.role === 'student') {
+            // Student self-registration via create-student-self-register Edge Function
+            const { data: fnData, error } = await supabase.functions.invoke('create-student-self-register', {
+              body: {
+                fullName: signUpForm.fullName,
+                phone: normalizedPhone,
+                password: signUpForm.password,
+                grade: signUpForm.grade,
+                stateId: signUpForm.stateId,
+                preferredLanguage: signUpForm.preferredLanguage,
+                accessToken: signUpAccessTokenRef.current ?? '',
+              },
+            });
+
+            if (error || fnData?.error) {
+              const msg = fnData?.error || error?.message || 'Could not create account. Please try again.';
+              logger.error('Student sign up error:', msg);
+              toast({ title: 'Sign Up Failed', description: msg, variant: 'destructive' });
+              return;
+            }
+
+          // G12: clear sensitive state now that the token has been consumed
+          signUpAccessTokenRef.current = null;
+          setSignUpForm(prev => ({ ...prev, password: '', confirmPassword: '' }));
+
           // Sign in immediately after successful registration
           const { error: signInError } = await signIn(normalizedPhone, signUpForm.password);
-          setLoading(false);
           if (signInError) {
             toast({ title: 'Account created', description: 'Please sign in with your mobile number and password.', variant: 'default' });
           }
           return;
         }
 
-        // Teacher self-registration via create-teacher Edge Function
-        const { data: fnData, error } = await supabase.functions.invoke('create-teacher', {
-          body: {
-            fullName: signUpForm.fullName,
-            phone: normalizedPhone,
-            password: signUpForm.password,
-            stateId: signUpForm.stateId,
-            preferredLanguage: signUpForm.preferredLanguage,
-            accessToken: accessTokenRef.current ?? '',
-          },
-        });
+          // Teacher self-registration via create-teacher Edge Function
+          const { data: fnData, error } = await supabase.functions.invoke('create-teacher', {
+            body: {
+              fullName: signUpForm.fullName,
+              phone: normalizedPhone,
+              password: signUpForm.password,
+              stateId: signUpForm.stateId,
+              preferredLanguage: signUpForm.preferredLanguage,
+              accessToken: signUpAccessTokenRef.current ?? '',
+            },
+          });
 
-        if (error || fnData?.error) {
-          const msg = fnData?.error || error?.message || 'Could not create account. Please try again.';
-          logger.error('Teacher sign up error:', msg);
-          toast({ title: 'Sign Up Failed', description: msg, variant: 'destructive' });
+          if (error || fnData?.error) {
+            const msg = fnData?.error || error?.message || 'Could not create account. Please try again.';
+            logger.error('Teacher sign up error:', msg);
+            toast({ title: 'Sign Up Failed', description: msg, variant: 'destructive' });
+            return;
+          }
+
+          // Sign in immediately after successful registration
+          const { error: signInError } = await signIn(normalizedPhone, signUpForm.password);
+          if (signInError) {
+            toast({ title: 'Account created', description: 'Please sign in with your mobile number and password.', variant: 'default' });
+          }
+        } catch (err) {
+          logger.error('Unexpected error after OTP verify (sign up):', err);
+          toast({ title: 'Unexpected Error', description: 'Something went wrong. Please try again.', variant: 'destructive' });
+        } finally {
           setLoading(false);
-          return;
-        }
-
-        // Sign in immediately after successful registration
-        const { error: signInError } = await signIn(normalizedPhone, signUpForm.password);
-        setLoading(false);
-        if (signInError) {
-          toast({ title: 'Account created', description: 'Please sign in with your mobile number and password.', variant: 'default' });
         }
       },
       (_error: unknown) => {
         toast({
           title: 'OTP Verification Failed',
-          description: 'The OTP you entered is incorrect. Please try again.',
+          description: 'The OTP entered is incorrect or has expired. Please try again or request a new one.',
           variant: 'destructive',
         });
         setLoading(false);
@@ -613,30 +678,14 @@ export default function AuthPage() {
 
     setLoading(true);
 
-    // Pre-check: confirm this mobile is registered before spending an SMS
     const normalizedPhone = toE164Indian(firstLoginForm.phone);
-    const { data: existingUser } = await supabase
-      .from('users')
-      .select('id')
-      .eq('mobile', normalizedPhone)
-      .maybeSingle();
-
-    if (!existingUser) {
-      toast({
-        title: 'Not Registered',
-        description: 'No account found for this mobile number. Please sign up instead.',
-        variant: 'destructive',
-      });
-      setLoading(false);
-      return;
-    }
-
     const msg91Mobile = normalizedPhone.replace('+', '');
     msg91MobileRef.current = msg91Mobile;
     sendOtpWithTimeout(
       msg91Mobile,
       (data) => {
         logger.log('MSG91 sendOtp success:', JSON.stringify(data));
+        otpSentAtRef.current = Date.now();
         setFirstLoginOtp('');
         setFirstLoginStep('otp');
         setOtpSentCount(c => c + 1);
@@ -669,7 +718,7 @@ export default function AuthPage() {
     window.verifyOtp(
       firstLoginOtp,
       (data: Record<string, unknown>) => {
-        accessTokenRef.current = (
+        firstLoginAccessTokenRef.current = (
           (data?.['access-token'] as string) ||
           (data?.['access_token'] as string) ||
           (data?.['accessToken'] as string) ||
@@ -678,7 +727,7 @@ export default function AuthPage() {
           ''
         );
 
-        if (!accessTokenRef.current) {
+        if (!firstLoginAccessTokenRef.current) {
           toast({
             title: 'Verification Error',
             description: 'OTP verified but no access token was returned. Please try again.',
@@ -694,7 +743,7 @@ export default function AuthPage() {
       (_error: unknown) => {
         toast({
           title: 'OTP Verification Failed',
-          description: 'The OTP you entered is incorrect. Please try again.',
+          description: 'The OTP entered is incorrect or has expired. Please try again or request a new one.',
           variant: 'destructive',
         });
         setLoading(false);
@@ -727,7 +776,7 @@ export default function AuthPage() {
       body: {
         mobile: normalizedPhone,
         newPassword: firstLoginForm.newPassword,
-        access_token: accessTokenRef.current ?? '',
+        access_token: firstLoginAccessTokenRef.current ?? '',
       },
     });
 
@@ -801,15 +850,15 @@ export default function AuthPage() {
                         required
                       />
                     </div>
-                    <Button type="submit" className="w-full" disabled={loading}>
-                      {loading ? 'Signing In...' : t('signInBtn')}
+                    <Button type="submit" className="w-full" disabled={loading || signInLockCountdown > 0}>
+                      {loading ? 'Signing In...' : signInLockCountdown > 0 ? `Too many attempts — wait ${signInLockCountdown}s` : t('signInBtn')}
                     </Button>
                     <p className="text-center text-sm text-muted-foreground">
                       Account set up by your teacher?{' '}
                       <button
                         type="button"
                         className="underline text-foreground hover:text-primary transition-colors"
-                        onClick={() => { setSignInMode('firstlogin'); setFirstLoginStep('phone'); accessTokenRef.current = null; msg91MobileRef.current = ''; }}
+                        onClick={() => { setSignInMode('firstlogin'); setFirstLoginStep('phone'); firstLoginAccessTokenRef.current = null; msg91MobileRef.current = ''; }}
                       >
                         Set up your password
                       </button>
@@ -818,7 +867,7 @@ export default function AuthPage() {
                 ) : firstLoginStep === 'phone' ? (
                   <form onSubmit={handleFirstLoginOtp} className="space-y-4">
                     <p className="text-sm text-muted-foreground">
-                      Verify your mobile number to set a password for the first time.
+                      Verify your mobile number to set or reset your password.
                     </p>
                     <div className="space-y-2">
                       <Label htmlFor="firstlogin-phone">{t('mobileNumber')}</Label>
@@ -839,7 +888,7 @@ export default function AuthPage() {
                       <button
                         type="button"
                         className="underline text-foreground hover:text-primary transition-colors"
-                        onClick={() => { setSignInMode('signin'); setFirstLoginStep('phone'); accessTokenRef.current = null; msg91MobileRef.current = ''; }}
+                        onClick={() => { setSignInMode('signin'); setFirstLoginStep('phone'); firstLoginAccessTokenRef.current = null; msg91MobileRef.current = ''; }}
                       >
                         Sign in
                       </button>
@@ -853,24 +902,23 @@ export default function AuthPage() {
                     onOtpChange={setFirstLoginOtp}
                     onVerify={handleFirstLoginVerifyOtp}
                     resendCooldown={firstLoginResendCooldown}
-                    onBack={() => { setFirstLoginStep('phone'); accessTokenRef.current = null; msg91MobileRef.current = ''; }}
+                    initialTimeLeft={otpSentAtRef.current ? Math.max(0, OTP_EXPIRY_SECONDS - Math.floor((Date.now() - otpSentAtRef.current) / 1000)) : OTP_EXPIRY_SECONDS}
+                    onBack={() => { setFirstLoginStep('phone'); firstLoginAccessTokenRef.current = null; msg91MobileRef.current = ''; }}
                     onResend={() => {
-                      if (msg91MobileRef.current) {
-                        sendOtpWithTimeout(
-                          msg91MobileRef.current,
-                          (data) => {
-                            logger.log('MSG91 resend OTP success:', data);
-                            setFirstLoginOtp('');
-                            setOtpSentCount(c => c + 1);
-                            startFirstLoginCooldown();
-                            toast({ title: 'OTP Resent', description: 'A new OTP has been sent to your mobile number.' });
-                          },
-                          () => {
-                            logger.error('MSG91 resend OTP failed or timed out');
-                            toast({ title: 'Failed to Resend', description: 'Could not resend OTP. Please try again.', variant: 'destructive' });
-                          }
-                        );
+                      // G6: retryOtp re-sends on the same MSG91 session (correct API for resend)
+                      if (!msg91MobileRef.current) return;
+                      if (typeof window.retryOtp !== 'function') {
+                        toast({ title: 'OTP Unavailable', description: 'OTP service unavailable. Please refresh and try again.', variant: 'destructive' });
+                        return;
                       }
+                      otpSentAtRef.current = Date.now();
+                      setFirstLoginOtp('');
+                      setOtpSentCount(c => c + 1);
+                      startFirstLoginCooldown();
+                      window.retryOtp(() => {
+                        logger.log('MSG91 retryOtp callback (first login)');
+                        toast({ title: 'OTP Resent', description: 'A new OTP has been sent to your mobile number.' });
+                      });
                     }}
                     verifyLoading={loading}
                   />
@@ -878,6 +926,10 @@ export default function AuthPage() {
                   <form onSubmit={handleSetPassword} className="space-y-4">
                     <p className="text-sm text-muted-foreground">
                       Mobile verified: <span className="font-medium">{toE164Indian(firstLoginForm.phone)}</span>
+                    </p>
+                    {/* G17: warn that the OTP session has a limited lifetime so the user sets the password promptly */}
+                    <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+                      Your OTP session expires in 15 minutes — please set your password now.
                     </p>
                     <div className="space-y-2">
                       <Label htmlFor="firstlogin-newpassword">New Password</Label>
@@ -925,24 +977,23 @@ export default function AuthPage() {
                     onOtpChange={setSignUpOtp}
                     onVerify={handleSignUpVerifyOtp}
                     resendCooldown={signUpResendCooldown}
-                    onBack={() => { setSignUpStep('form'); accessTokenRef.current = null; msg91MobileRef.current = ''; }}
+                    initialTimeLeft={otpSentAtRef.current ? Math.max(0, OTP_EXPIRY_SECONDS - Math.floor((Date.now() - otpSentAtRef.current) / 1000)) : OTP_EXPIRY_SECONDS}
+                    onBack={() => { setSignUpStep('form'); signUpAccessTokenRef.current = null; msg91MobileRef.current = ''; }}
                     onResend={() => {
-                      if (msg91MobileRef.current) {
-                        sendOtpWithTimeout(
-                          msg91MobileRef.current,
-                          (data) => {
-                            logger.log('MSG91 resend OTP success:', data);
-                            setSignUpOtp('');
-                            setOtpSentCount(c => c + 1);
-                            startSignUpCooldown();
-                            toast({ title: 'OTP Resent', description: 'A new OTP has been sent to your mobile number.' });
-                          },
-                          () => {
-                            logger.error('MSG91 resend OTP failed or timed out');
-                            toast({ title: 'Failed to Resend', description: 'Could not resend OTP. Please try again.', variant: 'destructive' });
-                          }
-                        );
+                      // G6: retryOtp re-sends on the same MSG91 session (correct API for resend)
+                      if (!msg91MobileRef.current) return;
+                      if (typeof window.retryOtp !== 'function') {
+                        toast({ title: 'OTP Unavailable', description: 'OTP service unavailable. Please refresh and try again.', variant: 'destructive' });
+                        return;
                       }
+                      otpSentAtRef.current = Date.now();
+                      setSignUpOtp('');
+                      setOtpSentCount(c => c + 1);
+                      startSignUpCooldown();
+                      window.retryOtp(() => {
+                        logger.log('MSG91 retryOtp callback (sign up)');
+                        toast({ title: 'OTP Resent', description: 'A new OTP has been sent to your mobile number.' });
+                      });
                     }}
                     verifyLoading={loading}
                   />
@@ -952,7 +1003,7 @@ export default function AuthPage() {
                     <div className="flex rounded-lg border overflow-hidden">
                       <button
                         type="button"
-                        onClick={() => setSignUpForm({ ...signUpForm, role: 'teacher', grade: '' })}
+                        onClick={() => setSignUpForm({ ...signUpForm, role: 'teacher', grade: '', confirmPassword: '' })}
                         className={`flex-1 py-2 text-sm font-medium transition-colors ${signUpForm.role === 'teacher' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted'}`}
                       >
                         I am a Teacher
@@ -1002,42 +1053,69 @@ export default function AuthPage() {
                         onChange={(e) => setSignUpForm({ ...signUpForm, password: e.target.value })}
                         required
                       />
-                      {signUpForm.password.length > 0 && signUpForm.password.length < 6 ? (
-                        <p className="text-xs text-red-500">Password must be at least 6 characters</p>
-                      ) : (
-                        <p className="text-xs text-muted-foreground">At least 6 characters</p>
+                      {(() => {
+                        const { label, color } = passwordStrength(signUpForm.password);
+                        return label
+                          ? <p className={`text-xs ${color}`}>{label}</p>
+                          : <p className="text-xs text-muted-foreground">At least 6 characters</p>;
+                      })()}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-confirm-password">Confirm Password</Label>
+                      <Input
+                        id="signup-confirm-password"
+                        type="password"
+                        autoComplete="new-password"
+                        placeholder="Re-enter your password"
+                        value={signUpForm.confirmPassword}
+                        onChange={(e) => setSignUpForm({ ...signUpForm, confirmPassword: e.target.value })}
+                        required
+                      />
+                      {signUpForm.confirmPassword.length > 0 && signUpForm.password !== signUpForm.confirmPassword && (
+                        <p className="text-xs text-red-500">Passwords do not match</p>
                       )}
                     </div>
                     {/* State Selection */}
                     <div className="space-y-2">
                       <Label htmlFor="state">{t('state')}</Label>
-                      <Select
-                        value={signUpForm.stateId}
-                        onValueChange={(value) => setSignUpForm({ ...signUpForm, stateId: value })}
-                        disabled={loadingStates}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder={loadingStates ? "Loading states..." : "Select your state"} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {states.length === 0 ? (
-                            <>
-                              {loadingStates ? null : (
+                      {statesLoadError ? (
+                        <div className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive flex items-center justify-between">
+                          <span>Could not load states.</span>
+                          <button
+                            type="button"
+                            className="underline text-sm font-medium ml-2"
+                            onClick={loadStates}
+                          >
+                            Retry
+                          </button>
+                        </div>
+                      ) : (
+                        <Select
+                          value={signUpForm.stateId}
+                          onValueChange={(value) => setSignUpForm({ ...signUpForm, stateId: value })}
+                          disabled={loadingStates}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={loadingStates ? "Loading states..." : "Select your state"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {states.length === 0 ? (
+                              loadingStates ? null : (
                                 <div className="px-3 py-2 text-sm text-muted-foreground">No states available</div>
-                              )}
-                            </>
-                          ) : (
-                            states.map((state) => (
-                              <SelectItem key={state.state_id} value={state.state_id}>
-                                <div className="flex flex-col">
-                                  <span className="font-medium">{state.state_name}</span>
-                                  <span className="text-xs text-muted-foreground">{state.state_code}</span>
-                                </div>
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
+                              )
+                            ) : (
+                              states.map((state) => (
+                                <SelectItem key={state.state_id} value={state.state_id}>
+                                  <div className="flex flex-col">
+                                    <span className="font-medium">{state.state_name}</span>
+                                    <span className="text-xs text-muted-foreground">{state.state_code}</span>
+                                  </div>
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                      )}
                     </div>
 
                     {/* Grade picker — students only */}

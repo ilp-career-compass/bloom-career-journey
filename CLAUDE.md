@@ -350,13 +350,14 @@ Three scenarios require OTP verification before account creation or password set
 **Secrets & env vars**:
 - `VITE_MSG91_WIDGET_ID`, `VITE_MSG91_TOKEN_AUTH` — Vercel env vars, mark **Sensitive** for Production + Preview
 - `MSG91_AUTH_KEY` — Supabase secret only (`supabase secrets set MSG91_AUTH_KEY=...`); never in `.env` or client bundle
+- `ALLOWED_ORIGIN` — Supabase secret; set to `https://bloom-career-journey.vercel.app`; restricts CORS on `create-teacher`, `create-student-self-register`, `set-first-password`, `gemini-proxy`; update if custom domain added
 
 ---
 
 ## 10. State Management
 
 **Global providers** (`App.tsx`): `ErrorBoundary → Router → AuthProvider → LangProvider → Routes + Toaster`
-- `AuthProvider` (`useAuth.tsx`): `user`, `session`, `signIn`, `signUp`, `signOut`, `userProfile`
+- `AuthProvider` (`useAuth.tsx`): `user`, `session`, `loading`, `refreshingProfile`, `signIn`, `signOut`, `userProfile`, `refreshUserProfile` — `signUp` removed (registration handled by Edge Functions)
 - `LangProvider` (`useLang.tsx`): language state + translations; priority: URL param → `userProfile.preferred_language` → `localStorage.lang` → `'en'`
 - Most data fetching: `useEffect` + direct Supabase calls (TanStack React Query available but underused)
 
@@ -383,7 +384,7 @@ Three scenarios require OTP verification before account creation or password set
 
 ## 12. Current Implementation Status
 
-**Last verified build:** 2026-05-01
+**Last verified build:** 2026-05-06
 
 ### Assessment Module Status
 | Assessment | UI | DB | AI Summary | Approval | Wired |
@@ -439,7 +440,7 @@ Three scenarios require OTP verification before account creation or password set
 > **Profile card rejection audit trail**: Teacher feedback is consumed by Gemini during auto-regeneration but not persisted to DB after regen (`rejection_reason` set to `null` on upsert). No history of prior feedback rounds stored. Max 3 rejection rounds per module enforced client-side only (`rejectionCounts` state — resets on page reload).
 
 > [!NOTE]
-> **MSG91 OTP server-side enforcement**: `create-teacher` and `create-student-self-register` Edge Functions now validate the MSG91 access token server-side when `MSG91_AUTH_KEY` is set. All three rejection branches return 401. Demo credentials will still auto-bypass the client-side OTP widget in dev (expected behavior — MSG91 by design). Full enforcement active in production.
+> **MSG91 OTP server-side enforcement**: `create-teacher` and `create-student-self-register` Edge Functions validate the MSG91 access token server-side when `MSG91_AUTH_KEY` is set. All three rejection branches return 401. Demo credentials still auto-bypass the client-side OTP widget in dev (expected — MSG91 by design). Full enforcement active in production. Both EFs deployed May 2026.
 
 > [!NOTE]
 > **TEMP markers (all removed)**: All 4 `// TEMP: remove in PR 2b` markers have been cleaned up — `create-student` Edge Function no longer returns `tempPassword`; `ImportStudentsDialog.tsx` no longer logs temp passwords; `TeacherDashboard.tsx` toast no longer exposes generated password. Completed May 2026.
@@ -517,3 +518,4 @@ Three scenarios require OTP verification before account creation or password set
 | **PR 2b-temp-removed** | All 4 `// TEMP: remove in PR 2b` markers removed: `create-student` EF no longer returns `tempPassword`; `ImportStudentsDialog.tsx` and `TeacherDashboard.tsx` no longer expose generated passwords |
 | **PR 2b-security** | `VITE_AZURE_SPEECH_KEY` + `VITE_GOOGLE_SPEECH_API_KEY` removed from client bundle; `VITE_MSG91_WIDGET_ID` + `VITE_MSG91_TOKEN_AUTH` marked Sensitive in Vercel; `MSG91_AUTH_KEY` as Supabase secret only; `App.tsx` debug log masks key values |
 | **PR 2b-otp-serverside** | Server-side MSG91 token validation added to `create-teacher` and `create-student-self-register` Edge Functions: client passes `accessToken` from `window.verifyOtp` callback; server calls `verify-msg91-token` (internal fetch with `serviceRoleKey`) and cross-checks mobile (last-10-digits normalize); empty-token guard added client-side before Edge Function call; block skipped when `MSG91_AUTH_KEY` not set (dev). Deploy both EFs to activate in production. |
+| **auth-sec** | Auth & authorization security hardening (19-point audit, May 2026): `initialLoadDone` closure flag prevents duplicate profile fetch from `onAuthStateChange` SIGNED_IN on session restore; `TOKEN_REFRESHED` and `USER_UPDATED` events handled; `isValidE164` gate on sign-in prevents malformed phone submission; password confirm field with Zod validation added to sign-up form; states-load error state with Retry button (replaces fake UUID fallbacks); unknown/unrecognized roles redirect to `/auth` instead of infinite role-dashboard loop; test routes (`/audio-test`, `/assessment-test`, `/database-test`) restricted to admin role; CORS origin-locked via `ALLOWED_ORIGIN` Supabase secret on all browser-facing EFs; `verify-msg91-token` made internal-only (no CORS, service-role auth required, non-empty mobile enforced); sign-in rate-limiting (5 failures → 60s lockout with countdown); password strength indicator on sign-up; `OTP_EXPIRY_SECONDS` module constant (900s) syncs expiry timer to MSG91 config; `signUpAccessTokenRef`/`firstLoginAccessTokenRef` split to prevent cross-flow token contamination; `ProtectedRoute` 10s load timeout with Reload prompt; role-mismatch redirects include `?lang=` and `state={{ from: location }}`; `refreshingProfile` boolean wired in `useAuth` (`setRefreshingProfile` in `refreshUserProfile` try/finally); dead `signUp` function removed from `useAuth` (−135 lines). All 5 affected EFs redeployed; `ALLOWED_ORIGIN` secret set in Supabase. |

@@ -1,8 +1,11 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+function getCorsHeaders(req: Request): Record<string, string> {
+  const allowedOrigin = Deno.env.get('ALLOWED_ORIGIN')
+  const base = { 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' }
+  if (!allowedOrigin) return { ...base, 'Access-Control-Allow-Origin': '*' }
+  const origin = req.headers.get('Origin') ?? ''
+  return { ...base, 'Access-Control-Allow-Origin': origin === allowedOrigin ? origin : allowedOrigin, 'Vary': 'Origin' }
 }
 
 interface RequestBody {
@@ -19,6 +22,7 @@ function isValidE164(phone: string): boolean {
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req)
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -126,13 +130,15 @@ Deno.serve(async (req) => {
 
     try {
       // 4. Insert into public.users
+      const VALID_LANGUAGES = ['en', 'kn', 'ta', 'hi']
+      const lang = VALID_LANGUAGES.includes(preferredLanguage) ? preferredLanguage : 'en'
       const { error: userError } = await supabaseAdmin.from('users').insert({
         id: authUserId,
         full_name: fullName,
         mobile: phone,
         role: 'teacher',
         state_id: stateId,
-        preferred_language: preferredLanguage || 'en',
+        preferred_language: lang,
         password_hash: 'managed_by_supabase_auth',
       })
       if (userError) {

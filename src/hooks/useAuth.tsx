@@ -16,15 +16,8 @@ interface AuthContextType {
   user: AuthUser | null;
   session: Session | null;
   loading: boolean;
+  refreshingProfile: boolean;
   signIn: (phone: string, password: string) => Promise<{ error: any }>;
-  signUp: (
-    phone: string,
-    password: string,
-    fullName: string,
-    role: 'teacher' | 'student',
-    stateId: string,
-    preferredLanguage?: 'en' | 'kn' | 'ta' | 'hi'
-  ) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   userProfile: any;
   refreshUserProfile: () => Promise<void>;
@@ -36,117 +29,78 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshingProfile, setRefreshingProfile] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
   const { toast } = useToast();
 
   const fetchingProfileRef = useRef<string | null>(null);
-  const hasAuthStateRef = useRef(false);
-  const authSubscriptionRef = useRef<any>(null);
 
   logger.log('AuthProvider initialized');
 
   useEffect(() => {
     logger.log('AuthProvider useEffect running');
 
-    let lastEventTime = 0;
-    let lastEventType = '';
+    // Flag set to true once getSession() resolves — prevents the synthetic
+    // SIGNED_IN that Supabase fires on page load from double-processing the
+    // initial session (getSession already handles that path).
+    let initialLoadDone = false;
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        const now = Date.now();
+        logger.log('🔔 Auth event:', event, session?.user?.id);
 
-        logger.log('🔔 Auth event:', event, '| hasAuthStateRef:', hasAuthStateRef.current);
-
-        if (hasAuthStateRef.current && event !== 'SIGNED_OUT') {
-          logger.log(`🛑 Already authenticated - ignoring ${event} event completely`);
-          return;
-        }
-
-        if (event === lastEventType && (now - lastEventTime) < 100) {
-          logger.log(`⏭️ Ignoring duplicate ${event} event within 100ms`);
-          return;
-        }
-
-        lastEventTime = now;
-        lastEventType = event;
-
-        logger.log('Auth state change:', event, session?.user?.id);
-
-        if (event === 'TOKEN_REFRESHED') {
-          logger.log('🔄 Token refreshed event received');
-          if (hasAuthStateRef.current) {
-            logger.log('✅ Already authenticated, ignoring TOKEN_REFRESHED completely');
-            return;
-          }
-          if (session) {
-            setSession(session);
-            if (session.user) {
-              setUser(session.user as AuthUser);
-            }
-          }
+        // Supabase fires SIGNED_IN immediately when a stored session is restored.
+        // getSession() below is already handling that, so skip this duplicate.
+        if (event === 'SIGNED_IN' && !initialLoadDone) {
+          logger.log('⏭️ Skipping pre-load SIGNED_IN — getSession handles initial session');
           return;
         }
 
         if (event === 'SIGNED_IN') {
-          logger.log('✅ SIGNED_IN event, setting up auth state');
           setSession(session);
           setUser(session?.user as AuthUser || null);
-
           if (session?.user) {
             setTimeout(() => {
               fetchUserProfile(session.user.id, session.user as AuthUser);
             }, 0);
           }
           setLoading(false);
+        } else if (event === 'TOKEN_REFRESHED') {
+          // Keep React state in sync when Supabase silently refreshes the token
+          if (session) {
+            setSession(session);
+            setUser(session.user as AuthUser);
+          }
+        } else if (event === 'USER_UPDATED') {
+          // Re-fetch profile so any server-side changes are reflected in the UI
+          if (session?.user) {
+            fetchUserProfile(session.user.id, session.user as AuthUser, true);
+          }
         } else if (event === 'SIGNED_OUT') {
-          logger.log('❌ SIGNED_OUT event, clearing auth state');
           setSession(null);
           setUser(null);
           setUserProfile(null);
           setLoading(false);
-        } else {
-          logger.log(`⏭️ Ignoring ${event} event - not SIGNED_IN or SIGNED_OUT`);
         }
       }
     );
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       logger.log('Initial session check:', session?.user?.id);
-
+      initialLoadDone = true;
       setSession(session);
       setUser(session?.user as AuthUser || null);
-
       if (session?.user) {
         fetchUserProfile(session.user.id, session.user as AuthUser);
       }
       setLoading(false);
     });
 
-    authSubscriptionRef.current = subscription;
-    logger.log('📡 Auth subscription created and stored in ref');
-
     return () => {
       logger.log('🧹 Cleaning up auth subscription');
       subscription.unsubscribe();
     };
   }, []);
-
-  useEffect(() => {
-    logger.log('🔄 userProfile state changed:', userProfile);
-    logger.log('🔄 Current user state:', user);
-    logger.log('🔄 Loading state:', loading);
-
-    const hasValidAuth = user !== null && userProfile !== null;
-    const wasAuthenticated = hasAuthStateRef.current;
-    hasAuthStateRef.current = hasValidAuth;
-    logger.log('🔄 hasAuthStateRef updated to:', hasValidAuth);
-
-    if (hasValidAuth && !wasAuthenticated && authSubscriptionRef.current) {
-      logger.log('🔒 UNSUBSCRIBING from Supabase auth listener - we have valid auth');
-      authSubscriptionRef.current.unsubscribe();
-      authSubscriptionRef.current = null;
-    }
-  }, [userProfile, user, loading]);
 
   const fetchUserProfile = async (userId: string, userOverride?: AuthUser, forceRefresh?: boolean) => {
     try {
@@ -228,12 +182,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (currentUser && currentUser.user_metadata?.role) {
         const derivedRole = currentUser.user_metadata.role;
+        const cachedLang = (typeof window !== 'undefined' ? localStorage.getItem('lang') : null) || 'en';
         const baseProfile: any = {
           id: userId,
           full_name: currentUser.user_metadata.full_name,
           mobile: currentUser.user_metadata.mobile,
           role: derivedRole,
-          state_id: null
+          state_id: null,
+          preferred_language: cachedLang,
         };
 
         setUserProfile(baseProfile);
@@ -261,9 +217,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       fetchingProfileRef.current = null;
     } catch (error) {
       logger.error('Error fetching user profile:', error);
-      const fallbackProfile = { id: userId, role: 'unknown' };
-      setUserProfile(fallbackProfile);
-      logger.log('Fallback userProfile set due to error:', fallbackProfile);
+      // Do not set a partial profile — keep userProfile null so ProtectedRoute redirects to /auth
     } finally {
       fetchingProfileRef.current = null;
     }
@@ -326,142 +280,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signUp = async (
-    phone: string,
-    password: string,
-    fullName: string,
-    role: 'teacher' | 'student',
-    stateId: string,
-    preferredLanguage: 'en' | 'kn' | 'ta' | 'hi' = 'en'
-  ) => {
-    try {
-      logger.log('Starting signUp process:', { phone, fullName, role, stateId, preferredLanguage });
-
-      // Check if phone already exists
-      const { data: existingUser, error: mobileCheckError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('mobile', phone)
-        .maybeSingle();
-
-      if (mobileCheckError) {
-        logger.error('Error checking mobile:', mobileCheckError);
-        return { error: { message: 'Failed to check mobile availability' } };
-      }
-
-      if (existingUser) {
-        return { error: { message: 'Mobile number already registered' } };
-      }
-
-      // Create Supabase auth user with phone
-      logger.log('Creating Supabase auth user with phone:', phone);
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        phone,
-        password,
-        options: {
-          data: {
-            mobile: phone,
-            full_name: fullName,
-            role,
-            preferred_language: preferredLanguage,
-          }
-        }
-      });
-
-      if (authError) {
-        logger.error('Supabase auth error:', authError);
-        toast({
-          title: 'Registration failed',
-          description: authError.message,
-          variant: 'destructive',
-        });
-        return { error: authError };
-      }
-
-      logger.log('Supabase auth user created:', authData.user?.id);
-
-      if (authData.user) {
-        // Insert into public.users
-        const { error: userInsertError } = await supabase.from('users').insert({
-          id: authData.user.id,
-          full_name: fullName,
-          mobile: phone,
-          role,
-          state_id: stateId,
-          preferred_language: preferredLanguage || 'en',
-          password_hash: 'managed_by_supabase_auth',
-        });
-
-        if (userInsertError) {
-          logger.error('Error creating user profile:', userInsertError);
-          toast({
-            title: 'Registration failed',
-            description: 'Failed to create user profile. Please contact support.',
-            variant: 'destructive',
-          });
-          return { error: userInsertError };
-        }
-
-        // Create role-specific profile
-        if (role === 'student') {
-          const { error: studentError } = await supabase
-            .from('students')
-            .insert({
-              user_id: authData.user.id,
-              class_id: null,
-              teacher_id: null,
-              enrollment_status: 'pending',
-            });
-
-          if (studentError) {
-            logger.error('Error creating student profile:', studentError);
-            // Non-fatal: account is created, student profile can be set up by teacher
-          }
-        }
-
-        // Auto sign-in
-        try {
-          await new Promise(resolve => setTimeout(resolve, 1000));
-
-          const { error: signInError } = await supabase.auth.signInWithPassword({ phone, password });
-
-          if (signInError) {
-            logger.error('Auto sign-in failed:', signInError);
-            toast({
-              title: 'Registration successful',
-              description: `Welcome to CareerCompass, ${fullName}! Please sign in with your mobile number and password.`,
-            });
-          } else {
-            logger.log('Auto sign-in successful');
-            const { data: sessionData } = await supabase.auth.getSession();
-            if (sessionData.session?.user) {
-              const authUser = sessionData.session.user as AuthUser;
-              setUser(authUser);
-              setSession(sessionData.session);
-              await fetchUserProfile(authUser.id, authUser);
-              await new Promise(resolve => setTimeout(resolve, 500));
-            }
-            toast({
-              title: 'Registration successful',
-              description: `Welcome to CareerCompass, ${fullName}! You're now signed in.`,
-            });
-          }
-        } catch (signInError) {
-          logger.error('Auto sign-in error:', signInError);
-          toast({
-            title: 'Registration successful',
-            description: `Welcome to CareerCompass, ${fullName}! Please sign in manually.`,
-          });
-        }
-      }
-
-      return { error: null };
-    } catch (error) {
-      logger.error('SignUp error:', error);
-      return { error };
-    }
-  };
-
   const signOut = async () => {
     // Best-effort Supabase sign out — don't gate local cleanup on this
     const { error } = await supabase.auth.signOut();
@@ -479,11 +297,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshUserProfile = async () => {
     if (user?.id) {
       logger.log('🔄 Refreshing user profile from database...');
+      setRefreshingProfile(true);
       try {
         await fetchUserProfile(user.id, undefined, true);
         logger.log('✅ User profile refreshed successfully');
       } catch (error) {
         logger.error('Error refreshing user profile:', error);
+      } finally {
+        setRefreshingProfile(false);
       }
     }
   };
@@ -492,23 +313,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     session,
     loading,
+    refreshingProfile,
     signIn,
-    signUp,
     signOut,
     userProfile,
     refreshUserProfile,
   };
-
-  logger.log('AuthProvider rendering with value:', {
-    user: !!user,
-    loading,
-    userProfile: userProfile ? {
-      id: userProfile.id,
-      role: userProfile.role,
-      hasStudentProfile: !!userProfile.studentProfile,
-      hasTeacherProfile: !!userProfile.teacherProfile
-    } : null
-  });
 
   return (
     <AuthContext.Provider value={value}>
