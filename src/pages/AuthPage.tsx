@@ -210,17 +210,34 @@ export default function AuthPage() {
   const accessTokenRef = useRef<string | null>(null);
   const msg91MobileRef = useRef<string>('');
 
-  const [resendCooldown, setResendCooldown] = useState(0);
-  const cooldownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [signUpResendCooldown, setSignUpResendCooldown] = useState(0);
+  const [firstLoginResendCooldown, setFirstLoginResendCooldown] = useState(0);
+  const signUpCooldownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const firstLoginCooldownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const startCooldown = () => {
-    setResendCooldown(30);
-    if (cooldownTimerRef.current) clearInterval(cooldownTimerRef.current);
-    cooldownTimerRef.current = setInterval(() => {
-      setResendCooldown(prev => {
+  const startSignUpCooldown = () => {
+    setSignUpResendCooldown(30);
+    if (signUpCooldownTimerRef.current) clearInterval(signUpCooldownTimerRef.current);
+    signUpCooldownTimerRef.current = setInterval(() => {
+      setSignUpResendCooldown(prev => {
         if (prev <= 1) {
-          clearInterval(cooldownTimerRef.current!);
-          cooldownTimerRef.current = null;
+          clearInterval(signUpCooldownTimerRef.current!);
+          signUpCooldownTimerRef.current = null;
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const startFirstLoginCooldown = () => {
+    setFirstLoginResendCooldown(30);
+    if (firstLoginCooldownTimerRef.current) clearInterval(firstLoginCooldownTimerRef.current);
+    firstLoginCooldownTimerRef.current = setInterval(() => {
+      setFirstLoginResendCooldown(prev => {
+        if (prev <= 1) {
+          clearInterval(firstLoginCooldownTimerRef.current!);
+          firstLoginCooldownTimerRef.current = null;
           return 0;
         }
         return prev - 1;
@@ -229,7 +246,10 @@ export default function AuthPage() {
   };
 
   useEffect(() => {
-    return () => { if (cooldownTimerRef.current) clearInterval(cooldownTimerRef.current); };
+    return () => {
+      if (signUpCooldownTimerRef.current) clearInterval(signUpCooldownTimerRef.current);
+      if (firstLoginCooldownTimerRef.current) clearInterval(firstLoginCooldownTimerRef.current);
+    };
   }, []);
 
   useEffect(() => {
@@ -557,6 +577,7 @@ export default function AuthPage() {
       return;
     }
 
+    setLoading(true);
     const msg91Mobile = toE164Indian(firstLoginForm.phone).replace('+', '');
     msg91MobileRef.current = msg91Mobile;
     window.sendOtp(
@@ -566,6 +587,7 @@ export default function AuthPage() {
         setFirstLoginOtp('');
         setFirstLoginStep('otp');
         setOtpSentCount(c => c + 1);
+        setLoading(false);
       },
       (error) => {
         logger.error('MSG91 sendOtp failed:', JSON.stringify(error));
@@ -773,14 +795,15 @@ export default function AuthPage() {
                     otpValue={firstLoginOtp}
                     onOtpChange={setFirstLoginOtp}
                     onVerify={handleFirstLoginVerifyOtp}
-                    resendCooldown={resendCooldown}
+                    resendCooldown={firstLoginResendCooldown}
                     onResend={() => {
-                      startCooldown();
+                      startFirstLoginCooldown();
                       if (typeof window.sendOtp === 'function' && msg91MobileRef.current) {
                         window.sendOtp(
                           msg91MobileRef.current,
                           (data) => {
                             logger.log('MSG91 resend OTP success:', data);
+                            setFirstLoginOtp('');
                             setOtpSentCount(c => c + 1);
                             toast({ title: 'OTP Resent', description: 'A new OTP has been sent to your mobile number.' });
                           },
@@ -835,14 +858,15 @@ export default function AuthPage() {
                     otpValue={signUpOtp}
                     onOtpChange={setSignUpOtp}
                     onVerify={handleSignUpVerifyOtp}
-                    resendCooldown={resendCooldown}
+                    resendCooldown={signUpResendCooldown}
                     onResend={() => {
-                      startCooldown();
+                      startSignUpCooldown();
                       if (typeof window.sendOtp === 'function' && msg91MobileRef.current) {
                         window.sendOtp(
                           msg91MobileRef.current,
                           (data) => {
                             logger.log('MSG91 resend OTP success:', data);
+                            setSignUpOtp('');
                             setOtpSentCount(c => c + 1);
                             toast({ title: 'OTP Resent', description: 'A new OTP has been sent to your mobile number.' });
                           },

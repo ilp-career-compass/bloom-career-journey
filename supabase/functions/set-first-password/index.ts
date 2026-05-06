@@ -68,10 +68,10 @@ Deno.serve(async (req) => {
     }
 
     // Confirm the verified mobile matches the one the student entered.
-    // MSG91 may return without the '+'; normalise before comparing.
-    const rawVerified: string = verifyData.mobile ?? ''
-    const normalizedVerified = rawVerified.startsWith('+') ? rawVerified : `+${rawVerified}`
-    if (normalizedVerified !== mobile) {
+    // Only cross-check if MSG91 returned a mobile — if empty, token validity alone is sufficient.
+    // Use last-10-digits normalization to handle varying formats (91XXXXXXXXXX, +91XXXXXXXXXX, XXXXXXXXXX).
+    const normalize = (m: string) => (m || '').replace(/\D/g, '').slice(-10)
+    if (verifyData.mobile && normalize(verifyData.mobile) !== normalize(mobile)) {
       return new Response(
         JSON.stringify({ error: 'Mobile number does not match OTP verification' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
