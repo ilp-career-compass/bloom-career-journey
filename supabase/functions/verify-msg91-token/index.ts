@@ -49,7 +49,6 @@ Deno.serve(async (req) => {
         body: JSON.stringify({ 'access-token': accessToken }),
       })
     } catch (fetchErr) {
-      clearTimeout(timeoutId)
       if ((fetchErr as Error).name === 'AbortError') {
         return new Response(
           JSON.stringify({ success: false, error: 'MSG91 API timed out' }),
@@ -61,7 +60,25 @@ Deno.serve(async (req) => {
       clearTimeout(timeoutId)
     }
 
-    const data = await upstream.json()
+    if (!upstream.ok) {
+      const body = await upstream.text()
+      console.error('[verify-msg91-token] MSG91 upstream error:', upstream.status, body.slice(0, 200))
+      return new Response(
+        JSON.stringify({ success: false, error: `MSG91 API error: ${upstream.status}` }),
+        { status: 502, headers: { 'Content-Type': 'application/json' } },
+      )
+    }
+
+    let data: Record<string, unknown>
+    try {
+      data = await upstream.json()
+    } catch {
+      console.error('[verify-msg91-token] MSG91 returned non-JSON response')
+      return new Response(
+        JSON.stringify({ success: false, error: 'MSG91 API returned unexpected response format' }),
+        { status: 502, headers: { 'Content-Type': 'application/json' } },
+      )
+    }
 
     // MSG91 returns { type: "success", widget_data: { mobile: "..." } } on success
     // and { type: "error", message: "..." } on failure

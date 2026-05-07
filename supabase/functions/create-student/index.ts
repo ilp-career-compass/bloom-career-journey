@@ -210,10 +210,12 @@ Deno.serve(async (req) => {
 
         created.push({ fullName, phone, userId: authUserId })
       } catch (dbError: unknown) {
-        // Rollback: delete the auth user we just created
-        await supabaseAdmin.auth.admin.deleteUser(authUserId)
-        const message = dbError instanceof Error ? dbError.message : String(dbError)
-        errors.push({ fullName, phone, reason: message })
+        const { error: rollbackError } = await supabaseAdmin.auth.admin.deleteUser(authUserId)
+        if (rollbackError) {
+          console.error('[create-student] rollback deleteUser failed — orphaned auth user:', authUserId, JSON.stringify(rollbackError))
+        }
+        console.error('[create-student] DB error for', phone, ':', dbError instanceof Error ? dbError.message : String(dbError))
+        errors.push({ fullName, phone, reason: 'Account creation failed — please try again' })
       }
     }
 
@@ -223,6 +225,7 @@ Deno.serve(async (req) => {
     )
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err)
+    console.error('[create-student] outer catch:', message)
     return new Response(
       JSON.stringify({ error: message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },

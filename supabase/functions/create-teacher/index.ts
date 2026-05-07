@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
     const body: RequestBody = await req.json()
     const { fullName, phone, password, stateId, preferredLanguage, accessToken } = body
 
-    if (!fullName || !phone || !password || !stateId) {
+    if (!fullName?.trim() || !phone || !password || !stateId) {
       return new Response(
         JSON.stringify({ error: 'fullName, phone, password, and stateId are required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
@@ -62,6 +62,13 @@ Deno.serve(async (req) => {
     if (!isValidE164(phone)) {
       return new Response(
         JSON.stringify({ error: `Invalid phone format: ${phone}. Expected E.164 format like +91XXXXXXXXXX` }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
+    }
+
+    if (typeof password !== 'string' || password.length < 6) {
+      return new Response(
+        JSON.stringify({ error: 'Password must be at least 6 characters' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       )
     }
@@ -155,7 +162,7 @@ Deno.serve(async (req) => {
       const lang = VALID_LANGUAGES.includes(preferredLanguage) ? preferredLanguage : 'en'
       const { error: userError } = await supabaseAdmin.from('users').insert({
         id: authUserId,
-        full_name: fullName,
+        full_name: fullName.trim(),
         mobile: phone,
         role: 'teacher',
         state_id: stateId,
@@ -183,9 +190,9 @@ Deno.serve(async (req) => {
       if (rollbackError) {
         console.error('[create-teacher] rollback deleteUser failed — orphaned auth user:', authUserId, JSON.stringify(rollbackError))
       }
-      const message = dbError instanceof Error ? dbError.message : String(dbError)
+      console.error('[create-teacher] DB error:', dbError instanceof Error ? dbError.message : String(dbError))
       return new Response(
-        JSON.stringify({ error: message }),
+        JSON.stringify({ error: 'Account creation failed — please try again' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       )
     }

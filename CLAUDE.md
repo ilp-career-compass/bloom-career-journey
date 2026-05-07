@@ -396,7 +396,7 @@ Three scenarios require OTP verification before account creation or password set
 
 ## 12. Current Implementation Status
 
-**Last verified build:** 2026-05-07 (inspiration-videos-audit)
+**Last verified build:** 2026-05-07
 
 ### Assessment Module Status
 | Assessment | UI | DB | AI Summary | Approval | Wired |
