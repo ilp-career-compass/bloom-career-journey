@@ -31,6 +31,9 @@ export const AUDIO_CONFIG = {
   showTranscription: true,
   allowReRecord: true,
   autoPlay: false,
+
+  // API keys (read once at module load; undefined when not set)
+  googleApiKey: import.meta.env.VITE_GOOGLE_SPEECH_API_KEY as string | undefined,
 };
 
 export const AUDIO_FEATURES = {

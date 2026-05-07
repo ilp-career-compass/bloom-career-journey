@@ -18,6 +18,7 @@ export interface AudioResponseData {
   duration: number;
   fileSize: number;
   contextPhrases?: string[];
+  queuedAt?: number;
 }
 
 export interface AudioResponseResult {
@@ -230,7 +231,7 @@ class AudioResponseManager {
         // Don't throw error for RLS policy issues, just log it
         if (dbResult.error?.includes('row-level security policy')) {
           logger.log('RLS policy error ignored - continuing without database save');
-        } else if (this.config!.studentId !== 'test-student-123') {
+        } else {
           throw new Error(dbResult.error || 'Database save failed');
         }
       }
@@ -253,13 +254,14 @@ class AudioResponseManager {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
-      // If offline mode is enabled, queue for later
-      if (this.config.enableOfflineMode && !this.isOnline) {
+      // Queue on any failure when offline mode is enabled — not just when
+      // the device reports offline, so transient network blips are also retried.
+      if (this.config.enableOfflineMode) {
         this.queueOfflineResponse(audioData);
 
         return {
           success: true,
-          error: 'Queued for offline sync',
+          error: 'Queued for retry',
           metadata: {
             duration: audioData.duration,
             fileSize: audioData.fileSize,
@@ -286,7 +288,7 @@ class AudioResponseManager {
 
     try {
       const result = await supabaseUploadService.uploadFile({
-        bucket: 'assessment-audio',
+        bucket: 'audio-files',
         path: filePath,
         file: audioData.audioBlob,
         chunkSize: 512 * 1024, // 512KB chunks for audio
@@ -324,28 +326,6 @@ class AudioResponseManager {
       if (this.config!.studentId === 'test-student-123') {
         logger.log('Test mode: Skipping database save for audio file');
         return { success: true };
-      }
-
-      // Save to audio_files table
-      const { error: audioFileError } = await supabase
-        .from('audio_files')
-        .insert({
-          student_id: this.config!.studentId,
-          assessment_id: this.config!.assessmentId,
-          question_id: data.questionId,
-          file_path: data.audioUrl,
-          file_url: data.audioUrl,
-          file_size: data.fileSize,
-          duration_ms: data.duration,
-          mime_type: 'audio/webm;codecs=opus',
-          language_detected: data.languageDetected,
-          transcription: data.transcription,
-          confidence_score: data.confidence,
-          upload_status: 'completed',
-        });
-
-      if (audioFileError) {
-        throw audioFileError;
       }
 
       // Update assessment_responses.audio_responses if the column exists
@@ -427,13 +407,9 @@ class AudioResponseManager {
    * Queue audio response for offline sync
    */
   private queueOfflineResponse(audioData: AudioResponseData): void {
-    this.offlineQueue.push(audioData);
-
-    // Save to localStorage for persistence
-    localStorage.setItem(
-      `audio_queue_${this.config!.studentId}`,
-      JSON.stringify(this.offlineQueue)
-    );
+    this.offlineQueue.push({ ...audioData, queuedAt: Date.now() });
+    // Blobs cannot be serialized to localStorage — queue is in-memory only.
+    // Items survive connectivity blips within a session but not page reloads.
   }
 
   /**
@@ -441,16 +417,9 @@ class AudioResponseManager {
    */
   loadOfflineQueue(): void {
     if (!this.config) return;
-
-    try {
-      const stored = localStorage.getItem(`audio_queue_${this.config.studentId}`);
-      if (stored) {
-        this.offlineQueue = JSON.parse(stored);
-      }
-    } catch (error) {
-      logger.error('Failed to load offline queue:', error);
-      this.offlineQueue = [];
-    }
+    // Remove any stale serialized queue entries written by the old (broken) code,
+    // which serialized Blob fields as {} and would fail silently on sync.
+    localStorage.removeItem(`audio_queue_${this.config.studentId}`);
   }
 
   /**
@@ -477,15 +446,8 @@ class AudioResponseManager {
       }
     }
 
-    // Update localStorage
-    if (this.offlineQueue.length > 0) {
-      localStorage.setItem(
-        `audio_queue_${this.config!.studentId}`,
-        JSON.stringify(this.offlineQueue)
-      );
-    } else {
-      localStorage.removeItem(`audio_queue_${this.config!.studentId}`);
-    }
+    // Queue is in-memory only (Blobs can't serialize); clear any stale localStorage entry.
+    localStorage.removeItem(`audio_queue_${this.config!.studentId}`);
   }
 
   /**
@@ -498,7 +460,7 @@ class AudioResponseManager {
   } {
     const totalSize = this.offlineQueue.reduce((sum, item) => sum + item.fileSize, 0);
     const oldestItem = this.offlineQueue.length > 0
-      ? new Date(Math.min(...this.offlineQueue.map(item => Date.now()))).toISOString()
+      ? new Date(Math.min(...this.offlineQueue.map(item => item.queuedAt ?? Date.now()))).toISOString()
       : undefined;
 
     return {

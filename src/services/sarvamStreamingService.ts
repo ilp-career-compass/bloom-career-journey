@@ -5,6 +5,7 @@ export class SarvamStreamingService {
     private isConnected = false;
     private onTranscriptCallback: ((text: string, isFinal: boolean) => void) | null = null;
     private onErrorCallback: ((error: string) => void) | null = null;
+    private disconnectTimer: ReturnType<typeof setTimeout> | null = null;
     // Use environment variable for production, fallback to localhost for dev
     private url = import.meta.env.VITE_SARVAM_PROXY_URL || 'ws://127.0.0.1:8000/ws/stream';
 
@@ -21,6 +22,17 @@ export class SarvamStreamingService {
         return new Promise((resolve, reject) => {
             this.onTranscriptCallback = onTranscript;
             this.onErrorCallback = onError;
+
+            // G2/G3: Cancel any pending flush timer and close any existing WS before opening a new one
+            if (this.disconnectTimer) {
+                clearTimeout(this.disconnectTimer);
+                this.disconnectTimer = null;
+            }
+            if (this.ws) {
+                this.ws.close();
+                this.ws = null;
+            }
+            this.isConnected = false;
 
             try {
                 const socketUrl = `${this.url}?language_code=${languageCode}`;
@@ -52,6 +64,11 @@ export class SarvamStreamingService {
                 this.ws.onclose = (event) => {
                     logger.log('🔌 [SarvamService] Disconnected:', event.code, event.reason);
                     this.isConnected = false;
+                    // 1000 = normal closure (we sent STOP + closed intentionally).
+                    // Any other code means an unexpected drop — notify the UI.
+                    if (event.code !== 1000 && this.onErrorCallback) {
+                        this.onErrorCallback(`Connection lost (code ${event.code})`);
+                    }
                 };
 
             } catch (e) {
@@ -99,11 +116,12 @@ export class SarvamStreamingService {
         }
 
         if (transcriptText) {
-            // Handle "Hello" vs "Hello." duplicates? 
-            // Ideally we just pass what we get. The UI appends it.
-            logger.log('📝 Extracted Transcript:', transcriptText);
+            // G7: Detect partial vs final. Sarvam may include is_final on the wrapper or inner object.
+            // Default to true (treat as final) when the flag is absent.
+            const isFinal: boolean = data.is_final !== false && data.data?.is_final !== false;
+            logger.log('📝 Extracted Transcript:', transcriptText, 'isFinal:', isFinal);
             if (this.onTranscriptCallback) {
-                this.onTranscriptCallback(transcriptText, true);
+                this.onTranscriptCallback(transcriptText, isFinal);
             }
         }
 
@@ -111,36 +129,44 @@ export class SarvamStreamingService {
         if (data.type === 'speech_start' || (data.type === 'events' && data.data?.signal_type === 'START_SPEECH')) {
             logger.log('🎤 [SarvamService] Speech Started');
         } else if (data.type === 'speech_end' || (data.type === 'events' && data.data?.signal_type === 'END_SPEECH')) {
-            logger.log('mb [SarvamService] Speech Ended');
+            logger.log('🎤 [SarvamService] Speech Ended');
         }
     }
 
-    disconnect() {
-        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-            logger.log('🛑 [SarvamService] Sending STOP command...');
-            try {
-                this.ws.send('STOP'); // Signal backend to flush buffer
-            } catch (e) {
-                logger.error('⚠️ [SarvamService] Failed to send STOP:', e);
+    disconnect(): Promise<void> {
+        return new Promise((resolve) => {
+            if (this.disconnectTimer) {
+                clearTimeout(this.disconnectTimer);
+                this.disconnectTimer = null;
             }
 
-            // Wait for flush response before closing
-            // Increased to 2500ms to allow round-trip time for final transcript
-            setTimeout(() => {
+            if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                logger.log('🛑 [SarvamService] Sending STOP command...');
+                try {
+                    this.ws.send('STOP'); // Signal backend to flush buffer
+                } catch (e) {
+                    logger.error('⚠️ [SarvamService] Failed to send STOP:', e);
+                }
+
+                // G8: Resolve only after Sarvam has had time to flush the final transcript
+                this.disconnectTimer = setTimeout(() => {
+                    this.disconnectTimer = null;
+                    if (this.ws) {
+                        logger.log('🔌 [SarvamService] Closing connection now (flush complete).');
+                        this.ws.close();
+                        this.ws = null;
+                    }
+                    resolve();
+                }, 2500);
+            } else {
                 if (this.ws) {
-                    logger.log('🔌 [SarvamService] Closing connection now (timeout reached).');
                     this.ws.close();
                     this.ws = null;
                 }
-            }, 2500);
-        } else {
-            // Already closed or connecting
-            if (this.ws) {
-                this.ws.close();
-                this.ws = null;
+                resolve();
             }
-        }
-        this.isConnected = false;
+            this.isConnected = false;
+        });
     }
 }
 

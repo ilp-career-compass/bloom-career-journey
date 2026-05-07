@@ -39,6 +39,8 @@ export interface QueuedUpload {
 }
 
 class SupabaseUploadService {
+  // In-memory only — QueuedUpload holds a Blob which cannot be serialized.
+  // Items survive connectivity blips within a session but not page reloads.
   private uploadQueue: QueuedUpload[] = [];
   private isProcessing = false;
   private maxConcurrentUploads = 2;
@@ -156,6 +158,7 @@ class SupabaseUploadService {
     const totalChunks = Math.ceil(file.size / chunkSize);
     const chunkHashes: string[] = [];
     let uploadedBytes = 0;
+    const uploadedChunkIndices: number[] = [];
 
     try {
       // Upload each chunk
@@ -188,6 +191,7 @@ class SupabaseUploadService {
             const chunkHash = await this.calculateHash(chunk);
             chunkHashes.push(chunkHash);
             chunkUploaded = true;
+            uploadedChunkIndices.push(i);
 
             uploadedBytes += chunk.size;
             const progress = (uploadedBytes / file.size) * 100;
@@ -209,19 +213,15 @@ class SupabaseUploadService {
 
       // Combine chunks into final file
       const finalFile = await this.combineChunks(bucket, path, totalChunks, file.type);
-      
+
+      // Upload the reassembled blob to the final path (chunks are staging files only)
+      const finalResult = await this.uploadSingleChunk(bucket, path, finalFile, onProgress);
+
       // Clean up chunk files
       await this.cleanupChunks(bucket, path, totalChunks);
 
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from(bucket)
-        .getPublicUrl(path);
-
       return {
-        success: true,
-        url: urlData.publicUrl,
-        path,
+        ...finalResult,
         metadata: {
           size: file.size,
           contentType: file.type,
@@ -230,8 +230,10 @@ class SupabaseUploadService {
       };
 
     } catch (error) {
-      // Clean up any uploaded chunks on failure
-      await this.cleanupChunks(bucket, path, totalChunks);
+      // Only clean up chunks that were actually uploaded
+      if (uploadedChunkIndices.length > 0) {
+        await this.cleanupChunks(bucket, path, uploadedChunkIndices);
+      }
       throw error;
     }
   }
@@ -271,9 +273,11 @@ class SupabaseUploadService {
   private async cleanupChunks(
     bucket: string,
     path: string,
-    totalChunks: number
+    indices: number | number[]
   ): Promise<void> {
-    const chunkPaths = Array.from({ length: totalChunks }, (_, i) => `${path}.chunk.${i}`);
+    const chunkPaths = Array.isArray(indices)
+      ? indices.map(i => `${path}.chunk.${i}`)
+      : Array.from({ length: indices }, (_, i) => `${path}.chunk.${i}`);
     
     const { error } = await supabase.storage
       .from(bucket)
@@ -346,6 +350,7 @@ class SupabaseUploadService {
         if (result.success) {
           queuedUpload.status = 'completed';
           queuedUpload.progress = 100;
+          this.activeUploads--;
         } else {
           throw new Error(result.error || 'Upload failed');
         }

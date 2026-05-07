@@ -152,6 +152,8 @@ export function AudioRecorder({
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const streamingTranscriptRef = useRef<string>("");
+  const flushPromiseRef = useRef<Promise<void>>(Promise.resolve());
+  const isPausedRef = useRef<boolean>(false);
 
   // State
   const [state, setState] = useState<RecordingState>({
@@ -240,10 +242,14 @@ export function AudioRecorder({
     }));
   }, []);
 
-  // Keep ref in sync
+  // Keep refs in sync
   useEffect(() => {
     isRecordingRef.current = state.isRecording;
   }, [state.isRecording]);
+
+  useEffect(() => {
+    isPausedRef.current = state.isPaused;
+  }, [state.isPaused]);
 
   const markInteraction = useCallback(() => {
     setState(prev => ({ ...prev, hasInteracted: true }));
@@ -267,21 +273,29 @@ export function AudioRecorder({
       await sarvamStreamingService.connect(
         langCode,
         (text, isFinal) => {
-          logger.log('📝 Stream update:', text);
-          streamingTranscriptRef.current += text + " ";
+          logger.log('📝 Stream update:', text, 'isFinal:', isFinal);
+          if (isFinal) {
+            streamingTranscriptRef.current += text + " ";
+          }
           if (onStreamTranscript) {
-            onStreamTranscript(streamingTranscriptRef.current.trim());
+            const display = isFinal
+              ? streamingTranscriptRef.current.trim()
+              : (streamingTranscriptRef.current + text).trim();
+            onStreamTranscript(display);
           }
         },
         (error) => {
           logger.error('❌ Streaming error:', error);
-          const recordingMsg = lang === 'kn' ? 'ರೆಕಾರ್ಡಿಂಗ್ ನಡೆಯುತ್ತಿದೆ. ನಿಮ್ಮ ಉತ್ತರವನ್ನು ಉಳಿಸಲಾಗುತ್ತದೆ.'
-            : lang === 'ta' ? 'பதிவு நடைபெறுகிறது. உங்கள் பதில் சேமிக்கப்படும்.'
-            : lang === 'hi' ? 'रिकॉर्डिंग जारी है। आपका उत्तर सहेजा जाएगा।'
-            : 'Recording in progress. Your response will be saved.';
-          setErrorState('warning', recordingMsg);
+          const baseLang = (lang || localStorage.getItem('lang') || 'en').split('-')[0];
+          setErrorState('warning', streamingUnavailableMessages[baseLang] || streamingUnavailableMessages.en);
         }
       );
+
+      // G15: Close any AudioContext left open by a previous failed startStreamingCapture
+      if (audioContextRef.current) {
+        audioContextRef.current.close().catch(() => {});
+        audioContextRef.current = null;
+      }
 
       // Create Audio Context @ 16kHz
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
@@ -311,8 +325,8 @@ export function AudioRecorder({
 
       // Handle Audio Chunks from Worklet
       workletNode.port.onmessage = (e) => {
-        // Use Ref to avoid stale closure issues
-        if (!isRecordingRef.current && !state.isPaused) return;
+        // G14: use refs to avoid stale closure; stream only when recording and not paused
+        if (!isRecordingRef.current || isPausedRef.current) return;
 
         // e.data is Float32Array
         const inputData = e.data;
@@ -352,11 +366,11 @@ export function AudioRecorder({
     }
   };
 
-  const stopStreamingCapture = () => {
-    // Disconnect WebSocket
-    sarvamStreamingService.disconnect();
+  const stopStreamingCapture = (): Promise<void> => {
+    // G8: return the flush Promise so callers can await the final Sarvam transcript
+    const flushPromise = sarvamStreamingService.disconnect();
 
-    // Disconnect Audio Nodes
+    // Disconnect Audio Nodes immediately — no more audio to send
     if (processorRef.current) {
       processorRef.current.disconnect();
       processorRef.current = null;
@@ -369,6 +383,7 @@ export function AudioRecorder({
       audioContextRef.current.close();
       audioContextRef.current = null;
     }
+    return flushPromise;
   };
 
   // --- PERMISSIONS & SETUP ---
@@ -378,6 +393,27 @@ export function AudioRecorder({
     kn: 'ಮೈಕ್ರೋಫೋನ್ ಅನುಮತಿ ನಿರಾಕರಿಸಲಾಗಿದೆ. ದಯವಿಟ್ಟು ಬ್ರೌಸರ್ ಸೆಟ್ಟಿಂಗ್‌ಗಳಲ್ಲಿ ಮೈಕ್ರೋಫೋನ್ ಅನ್ನು ಅನುಮತಿಸಿ.',
     ta: 'மைக்ரோஃபோன் அனுமதி மறுக்கப்பட்டது. உங்கள் பதிலை பதிவு செய்ய உலாவி அமைப்புகளில் மைக்ரோஃபோனை அனுமதிக்கவும்.',
     hi: 'माइक्रोफ़ोन अनुमति अस्वीकृत। कृपया अपना उत्तर रिकॉर्ड करने के लिए ब्राउज़र सेटिंग्स में माइक्रोफ़ोन की अनुमति दें।',
+  };
+
+  const micNotFoundMessages: Record<string, string> = {
+    en: 'No microphone found. Please connect a microphone and try again.',
+    kn: 'ಮೈಕ್ರೋಫೋನ್ ಕಂಡುಬಂದಿಲ್ಲ. ದಯವಿಟ್ಟು ಮೈಕ್ರೋಫೋನ್ ಸಂಪರ್ಕಿಸಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
+    ta: 'மைக்ரோஃபோன் கண்டுபிடிக்கப்படவில்லை. மைக்ரோஃபோனை இணைத்து மீண்டும் முயற்சிக்கவும்.',
+    hi: 'माइक्रोफ़ोन नहीं मिला। कृपया माइक्रोफ़ोन जोड़कर फिर से प्रयास करें।',
+  };
+
+  const micInUseMessages: Record<string, string> = {
+    en: 'Microphone is being used by another application. Please close other apps and try again.',
+    kn: 'ಮೈಕ್ರೋಫೋನ್ ಅನ್ನು ಇನ್ನೊಂದು ಅಪ್ಲಿಕೇಶನ್ ಬಳಸುತ್ತಿದೆ. ಇತರ ಅಪ್ಲಿಕೇಶನ್‌ಗಳನ್ನು ಮುಚ್ಚಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
+    ta: 'மைக்ரோஃபோன் வேறு பயன்பாட்டில் உள்ளது. மற்ற பயன்பாடுகளை மூடி மீண்டும் முயற்சிக்கவும்.',
+    hi: 'माइक्रोफ़ोन किसी अन्य एप्लिकेशन द्वारा उपयोग किया जा रहा है। अन्य एप्लिकेशन बंद करके फिर से प्रयास करें।',
+  };
+
+  const streamingUnavailableMessages: Record<string, string> = {
+    en: 'Recording in progress. Your response will be saved.',
+    kn: 'ರೆಕಾರ್ಡಿಂಗ್ ನಡೆಯುತ್ತಿದೆ. ನಿಮ್ಮ ಉತ್ತರವನ್ನು ಉಳಿಸಲಾಗುತ್ತದೆ.',
+    ta: 'பதிவு நடைபெறுகிறது. உங்கள் பதில் சேமிக்கப்படும்.',
+    hi: 'रिकॉर्डिंग जारी है। आपका उत्तर सहेजा जाएगा।',
   };
 
   // Request microphone permission (called lazily on first record click)
@@ -395,19 +431,16 @@ export function AudioRecorder({
 
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          sampleRate: AUDIO_CONFIG.sampleRate,
-          channelCount: AUDIO_CONFIG.channels,
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
+          channelCount: 1,
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false,
         }
       });
 
       setState(prev => ({ ...prev, hasPermission: true }));
+      // L1: Keep the stream alive so startActualRecording can reuse it immediately
       streamRef.current = stream;
-
-      // Clean up the test stream
-      stream.getTracks().forEach(track => track.stop());
 
       logger.log('✅ Microphone permission granted');
       return true;
@@ -415,16 +448,16 @@ export function AudioRecorder({
       logger.error('❌ Microphone permission denied:', error);
       setState(prev => ({ ...prev, hasPermission: false }));
 
-      const baseLang = (lang || 'en').split('-')[0];
+      const baseLang = (lang || localStorage.getItem('lang') || 'en').split('-')[0];
       let errorMessage = micDeniedMessages[baseLang] || micDeniedMessages.en;
 
       if (error instanceof Error) {
         if (error.name === 'NotFoundError') {
-          errorMessage = 'No microphone found. Please connect a microphone and try again.';
+          errorMessage = micNotFoundMessages[baseLang] || micNotFoundMessages.en;
         } else if (error.name === 'NotReadableError') {
-          errorMessage = 'Microphone is being used by another application. Please close other applications and try again.';
+          errorMessage = micInUseMessages[baseLang] || micInUseMessages.en;
         }
-        // NotAllowedError uses the localized message above
+        // NotAllowedError uses micDeniedMessages above
       }
 
       setErrorState('warning', errorMessage);
@@ -488,7 +521,6 @@ export function AudioRecorder({
 
   const startActualRecording = async () => {
     try {
-      // 1. Constraints: Disable native processing to avoid VAD gating
       const constraints = {
         audio: {
           channelCount: 1,
@@ -498,7 +530,10 @@ export function AudioRecorder({
         }
       };
 
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      // L1: Reuse the stream opened by requestMicrophonePermission if it is still live
+      const stream = (streamRef.current && streamRef.current.getTracks().some(t => t.readyState === 'live'))
+        ? streamRef.current
+        : await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
 
       // 1. Start MediaRecorder (Blob Storage)
@@ -516,13 +551,17 @@ export function AudioRecorder({
         if (e.data.size > 0) audioChunksRef.current.push(e.data);
       };
 
-      mediaRecorder.onstop = () => {
+      mediaRecorder.onstop = async () => {
         logger.log('🛑 Recorder Stopped');
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        setState(prev => ({ ...prev, audioBlob, buttonState: 'saved', hasRecorded: true }));
+        setState(prev => ({ ...prev, audioBlob, hasRecorded: true }));
+
+        // G8: Wait for Sarvam's 2500ms flush to complete so the final transcript is captured
+        await flushPromiseRef.current;
 
         const finalTranscript = streamingTranscriptRef.current;
         onRecordingComplete(audioBlob, finalTranscript);
+        setState(prev => ({ ...prev, buttonState: 'saved' }));
       };
 
       mediaRecorder.start(100);
@@ -543,24 +582,29 @@ export function AudioRecorder({
 
         startStreamingCapture(streamClone).catch(err => {
           logger.warn("Streaming failed, but local recording continues:", err);
-          const unavailMsg = lang === 'kn' ? 'ರೆಕಾರ್ಡಿಂಗ್ ನಡೆಯುತ್ತಿದೆ. ನಿಮ್ಮ ಉತ್ತರವನ್ನು ಉಳಿಸಲಾಗುತ್ತದೆ.'
-            : lang === 'ta' ? 'பதிவு நடைபெறுகிறது. உங்கள் பதில் சேமிக்கப்படும்.'
-            : lang === 'hi' ? 'रिकॉर्डिंग जारी है। आपका उत्तर सहेजा जाएगा।'
-            : 'Recording in progress. Your response will be saved.';
-          setErrorState('warning', unavailMsg);
+          const baseLang = (lang || localStorage.getItem('lang') || 'en').split('-')[0];
+          setErrorState('warning', streamingUnavailableMessages[baseLang] || streamingUnavailableMessages.en);
         });
       }
 
     } catch (e) {
       logger.error('Error starting recording:', e);
-      setErrorState('error', 'Could not start recording.');
+      // L3: If mic was revoked between sessions, reset hasPermission and show localized denial
+      if (e instanceof Error && (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError')) {
+        setState(prev => ({ ...prev, hasPermission: false }));
+        const baseLang = (lang || localStorage.getItem('lang') || 'en').split('-')[0];
+        setErrorState('warning', micDeniedMessages[baseLang] || micDeniedMessages.en);
+      } else {
+        setErrorState('error', 'Could not start recording.');
+      }
     }
   };
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && state.isRecording) {
+      // G8: Capture flush Promise BEFORE stopping the recorder so onstop can await it
+      flushPromiseRef.current = stopStreamingCapture();
       mediaRecorderRef.current.stop();
-      stopStreamingCapture();
 
       if (recordingIntervalRef.current) {
         clearInterval(recordingIntervalRef.current);
