@@ -422,9 +422,6 @@ Three scenarios require OTP verification before account creation or password set
 > **Hindi content translations**: Summary questions have Hindi for all 6 assessments. Some `content_translations` `hi` rows pending ILP Google Sheet update for non-summary content.
 
 > [!NOTE]
-> **Career roadmap milestone labels**: Hardcoded in en/kn/ta only — no Hindi. Pending DB migration decision.
-
-> [!NOTE]
 > **Sheet restructuring**: Phases 2–3 (Google Sheets sync automation) paused until ILP finalizes new format.
 
 > [!NOTE]
@@ -448,3 +445,7 @@ Three scenarios require OTP verification before account creation or password set
 ### Completed Work (Mar–May 2026)
 
 Feature work phases 0A–14C, PR 2a/2b, and full audit fix passes (auth 19-point, OTP 29-point, AI-summary 22-point, approval-workflow, profile-card 10-point, things-interest 18-point, roadmap 22-point) — all completed and verified May 2026. See `git log` for per-phase details.
+
+| Phase | Description |
+|-------|-------------|
+| **i18n-audit** | Multilingual / i18n 18-point gap analysis + full fix pass (May 2026). **Critical** — `t('error')`, `t('success')`, `t('passwordUpdated')` added to DICT for all 4 languages (were returning empty string in ProfileDialog password toasts and AudioRecorder error toasts). **High** — `teacherStrings.ts` Hindi block fully translated (was English fallback with TODO); `signIn` catch block translated for all 4 languages; `signOut` now emits translated toast; `localStorage.lang` cleared on sign-out (shared-device fix). **Medium** — `TeacherDashboard` replaced manual lang derivation + localStorage write effect with `useLang()` (now reactive to ProfileDialog language changes); `cachedLang` in auth fallback path validated against whitelist; `ProfileDialog` 25+ inline ternary translation chains replaced with module-level `PD` map (4 languages × 28 keys); `langNames` redundant nested lookup simplified to `PD[selectedLang].langUpdated`; `LangProvider` `initial` state validated via `validateLang` helper (removes unsafe cast); Hindi `videoProgressSaved` emoji parity with kn/ta. **Low** — `urlLang` parsed with `validateLang` (invalid codes like `?lang=fr` produce `null` immediately); `t()` logs `logger.warn` in dev mode for missing keys; roadmap milestone Hindi labels confirmed complete (stale CLAUDE.md note removed). |

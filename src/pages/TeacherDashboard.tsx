@@ -6,8 +6,8 @@ function toE164Indian(phone: string): string {
   if (digits.length === 12 && digits.startsWith('91')) return `+${digits}`;
   return phone;
 }
-import React, { useState, useEffect, useMemo } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { StateInfo, SchoolClass } from '@/integrations/supabase/types';
@@ -17,6 +17,7 @@ import { Users, Activity, BookOpen } from 'lucide-react';
 
 // Sub-components
 import { useTeacherStrings, TeacherLang } from '@/components/teacher/teacherStrings';
+import { useLang } from '@/hooks/useLang';
 import TeacherDashboardHeader from '@/components/teacher/TeacherDashboardHeader';
 import TeacherStatsCards from '@/components/teacher/TeacherStatsCards';
 import StudentsTab, { Student } from '@/components/teacher/StudentsTab';
@@ -41,14 +42,10 @@ interface StudentStats {
 
 export default function TeacherDashboard() {
   const { user, userProfile, signOut } = useAuth();
-  const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  // ── Language ──────────────────────────────────────────────────────
-  const urlLang = useMemo(() => new URLSearchParams(location.search).get('lang') as (TeacherLang | null), [location.search]);
-  const lang: TeacherLang = (urlLang || userProfile?.preferred_language || (localStorage.getItem('lang') as TeacherLang | null) || 'en') as TeacherLang;
-  useEffect(() => { try { localStorage.setItem('lang', lang); } catch { } }, [lang]);
+  const { lang: rawLang } = useLang();
+  const lang = rawLang as TeacherLang;
   const { t, welcomeMessage } = useTeacherStrings(lang);
 
   // ── Student state ─────────────────────────────────────────────────

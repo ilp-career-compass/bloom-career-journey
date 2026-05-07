@@ -182,7 +182,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (currentUser && currentUser.user_metadata?.role) {
         const derivedRole = currentUser.user_metadata.role;
-        const cachedLang = (typeof window !== 'undefined' ? localStorage.getItem('lang') : null) || 'en';
+        const rawLang = typeof window !== 'undefined' ? localStorage.getItem('lang') : null;
+        const cachedLang = (rawLang === 'en' || rawLang === 'kn' || rawLang === 'ta' || rawLang === 'hi') ? rawLang : 'en';
         const baseProfile: any = {
           id: userId,
           full_name: currentUser.user_metadata.full_name,
@@ -271,16 +272,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: new Error('Sign in failed') };
     } catch (error) {
       logger.error('❌ Sign in error:', error);
+      const catchLang = (typeof window !== 'undefined' ? localStorage.getItem('lang') : null) || 'en';
+      const catchTitles: Record<string, string> = {
+        en: 'Sign in failed',
+        kn: 'ಸೈನ್ ಇನ್ ವಿಫಲವಾಗಿದೆ',
+        ta: 'உள்நுழைவு தோல்வியடைந்தது',
+        hi: 'साइन इन विफल',
+      };
+      const catchDescs: Record<string, string> = {
+        en: 'An unexpected error occurred. Please try again.',
+        kn: 'ಅನಿರೀಕ್ಷಿತ ದೋಷ ಸಂಭವಿಸಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
+        ta: 'எதிர்பாராத பிழை ஏற்பட்டது. மீண்டும் முயற்சிக்கவும்.',
+        hi: 'एक अप्रत्याशित त्रुटि हुई। कृपया पुनः प्रयास करें।',
+      };
       toast({
-        title: "Sign in failed",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
+        title: catchTitles[catchLang] || catchTitles.en,
+        description: catchDescs[catchLang] || catchDescs.en,
+        variant: 'destructive',
       });
       return { error };
     }
   };
 
   const signOut = async () => {
+    const signOutToasts: Record<string, string> = {
+      en: 'Logged out successfully',
+      kn: 'ಯಶಸ್ವಿಯಾಗಿ ಲಾಗ್ ಔಟ್ ಆಗಿದೆ',
+      ta: 'வெளியேறிவிட்டீர்கள்',
+      hi: 'सफलतापूर्वक लॉग आउट हो गए',
+    };
+    // Read lang before clearing state
+    const outLang = (typeof window !== 'undefined' ? localStorage.getItem('lang') : null) || 'en';
+
     // Best-effort Supabase sign out — don't gate local cleanup on this
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -292,6 +315,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null);
     setUserProfile(null);
     setLoading(false);
+    try { localStorage.removeItem('lang'); } catch { }
+
+    toast({ title: signOutToasts[outLang] || signOutToasts.en });
   };
 
   const refreshUserProfile = async () => {
