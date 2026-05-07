@@ -46,6 +46,7 @@ export default function ProfileCardModulesPanel({
   const [rejectingModule, setRejectingModule] = useState<ModuleKey | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [savingApproval, setSavingApproval] = useState(false);
+  const [studentLang, setStudentLang] = useState<string>('en');
 
   useEffect(() => {
     if (!cacheUserId) return;
@@ -76,13 +77,22 @@ export default function ProfileCardModulesPanel({
       }
       setCacheRows(rowMap);
 
-      // 2. Fetch question labels from content_translations (en only)
+      // 2. Fetch student's preferred language for regen calls and label display
+      const { data: userData } = await supabase
+        .from('users')
+        .select('preferred_language')
+        .eq('id', cacheUserId)
+        .maybeSingle();
+      const lang = userData?.preferred_language || 'en';
+      setStudentLang(lang);
+
+      // 3. Fetch question labels in student's language
       const resourceTypes = PROFILE_CARD_MODULES.map(m => `profile_card_${m.key}`);
       const { data: labelRows } = await supabase
         .from('content_translations')
         .select('resource_type, resource_key, text')
         .in('resource_type', resourceTypes)
-        .eq('lang', 'en');
+        .eq('lang', lang);
 
       const labelMap: Partial<Record<ModuleKey, QuestionLabel[]>> = {};
       for (const row of (labelRows || [])) {
@@ -176,6 +186,17 @@ export default function ProfileCardModulesPanel({
       setRejectReason('');
       toast({ title: 'Feedback submitted — student will be asked to revise' });
 
+      // Fire-and-forget: notify the student
+      supabase.rpc('create_notification_secure', {
+        p_user_id: cacheUserId,
+        p_type: 'profile_card_rejected',
+        p_title: 'Profile card module needs revision',
+        p_message: 'Your teacher has requested changes to a module in your Career Compass. Please visit your profile card to see the feedback.',
+        p_link: '/student/profile-card',
+      }).then(({ error: notifError }) => {
+        if (notifError) logger.error('Profile card rejection notification error:', notifError);
+      });
+
       // Fire-and-forget: fetch responses and regenerate keywords
       supabase
         .from('assessment_responses')
@@ -192,7 +213,7 @@ export default function ProfileCardModulesPanel({
               moduleBeingRejected,
               respData.responses,
               cacheUserId,
-              'en'
+              studentLang
             );
           }
         });
@@ -281,8 +302,8 @@ export default function ProfileCardModulesPanel({
                   <p className="text-xs text-gray-400 italic mb-3">Assessment not completed.</p>
                 )}
 
-                {/* Approve / Request Changes — only if cache row exists */}
-                {row && (
+                {/* Approve / Request Changes — only when keywords have been generated */}
+                {row && row.keywords && (
                   <div className="flex gap-2 pt-2 border-t border-gray-100">
                     {status !== 'approved' && (
                       <Button

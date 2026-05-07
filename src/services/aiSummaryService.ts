@@ -1,4 +1,5 @@
 import { logger } from '@/lib/logger';
+import { flattenResponses } from '@/utils/flattenResponses';
 
 // AI Summary Service - Generates reflective summaries using Gemini API
 
@@ -2388,19 +2389,9 @@ Role Models: ${formatAnswers(roleModelsAnswers)}`;
     lang: string
   ): Promise<void> {
     try {
-      const parts: string[] = [];
-      const extract = (obj: any) => {
-        for (const val of Object.values(obj)) {
-          if (typeof val === 'string' && (val as string).trim()) parts.push((val as string).trim());
-          else if (typeof val === 'object' && val !== null) extract(val);
-        }
-      };
-      if (responses && typeof responses === 'object') extract(responses);
-      const text = parts.join('\n');
+      const text = flattenResponses(responses);
       if (!text) return;
 
-      // Pass raw responses as assessmentResponses (not summaryText) — no approved summary
-      // exists yet at submission time; the guard accepts assessmentResponses-only calls.
       const result = await this.generateProfileCardKeywords(assessmentType, '', lang, text);
       if (result.success && result.keywords) {
         const { error } = await supabase.from('profile_card_cache').upsert({

@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useStudentStrings } from '@/components/student/studentStrings';
 import { useToast } from '@/hooks/use-toast';
+import { flattenResponses } from '@/utils/flattenResponses';
 
 type ModuleConfig = {
   key: string;
@@ -50,21 +51,20 @@ const CAREER_DIR_TITLE: Record<string, string> = {
 };
 
 const SECTIONS_COMPLETE: Record<string, (n: number) => string> = {
-  en: (n) => `${n} of 6 modules complete`,
-  kn: (n) => `6 ರಲ್ಲಿ ${n} ಮಾಡ್ಯೂಲ್‌ಗಳು ಪೂರ್ಣ`,
-  ta: (n) => `6 இல் ${n} பிரிவுகள் முடிந்தது`,
-  hi: (n) => `6 में से ${n} मॉड्यूल पूरे`,
+  en: (n) => `${n} of 6 modules approved`,
+  kn: (n) => `6 ರಲ್ಲಿ ${n} ಮಾಡ್ಯೂಲ್‌ಗಳು ಅನುಮೋದಿತ`,
+  ta: (n) => `6 இல் ${n} பிரிவுகள் அங்கீகரிக்கப்பட்டவை`,
+  hi: (n) => `6 में से ${n} मॉड्यूल स्वीकृत`,
 };
 
 type ProfileCardAnswers = Record<string, string>;
 type ProfileCardQuestionLabels = { key: string; label: string }[];
 
 interface ProfileCardPageProps {
-  studentIdOverride?: string;
   readOnly?: boolean;
 }
 
-export default function ProfileCardPage({ studentIdOverride, readOnly }: ProfileCardPageProps) {
+export default function ProfileCardPage({ readOnly }: ProfileCardPageProps) {
   const navigate = useNavigate();
   const { user, userProfile } = useAuth();
   const { lang: currentLang } = useLang();
@@ -73,7 +73,7 @@ export default function ProfileCardPage({ studentIdOverride, readOnly }: Profile
   // assessment_responses.student_id → students(id)
   // profile_card_cache.student_id → users(id)
   // These are different FKs, so we need separate IDs for each table.
-  const studentId = studentIdOverride || params.studentId || userProfile?.studentProfile?.id || '';
+  const studentId = params.studentId || userProfile?.studentProfile?.id || '';
   const userId = user?.id || '';
   const lang = (currentLang || 'en') as 'en' | 'kn' | 'ta' | 'hi';
   const { t } = useStudentStrings(lang);
@@ -228,26 +228,13 @@ export default function ProfileCardPage({ studentIdOverride, readOnly }: Profile
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, completedModules, cacheTimestamps]);
 
-  const flattenResponses = (responses: any): string => {
-    if (!responses || typeof responses !== 'object') return '';
-    const parts: string[] = [];
-    const extract = (obj: any) => {
-      for (const val of Object.values(obj)) {
-        if (typeof val === 'string' && val.trim()) parts.push(val.trim());
-        else if (typeof val === 'object' && val !== null) extract(val);
-      }
-    };
-    extract(responses);
-    return parts.join('\n');
-  };
-
   const regenerateAnswers = async (assessmentType: string, responses: any, teacherFeedback?: string) => {
     if (generatingKeys.has(assessmentType)) return;
     setGeneratingKeys(prev => new Set(prev).add(assessmentType));
     try {
       const text = flattenResponses(responses);
       if (!text) return;
-      const result = await aiSummaryService.generateProfileCardKeywords(assessmentType, text, lang, undefined, teacherFeedback);
+      const result = await aiSummaryService.generateProfileCardKeywords(assessmentType, '', lang, text, teacherFeedback);
       if (result.success && result.keywords) {
         const now = new Date().toISOString();
         setAnswers(prev => ({ ...prev, [assessmentType]: result.keywords! }));
@@ -260,7 +247,6 @@ export default function ProfileCardPage({ studentIdOverride, readOnly }: Profile
           approval_status: 'pending',
           approved_by: null,
           approved_at: null,
-          rejection_reason: null, // teacher feedback consumed by AI prompt, not persisted to DB
         } as any, { onConflict: 'student_id,assessment_type' });
         if (error) logger.error('Profile card cache upsert error:', error);
         setApprovalStatus(prev => ({ ...prev, [assessmentType]: 'pending' }));
@@ -274,10 +260,20 @@ export default function ProfileCardPage({ studentIdOverride, readOnly }: Profile
 
   const completedCount = MODULES.filter(m => !!completedModules[m.key]).length;
   const allComplete = completedCount === 6;
-  const progressPercent = Math.round((completedCount / 6) * 100);
+  const approvedCount = MODULES.filter(m => approvalStatus[m.key] === 'approved').length;
+  const progressPercent = Math.round((approvedCount / 6) * 100);
+  const dirStatus = (approvalStatus['career_direction'] || 'pending') as string;
+  const showCareerDirection = readOnly || dirStatus === 'approved';
 
   useEffect(() => {
     if (!allComplete || generatingDirection || loading || readOnly) return;
+
+    // All 3 source modules must have at least one non-empty keyword before synthesising
+    // the direction — prevents partial synthesis while sibling modules are still generating.
+    const sourceModulesReady = (['dreams', 'hobbies', 'role_models'] as const).every(
+      key => answers[key] && Object.values(answers[key]).some(v => v?.trim())
+    );
+    if (!sourceModulesReady) return;
 
     const dirCachedAt = cacheTimestamps['career_direction'];
     const latestResponseUpdate = MODULES
@@ -313,8 +309,13 @@ export default function ProfileCardPage({ studentIdOverride, readOnly }: Profile
           assessment_type: 'career_direction',
           keywords: { direction: result.direction },
           generated_at: now,
-        }, { onConflict: 'student_id,assessment_type' });
+          approval_status: 'pending',
+          approved_by: null,
+          approved_at: null,
+          rejection_reason: null,
+        } as any, { onConflict: 'student_id,assessment_type' });
         if (error) logger.error('Career direction cache upsert error:', error);
+        setApprovalStatus(prev => ({ ...prev, career_direction: 'pending' }));
       }
     } catch (err) {
       logger.error('Career direction generation failed:', err);
@@ -324,7 +325,7 @@ export default function ProfileCardPage({ studentIdOverride, readOnly }: Profile
   };
 
   const handleApproveModule = async (assessmentType: string) => {
-    if (!user?.id) return;
+    if (!user?.id || !cacheUserId) return;
     setSavingApproval(true);
     try {
       const { error } = await supabase.from('profile_card_cache').update({
@@ -357,11 +358,19 @@ export default function ProfileCardPage({ studentIdOverride, readOnly }: Profile
   };
 
   const handleReject = async () => {
-    if (!rejectingModule || !user?.id) return;
+    if (!rejectingModule || !user?.id || !cacheUserId) return;
     setSavingApproval(true);
     try {
-      const feedback = rejectReason || 'Changes requested';
+      const feedback = rejectReason.trim() || 'Changes requested';
       const moduleBeingRejected = rejectingModule;
+
+      const currentCount = rejectionCounts[moduleBeingRejected] || 0;
+      if (currentCount >= 3) {
+        setRejectingModule(null);
+        setRejectReason('');
+        toast({ title: 'Maximum feedback rounds reached — please approve or discuss with student directly' });
+        return;
+      }
 
       await supabase.from('profile_card_cache').update({
         approval_status: 'rejected',
@@ -375,10 +384,16 @@ export default function ProfileCardPage({ studentIdOverride, readOnly }: Profile
       setRejectingModule(null);
       setRejectReason('');
 
-      const currentCount = rejectionCounts[moduleBeingRejected] || 0;
-      if (currentCount >= 3) {
-        toast({ title: 'Maximum feedback rounds reached — please approve or discuss with student directly' });
-        return;
+      if (cacheUserId) {
+        supabase.rpc('create_notification_secure', {
+          p_user_id: cacheUserId,
+          p_type: 'profile_card_rejected',
+          p_title: 'Profile card module needs revision',
+          p_message: 'Your teacher has requested changes to a module in your Career Compass. Please visit your profile card to see the feedback.',
+          p_link: '/student/profile-card',
+        }).then(({ error: notifError }) => {
+          if (notifError) logger.error('Profile card rejection notification error:', notifError);
+        });
       }
 
       setRejectionCounts(prev => ({ ...prev, [moduleBeingRejected]: currentCount + 1 }));
@@ -412,7 +427,7 @@ export default function ProfileCardPage({ studentIdOverride, readOnly }: Profile
       <div className="bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-700 text-white">
         <div className="container mx-auto px-4 py-10">
           <div className="flex items-center gap-3 mb-6">
-            <Button variant="ghost" size="icon" className="text-white/80 hover:text-white hover:bg-white/10" onClick={() => navigate(-1)}>
+            <Button variant="ghost" size="icon" className="text-white/80 hover:text-white hover:bg-white/10" onClick={() => readOnly ? navigate('/teacher') : navigate(-1)}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </div>
@@ -425,10 +440,10 @@ export default function ProfileCardPage({ studentIdOverride, readOnly }: Profile
             {/* Progress bar */}
             <div className="mt-5 max-w-xs mx-auto">
               <div className="flex items-center justify-between text-xs text-indigo-200 mb-1.5">
-                <span>{(SECTIONS_COMPLETE[lang] || SECTIONS_COMPLETE.en)(completedCount)}</span>
+                <span>{(SECTIONS_COMPLETE[lang] || SECTIONS_COMPLETE.en)(approvedCount)}</span>
                 <span>{progressPercent}%</span>
               </div>
-              <div className="h-2.5 bg-white/20 rounded-full overflow-hidden" role="progressbar" aria-valuenow={completedCount} aria-valuemin={0} aria-valuemax={6} aria-label="Profile completion progress">
+              <div className="h-2.5 bg-white/20 rounded-full overflow-hidden" role="progressbar" aria-valuenow={approvedCount} aria-valuemin={0} aria-valuemax={6} aria-label="Profile approval progress">
                 <div
                   className="h-full bg-gradient-to-r from-green-400 to-emerald-400 rounded-full transition-all duration-500"
                   style={{ width: `${progressPercent}%` }}
@@ -582,19 +597,32 @@ export default function ProfileCardPage({ studentIdOverride, readOnly }: Profile
           })}
         </div>
 
-        {/* 7th card — My Career Direction — always visible */}
+        {/* 7th card — My Career Direction */}
         <div className="mt-8">
-          <Card className="rounded-xl shadow-md hover:shadow-lg border border-gray-100 bg-white overflow-hidden">
+          <Card className={`rounded-xl shadow-md hover:shadow-lg border bg-white overflow-hidden ${careerDirection && dirStatus === 'rejected' ? 'border-red-200' : 'border-gray-100'}`}>
             <div className="h-1 bg-gradient-to-r from-indigo-500 to-purple-500" />
             <CardContent className="p-6">
-              <div className="flex items-center gap-2.5 mb-3">
-                <Compass className={`h-6 w-6 ${allComplete ? 'text-indigo-600' : 'text-gray-400 animate-pulse'}`} />
-                <h3 className={`text-lg font-bold ${allComplete ? 'text-indigo-800' : 'text-gray-500'}`}>
-                  {CAREER_DIR_TITLE[lang] || CAREER_DIR_TITLE.en}
-                </h3>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2.5">
+                  <Compass className={`h-6 w-6 ${allComplete ? 'text-indigo-600' : 'text-gray-400 animate-pulse'}`} />
+                  <h3 className={`text-lg font-bold ${allComplete ? 'text-indigo-800' : 'text-gray-500'}`}>
+                    {CAREER_DIR_TITLE[lang] || CAREER_DIR_TITLE.en}
+                  </h3>
+                </div>
+                {allComplete && careerDirection && !generatingDirection && (
+                  dirStatus === 'approved' ? (
+                    <Badge className="bg-green-100 text-green-700 text-[10px]"><CheckCircle className="h-3 w-3 mr-1" />Approved</Badge>
+                  ) : (
+                    <Badge className="bg-yellow-100 text-yellow-700 text-[10px]"><Clock className="h-3 w-3 mr-1" />Pending Review</Badge>
+                  )
+                )}
               </div>
 
               <div className="border-t border-gray-100 mb-4" />
+
+              {!readOnly && allComplete && careerDirection && !generatingDirection && dirStatus === 'pending' && (
+                <p className="text-xs text-yellow-600 italic mb-3">Your career direction is being reviewed by your teacher.</p>
+              )}
 
               {allComplete ? (
                 generatingDirection ? (
@@ -603,9 +631,13 @@ export default function ProfileCardPage({ studentIdOverride, readOnly }: Profile
                     <span>{t('generating_direction')}</span>
                   </div>
                 ) : careerDirection ? (
-                  <blockquote className="border-l-4 border-indigo-400 pl-4 text-gray-700 leading-relaxed italic">
-                    {careerDirection}
-                  </blockquote>
+                  showCareerDirection ? (
+                    <blockquote className="border-l-4 border-indigo-400 pl-4 text-gray-700 leading-relaxed italic">
+                      {careerDirection}
+                    </blockquote>
+                  ) : (
+                    <p className="text-sm text-gray-300 italic">—</p>
+                  )
                 ) : (
                   <p className="text-sm text-gray-400 italic">{t('generating_direction')}</p>
                 )
@@ -615,6 +647,20 @@ export default function ProfileCardPage({ studentIdOverride, readOnly }: Profile
                   <p className="text-sm text-gray-400">
                     {t('career_direction_motivational')}
                   </p>
+                </div>
+              )}
+
+              {readOnly && allComplete && careerDirection && !generatingDirection && dirStatus !== 'approved' && (
+                <div className="mt-3 pt-3 border-t border-gray-100">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-green-600 border-green-200 hover:bg-green-50 text-xs"
+                    onClick={(e) => { e.stopPropagation(); handleApproveModule('career_direction'); }}
+                    disabled={savingApproval}
+                  >
+                    <CheckCircle className="h-3 w-3 mr-1" /> Approve
+                  </Button>
                 </div>
               )}
             </CardContent>

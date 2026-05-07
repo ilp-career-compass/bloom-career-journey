@@ -13,7 +13,7 @@
 
 ### Regional/Language Context
 - Supports **English (`en`)**, **Kannada (`kn`)**, **Tamil (`ta`)**, **Hindi (`hi`)**; Unicode detection (Kannada: `0C80–0CFF`, Tamil: `0B80–0BFF`, Hindi: `0900–097F`)
-- **IndicKeyboard** (`IndicKeyboard.tsx`): Kannada/Tamil/Hindi virtual keyboard layouts, scroll compensation, enlarged touch targets, haptic feedback; STT optimized for Indian accents
+- **Input method**: Virtual keyboard dropped. Students type using their device's built-in keyboard with transliteration (Tanglish/Kanglish/Hinglish — e.g. "nanna hesaru Raju" for Kannada). AI prompts already include Tanglish/Kanglish/Hinglish awareness. STT still supports `en-IN`, `hi-IN`, `kn-IN`, `ta-IN`.
 
 ---
 
@@ -36,7 +36,7 @@
 | Forms | React Hook Form + Zod |
 
 ### Key Libraries
-`recharts`, `sonner`, `lucide-react`, `date-fns`, `embla-carousel-react`, `IndicKeyboard` (replaced `simple-keyboard`), `react-resizable-panels`, `cmdk`, `vaul`, `class-variance-authority` + `clsx` + `tailwind-merge`
+`recharts`, `sonner`, `lucide-react`, `date-fns`, `embla-carousel-react`, `react-resizable-panels`, `cmdk`, `vaul`, `class-variance-authority` + `clsx` + `tailwind-merge`
 
 ---
 
@@ -77,7 +77,7 @@ bloom-career-journey/
 │   ├── hooks/
 │   │   ├── useAuth.tsx            # Auth context: signIn, signUp, signOut, userProfile
 │   │   ├── useLang.tsx            # i18n context: language + translation
-│   │   ├── useIndicKeyboard.ts / use-toast.tsx / use-mobile.tsx
+│   │   ├── use-toast.tsx / use-mobile.tsx
 │   ├── integrations/supabase/client.ts + types.ts
 │   ├── types/assessmentSummary.ts # Summary types + approval workflow types
 │   └── utils/
@@ -151,8 +151,8 @@ Responses saved as JSON in `assessment_responses.responses`. (Companion `*DB.tsx
 `aiChatService.ts` + `ChatbotDialog.tsx`; "Vidya Saathi" persona; same Gemini cascade fallback as summaries.
 
 ### My Compass
-- **Profile Card** (`/student/profile-card`): 6 module cards (always visible, never locked). Questions from `content_translations` (`resource_type: profile_card_{type}`); 2-3 word AI answers when complete. 7th card ("My Career Direction") synthesizes all 6. Cached in `profile_card_cache`. Teacher approval: keywords hidden until approved, reset to `pending` when student updates responses. Teacher review at `/teacher/student-profile-card/:studentId`.
-- **Things that Interest Me** (`/student/things-interest-me`): Editable 4-col table (Subject, Lesson/Chapter, Why Factors, Compatible Career). Autosave 1s debounce. All 4 languages + IndicKeyboard. Backed by `things_that_interest_me` (RLS-protected). Post-assessment redirect with `?from={type}`.
+- **Profile Card** (`/student/profile-card`): 6 module cards (always visible, never locked). Questions from `content_translations` (`resource_type: profile_card_{type}`); 2-3 word AI answers when complete. 7th card ("My Career Direction") synthesizes Dreams + Hobbies + Role Models keywords — also gated behind teacher approval (student sees `—` until approved). Cached in `profile_card_cache`. Teacher approval: keywords and career direction hidden until approved, reset to `pending` when student updates responses. Teacher review at `/teacher/student-profile-card/:studentId`. Two teacher review surfaces: full-page (`ProfileCardPage readOnly`) and embedded panel (`ProfileCardModulesPanel` in StudentAssessmentReview). Both use student's `preferred_language` for regen and label display.
+- **Things that Interest Me** (`/student/things-interest-me`): Editable 4-col table (Subject, Lesson/Chapter, Why Factors, Compatible Career). Autosave 1s debounce. All 4 languages. Backed by `things_that_interest_me` (RLS-protected). Post-assessment redirect with `?from={type}`. Students type in transliteration using device keyboard.
 - **Career Roadmap** (`/student/career-roadmap`): 7 milestones × 4 cols (Milestone + Plan A/B/C). Top 3 editable, bottom 4 locked. Autosave 1s debounce to `career_roadmap`. Midterm trigger: module 5.
 
 ---
@@ -238,7 +238,7 @@ orgs (id, name) → states (id, state_name, org_id, state_code)
 - `summary_templates`: per-assessment Gemini prompt templates, multi-language
 - `content_translations`: UI text by `resource_type`, `resource_key`, `lang`; includes `profile_card_{type}` entries (4 langs)
 - `inspiration_sources`: video URLs; `lang` column for per-language sets (en/kn/ta/hi); filtered by `get_inspiration_videos(p_lang)`
-- `things_that_interest_me`: `(student_id, row_order)` with `subject`, `lesson_chapter`, `why_factors`, `compatible_career`, `source_assessment`; RLS-protected
+- `things_that_interest_me`: PK `id`; `student_id` FK → `users.id`; `subject`, `lesson_chapter`, `why_factors`, `compatible_career`, `source_assessment`; rows ordered by `created_at` (no user-controlled ordering, no `row_order` column); RLS-protected; max 20 rows per student enforced client-side
 
 ### Relationships
 ```
@@ -449,7 +449,7 @@ Three scenarios require OTP verification before account creation or password set
 > **Phone-only auth (PR 2a)**: Custom auth (mock session, `@internal.app` emails, `customAuth` localStorage) removed. All sign-in via `signInWithPassword({ phone, password })`. Teacher self-register via `create-teacher` Edge Function. `student_auth_credentials` + `authenticate_student` kept for legacy NO students only.
 
 > [!NOTE]
-> **Profile card rejection audit trail**: Teacher feedback is consumed by Gemini during auto-regeneration but not persisted to DB after regen (`rejection_reason` set to `null` on upsert). No history of prior feedback rounds stored. Max 3 rejection rounds per module enforced client-side only (`rejectionCounts` state — resets on page reload).
+> **Profile card rejection audit trail**: Teacher feedback is incorporated into the AI regen prompt and `rejection_reason` now persists in the DB after regen (shown to student only when `approval_status = 'rejected'`). Max 3 rejection rounds per module still enforced client-side only (`rejectionCounts` state — resets on page reload; no DB counter).
 
 > [!NOTE]
 > **MSG91 OTP security audit (May 2026)**: 29-point gap analysis completed across widget init, Sign Up / First Login state machines, and all 4 Edge Functions. All high/medium/low severity issues fixed and deployed. Key hardening: `verify-msg91-token` is now internal-only (no CORS, service-role auth required, non-empty mobile enforced, 10 s upstream timeout); `set-first-password` has server-side password length enforcement (≥6), role restriction (students only), PGRST116 duplicate-account 409, and dev bypass parity with other EFs; OTP digit count driven by `VITE_MSG91_OTP_LENGTH`; `retryOtp` used for resend (not `sendOtp`); expiry countdown accurate after tab switch; `signUpAccessTokenRef`/`firstLoginAccessTokenRef` cleared after use; MSG91 window globals deleted on component unmount; `normalizedPhone` declaration bug in `handleSignUp` fixed. All 4 EFs smoke-tested on production (API-level, May 2026).
@@ -466,10 +466,10 @@ Three scenarios require OTP verification before account creation or password set
 | **0A** | Fix corrupted School Learning summary question1 |
 | **0B** | `get_role_models_assessment_template` RPC + 404 fix |
 | **1C–1E** | Move summary section titles + School Learning method options to DB |
-| **4A** | IndicKeyboard: Tamil + Hindi layouts, scroll/touch/haptic UX |
+| **4A** | Tamil + Hindi STT locale support; haptic feedback via native browser APIs |
 | **4B** | Hindi (`hi`) added to `preferred_language` CHECK constraint |
 | **4C** | Hindi support across all services and components |
-| **4D–4E** | Remove `simple-keyboard`; full build verification (tsc + vite) |
+| **4D–4E** | Virtual keyboard dropped (simple-keyboard removed); full build verification (tsc + vite) |
 | **5A** | Add `hi` to `SummaryTemplate` type, remove `(template as any)` casts |
 | **5B** | Role Models prompt reads questions from DB template (not hardcoded) |
 | **5C** | Hindi `languageInstruction` blocks in all 12 prompt builders |
@@ -495,7 +495,7 @@ Three scenarios require OTP verification before account creation or password set
 | **7C–7E** | Notification panel mobile alignment; audio transcription message; lazy mic init |
 | **7F–7G** | Roadmap midterm trigger module 4 → 5; remove About Me summary Category labels |
 | **8A** | 100+ hardcoded English strings → Hindi across 6 assessment components |
-| **8B** | IndicKeyboard to ThingsInterestMePage; Hindi keyboard conditions in ProfileDialog/ChatBubble |
+| **8B** | Hindi keyboard conditions removed from ProfileDialog/ChatBubble (virtual keyboard dropped); ThingsInterestMePage uses device keyboard |
 | **8C** | Inspiration videos: `lang` column, 4-language sets, `get_inspiration_videos(p_lang)` RPC |
 | **8D** | Notifications language-aware: fetches student `preferred_language`, translates kn/ta/hi |
 | **8E** | AISummaryReview passes student language to AI generators |
@@ -537,3 +537,4 @@ Three scenarios require OTP verification before account creation or password set
 | **14B** | Background AI summary generation on student submit (all 6 assessed modules): fire-and-forget `generate*Summary` + `createAISummary` called in `submitAssessment`; 5 s retry on failure. `MyHobbiesAssessment` upsert fixed to use `.select().single()` to obtain `assessmentData.id`. |
 | **14C** | Delete 6 unused `*DB.tsx` assessment companion files (dead code — logic already inlined in `*Assessment.tsx`). |
 | **approval-workflow** | Full approval workflow fix pass (May 2026): Migration `20260506000002` adds `revision_requested`/`summary_rejected` to `notification_type` enum, adds `already_approved` guard to `approve_summary`/`reject_summary`, extends `update_student_summary` to accept `revision_requested`→`pending_approval` resubmit, adds new `request_revision_summary` RPC. `SummaryApprovalCard`: "Request Revision" button+dialog, save-edits-before-approve guard, `already_approved` race toast, removed debug "Check DB" button, dead code purge. `SummaryViewDialog`: `isEditing` reset on close, removed 3 local duplicate parsers (uses shared `summaryParsers`), role_models title fix, Hindi for all button labels/toasts. `AISummaryReview`: `selectedStudentId` race condition fixed, 4-column stats with orange `revision_requested` card. `summaryDatabaseService` gains `requestRevision()`. Language-aware fire-and-forget notifications for all 3 teacher actions. Smoke tested: `scripts/smoke_approval_workflow.ts` 5/5 T1–T5 pass. |
+| **profile-card-audit** | Profile Card 10-point gap analysis + full fix pass (May 2026). **High** — H1: teacher INSERT RLS policy added to `profile_card_cache` (migration `20260507000001`); H2: career direction gated behind `approval_status` — student sees `—` until approved, teacher gets Approve button on 7th card, `generateDirection` upsert now resets `approval_status` to `pending`; H3: `profile_card_rejected` notification type added to enum, both teacher surfaces notify student on rejection. **Medium** — M1: `ProfileCardModulesPanel` fetches student `preferred_language` and uses it for regen calls and question label display; M3: rejection count limit checked before DB write (not after), `rejectReason.trim()` applied; M4: `generateDirection` effect waits until dreams/hobbies/role_models all have keywords before synthesising; M5: approve/reject buttons hidden in panel when `keywords = null`; M6: regen upsert no longer clears `rejection_reason` (persists as audit trail). **Low** — L2: responses consistently passed as `assessmentResponses` (not `summaryText`) in `regenerateAnswers`; L3: `flattenResponses` extracted to `src/utils/flattenResponses.ts` (removes duplication across `ProfileCardPage` + `aiSummaryService`); L4: dead `studentIdOverride` prop removed; L5: panel question labels in student's language; L6: progress bar tracks approved-module count (not completed), label updated to "approved" in all 4 languages; L8: teacher back button navigates to `/teacher` (not `navigate(-1)`); L9: `cacheUserId` empty guard added to `handleApproveModule` and `handleReject`. |
