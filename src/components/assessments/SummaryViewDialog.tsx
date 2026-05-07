@@ -62,9 +62,9 @@ export default function SummaryViewDialog({
   const isHobbiesAssessment = assessmentType === 'hobbies';
   const isRoleModelsAssessment = assessmentType === 'role_models';
   const [questionTitles, setQuestionTitles] = useState<{ [key: string]: string }>({
-    q1: lang === 'kn' ? '1. ಪ್ರಶ್ನೆ 1' : lang === 'ta' ? '1. கேள்வி 1' : '1. Question 1',
-    q2: lang === 'kn' ? '2. ಪ್ರಶ್ನೆ 2' : lang === 'ta' ? '2. கேள்வி 2' : '2. Question 2',
-    q3: lang === 'kn' ? '3. ಪ್ರಶ್ನೆ 3' : lang === 'ta' ? '3. கேள்வி 3' : '3. Question 3'
+    q1: lang === 'kn' ? '1. ಪ್ರಶ್ನೆ 1' : lang === 'ta' ? '1. கேள்வி 1' : lang === 'hi' ? '1. प्रश्न 1' : '1. Question 1',
+    q2: lang === 'kn' ? '2. ಪ್ರಶ್ನೆ 2' : lang === 'ta' ? '2. கேள்வி 2' : lang === 'hi' ? '2. प्रश्न 2' : '2. Question 2',
+    q3: lang === 'kn' ? '3. ಪ್ರಶ್ನೆ 3' : lang === 'ta' ? '3. கேள்வி 3' : lang === 'hi' ? '3. प्रश्न 3' : '3. Question 3',
   });
   const [editedSummary, setEditedSummary] = useState<SummaryQuestions>({
     question1: '',
@@ -73,31 +73,37 @@ export default function SummaryViewDialog({
   });
 
   const [dreamHeadings, setDreamHeadings] = useState({
-    dream: lang === 'kn' ? 'ಕನಸು' : lang === 'ta' ? 'கனவு' : 'Dream',
+    dream: lang === 'kn' ? 'ಕನಸು' : lang === 'ta' ? 'கனவு' : lang === 'hi' ? 'सपना' : 'Dream',
     quality: lang === 'kn'
       ? 'ನಿಮ್ಮಲ್ಲಿ ಈಗಾಗಲೇ ಕಂಡುಕೊಂಡಿರುವ ಯಾವ ಗುಣ/ ಮೌಲ್ಯ/ ಸಾರ್ಥ್ಯ ನಿಮ್ಮ ಕನಸನ್ನು ಸಾಧಿಸಲು ಸಹಾಯ ಮಾಡುತ್ತದೆ.'
       : lang === 'ta'
         ? 'உங்களிடம் ஏற்கனவே உள்ள எந்த குணம் / மதிப்பு / திறன் இந்த கனவை அடைய உங்களுக்கு உதவும்?'
-        : 'Which quality/ value/ ability that you already have will help you achieve your dream?',
+        : lang === 'hi'
+          ? 'आपके पास पहले से कौन सा गुण / मूल्य / क्षमता है जो इस सपने को पूरा करने में मदद करेगी?'
+          : 'Which quality/ value/ ability that you already have will help you achieve your dream?',
     prevent: lang === 'kn'
       ? 'ಕನಸು ವಿಫಲವಾಗುವುದಿಲ್ಲ ಎಂದು ಖಚಿತಪಡಿಸಿಕೊಳ್ಳಲು ನೀವು ಏನು ಮಾಡಬೇಕಾಗುತ್ತದೆ'
       : lang === 'ta'
         ? 'இந்த கனவு தோல்வியடையாமல் இருக்க நீங்கள் என்ன செய்ய வேண்டும்?'
-        : 'What do you need to do to make sure this dream does not fail?',
+        : lang === 'hi'
+          ? 'यह सुनिश्चित करने के लिए आपको क्या करना होगा कि यह सपना विफल न हो?'
+          : 'What do you need to do to make sure this dream does not fail?',
     study: lang === 'kn'
       ? 'ಈ ಕನಸನ್ನುಸಾಧಿಸಲು ೧೦ನೇ ತರಗತಿಯ ನಂತರ ನೀವು ಏನು ಅಧ್ಯಯನ ಮಾಡಬೇಕು? (ಅನ್ವಯಿಸಿದರೆ)'
       : lang === 'ta'
         ? 'இந்த கனவை அடைய 10ஆம் வகுப்பிற்குப் பிறகு நீங்கள் என்ன படிக்க வேண்டும்? (தேவையானால்)'
-        : 'To achieve this dream, what do you need to study after Class 10? (if applicable)'
+        : lang === 'hi'
+          ? 'इस सपने को पूरा करने के लिए 10वीं के बाद आपको क्या पढ़ना होगा? (यदि लागू हो)'
+          : 'To achieve this dream, what do you need to study after Class 10? (if applicable)',
   });
 
   const schoolLearningColumnHeadings = {
-    q1: lang === 'kn' ? 'ನಾನು ಇಷ್ಟಪಡುವ ವಿಷಯಗಳು' : lang === 'ta' ? '1.நான் விரும்பும் பாடங்கள்' : 'Subjects I like',
-    q2: lang === 'kn' ? 'ನಾನು ಇಷ್ಟಪಡುವ ವಿಷಯಗಳಿಂದ ನಾನು ಪಡೆಯಲು ಸಾಧ್ಯವಾಗಬಹುದಾದ ವೃತ್ತಿಗಳು' : lang === 'ta' ? '2.நான் விரும்பும் பாடங்களின் மூலம் நான் அடையக்கூடிய தொழில்கள்' : 'Careers I can pursue based on the subjects I like',
-    q3: lang === 'kn' ? 'ನಾನು ಇಷ್ಟಪಡದ ವಿಷಯಗಳು' : lang === 'ta' ? '3.நான் விரும்பாத பாடங்கள்' : 'Subjects I do not like',
-    q4: lang === 'kn' ? 'ಇಷ್ಟಪಡದ ವಿಷಯಗಳಲ್ಲಿ ನಾನು ಸುಧಾರಿಸಿಕೊಂಡರೆ ಪಡೆಯಲು ಸಾಧ್ಯವಾಗಬಹುದಾದ ವೃತ್ತಿಗಳು' : lang === 'ta' ? '4.நான் விரும்பாத பாடங்களில் முன்னேற்றம் பெற்றால் ನಾನು அடையக்கூடிய தொழில்கள்' : 'Careers I can pursue if I make progress in the subjects I do not like',
-    q5: lang === 'kn' ? 'ಪಠ್ಯ ವಿಷಯಗಳ ಜೊತೆಗೆ, ನಾನು ಉತ್ತಮ ಸಾಧನೆ ಮಾಡುವ ಇತರ ಚಟುವಟಿಕೆಗಳು / ವಿಷಯಗಳು' : lang === 'ta' ? '5.பாடப்பிரிவுகளுடன் சேர்த்து, நான் சிறப்பாக சாதனை புரியும் பிற செயல்பாடுகள் / விஷயங்கள்' : 'Other activities / areas in which I perform well along with academic subjects',
-    q6: lang === 'kn' ? 'ನಾನು ಈ ಕೌಶಲ್ಯಗಳನ್ನು ಸುಧಾರಿಸಿಕೊಂಡರೆ ನನ್ನ ಕೆಲಸ / ವೃತ್ತಿಯ ಆಯ್ಕೆಗೆ ಸಹಾಯವಾಗುತ್ತದೆ.' : lang === 'ta' ? '6.இந்த திறன்களில் நான் மேம்பட்டால், என் வேலை / தொழில் தேர்வுக்கு உதவியாக இருக்கும்.' : 'If I improve these skills, it will help me in choosing my job / career.',
+    q1: lang === 'kn' ? 'ನಾನು ಇಷ್ಟಪಡುವ ವಿಷಯಗಳು' : lang === 'ta' ? '1.நான் விரும்பும் பாடங்கள்' : lang === 'hi' ? 'मुझे पसंद विषय' : 'Subjects I like',
+    q2: lang === 'kn' ? 'ನಾನು ಇಷ್ಟಪಡುವ ವಿಷಯಗಳಿಂದ ನಾನು ಪಡೆಯಲು ಸಾಧ್ಯವಾಗಬಹುದಾದ ವೃತ್ತಿಗಳು' : lang === 'ta' ? '2.நான் விரும்பும் பாடங்களின் மூலம் நான் அடையக்கூடிய தொழில்கள்' : lang === 'hi' ? 'पसंदीदा विषयों से मिलने वाले करियर' : 'Careers I can pursue based on the subjects I like',
+    q3: lang === 'kn' ? 'ನಾನು ಇಷ್ಟಪಡದ ವಿಷಯಗಳು' : lang === 'ta' ? '3.நான் விரும்பாத பாடங்கள்' : lang === 'hi' ? 'कठिन लगने वाले विषय' : 'Subjects I do not like',
+    q4: lang === 'kn' ? 'ಇಷ್ಟಪಡದ ವಿಷಯಗಳಲ್ಲಿ ನಾನು ಸುಧಾರಿಸಿಕೊಂಡರೆ ಪಡೆಯಲು ಸಾಧ್ಯವಾಗಬಹುದಾದ ವೃತ್ತಿಗಳು' : lang === 'ta' ? '4.நான் விரும்பாத பாடங்களில் முன்னேற்றம் பெற்றால் ನಾನு அடையக்கூடிய தொழில்கள்' : lang === 'hi' ? 'कठिन विषयों में सुधार से मिलने वाले करियर' : 'Careers I can pursue if I make progress in the subjects I do not like',
+    q5: lang === 'kn' ? 'ಪಠ್ಯ ವಿಷಯಗಳ ಜೊತೆಗೆ, ನಾನು ಉತ್ತಮ ಸಾಧನೆ ಮಾಡುವ ಇತರ ಚಟುವಟಿಕೆಗಳು / ವಿಷಯಗಳು' : lang === 'ta' ? '5.பாடப்பிரிவுகளுடன் சேர்த்து, நான் சிறப்பாக சாதனை புரியும் பிற செயல்பாடுகள் / விஷயங்கள்' : lang === 'hi' ? 'पाठ्यक्रम के अलावा अन्य गतिविधियाँ जिनमें मैं अच्छा हूँ' : 'Other activities / areas in which I perform well along with academic subjects',
+    q6: lang === 'kn' ? 'ನಾನು ಈ ಕೌಶಲ್ಯಗಳನ್ನು ಸುಧಾರಿಸಿಕೊಂಡರೆ ನನ್ನ ಕೆಲಸ / ವೃತ್ತಿಯ ಆಯ್ಕೆಗೆ ಸಹಾಯವಾಗುತ್ತದೆ.' : lang === 'ta' ? '6.இந்த திறன்களில் நான் மேம்பட்டால், என் வேலை / தொழில் தேர்வுக்கு உதவியாக இருக்கும்.' : lang === 'hi' ? 'इन कौशलों में सुधार से करियर चुनाव में मदद मिलेगी।' : 'If I improve these skills, it will help me in choosing my job / career.',
   };
 
   // Effect to update dreamHeadings from fetched titles (questionTitles is populated from content_translations)
@@ -120,9 +126,9 @@ export default function SummaryViewDialog({
       if (!assessmentType) return;
 
       try {
-        // 1. Fetch from legacy/structure template
+        // 1. Fetch from template table
         const { data: template } = await supabase
-          .from('assessment_summary_templates')
+          .from('summary_templates')
           .select('summary_questions')
           .eq('assessment_type', assessmentType)
           .maybeSingle();
@@ -131,7 +137,7 @@ export default function SummaryViewDialog({
 
         if (template?.summary_questions) {
           const questions = template.summary_questions as any;
-          const preferredKey = lang === 'kn' ? 'kn' : lang === 'ta' ? 'ta' : 'en';
+          const preferredKey = lang === 'kn' ? 'kn' : lang === 'ta' ? 'ta' : lang === 'hi' ? 'hi' : 'en';
           const hasPreferred = questions[preferredKey];
           const langKey = hasPreferred ? preferredKey : 'en';
 
@@ -403,25 +409,33 @@ export default function SummaryViewDialog({
                     ? 'ನನ್ನ ಬಗ್ಗೆ ಸಾರಾಂಶ'
                     : lang === 'ta'
                       ? 'சுருக்கம்: என்னைப் பற்றி'
-                      : 'Summary: About Me')
+                      : lang === 'hi'
+                        ? 'सारांश: मेरे बारे में'
+                        : 'Summary: About Me')
                   : assessmentType === 'dreams'
                     ? (lang === 'kn'
                       ? 'ನನ್ನ ಕನಸುಗಳು ಸಾರಾಂಶ'
                       : lang === 'ta'
                         ? 'சுருக்கம்: என் கனவுகள்'
-                        : 'Summary: My Dreams')
+                        : lang === 'hi'
+                          ? 'सारांश: मेरे सपने'
+                          : 'Summary: My Dreams')
                     : assessmentType === 'school_learning'
                       ? (lang === 'kn'
                         ? 'ಸಾರಾಂಶ: ನನ್ನ ಮುಂದಿನ ಯೋಜನೆ'
                         : lang === 'ta'
                           ? 'சுருக்கம்: என் எதிர்கால திட்டம்'
-                          : 'Summary: My future plan')
+                          : lang === 'hi'
+                            ? 'सारांश: मेरी भविष्य की योजना'
+                            : 'Summary: My future plan')
                       : assessmentType === 'hobbies'
                         ? (lang === 'kn'
                           ? 'ನನ್ನ ಪ್ರತಿಭೆಗಳು ಮತ್ತು ಹವ್ಯಾಸಗಳು ಸಾರಾಂಶ'
                           : lang === 'ta'
                             ? 'சுருக்கம்: என் திறமைகள் மற்றும் பொழுதுபோக்குகள்'
-                            : 'Summary: My Talents and Hobbies')
+                            : lang === 'hi'
+                              ? 'सारांश: मेरी प्रतिभाएँ और शौक'
+                              : 'Summary: My Talents and Hobbies')
                         : assessmentType === 'role_models'
                           ? (lang === 'kn'
                             ? 'ಸಾರಾಂಶ: ನನ್ನ ಆದರ್ಶ ವ್ಯಕ್ತಿಗಳು'
@@ -434,7 +448,9 @@ export default function SummaryViewDialog({
                             ? 'ನನ್ನನ್ನು ಪ್ರೇರೇಪಿಸಿದ ವಿಷಯಗಳು'
                             : lang === 'ta'
                               ? 'என்னை ஊக்கப்படுத்திய விஷயங்கள்'
-                              : 'Things I Was Inspired By')}
+                              : lang === 'hi'
+                                ? 'जिन चीज़ों ने मुझे प्रेरित किया'
+                                : 'Things I Was Inspired By')}
               </DialogTitle>
               <DialogDescription>
                 {assessmentType === 'about_me'
@@ -442,36 +458,48 @@ export default function SummaryViewDialog({
                     ? 'ನಿಮ್ಮ ಆತ್ಮ-ಪ್ರತಿಬಿಂಬ ಮತ್ತು ಬೆಳವಣಿಗೆಯ ಪ್ರದೇಶಗಳ ಬಗ್ಗೆ ಸಾರಾಂಶ'
                     : lang === 'ta'
                       ? 'உங்கள் சுய சிந்தனை மற்றும் வளர வேண்டிய பகுதிகளைச் சுருக்கமாகப் பார்க்கும் பகுதி.'
-                      : 'Summary of your self-reflection and areas for growth')
+                      : lang === 'hi'
+                        ? 'आत्म-चिंतन और विकास के क्षेत्रों का सारांश'
+                        : 'Summary of your self-reflection and areas for growth')
                   : assessmentType === 'dreams'
                     ? (lang === 'kn'
                       ? 'ನಿಮ್ಮ ಕನಸುಗಳು ಮತ್ತು ಉದ್ದೇಶಗಳ ಬಗ್ಗೆ ಸಾರಾಂಶ'
                       : lang === 'ta'
                         ? 'உங்கள் கனவுகள் மற்றும் எதிர்கால இலக்குகளைச் சுருக்கமாகப் பதிவு செய்துள்ளது.'
-                        : 'Summary of your dreams and aspirations')
+                        : lang === 'hi'
+                          ? 'आपके सपनों और आकांक्षाओं का सारांश'
+                          : 'Summary of your dreams and aspirations')
                     : assessmentType === 'school_learning'
                       ? (lang === 'kn'
                         ? 'ನಿಮ್ಮ ಭವಿಷ್ಯದ ಯೋಜನೆಯನ್ನು ಸಂಕ್ಷಿಪ್ತವಾಗಿ ಬರೆಯಿರಿ.'
                         : lang === 'ta'
                           ? 'உங்கள் எதிர்கால திட்டத்தை சுருக்கமாக எழுதுங்கள்.'
-                          : 'Write a brief summary of your future plan.')
+                          : lang === 'hi'
+                            ? 'अपनी भविष्य की योजना का संक्षिप्त विवरण लिखें।'
+                            : 'Write a brief summary of your future plan.')
                       : assessmentType === 'hobbies'
                         ? (lang === 'kn'
                           ? 'ನಿಮ್ಮ ಪ್ರತಿಭೆಗಳು ಮತ್ತು ಹವ್ಯಾಸಗಳ ಬಗ್ಗೆ ಸಾರಾಂಶ'
                           : lang === 'ta'
                             ? 'உங்கள் திறமைகள் மற்றும் பொழுதுபோக்குகள் பற்றிய முக்கிய அம்சங்களின் சுருக்கம்.'
-                            : 'Summary of your talents and hobbies')
+                            : lang === 'hi'
+                              ? 'आपकी प्रतिभाओं और शौकों का सारांश'
+                              : 'Summary of your talents and hobbies')
                         : assessmentType === 'role_models'
                           ? (lang === 'kn'
                             ? 'ನಿಮ್ಮ ಆದರ್ಶ ವ್ಯಕ್ತಿಗಳ ಬಗ್ಗೆ ಸಾರಾಂಶ'
                             : lang === 'ta'
                               ? 'உங்கள் எதிர்கால படிப்பு, வேலை, தொழில் தேர்வு குறித்து சந்தேகமாக உள்ள கேள்விகளை நினைத்து எழுதுங்கள்.'
-                              : 'Think about questions related to your future studies, job, or career choice and write them.')
+                              : lang === 'hi'
+                                ? 'भविष्य की पढ़ाई, नौकरी और करियर से जुड़े सवाल सोचकर लिखें।'
+                                : 'Think about questions related to your future studies, job, or career choice and write them.')
                           : (lang === 'kn'
                             ? 'ಪ್ರೇರಣಾದಾಯಕ ವೀಡಿಯೊಗಳು ಮತ್ತು ಅನುಭವಗಳ ಬಗ್ಗೆ ನಿಮ್ಮ ಪ್ರತಿಬಿಂಬ'
                             : lang === 'ta'
                               ? 'உங்களை ஊக்கப்படுத்திய வீடியோக்கள் மற்றும் அனுபவங்கள் குறித்து உங்கள் சிந்தனைகளின் சுருக்கம்.'
-                              : 'Your reflection on inspirational videos and experiences')}
+                              : lang === 'hi'
+                                ? 'प्रेरणादायक वीडियो और अनुभवों पर आपके विचारों का सारांश'
+                                : 'Your reflection on inspirational videos and experiences')}
               </DialogDescription>
             </div>
             <div className="flex items-center gap-2">

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useLayoutEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +27,12 @@ interface CareerChatSectionProps {
 export default function CareerChatSection({
     resolvedLang, t, ccMessages, ccInput, setCcInput, ccCanSend, ccLoading, onSend, ccListRef,
 }: CareerChatSectionProps) {
+    useLayoutEffect(() => {
+        if (ccListRef.current) {
+            ccListRef.current.scrollTop = ccListRef.current.scrollHeight;
+        }
+    }, [ccMessages.length, ccLoading]);
+
     return (
         <div className="mt-12 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
             {/* Left: Spotlight */}
@@ -56,16 +62,7 @@ export default function CareerChatSection({
                                             </div>
                                             <span className="font-medium text-gray-700">CareerBot</span>
                                         </div>
-                                        <p className="text-gray-600 text-sm">
-                                            {resolvedLang === 'kn'
-                                                ? 'ನಮಸ್ಕಾರ! ನಿಮ್ಮ ವೃತ್ತಿ ಪ್ರಯಾಣದಲ್ಲಿ ಮಾರ್ಗದರ್ಶನ ನೀಡಲು ನಾನು ಇಲ್ಲಿದ್ದೇನೆ. ನಿಮ್ಮ ಮೌಲ್ಯಮಾಪನಗಳ ಆಧಾರದ ಮೇಲೆ, ನಾನು ವೈಯಕ್ತಿಕ ಸಲಹೆ ಮತ್ತು ಸೂಚನೆಗಳನ್ನು ನೀಡಬಹುದು.'
-                                                : resolvedLang === 'ta'
-                                                    ? 'வணக்கம்! உங்கள் தொழில் பயணத்தில் உங்களுக்கு வழிகாட்ட நான் இருக்கிறேன். நீங்கள் எழுதிய மதிப்பீடுகளின் அடிப்படையில், உங்களுக்கு தனிப்பட்ட ஆலோசனைகளையும் பரிந்துரைகளையும் வழங்க முடியும்.'
-                                                    : resolvedLang === 'hi'
-                                                        ? 'नमस्ते! आपकी करियर यात्रा में मार्गदर्शन करने के लिए मैं यहाँ हूँ। आपके मूल्यांकनों के आधार पर, मैं व्यक्तिगत सलाह और सुझाव दे सकता हूँ।'
-                                                        : "Hello! I'm here to help guide your career journey. Based on your assessments, I can provide personalized advice and suggestions."
-                                            }
-                                        </p>
+                                        <p className="text-gray-600 text-sm">{t('chat_greeting')}</p>
                                     </div>
                                 ) : (
                                     <>

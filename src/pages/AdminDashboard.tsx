@@ -51,7 +51,18 @@ interface ClassRow { id: string; name: string; state_id: string; states: { name:
 interface AdminUser {
   id: string; full_name: string; email: string;
   role: 'admin' | 'teacher' | 'student';
-  preferred_language: string; mobile: string | null
+  preferred_language: string; mobile: string | null;
+  bio: string | null; interests: string | null;
+  career_goals: string | null; strengths: string | null;
+  areas_for_growth: string | null; profile_picture_url: string | null;
+  date_of_birth: string | null; gender: string | null;
+  address: string | null; school: string | null;
+}
+
+interface AuditLog {
+  id: string; actor_user_id: string | null; action: string;
+  target_type: string; target_id: string | null;
+  target_name: string | null; created_at: string;
 }
 
 interface TemplateRow {
@@ -177,6 +188,19 @@ export default function AdminDashboard() {
         `This school has ${teachers} teacher(s) and ${students} student(s). Delete anyway?`,
       confirmBtn: 'Confirm', promoteBtn: 'Promote', myProfile: 'My Profile',
       searchTeachers: 'Search teachers...', searchStudents: 'Search students...',
+      // user profile columns
+      bio: 'Bio', interests: 'Interests', careerGoals: 'Career Goals',
+      strengths: 'Strengths', areasForGrowth: 'Areas for Growth',
+      profilePicture: 'Profile Picture', dob: 'Date of Birth',
+      genderLabel: 'Gender', addressLabel: 'Address', schoolLabel: 'School',
+      // audit log
+      auditLog: 'Audit Log', auditLogDesc: 'Last 50 administrative actions (most recent first)',
+      auditAction: 'Action', auditTarget: 'Target', auditWhen: 'When', auditActor: 'Actor',
+      loadAudit: 'Load Audit Log',
+      // profile picture orphan check
+      profilePicCheck: 'Profile Picture Check',
+      profilePicCheckDesc: 'Users by profile picture URL status',
+      withPic: 'URL set', withoutPic: 'No URL',
     },
     kn: {
       adminDashboard: 'ಆಡಳಿತ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್', adminPanel: 'CareerCompass ಆಡಳಿತ ಫಲಕ',
@@ -458,6 +482,10 @@ export default function AdminDashboard() {
   // E7 — profile dialog
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
 
+  // Audit log
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [auditLoading, setAuditLoading] = useState(false);
+
   // ── Data fetching ──────────────────────────────────────────────────────────
 
   const fetchData = async () => {
@@ -469,7 +497,7 @@ export default function AdminDashboard() {
           supabase.from('teachers').select('id, state_id, is_active, users:user_id(full_name, mobile), states:state_id(name), classes:class_id(name)').order('created_at', { ascending: false }).limit(QUERY_LIMIT),
           supabase.from('students').select('id, enrollment_status, users:user_id(full_name, mobile), classes:class_id(name, states:state_id(name)), teachers:teacher_id(users:user_id(full_name), is_default)').order('created_at', { ascending: false }).limit(QUERY_LIMIT),
           supabase.from('classes').select('id, name, state_id, states:state_id(name)').order('name').limit(QUERY_LIMIT),
-          supabase.from('users').select('id, full_name, email, role, preferred_language, mobile').order('created_at', { ascending: false }).limit(QUERY_LIMIT),
+          supabase.from('users').select('id, full_name, email, role, preferred_language, mobile, bio, interests, career_goals, strengths, areas_for_growth, profile_picture_url, date_of_birth, gender, address, school').order('created_at', { ascending: false }).limit(QUERY_LIMIT),
           AssessmentService.getAllAssessmentTemplates(),
           supabase.from('assessment_summary_templates').select('id, assessment_type, title, is_active').order('assessment_type'),
         ]);
@@ -498,6 +526,51 @@ export default function AdminDashboard() {
     }
   };
 
+  // ── Targeted single-table fetch helpers (LOW — scoped refetch) ───────────
+
+  const fetchOrgs = async () => {
+    const { data, error } = await supabase.from('orgs').select('*').order('created_at', { ascending: false }).limit(QUERY_LIMIT);
+    if (error) logger.error('fetchOrgs:', error);
+    else setOrganizations(data || []);
+  };
+  const fetchSchools = async () => {
+    const { data, error } = await supabase.from('states').select('id, name, state_code, org_id, orgs:org_id(name), created_at').order('created_at', { ascending: false }).limit(QUERY_LIMIT);
+    if (error) logger.error('fetchSchools:', error);
+    else setSchools(data as StateRow[] || []);
+  };
+  const fetchClasses = async () => {
+    const { data, error } = await supabase.from('classes').select('id, name, state_id, states:state_id(name)').order('name').limit(QUERY_LIMIT);
+    if (error) logger.error('fetchClasses:', error);
+    else setClasses(data as ClassRow[] || []);
+  };
+  const fetchTeachers = async () => {
+    const { data, error } = await supabase.from('teachers').select('id, state_id, is_active, users:user_id(full_name, mobile), states:state_id(name), classes:class_id(name)').order('created_at', { ascending: false }).limit(QUERY_LIMIT);
+    if (error) logger.error('fetchTeachers:', error);
+    else setTeachers(data as Teacher[] || []);
+  };
+  const fetchStudents = async () => {
+    const { data, error } = await supabase.from('students').select('id, enrollment_status, users:user_id(full_name, mobile), classes:class_id(name, states:state_id(name)), teachers:teacher_id(users:user_id(full_name), is_default)').order('created_at', { ascending: false }).limit(QUERY_LIMIT);
+    if (error) logger.error('fetchStudents:', error);
+    else setStudents(data as Student[] || []);
+  };
+  const fetchUsers = async () => {
+    const { data, error } = await supabase.from('users').select('id, full_name, email, role, preferred_language, mobile, bio, interests, career_goals, strengths, areas_for_growth, profile_picture_url, date_of_birth, gender, address, school').order('created_at', { ascending: false }).limit(QUERY_LIMIT);
+    if (error) logger.error('fetchUsers:', error);
+    else setAdminUsers(data as AdminUser[] || []);
+  };
+  const fetchAuditLogs = async () => {
+    setAuditLoading(true);
+    const { data } = await (supabase as any).from('admin_audit_log').select('*').order('created_at', { ascending: false }).limit(50);
+    setAuditLogs((data as AuditLog[]) || []);
+    setAuditLoading(false);
+  };
+  const logAudit = (action: string, targetType: string, targetId: string | null, targetName: string | null) => {
+    (supabase as any).from('admin_audit_log').insert({
+      actor_user_id: userProfile?.id ?? null,
+      action, target_type: targetType, target_id: targetId, target_name: targetName,
+    }).then();
+  };
+
   useEffect(() => { fetchData(); }, []);
 
   // ── Shared confirm helper (B5) ────────────────────────────────────────────
@@ -510,11 +583,12 @@ export default function AdminDashboard() {
 
   const createOrganization = async () => {
     if (!newOrgName.trim()) return;
-    const { error } = await supabase.from('orgs').insert({ name: newOrgName.trim() });
+    const { data, error } = await supabase.from('orgs').insert({ name: newOrgName.trim() }).select('id').single();
     if (error) { toast({ title: 'Error', description: 'Failed to create organization', variant: 'destructive' }); return; }
     toast({ title: 'Organization Created', description: `${newOrgName} created` });
+    logAudit('create_org', 'org', data?.id ?? null, newOrgName.trim());
     setNewOrgName('');
-    fetchData();
+    fetchOrgs();
   };
 
   // B1 — rename org
@@ -524,8 +598,9 @@ export default function AdminDashboard() {
     const { error } = await supabase.from('orgs').update({ name: editOrgName.trim() }).eq('id', editingOrg.id);
     if (error) { toast({ title: 'Error', description: 'Failed to rename', variant: 'destructive' }); return; }
     toast({ title: 'Renamed', description: editOrgName });
+    logAudit('edit_org', 'org', editingOrg.id, editOrgName.trim());
     setEditingOrg(null);
-    fetchData();
+    fetchOrgs();
   };
 
   // B4 — cascade pre-count for org delete
@@ -536,6 +611,7 @@ export default function AdminDashboard() {
       const { error } = await supabase.from('orgs').delete().eq('id', id);
       if (error) { toast({ title: 'Error', description: `Failed to delete (${error.message})`, variant: 'destructive' }); return; }
       toast({ title: 'Deleted', description: name });
+      logAudit('delete_org', 'org', id, name);
       fetchData();
     });
   };
@@ -544,15 +620,16 @@ export default function AdminDashboard() {
 
   const createSchool = async () => {
     if (!newSchoolName.trim() || !selectedOrgForSchool) return;
-    const { error } = await supabase.from('states').insert({
+    const { data, error } = await supabase.from('states').insert({
       name: newSchoolName.trim(),
       org_id: selectedOrgForSchool,
       ...(newSchoolCode.trim() ? { state_code: newSchoolCode.trim() } : {}),
-    });
+    }).select('id').single();
     if (error) { toast({ title: 'Error', description: 'Failed to create school', variant: 'destructive' }); return; }
     toast({ title: 'School Created', description: newSchoolName });
+    logAudit('create_school', 'school', data?.id ?? null, newSchoolName.trim());
     setNewSchoolName(''); setNewSchoolCode(''); setSelectedOrgForSchool('');
-    fetchData();
+    fetchSchools();
   };
 
   // B1 — edit state
@@ -565,8 +642,9 @@ export default function AdminDashboard() {
     }).eq('id', editingState.id);
     if (error) { toast({ title: 'Error', description: 'Failed to update', variant: 'destructive' }); return; }
     toast({ title: 'Updated', description: editStateName });
+    logAudit('edit_school', 'school', editingState.id, editStateName.trim());
     setEditingState(null);
-    fetchData();
+    fetchSchools();
   };
 
   // B4 — cascade pre-count for state delete
@@ -577,7 +655,8 @@ export default function AdminDashboard() {
       const { error } = await supabase.from('states').delete().eq('id', id);
       if (error) { toast({ title: 'Error', description: `Failed to delete (${error.message})`, variant: 'destructive' }); return; }
       toast({ title: 'Deleted', description: name });
-      fetchData();
+      logAudit('delete_school', 'school', id, name);
+      Promise.all([fetchSchools(), fetchTeachers(), fetchStudents(), fetchClasses()]);
     });
   };
 
@@ -585,11 +664,12 @@ export default function AdminDashboard() {
 
   const createClass = async () => {
     if (!newClassName.trim() || !selectedStateForClass) return;
-    const { error } = await supabase.from('classes').insert({ name: newClassName.trim(), state_id: selectedStateForClass });
+    const { data, error } = await supabase.from('classes').insert({ name: newClassName.trim(), state_id: selectedStateForClass }).select('id').single();
     if (error) { toast({ title: 'Error', description: 'Failed to create class', variant: 'destructive' }); return; }
     toast({ title: 'Class Created', description: newClassName });
+    logAudit('create_class', 'class', data?.id ?? null, newClassName.trim());
     setNewClassName(''); setSelectedStateForClass('');
-    fetchData();
+    fetchClasses();
   };
 
   const deleteClass = async (id: string, name: string) => {
@@ -597,6 +677,7 @@ export default function AdminDashboard() {
       const { error } = await supabase.from('classes').delete().eq('id', id);
       if (error) { toast({ title: 'Error', description: `Failed to delete (${error.message})`, variant: 'destructive' }); return; }
       toast({ title: 'Deleted', description: name });
+      logAudit('delete_class', 'class', id, name);
       setClasses(prev => prev.filter(c => c.id !== id));
     });
   };
@@ -631,8 +712,9 @@ export default function AdminDashboard() {
     const { error } = await supabase.from('users').update({ full_name: editName.trim(), preferred_language: editLang }).eq('id', editingUser.id);
     if (error) { toast({ title: 'Error', description: 'Failed to update user', variant: 'destructive' }); return; }
     toast({ title: 'User Updated', description: editName });
+    logAudit('edit_user', 'user', editingUser.id, editName.trim());
     setEditingUser(null);
-    fetchData();
+    fetchUsers();
   };
 
   const promoteToAdmin = async (u: AdminUser) => {
@@ -640,7 +722,8 @@ export default function AdminDashboard() {
       const { error } = await supabase.from('users').update({ role: 'admin' }).eq('id', u.id);
       if (error) { toast({ title: 'Error', description: 'Failed to update role', variant: 'destructive' }); return; }
       toast({ title: 'Role Updated', description: `${u.full_name} is now an Admin` });
-      fetchData();
+      logAudit('promote_admin', 'user', u.id, u.full_name);
+      fetchUsers();
     }, t('promoteBtn'));
   };
 
@@ -663,8 +746,12 @@ export default function AdminDashboard() {
     if (!ok) { toast({ title: 'Error', description: 'Failed to update template', variant: 'destructive' }); return; }
     aiSummaryService.clearTemplateCache(editingTemplate.assessment_type); // C6
     toast({ title: 'Template Updated', description: editTplTitle });
+    setAssessmentTemplates(prev => prev.map(tp =>
+      tp.id === editingTemplate.id
+        ? { ...tp, title: editTplTitle.trim(), description: editTplDesc.trim() || null, instructions: editTplInstr.trim() || null, is_active: editTplActive }
+        : tp
+    ));
     setEditingTemplate(null);
-    fetchData();
   };
 
   // ── Summary template handlers (C3/C5/C6) ──────────────────────────────────
@@ -1170,6 +1257,92 @@ export default function AdminDashboard() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Audit Log */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>{t('auditLog')}</CardTitle>
+                    <CardDescription>{t('auditLogDesc')}</CardDescription>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={fetchAuditLogs} disabled={auditLoading}>
+                    {auditLoading ? '...' : t('loadAudit')}
+                  </Button>
+                </div>
+              </CardHeader>
+              {auditLogs.length > 0 && (
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader><TableRow>
+                        <TableHead>{t('auditWhen')}</TableHead>
+                        <TableHead>{t('auditAction')}</TableHead>
+                        <TableHead>{t('auditTarget')}</TableHead>
+                        <TableHead>{t('auditActor')}</TableHead>
+                      </TableRow></TableHeader>
+                      <TableBody>
+                        {auditLogs.map(log => (
+                          <TableRow key={log.id}>
+                            <TableCell className="text-xs whitespace-nowrap text-muted-foreground">
+                              {new Date(log.created_at).toLocaleString()}
+                            </TableCell>
+                            <TableCell className="font-mono text-xs">{log.action}</TableCell>
+                            <TableCell className="text-sm">
+                              <span className="font-medium">{log.target_name || log.target_id || '—'}</span>
+                              <span className="text-muted-foreground text-xs ml-1">({log.target_type})</span>
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground">
+                              {adminUsers.find(u => u.id === log.actor_user_id)?.full_name || (log.actor_user_id ? log.actor_user_id.slice(0, 8) + '…' : '—')}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              )}
+            </Card>
+
+            {/* Profile Picture Orphan Check */}
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('profilePicCheck')}</CardTitle>
+                <CardDescription>{t('profilePicCheckDesc')}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-8 mb-4">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold">{adminUsers.filter(u => u.profile_picture_url).length}</p>
+                    <p className="text-xs text-muted-foreground">{t('withPic')}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-muted-foreground">{adminUsers.filter(u => !u.profile_picture_url).length}</p>
+                    <p className="text-xs text-muted-foreground">{t('withoutPic')}</p>
+                  </div>
+                </div>
+                {adminUsers.filter(u => u.profile_picture_url).length > 0 && (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader><TableRow>
+                        <TableHead>{t('name')}</TableHead>
+                        <TableHead>{t('role')}</TableHead>
+                        <TableHead>{t('profilePicture')} URL</TableHead>
+                      </TableRow></TableHeader>
+                      <TableBody>
+                        {adminUsers.filter(u => u.profile_picture_url).map(u => (
+                          <TableRow key={u.id}>
+                            <TableCell className="font-medium text-sm whitespace-nowrap">{u.full_name}</TableCell>
+                            <TableCell><Badge variant="outline" className="text-xs">{u.role}</Badge></TableCell>
+                            <TableCell className="text-xs text-muted-foreground max-w-xs truncate">{u.profile_picture_url}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* ── Users ────────────────────────────────────────────────────── */}
@@ -1182,7 +1355,9 @@ export default function AdminDashboard() {
                     <TableHeader><TableRow>
                       <TableHead>{t('name')}</TableHead><TableHead>{t('email')}</TableHead>
                       <TableHead>{t('role')}</TableHead><TableHead>{t('language')}</TableHead>
-                      <TableHead>{t('mobile')}</TableHead><TableHead>Actions</TableHead>
+                      <TableHead>{t('mobile')}</TableHead>
+                      <TableHead className="text-center">{t('profilePicture')}</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow></TableHeader>
                     <TableBody>
                       {adminUsers.map(u => (
@@ -1192,6 +1367,7 @@ export default function AdminDashboard() {
                           <TableCell><Badge variant={u.role === 'admin' ? 'default' : u.role === 'teacher' ? 'secondary' : 'outline'}>{u.role}</Badge></TableCell>
                           <TableCell className="uppercase text-xs">{u.preferred_language || 'en'}</TableCell>
                           <TableCell className="whitespace-nowrap">{u.mobile || '—'}</TableCell>
+                          <TableCell className="text-center text-sm">{u.profile_picture_url ? '✓' : '—'}</TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <Button variant="outline" size="sm" onClick={() => openEditUser(u)}><Edit className="w-4 h-4" /></Button>
@@ -1475,7 +1651,7 @@ export default function AdminDashboard() {
           classes={importClasses}
           teacherId={importTeacher.id}
           stateId={importTeacher.state_id}
-          onImported={() => { setImportDialogOpen(false); setImportTeacher(null); fetchData(); }}
+          onImported={() => { setImportDialogOpen(false); setImportTeacher(null); fetchStudents(); }}
         />
       )}
 
@@ -1510,7 +1686,7 @@ export default function AdminDashboard() {
 
       {/* User edit */}
       <Dialog open={!!editingUser} onOpenChange={open => !open && setEditingUser(null)}>
-        <DialogContent>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{t('editUser')}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div><Label>{t('name')}</Label><Input value={editName} onChange={e => setEditName(e.target.value)} className="mt-1" /></div>
@@ -1528,6 +1704,45 @@ export default function AdminDashboard() {
                 </SelectContent>
               </Select>
             </div>
+            {/* Read-only profile columns surfaced for admin visibility */}
+            {editingUser && (editingUser.date_of_birth || editingUser.gender || editingUser.address ||
+              editingUser.school || editingUser.bio || editingUser.interests ||
+              editingUser.career_goals || editingUser.strengths || editingUser.areas_for_growth ||
+              editingUser.profile_picture_url) && (
+              <div className="pt-3 border-t space-y-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Profile Information</p>
+                {editingUser.date_of_birth && (
+                  <div><p className="text-xs text-muted-foreground">{t('dob')}</p><p className="text-sm">{editingUser.date_of_birth}</p></div>
+                )}
+                {editingUser.gender && (
+                  <div><p className="text-xs text-muted-foreground">{t('genderLabel')}</p><p className="text-sm">{editingUser.gender}</p></div>
+                )}
+                {editingUser.address && (
+                  <div><p className="text-xs text-muted-foreground">{t('addressLabel')}</p><p className="text-sm whitespace-pre-wrap">{editingUser.address}</p></div>
+                )}
+                {editingUser.school && (
+                  <div><p className="text-xs text-muted-foreground">{t('schoolLabel')}</p><p className="text-sm">{editingUser.school}</p></div>
+                )}
+                {editingUser.bio && (
+                  <div><p className="text-xs text-muted-foreground">{t('bio')}</p><p className="text-sm whitespace-pre-wrap">{editingUser.bio}</p></div>
+                )}
+                {editingUser.interests && (
+                  <div><p className="text-xs text-muted-foreground">{t('interests')}</p><p className="text-sm">{editingUser.interests}</p></div>
+                )}
+                {editingUser.career_goals && (
+                  <div><p className="text-xs text-muted-foreground">{t('careerGoals')}</p><p className="text-sm whitespace-pre-wrap">{editingUser.career_goals}</p></div>
+                )}
+                {editingUser.strengths && (
+                  <div><p className="text-xs text-muted-foreground">{t('strengths')}</p><p className="text-sm">{editingUser.strengths}</p></div>
+                )}
+                {editingUser.areas_for_growth && (
+                  <div><p className="text-xs text-muted-foreground">{t('areasForGrowth')}</p><p className="text-sm">{editingUser.areas_for_growth}</p></div>
+                )}
+                {editingUser.profile_picture_url && (
+                  <div><p className="text-xs text-muted-foreground">{t('profilePicture')} URL</p><p className="text-xs text-muted-foreground break-all">{editingUser.profile_picture_url}</p></div>
+                )}
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditingUser(null)}>{t('cancel')}</Button>

@@ -55,33 +55,26 @@ export default function StudentDashboard() {
   const [ccInput, setCcInput] = useState('');
   const [ccLoading, setCcLoading] = useState(false);
   const ccListRef = useRef<HTMLDivElement | null>(null);
-  const roadmapRedirectedRef = useRef<Set<string>>(new Set());
+  const roadmapRedirectedRef = useRef<Set<string>>(
+    new Set<string>(JSON.parse(sessionStorage.getItem('roadmap_redirected') ?? '[]'))
+  );
   const ccCanSend = useMemo(() => !!ccInput.trim() && !ccLoading, [ccInput, ccLoading]);
-
-  const ccScrollToBottom = () => {
-    requestAnimationFrame(() => {
-      ccListRef.current?.scrollTo({ top: ccListRef.current.scrollHeight, behavior: 'smooth' });
-    });
-  };
 
   const handleCareerChatSend = async () => {
     if (!ccCanSend) return;
     const content = ccInput.trim();
     setCcInput('');
     const userMsg: ChatMsg = { id: crypto.randomUUID(), role: 'user', text: content };
-    const newMessages = [...ccMessages, userMsg];
-    setCcMessages(newMessages);
+    setCcMessages(prev => [...prev, userMsg]);
     setCcLoading(true);
-    ccScrollToBottom();
     try {
-      const history = ccMessages.map(m => ({ id: m.id, role: m.role, text: m.text }));
+      const history = ccMessages.slice(-20).map(m => ({ id: m.id, role: m.role, text: m.text }));
       const response = await aiChatService.sendMessage(history, content);
       if (response.success && response.text) {
         setCcMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'model', text: response.text! }]);
       } else {
         throw new Error(response.error || 'Unknown error');
       }
-      ccScrollToBottom();
     } catch {
       const errorText =
         resolvedLang === 'kn' ? 'ಸದ್ಯ ಸಂಪರ್ಕಿಸಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.' :
@@ -302,7 +295,10 @@ export default function StudentDashboard() {
 
     const validTypes = ['inspiration', 'about_me', 'dreams', 'school_learning', 'hobbies', 'role_models'] as const;
     type ValidType = typeof validTypes[number];
-    if (!validTypes.includes(assessment as ValidType)) return;
+    if (!validTypes.includes(assessment as ValidType)) {
+      setSearchParams({}, { replace: true });
+      return;
+    }
     if (!getCompletionStatus(assessment)) return;
 
     setSearchParams({}, { replace: true });
@@ -392,6 +388,7 @@ export default function StudentDashboard() {
     const milestone = ROADMAP_TRIGGERS[assessmentType];
     if (progressLoaded && milestone && !hasProgress(assessmentType) && !roadmapRedirectedRef.current.has(assessmentType)) {
       roadmapRedirectedRef.current.add(assessmentType);
+      sessionStorage.setItem('roadmap_redirected', JSON.stringify([...roadmapRedirectedRef.current]));
       navigate(`/student/career-roadmap?highlight=${milestone}`);
       return;
     }
@@ -455,12 +452,21 @@ export default function StudentDashboard() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-gray-800">{t('progress_title')}</h2>
-              <Badge variant="secondary">{Math.round(getOverallProgress())}% {t('complete_suffix')}</Badge>
+              {!progressLoaded
+                ? <Skeleton className="h-6 w-24 rounded-full" />
+                : <Badge variant="secondary">{Math.round(getOverallProgress())}% {t('complete_suffix')}</Badge>
+              }
             </div>
-            <Progress value={getOverallProgress()} className="h-3" />
+            {!progressLoaded
+              ? <Skeleton className="h-3 w-full rounded" />
+              : <Progress value={getOverallProgress()} className="h-3" />
+            }
             <div className="flex justify-between text-sm text-gray-600 mt-2">
               <span>8 {t('assessments_total')}</span>
-              <span>{Math.round(getOverallProgress())}% {t('complete_suffix')}</span>
+              {!progressLoaded
+                ? <Skeleton className="h-4 w-16 rounded" />
+                : <span>{Math.round(getOverallProgress())}% {t('complete_suffix')}</span>
+              }
             </div>
           </CardContent>
         </Card>

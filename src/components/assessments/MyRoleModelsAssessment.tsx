@@ -456,11 +456,16 @@ export default function MyRoleModelsAssessment() {
     return allRoleModelsComplete && generalQuestionsComplete && summaryComplete;
   };
 
+  const REQUIRED_ROLE_MODEL_FIELDS: (keyof RoleModel)[] = [
+    'name', 'relationship', 'admirationReasons', 'profession', 'desiredQualities',
+    'careerDiscussed', 'opinion', 'willingToHelp', 'helpLookingFor', 'similarities', 'incorporatePlan',
+  ];
+
   const areCoreSectionsComplete = () => {
-    // Check all role models are complete
+    // Check all role models are complete (only known required fields, not Object.values which breaks on schema additions)
     const allRoleModelsComplete = ['roleModel1', 'roleModel2', 'roleModel3'].every(key => {
       const roleModel = responses[key as keyof RoleModelsAssessmentResponse] as RoleModel;
-      return Object.values(roleModel).every(v => v && v.trim() !== '');
+      return REQUIRED_ROLE_MODEL_FIELDS.every(field => roleModel[field] && roleModel[field].trim() !== '');
     });
 
     // Check general questions are complete
