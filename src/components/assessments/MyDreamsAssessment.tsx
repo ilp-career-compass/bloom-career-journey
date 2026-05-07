@@ -321,12 +321,12 @@ export default function MyDreamsAssessment() {
     loadQuestions();
   }, [lang]);
 
-  // Auto-select summary tab from URL param
+  // Auto-select summary tab from URL param — only in read-only view to prevent bypassing lock for in-progress assessments
   useEffect(() => {
-    if (tabParam === 'summary' && dreamsQuestions.length > 0) {
+    if (tabParam === 'summary' && readOnlyView && dreamsQuestions.length > 0) {
       setCurrentSection('Summary');
     }
-  }, [tabParam, dreamsQuestions]);
+  }, [tabParam, readOnlyView, dreamsQuestions]);
 
   useEffect(() => {
     // Wait until both userProfile and questions are ready before loading saved responses
@@ -865,7 +865,7 @@ export default function MyDreamsAssessment() {
               }
 
               const isSummary = sectionKey === 'Summary';
-              const isLocked = isSummary && !areCoreSectionsComplete();
+              const isLocked = isSummary && !readOnlyView && !areCoreSectionsComplete();
 
               return (
                 <button

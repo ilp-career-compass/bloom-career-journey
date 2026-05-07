@@ -268,6 +268,32 @@ export default function SummaryViewDialog({
       requiredQuestions.push(editedSummary.question1, editedSummary.question2, editedSummary.question3);
     }
 
+    // For Dreams and Hobbies, validate that portfolio fields are valid JSON arrays
+    const jsonFields: Array<{ value: string; label: string }> = [];
+    if (isDreamsAssessment) {
+      jsonFields.push({ value: editedSummary.question1 || '', label: 'Dream Portfolio' });
+    } else if (isHobbiesAssessment) {
+      jsonFields.push({ value: editedSummary.question1 || '', label: 'Hobbies Portfolio' });
+      jsonFields.push({ value: editedSummary.question6 || '', label: 'Skills Portfolio' });
+    }
+    for (const field of jsonFields) {
+      try {
+        const parsed = JSON.parse(field.value);
+        if (!Array.isArray(parsed)) throw new Error('not an array');
+      } catch {
+        toast({
+          title: lang === 'kn' ? "ತಪ್ಪಾದ ಸ್ವರೂಪ" : lang === 'ta' ? 'தவறான வடிவம்' : lang === 'hi' ? 'अमान्य स्वरूप' : "Invalid Format",
+          description:
+            lang === 'kn' ? `${field.label} ಮಾನ್ಯ JSON ಪಟ್ಟಿಯಾಗಿರಬೇಕು.`
+              : lang === 'ta' ? `${field.label} சரியான JSON பட்டியலாக இருக்க வேண்டும்.`
+              : lang === 'hi' ? `${field.label} एक मान्य JSON सूची होनी चाहिए।`
+              : `${field.label} must be a valid JSON array.`,
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
     // Filter out undefined and check if empty
     const allFilled = requiredQuestions.every(q => q && q.trim().length > 0);
 

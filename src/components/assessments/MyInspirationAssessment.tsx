@@ -187,7 +187,7 @@ export default function MyInspirationAssessment() {
           setQuestionCount((list as any[]).length);
 
           // Initialize responses dynamically based on question count
-          const videoCount = inspirationVideos.length || 3; // Default to 3 if not loaded yet
+          const videoCount = defaultVideos.length || 3;
           const initialResponses: AssessmentResponse = {};
           for (let v = 1; v <= videoCount; v++) {
             const videoKey = `video${v}`;
@@ -296,13 +296,16 @@ export default function MyInspirationAssessment() {
             index === self.findIndex((v: any) => v.url === video.url)
           );
 
+          if (uniqueVideos.length < data.length) {
+            logger.warn(`⚠️ Deduplication removed ${data.length - uniqueVideos.length} duplicate video(s) for lang="${lang}"`);
+          }
           logger.log('🔍 After deduplication:', uniqueVideos.length, 'unique videos');
 
           const videos: InspirationVideo[] = uniqueVideos.map((video: any, index: number) => ({
             id: index + 1,
             title: video.title,
             url: video.url,
-            youtubeId: video.youtube_id || extractYouTubeId(video.url)
+            youtubeId: extractYouTubeId(video.url)
           }));
           logger.log('🔄 Setting default videos:', videos.length);
           setDefaultVideos(videos);
@@ -315,7 +318,7 @@ export default function MyInspirationAssessment() {
         logger.log('🔄 Using hardcoded fallback videos');
         // Fallback to hardcoded videos if database fails (4 videos)
         // Fallback to hardcoded videos if database fails
-        const kVideos = {
+        const kVideos: Record<string, InspirationVideo[]> = {
           'ta': [
             { id: 1, title: "Tamil Video 1", url: "https://youtu.be/U7-HlfpvQIA?si=_gakjQozpgbZC2aQ", youtubeId: "U7-HlfpvQIA" },
             { id: 2, title: "Tamil Video 2", url: "https://www.youtube.com/watch?v=xqb1hfgfcl8", youtubeId: "xqb1hfgfcl8" },
@@ -326,6 +329,11 @@ export default function MyInspirationAssessment() {
             { id: 2, title: "Kannada Video 2", url: "https://www.youtube.com/watch?v=xqb1hfgfcl8", youtubeId: "xqb1hfgfcl8" },
             { id: 3, title: "Kannada Video 3", url: "https://www.youtube.com/watch?v=z3PYJ9MfMH4", youtubeId: "z3PYJ9MfMH4" }
           ],
+          'hi': [
+            { id: 1, title: "Hindi Video 1", url: "https://youtu.be/U7-HlfpvQIA?si=_gakjQozpgbZC2aQ", youtubeId: "U7-HlfpvQIA" },
+            { id: 2, title: "Hindi Video 2", url: "https://www.youtube.com/watch?v=xqb1hfgfcl8", youtubeId: "xqb1hfgfcl8" },
+            { id: 3, title: "Hindi Video 3", url: "https://youtu.be/-9OGDxKtUMI", youtubeId: "-9OGDxKtUMI" }
+          ],
           'en': [
             { id: 1, title: "English Video 1", url: "https://youtu.be/U7-HlfpvQIA?si=_gakjQozpgbZC2aQ", youtubeId: "U7-HlfpvQIA" },
             { id: 2, title: "English Video 2", url: "https://www.youtube.com/watch?v=xqb1hfgfcl8", youtubeId: "xqb1hfgfcl8" },
@@ -334,13 +342,13 @@ export default function MyInspirationAssessment() {
         };
 
         const targetLang = lang === 'kn' ? 'kn' : lang === 'ta' ? 'ta' : lang === 'hi' ? 'hi' : 'en';
-        setDefaultVideos(kVideos[targetLang]);
+        setDefaultVideos(kVideos[targetLang] ?? kVideos['en']);
 
       }
     };
 
     loadVideosFromDatabase();
-  }, []);
+  }, [lang]);
 
   // Extract YouTube ID from URL
   const extractYouTubeId = (url: string): string => {
@@ -410,12 +418,15 @@ export default function MyInspirationAssessment() {
     }
   }, [defaultVideos]);
 
-  // Auto-select summary tab from URL param
+  // Auto-select summary tab from URL param.
+  // Only allow the jump when arriving via readonly=1 (dashboard "View Summary" link — assessment
+  // is known-completed). Without readonly the student must reach the summary through nextVideo(),
+  // which enforces areAllVideosComplete() at line ~1309.
   useEffect(() => {
-    if (tabParam === 'summary' && inspirationVideos.length > 0) {
+    if (tabParam === 'summary' && inspirationVideos.length > 0 && readOnlyView) {
       setCurrentVideoIndex(inspirationVideos.length);
     }
-  }, [tabParam, inspirationVideos]);
+  }, [tabParam, inspirationVideos, readOnlyView]);
 
   // Load summary questions and title from database
   useEffect(() => {
@@ -590,19 +601,13 @@ export default function MyInspirationAssessment() {
     }
 
     try {
-      logger.log('Querying database with studentId:', studentId);
-      logger.log('Query parameters:', {
-        student_id: studentId,
-        assessment_type: 'inspiration',
-        assessment_title: 'My Inspiration'
-      });
+      logger.log('Querying database with studentId:', studentId, 'assessment_type: inspiration');
 
       const { data, error } = await supabase
         .from('assessment_responses')
         .select('*')
         .eq('student_id', studentId)
         .eq('assessment_type', 'inspiration')
-        .eq('assessment_title', 'My Inspiration')
         .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -623,18 +628,18 @@ export default function MyInspirationAssessment() {
         // Update video progress from saved data
         if (data.responses) {
           const savedResponses = data.responses as Partial<AssessmentResponse>;
-          const mergeVideo = (vr: any) => ({
-            question1: vr?.question1 ?? '',
-            question2: vr?.question2 ?? '',
-            question3: vr?.question3 ?? '',
-            question4: vr?.question4 ?? '',
-            question5: vr?.question5 ?? '',
-            question6: vr?.question6 ?? '',
-            question7: vr?.question7 ?? '',
-            question8: vr?.question8 ?? '',
-            question9: vr?.question9 ?? '',
-            question10: vr?.question10 ?? ''
-          });
+          const mergeVideo = (vr: any) => {
+            const saved = vr || {};
+            const savedMax = Object.keys(saved)
+              .filter(k => /^question\d+$/.test(k))
+              .reduce((max, k) => Math.max(max, parseInt(k.replace('question', ''), 10)), 0);
+            const qCount = Math.max(savedMax, 10);
+            const result: Record<string, string> = {};
+            for (let q = 1; q <= qCount; q++) {
+              result[`question${q}`] = saved[`question${q}`] ?? '';
+            }
+            return result;
+          };
           // Build merged responses dynamically based on number of videos
           const mergedResponses: AssessmentResponse = {} as AssessmentResponse;
           const videoCount = defaultVideos.length || 3;
@@ -707,18 +712,18 @@ export default function MyInspirationAssessment() {
               setResponses(keepRecord.responses);
               setIsCompleted(!!keepRecord.completed_at);
 
-              const mergeVideo2 = (vr: any) => ({
-                question1: vr?.question1 ?? '',
-                question2: vr?.question2 ?? '',
-                question3: vr?.question3 ?? '',
-                question4: vr?.question4 ?? '',
-                question5: vr?.question5 ?? '',
-                question6: vr?.question6 ?? '',
-                question7: vr?.question7 ?? '',
-                question8: vr?.question8 ?? '',
-                question9: vr?.question9 ?? '',
-                question10: vr?.question10 ?? ''
-              });
+              const mergeVideo2 = (vr: any) => {
+                const saved = vr || {};
+                const savedMax = Object.keys(saved)
+                  .filter(k => /^question\d+$/.test(k))
+                  .reduce((max, k) => Math.max(max, parseInt(k.replace('question', ''), 10)), 0);
+                const qCount = Math.max(savedMax, 10);
+                const result: Record<string, string> = {};
+                for (let q = 1; q <= qCount; q++) {
+                  result[`question${q}`] = saved[`question${q}`] ?? '';
+                }
+                return result;
+              };
               const updatedProgress = defaultVideos.map(video => {
                 const videoKey = `video${video.id}` as keyof AssessmentResponse;
                 const videoResponses = mergeVideo2((keepRecord as any).responses[videoKey]);

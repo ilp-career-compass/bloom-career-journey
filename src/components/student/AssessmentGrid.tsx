@@ -28,6 +28,7 @@ export interface AssessmentCardData {
     isCompleted: boolean;
     isUnlocked: boolean;
     hasProgress: boolean;
+    hasSummary: boolean;
     summaryState: SummaryState;
 }
 
@@ -68,20 +69,20 @@ export default function AssessmentGrid({ cards, resolvedLang, t, onStartAssessme
                             {card.isCompleted && (
                                 <Badge variant="default" className="mt-2 bg-green-600">{t('completed')}</Badge>
                             )}
-                            {!card.isCompleted && card.key === 'inspiration' && card.hasProgress && (
+                            {!card.isCompleted && card.hasProgress && (
                                 <Badge variant="outline" className="mt-2 border-yellow-500 text-yellow-600">{t('in_progress')}</Badge>
                             )}
-                            {!card.isCompleted && card.key === 'inspiration' && !card.hasProgress && (
+                            {!card.isCompleted && !card.hasProgress && card.key === 'inspiration' && (
                                 <Badge variant="secondary" className="mt-2">{t('start_here')}</Badge>
                             )}
-                            {!card.isCompleted && card.key !== 'inspiration' && card.isUnlocked && (
+                            {!card.isCompleted && !card.hasProgress && card.key !== 'inspiration' && card.isUnlocked && (
                                 <Badge variant="secondary" className="mt-2">{t('available')}</Badge>
                             )}
-                            {!card.isCompleted && card.key !== 'inspiration' && !card.isUnlocked && (
+                            {!card.isCompleted && !card.hasProgress && !card.isUnlocked && (
                                 <Badge variant="outline" className="mt-2">{t('locked')}</Badge>
                             )}
 
-                            {card.isCompleted && (
+                            {card.isCompleted && card.hasSummary && (
                                 <div className="border-t border-gray-100 mt-3 pt-3">
                                     <button
                                         onClick={(e) => { e.stopPropagation(); onViewSummary(card.key); }}

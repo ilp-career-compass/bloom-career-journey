@@ -85,6 +85,15 @@ class AISummaryService {
     // API calls routed through gemini-proxy Edge Function — no client-side key needed
   }
 
+  /** Bust the in-process 30-min template cache after an admin update. */
+  clearTemplateCache(assessmentType?: string): void {
+    if (assessmentType) {
+      this.templateCache.delete(assessmentType);
+    } else {
+      this.templateCache.clear();
+    }
+  }
+
   /*
    * Check if Gemini API is configured
    */

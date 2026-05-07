@@ -97,6 +97,10 @@ Deno.serve(async (req) => {
 
     const data = await upstream.json()
 
+    if (!upstream.ok) {
+      console.error('[gemini-proxy] Gemini API error:', upstream.status, JSON.stringify(data).slice(0, 300))
+    }
+
     return new Response(JSON.stringify(data), {
       status: upstream.status,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

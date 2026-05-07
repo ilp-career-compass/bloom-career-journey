@@ -308,12 +308,12 @@ export default function AboutMeAssessment() {
     loadFields();
   }, [lang]);
 
-  // Auto-select summary tab from URL param
+  // Auto-select summary tab from URL param — only in read-only view to prevent bypassing lock for in-progress assessments
   useEffect(() => {
-    if (tabParam === 'summary' && aboutMeFields.length > 0) {
+    if (tabParam === 'summary' && readOnlyView && aboutMeFields.length > 0) {
       setCurrentSection('Summary');
     }
-  }, [tabParam, aboutMeFields]);
+  }, [tabParam, readOnlyView, aboutMeFields]);
 
   // Load localized help text overrides from content_translations (about_me_help)
   const [dbTitle, setDbTitle] = useState<string>('');
@@ -695,7 +695,7 @@ export default function AboutMeAssessment() {
                     const isCurrent = currentSection === sectionTitle;
 
                     // Check if core sections are complete for Summary tab
-                    const isLocked = isSummary && !areCoreSectionsComplete();
+                    const isLocked = isSummary && !readOnlyView && !loading && !areCoreSectionsComplete();
 
                     return (
                       <Button

@@ -238,12 +238,12 @@ export default function MySchoolLearningAssessment() {
     ).then(map => setOptionLabels(map)).catch(() => {});
   }, [lang]);
 
-  // Auto-select summary tab from URL param
+  // Auto-select summary tab from URL param — only when arriving via readonly=1
   useEffect(() => {
-    if (tabParam === 'summary') {
+    if (tabParam === 'summary' && readOnlyView) {
       setCurrentSection('section6');
     }
-  }, [tabParam]);
+  }, [tabParam, readOnlyView]);
 
   const getHelpText = (id: number, fallback: string) => {
     const key = `question${id}`;
@@ -962,7 +962,7 @@ export default function MySchoolLearningAssessment() {
                       : `Section ${sectionNumber}`;
             }
             const isSummary = sectionNumber === 6;
-            const isLocked = isSummary && !areCoreSectionsComplete();
+            const isLocked = isSummary && !readOnlyView && !areCoreSectionsComplete();
 
             return (
               <button

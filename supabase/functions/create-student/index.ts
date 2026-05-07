@@ -81,6 +81,13 @@ Deno.serve(async (req) => {
       )
     }
 
+    if (body.students.length > 200) {
+      return new Response(
+        JSON.stringify({ error: 'Batch size exceeds maximum of 200 students per request' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
+    }
+
     if (!body.teacherUserId) {
       return new Response(
         JSON.stringify({ error: 'teacherUserId is required' }),
@@ -185,7 +192,7 @@ Deno.serve(async (req) => {
           role: 'student',
           state_id: stateId,
           password_hash: 'managed_by_supabase_auth',
-          preferred_language: preferredLanguage || 'en',
+          preferred_language: ['en', 'kn', 'ta', 'hi'].includes(preferredLanguage) ? preferredLanguage : 'en',
         })
         if (userError) throw new Error(`users insert: ${userError.message}`)
 

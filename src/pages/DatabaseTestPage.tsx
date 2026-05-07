@@ -39,10 +39,18 @@ export default function DatabaseTestPage() {
         results.inspirationQuestions = { success: false, error: err };
       }
 
-      // Test 4: Check if Inspiration videos table exists
+      // Test 4: Check inspiration videos for all 4 languages
       try {
-        const { data, error } = await supabase.rpc('get_inspiration_videos');
-        results.inspirationVideos = { success: !error, data: data?.length || 0, error };
+        const langs = ['en', 'kn', 'ta', 'hi'] as const;
+        const counts: Record<string, number> = {};
+        let anyError: any = null;
+        for (const lang of langs) {
+          const { data, error } = await supabase.rpc('get_inspiration_videos', { p_lang: lang });
+          if (error) { anyError = error; break; }
+          counts[lang] = data?.length || 0;
+        }
+        const allHaveVideos = !anyError && Object.values(counts).every(n => n > 0);
+        results.inspirationVideos = { success: allHaveVideos, counts, error: anyError };
       } catch (err) {
         results.inspirationVideos = { success: false, error: err };
       }
@@ -85,6 +93,11 @@ export default function DatabaseTestPage() {
             {result.data !== undefined && (
               <div className="mt-2">
                 <strong>Data Count:</strong> {result.data}
+              </div>
+            )}
+            {result.counts !== undefined && (
+              <div className="mt-2">
+                <strong>Counts:</strong> {Object.entries(result.counts).map(([l, n]) => `${l}:${n}`).join(', ')}
               </div>
             )}
             {result.error && (

@@ -236,12 +236,12 @@ export default function MyRoleModelsAssessment() {
     loadSummaryQuestions();
   }, [lang]);
 
-  // Auto-select summary tab from URL param
+  // Auto-select summary tab from URL param — only when arriving via readonly=1
   useEffect(() => {
-    if (tabParam === 'summary') {
+    if (tabParam === 'summary' && readOnlyView) {
       setCurrentSection('summary');
     }
-  }, [tabParam]);
+  }, [tabParam, readOnlyView]);
 
   // Keep URL ?lang in sync without re-rendering
   useEffect(() => {
@@ -768,19 +768,19 @@ export default function MyRoleModelsAssessment() {
           <Button
             variant={currentSection === 'summary' ? 'default' : 'outline'}
             onClick={() => {
-              if (areCoreSectionsComplete()) {
+              if (readOnlyView || areCoreSectionsComplete()) {
                 setCurrentSection('summary');
               }
             }}
-            disabled={!areCoreSectionsComplete() && currentSection !== 'summary'}
+            disabled={!readOnlyView && !areCoreSectionsComplete() && currentSection !== 'summary'}
             className={`border-purple-200 ${currentSection === 'summary'
               ? 'bg-purple-600 hover:bg-purple-700'
-              : !areCoreSectionsComplete()
+              : !readOnlyView && !areCoreSectionsComplete()
                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-75'
                 : 'text-purple-700 hover:bg-purple-50'
               }`}
           >
-            {!areCoreSectionsComplete() ? (
+            {!readOnlyView && !areCoreSectionsComplete() ? (
               <Lock className="w-4 h-4 mr-2" />
             ) : (
               <Sparkles className="w-4 h-4 mr-2 text-yellow-500" />

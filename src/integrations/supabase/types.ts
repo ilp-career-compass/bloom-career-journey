@@ -137,6 +137,7 @@ export type Database = {
           description: string | null
           sequence_number: number
           is_active: boolean
+          lang: string
           created_at: string
         }
         Insert: {
@@ -146,6 +147,7 @@ export type Database = {
           description?: string | null
           sequence_number?: number
           is_active?: boolean
+          lang?: string
           created_at?: string
         }
         Update: {
@@ -155,6 +157,7 @@ export type Database = {
           description?: string | null
           sequence_number?: number
           is_active?: boolean
+          lang?: string
           created_at?: string
         }
       }

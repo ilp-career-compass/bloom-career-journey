@@ -248,12 +248,12 @@ export default function MyHobbiesAssessment() {
     loadQuestions();
   }, [lang]);
 
-  // Auto-select summary tab from URL param
+  // Auto-select summary tab from URL param — only in read-only view to prevent bypassing lock for in-progress assessments
   useEffect(() => {
-    if (tabParam === 'summary' && hobbiesQuestions.length > 0) {
+    if (tabParam === 'summary' && readOnlyView && hobbiesQuestions.length > 0) {
       setCurrentSection('summary');
     }
-  }, [tabParam, hobbiesQuestions]);
+  }, [tabParam, readOnlyView, hobbiesQuestions]);
 
   useEffect(() => {
     if (hobbiesQuestions.length > 0 && summaryQuestions.length > 0) {
@@ -876,7 +876,7 @@ export default function MyHobbiesAssessment() {
               }
 
               const isSummary = sectionKey === 'summary';
-              const isLocked = isSummary && !areCoreSectionsComplete();
+              const isLocked = isSummary && !readOnlyView && !areCoreSectionsComplete();
 
               return (
                 <button

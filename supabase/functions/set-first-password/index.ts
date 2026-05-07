@@ -72,14 +72,18 @@ Deno.serve(async (req) => {
       .eq('mobile', mobile)
       .maybeSingle()
 
-    // G20: maybeSingle() returns PGRST116 when multiple rows match — surface a clear 409
+    // G20: maybeSingle() returns PGRST116 when multiple rows match — surface a clear 409.
+    // Any other userError is a genuine DB/RLS failure — return 500, not 404.
     if (userError) {
       const isDuplicate = (userError as { code?: string }).code === 'PGRST116'
+      if (!isDuplicate) {
+        console.error('[set-first-password] users lookup error:', JSON.stringify(userError))
+      }
       return new Response(
         JSON.stringify({ error: isDuplicate
           ? 'Multiple accounts found for this number — please contact support'
-          : 'No account found for this mobile number' }),
-        { status: isDuplicate ? 409 : 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+          : 'Account lookup failed — please try again' }),
+        { status: isDuplicate ? 409 : 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       )
     }
     if (!userRow) {
@@ -150,6 +154,7 @@ Deno.serve(async (req) => {
     )
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err)
+    console.error('[set-first-password] outer catch:', message)
     return new Response(
       JSON.stringify({ error: message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },

@@ -59,7 +59,15 @@ Deno.serve(async (req) => {
       )
     }
 
-    // 1. Validate MSG91 OTP token server-side (enforced when MSG91_AUTH_KEY is configured)
+    // 1. Validate phone format before OTP — a format error must not consume an OTP
+    if (!isValidE164(phone)) {
+      return new Response(
+        JSON.stringify({ error: `Invalid phone format: ${phone}. Expected E.164 format like +91XXXXXXXXXX` }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
+    }
+
+    // 2. Validate MSG91 OTP token server-side (enforced when MSG91_AUTH_KEY is configured)
     const msg91AuthKey = Deno.env.get('MSG91_AUTH_KEY')
     if (!msg91AuthKey) {
       console.warn('[create-student-self-register] MSG91_AUTH_KEY not configured — OTP verification bypassed')
@@ -83,22 +91,14 @@ Deno.serve(async (req) => {
           { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
         )
       }
-      // Only cross-check mobile if MSG91 returned one — if empty, token validity alone is sufficient
+      // verify-msg91-token guarantees a non-empty mobile on success (G23) — always cross-check
       const normalize = (m: string) => (m || '').replace(/\D/g, '').slice(-10)
-      if (verifyData.mobile && normalize(verifyData.mobile) !== normalize(phone)) {
+      if (normalize(verifyData.mobile) !== normalize(phone)) {
         return new Response(
           JSON.stringify({ error: 'OTP was verified for a different mobile number.' }),
           { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
         )
       }
-    }
-
-    // 2. Validate phone format
-    if (!isValidE164(phone)) {
-      return new Response(
-        JSON.stringify({ error: `Invalid phone format: ${phone}. Expected E.164 format like +91XXXXXXXXXX` }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      )
     }
 
     // 3. Check for duplicate phone in users table
@@ -115,7 +115,16 @@ Deno.serve(async (req) => {
       )
     }
 
-    // 3. Resolve class_id from grade + stateId
+    // 3. Validate grade is a supported value
+    const VALID_GRADES = ['8', '9', '10', '11', '12']
+    if (!VALID_GRADES.includes(grade)) {
+      return new Response(
+        JSON.stringify({ error: 'Grade must be one of: 8, 9, 10, 11, 12' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
+    }
+
+    // 4. Resolve class_id from grade + stateId
     const className = `Class ${grade}`
     const { data: classRow, error: classError } = await supabaseAdmin
       .from('classes')
@@ -180,8 +189,10 @@ Deno.serve(async (req) => {
       )
       if (studentError) throw new Error(`students upsert: ${studentError.message}`)
     } catch (dbError: unknown) {
-      // 7. Rollback: delete the auth user we just created
-      await supabaseAdmin.auth.admin.deleteUser(authUserId)
+      const { error: rollbackError } = await supabaseAdmin.auth.admin.deleteUser(authUserId)
+      if (rollbackError) {
+        console.error('[create-student-self-register] rollback deleteUser failed — orphaned auth user:', authUserId, JSON.stringify(rollbackError))
+      }
       const message = dbError instanceof Error ? dbError.message : String(dbError)
       return new Response(
         JSON.stringify({ error: message }),
@@ -196,6 +207,7 @@ Deno.serve(async (req) => {
     )
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err)
+    console.error('[create-student-self-register] outer catch:', message)
     return new Response(
       JSON.stringify({ error: message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },

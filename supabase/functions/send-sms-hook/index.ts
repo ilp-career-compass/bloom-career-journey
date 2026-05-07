@@ -26,7 +26,16 @@ Deno.serve(async (req) => {
 
       // hookSecret format: "v1,whsec_<base64>"
       const base64Secret = hookSecret.replace(/^v1,whsec_/, '')
-      const secretBytes = Uint8Array.from(atob(base64Secret), (c) => c.charCodeAt(0))
+      let secretBytes: Uint8Array
+      try {
+        secretBytes = Uint8Array.from(atob(base64Secret), (c) => c.charCodeAt(0))
+      } catch {
+        console.error('send-sms-hook: SEND_SMS_HOOK_SECRET is malformed — expected format: v1,whsec_<base64>')
+        return new Response(JSON.stringify({ error: 'Webhook secret misconfigured on server' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
 
       const signingString = `${webhookId}.${webhookTimestamp}.${rawBody}`
       const encoder = new TextEncoder()
@@ -102,6 +111,7 @@ Deno.serve(async (req) => {
     const otp: string = payload?.sms?.otp
 
     if (!phone || !otp) {
+      console.error('send-sms-hook: Unexpected payload structure — expected user.phone and sms.otp. Keys received:', Object.keys(payload ?? {}).join(', '))
       return new Response(JSON.stringify({ error: 'Missing phone or otp in payload' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
