@@ -82,6 +82,10 @@ export default function TeacherDashboard() {
   const [studentReviewMap, setStudentReviewMap] = useState<Record<string, { reviewed: number; total: number }>>({});
   const [pendingProfileCardMap, setPendingProfileCardMap] = useState<Record<string, number>>({});
 
+  // ── Reviews reset key — increments whenever a stats card navigates to 'reviews',
+  //    forcing StudentAssessmentReview to remount and clear any selected student
+  const [reviewsResetKey, setReviewsResetKey] = useState(0);
+
   // ── Dialogs ───────────────────────────────────────────────────────
   const [contactOpen, setContactOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -353,7 +357,7 @@ export default function TeacherDashboard() {
     supabase.from('teachers').select('id, state_id').eq('user_id', userProfile.id).maybeSingle()
       .then(({ data }) => setTeacherRow((data as any) || null));
     refreshReviewOverview();
-  }, [userProfile]);
+  }, [userProfile?.id]); // use stable ID, not the whole object — prevents reload on profile refresh
 
   useEffect(() => {
     if (teacherRow?.state_id) loadClasses(teacherRow.state_id);
@@ -509,7 +513,10 @@ export default function TeacherDashboard() {
           totalStudents={studentStats.totalStudents}
           reviewOverview={reviewOverview}
           pendingProfileCardMap={pendingProfileCardMap}
-          onTabChange={setActiveTab}
+          onTabChange={(tab) => {
+            if (tab === 'reviews') setReviewsResetKey(k => k + 1);
+            setActiveTab(tab);
+          }}
         />
 
         {/* Main Content Tabs */}
@@ -556,7 +563,7 @@ export default function TeacherDashboard() {
           </TabsContent>
 
           <TabsContent value="reviews" className="space-y-6">
-            <AssessmentResponsesView onReviewUpdate={refreshReviewOverview} />
+            <AssessmentResponsesView key={reviewsResetKey} onReviewUpdate={refreshReviewOverview} />
           </TabsContent>
 
           <TabsContent value="resources" className="space-y-6">

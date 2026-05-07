@@ -630,14 +630,10 @@ export default function MyInspirationAssessment() {
           const savedResponses = data.responses as Partial<AssessmentResponse>;
           const mergeVideo = (vr: any) => {
             const saved = vr || {};
-            const savedMax = Object.keys(saved)
-              .filter(k => /^question\d+$/.test(k))
-              .reduce((max, k) => Math.max(max, parseInt(k.replace('question', ''), 10)), 0);
-            const qCount = Math.max(savedMax, 10);
             const result: Record<string, string> = {};
-            for (let q = 1; q <= qCount; q++) {
-              result[`question${q}`] = saved[`question${q}`] ?? '';
-            }
+            Object.keys(saved).filter(k => /^question\d+$/.test(k)).forEach(k => {
+              result[k] = saved[k] ?? '';
+            });
             return result;
           };
           // Build merged responses dynamically based on number of videos
@@ -657,7 +653,7 @@ export default function MyInspirationAssessment() {
           const updatedProgress = defaultVideos.map(video => {
             const videoKey = `video${video.id}` as keyof AssessmentResponse;
             const videoResponses = mergedResponses[videoKey];
-            const isComplete = Object.entries(videoResponses).every(([q, v]) => {
+            const isComplete = Object.keys(videoResponses).length > 0 && Object.entries(videoResponses).every(([q, v]) => {
               const qId = `${videoKey}_${q}`;
               return (typeof v === 'string' && v.trim() !== '') || !!answered[qId];
             });
@@ -1148,6 +1144,12 @@ export default function MyInspirationAssessment() {
           ? responses[videoKey]
           : (existingResponses as any)[vKey];
       }
+      // Always preserve summary responses so they aren't lost when saving a video
+      if ((responses as any).summary) {
+        (updatedResponses as any).summary = (responses as any).summary;
+      } else if ((existingResponses as any).summary) {
+        (updatedResponses as any).summary = (existingResponses as any).summary;
+      }
 
       logger.log('Saving video progress for video', videoIndex + 1);
       logger.log('Video responses to save:', responses[videoKey]);
@@ -1199,6 +1201,44 @@ export default function MyInspirationAssessment() {
         description: t('errorSavingVideoProgressDesc'),
         variant: "destructive",
       });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveSummaryProgress = async () => {
+    if (readOnlyView || !userProfile) return;
+    let studentId = userProfile.studentProfile?.id as string | undefined;
+    if (!studentId) {
+      const { data: studentRow } = await supabase.from('students').select('id').eq('user_id', userProfile.id).maybeSingle();
+      studentId = studentRow?.id;
+    }
+    if (!studentId) return;
+    setSaving(true);
+    try {
+      const { data: existingData } = await supabase
+        .from('assessment_responses').select('responses')
+        .eq('student_id', studentId).eq('assessment_type', 'inspiration')
+        .order('updated_at', { ascending: false }).limit(1).maybeSingle();
+      const existingResponses = (existingData?.responses as Partial<AssessmentResponse>) || {};
+      const videoCount = inspirationVideos.length || 3;
+      const updatedResponses: AssessmentResponse = {} as AssessmentResponse;
+      for (let v = 1; v <= videoCount; v++) {
+        const vKey = `video${v}` as keyof AssessmentResponse;
+        (updatedResponses as any)[vKey] = (responses as any)[vKey] || (existingResponses as any)[vKey];
+      }
+      (updatedResponses as any).summary = (responses as any).summary;
+      const { error } = await supabase.from('assessment_responses').upsert({
+        student_id: studentId, assessment_type: 'inspiration', assessment_title: 'My Inspiration',
+        responses: updatedResponses, updated_at: new Date().toISOString(), completed_at: null
+      }, { onConflict: 'student_id,assessment_type' });
+      if (error) throw error;
+      toast({
+        title: lang === 'kn' ? 'ಸಾರಾಂಶ ಉಳಿಸಲಾಗಿದೆ! ✅' : lang === 'ta' ? 'சுருக்கம் சேமிக்கப்பட்டது! ✅' : lang === 'hi' ? 'सारांश सहेजा गया! ✅' : 'Summary Saved! ✅',
+        description: lang === 'kn' ? 'ನಿಮ್ಮ ಸಾರಾಂಶ ಉತ್ತರಗಳನ್ನು ಉಳಿಸಲಾಗಿದೆ.' : lang === 'ta' ? 'உங்கள் சுருக்க பதில்கள் சேமிக்கப்பட்டன.' : lang === 'hi' ? 'आपके सारांश उत्तर सहेजे गए।' : 'Your summary responses have been saved.',
+      });
+    } catch (err) {
+      toast({ title: t('errorSavingVideoProgress'), description: t('errorSavingVideoProgressDesc'), variant: 'destructive' });
     } finally {
       setSaving(false);
     }
@@ -1791,8 +1831,8 @@ export default function MyInspirationAssessment() {
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Button
               variant="outline"
-              onClick={() => saveVideoProgress(currentVideoIndex)}
-              disabled={!isVideoComplete(currentVideoIndex) || saving || readOnlyView}
+              onClick={() => currentVideoIndex < inspirationVideos.length ? saveVideoProgress(currentVideoIndex) : saveSummaryProgress()}
+              disabled={(currentVideoIndex < inspirationVideos.length ? !isVideoComplete(currentVideoIndex) : !isSummaryComplete()) || saving || readOnlyView}
               className="w-full sm:w-auto border-green-200 text-green-700 hover:bg-green-50"
             >
               {saving ? (

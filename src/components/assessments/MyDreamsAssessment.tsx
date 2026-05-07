@@ -499,12 +499,16 @@ export default function MyDreamsAssessment() {
 
   const getProgressPercentage = () => {
     if (dreamsQuestions.length === 0) return 0;
-    const totalQuestions = dreamsQuestions.length;
-    const answeredQuestions = dreamsQuestions.filter(q => {
+    const answeredMain = dreamsQuestions.filter(q => {
       const response = responses[q.id];
       return response && response.trim() !== '';
     }).length;
-    return totalQuestions > 0 ? (answeredQuestions / totalQuestions) * 100 : 0;
+    const answeredSummary = summaryQuestions.filter(q => {
+      const response = responses[q.id];
+      return response && response.trim() !== '';
+    }).length;
+    const total = dreamsQuestions.length + summaryQuestions.length;
+    return total > 0 ? ((answeredMain + answeredSummary) / total) * 100 : 0;
   };
 
   const areCoreSectionsComplete = () => {
@@ -764,27 +768,32 @@ export default function MyDreamsAssessment() {
             </p>}
           </div>
 
-          {/* Description Text */}
-          <div className="max-w-3xl mx-auto space-y-3 text-gray-700">
-            <p className="text-base leading-relaxed whitespace-pre-wrap">
-              {dbIntro || (lang === 'kn'
-                ? 'ನಮ್ಮ ಭವಿಷ್ಯದ ಬಗ್ಗೆ ಪ್ರತಿಯೊಬ್ಬರಿಗೂ ಹಲವು ಕನಸುಗಳು ಇವೆ. ನಿಮ್ಮ ಕನಸುಗಳು ಯಾವುವು? ನಿಮಗೆ ಬಹಳ ಮುಖ್ಯವಾಗಿ ಅನಿಸುವ ಯಾವುದೇ ಗುರಿ ಅಥವಾ ಆಶೆ ಇದೆಯೇ?'
-                : lang === 'ta'
-                  ? 'நாம் ஒவ்வொருவரும் எங்கள் எதிர்காலத்தைப் பற்றி பல கனவுகளை வைத்திருக்கிறோம். உங்கள் கனவுகள் என்ன? உங்களுக்கு மிகவும் நெருக்கமாக உணரப்படும் ஒரு இலக்கு அல்லது ஆசை இருக்கிறதா?'
-                  : lang === 'hi'
-                    ? 'हम सभी अपने भविष्य के लिए सपने रखते हैं। आपके सपने क्या हैं? क्या कोई विशेष लक्ष्य या आकांक्षा है जो आपको प्रेरित करती है?'
-                    : 'We all hold dreams for our future. What are your dreams? Is there a particular goal or aspiration that resonates strongly with you?')}
-            </p>
-            {!dbIntro && <p className="text-base leading-relaxed">
-              {lang === 'kn'
-                ? 'ಈ பகுತಿಯಲ್ಲಿ, ನಿಮ್ಮ ಕನಸುಗಳು ಮತ್ತು ಆಶೆಗಳ ಪ್ರಪಂಚವನ್ನು ನಿಧಾನವಾಗಿ ಅನ್ವೇಷಿಸೋಣ.'
-                : lang === 'ta'
-                  ? 'இந்த ஆராய்ச்சி பகுதியின் மூலம், உங்கள் கனவுகள் மற்றும் ஆசைகளின் உலகத்தை மெதுவாக ஆராயப் போகிறோம்.'
-                  : lang === 'hi'
-                    ? 'इस खोज भाग में, हम आपके सपनों और आकांक्षाओं की दुनिया को धीरे-धीरे जानेंगे।'
-                    : "In this exploratory section, we'll uncover your world of dreams and aspirations."}
-            </p>}
-          </div>
+          {/* Description Text — guard against showing same text as the quote box above */}
+          {(() => {
+            const safeDbIntro = (dbIntro && dbIntro !== (dbQuote || '')) ? dbIntro : null;
+            return (
+              <div className="max-w-3xl mx-auto space-y-3 text-gray-700">
+                <p className="text-base leading-relaxed whitespace-pre-wrap">
+                  {safeDbIntro || (lang === 'kn'
+                    ? 'ನಮ್ಮ ಭವಿಷ್ಯದ ಬಗ್ಗೆ ಪ್ರತಿಯೊಬ್ಬರಿಗೂ ಹಲವು ಕನಸುಗಳು ಇವೆ. ನಿಮ್ಮ ಕನಸುಗಳು ಯಾವುವು? ನಿಮಗೆ ಬಹಳ ಮುಖ್ಯವಾಗಿ ಅನಿಸುವ ಯಾವುದೇ ಗುರಿ ಅಥವಾ ಆಶೆ ಇದೆಯೇ?'
+                    : lang === 'ta'
+                      ? 'நாம் ஒவ்வொருவரும் எங்கள் எதிர்காலத்தைப் பற்றி பல கனவுகளை வைத்திருக்கிறோம். உங்கள் கனவுகள் என்ன? உங்களுக்கு மிகவும் நெருக்கமாக உணரப்படும் ஒரு இலக்கு அல்லது ஆசை இருக்கிறதா?'
+                      : lang === 'hi'
+                        ? 'हम सभी अपने भविष्य के लिए सपने रखते हैं। आपके सपने क्या हैं? क्या कोई विशेष लक्ष्य या आकांक्षा है जो आपको प्रेरित करती है?'
+                        : 'We all hold dreams for our future. What are your dreams? Is there a particular goal or aspiration that resonates strongly with you?')}
+                </p>
+                {!safeDbIntro && <p className="text-base leading-relaxed">
+                  {lang === 'kn'
+                    ? 'ಈ பகுதಿಯಲ್ಲಿ, ನಿಮ್ಮ ಕನಸುಗಳು ಮತ್ತು ಆಶೆಗಳ ಪ್ರಪಂಚವನ್ನು ನಿಧಾನವಾಗಿ ಅನ್ವೇಷಿಸೋಣ.'
+                    : lang === 'ta'
+                      ? 'இந்த ஆராய்ச்சி பகுதியின் மூலம், உங்கள் கனவுகள் மற்றும் ஆசைகளின் உலகத்தை மெதுவாக ஆராயப் போகிறோம்.'
+                      : lang === 'hi'
+                        ? 'इस खोज भाग में, हम आपके सपनों और आकांक்षाओं की दुनिया को धीरे-धीरे जानेंगे।'
+                        : "In this exploratory section, we'll uncover your world of dreams and aspirations."}
+                </p>}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Progress Bar */}
@@ -1114,11 +1123,11 @@ export default function MyDreamsAssessment() {
               )}
             </Button>
 
-            <Button
-              variant="outline"
-              onClick={() => {
-                const currentIndex = sections.indexOf(currentSection);
-                if (currentIndex < sections.length - 1) {
+            {sections.indexOf(currentSection) < sections.length - 1 ? (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const currentIndex = sections.indexOf(currentSection);
                   const nextSection = sections[currentIndex + 1];
                   if (nextSection === 'Summary' && !areCoreSectionsComplete()) {
                     toast({
@@ -1135,21 +1144,14 @@ export default function MyDreamsAssessment() {
                     return;
                   }
                   setCurrentSection(nextSection);
-                }
-              }}
-              disabled={sections.indexOf(currentSection) === sections.length - 1}
-              className="w-full sm:w-auto border-blue-200 text-blue-700 hover:bg-blue-50"
-            >
-              {lang === 'kn'
-                ? 'ಮುಂದಿನ ಭಾಗ'
-                : lang === 'ta'
-                  ? 'அடுத்த பகுதி'
-                  : lang === 'hi'
-                    ? 'अगला भाग'
-                    : 'Next Section'}
-            </Button>
-
-            {sections.indexOf(currentSection) === sections.length - 1 && (
+                }}
+                className="w-full sm:w-auto border-blue-200 text-blue-700 hover:bg-blue-50"
+              >
+                {sections[sections.indexOf(currentSection) + 1] === 'Summary'
+                  ? (lang === 'kn' ? 'ಸಾರಾಂಶ →' : lang === 'ta' ? 'சுருக்கம் →' : lang === 'hi' ? 'सारांश →' : 'Summary →')
+                  : (lang === 'kn' ? 'ಮುಂದಿನ ಭಾಗ' : lang === 'ta' ? 'அடுத்த பகுதி' : lang === 'hi' ? 'अगला भाग' : 'Next Section')}
+              </Button>
+            ) : (
               <Button
                 onClick={submitAssessment}
                 disabled={!canSubmit() || submitting || isReadOnly}

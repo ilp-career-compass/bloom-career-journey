@@ -467,16 +467,32 @@ export default function MySchoolLearningAssessment() {
   const handleLearningMethodChange = (method: string, value: boolean | string) => {
     if (isReadOnly) return;
     isDirtyRef.current = true;
-    setResponses(prev => ({
-      ...prev,
-      section3: {
-        ...prev.section3,
-        question11: {
-          ...prev.section3.question11,
-          [method]: value
-        }
+    setResponses(prev => {
+      const cleared = {
+        visual: false, audio: false, experimenting: false,
+        discuss: false, groupDiscussions: false, presentation: false,
+        rolePlay: false, teaching: false, other: ''
+      };
+      // Single-select: when enabling a boolean method, clear all others first
+      if (value === true) {
+        return {
+          ...prev,
+          section3: { ...prev.section3, question11: { ...cleared, [method]: true } }
+        };
       }
-    }));
+      // Checking the 'other' checkbox (value is a space ' ') — clear all boolean methods
+      if (method === 'other' && value === ' ') {
+        return {
+          ...prev,
+          section3: { ...prev.section3, question11: { ...cleared, other: ' ' } }
+        };
+      }
+      // Deselect or update other's text input
+      return {
+        ...prev,
+        section3: { ...prev.section3, question11: { ...prev.section3.question11, [method]: value } }
+      };
+    });
   };
 
   const saveSection = async (section: 'section1' | 'section2' | 'section3' | 'section4' | 'section5' | 'section6') => {
@@ -518,12 +534,12 @@ export default function MySchoolLearningAssessment() {
                 : 'Section Saved! ✅',
         description:
           lang === 'kn'
-            ? `ನಿಮ್ಮ ${section.replace('section', 'ಭಾಗ ')} ಉತ್ತರಗಳನ್ನು ಉಳಿಸಲಾಗಿದೆ.`
+            ? `ನಿಮ್ಮ ${section === 'section6' ? 'ಸಾರಾಂಶ' : section.replace('section', 'ಭಾಗ ')} ಉತ್ತರಗಳನ್ನು ಉಳಿಸಲಾಗಿದೆ.`
             : lang === 'ta'
-              ? `உங்கள் ${section.replace('section', 'பகுதி ')} பதில்கள் சேமிக்கப்பட்டுள்ளன.`
+              ? `உங்கள் ${section === 'section6' ? 'சுருக்கம்' : section.replace('section', 'பகுதி ')} பதில்கள் சேமிக்கப்பட்டுள்ளன.`
               : lang === 'hi'
-                ? `आपके ${section.replace('section', 'भाग ')} के उत्तर सहेजे गए हैं।`
-                : `Your ${section.replace('section', 'Section ')} responses have been saved.`,
+                ? `आपके ${section === 'section6' ? 'सारांश' : section.replace('section', 'भाग ')} के उत्तर सहेजे गए हैं।`
+                : `Your ${section === 'section6' ? 'Summary' : section.replace('section', 'Section ')} responses have been saved.`,
       });
     } catch (error) {
       logger.error('Error saving section:', error);
@@ -1826,13 +1842,12 @@ export default function MySchoolLearningAssessment() {
                 }}
                 className="w-full sm:w-auto border-green-200 text-green-700 hover:bg-green-50"
               >
-                {lang === 'kn'
-                  ? 'ಮುಂದಿನ ಭಾಗ'
-                  : lang === 'ta'
-                    ? 'அடுத்த பகுதி'
-                    : lang === 'hi'
-                      ? 'अगला भाग'
-                      : 'Next Section'}
+                {(() => {
+                  const nextSec = sectionOrder[sectionOrder.indexOf(currentSection) + 1];
+                  return nextSec === 'section6'
+                    ? (lang === 'kn' ? 'ಸಾರಾಂಶ →' : lang === 'ta' ? 'சுருக்கம் →' : lang === 'hi' ? 'सारांश →' : 'Summary →')
+                    : (lang === 'kn' ? 'ಮುಂದಿನ ಭಾಗ' : lang === 'ta' ? 'அடுத்த பகுதி' : lang === 'hi' ? 'अगला भाग' : 'Next Section');
+                })()}
               </Button>
             ) : (
               <Button

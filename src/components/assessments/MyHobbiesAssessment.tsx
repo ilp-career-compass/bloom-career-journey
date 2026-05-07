@@ -1053,74 +1053,97 @@ export default function MyHobbiesAssessment() {
                   </div>
 
                   {/* Navigation Buttons */}
-                  <div className="mt-10 flex flex-col sm:flex-row justify-between items-center gap-4 border-t border-orange-100 pt-6" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 1rem))' }}>
+                  <div className="mt-10 flex flex-col-reverse sm:flex-row justify-between items-center gap-4 border-t border-orange-100 pt-6" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 1rem))' }}>
                     <Button
                       variant="outline"
-                      onClick={() => saveSection(currentSection)}
-                      disabled={savingSection !== null || isReadOnly}
+                      onClick={() => {
+                        const idx = sections.indexOf(currentSection);
+                        if (idx > 0) {
+                          setCurrentSection(sections[idx - 1]);
+                          window.scrollTo(0, 0);
+                        }
+                      }}
+                      disabled={sections.indexOf(currentSection) === 0}
                       className="w-full sm:w-auto border-orange-200 text-orange-700 hover:bg-orange-50"
                     >
-                      {savingSection ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
-                          {lang === 'kn' ? 'ಉಳಿಸುತ್ತಿದೆ...' : lang === 'ta' ? 'சேமித்து கொண்டிருக்கிறது...' : lang === 'hi' ? 'सहेजा जा रहा है...' : 'Saving...'}
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                          {t('saveProgress')}
-                        </>
-                      )}
+                      {lang === 'kn' ? 'ಹಿಂದಿನ ಭಾಗ' : lang === 'ta' ? 'முந்தைய பகுதி' : lang === 'hi' ? 'पिछला भाग' : 'Previous Section'}
                     </Button>
 
-                    {sections.indexOf(currentSection) < sections.length - 1 ? (
+                    <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                       <Button
                         variant="outline"
-                        onClick={() => {
-                          const idx = sections.indexOf(currentSection);
-                          if (idx < sections.length - 1) {
-                            const nextSection = sections[idx + 1];
-                            if (nextSection === 'summary' && !areCoreSectionsComplete()) {
-                              toast({
-                                title: lang === 'kn' ? 'ಸಾರಾಂಶ ಲಾಕ್ ಆಗಿದೆ' : lang === 'ta' ? 'சுருக்கம் பூட்டப்பட்டுள்ளது' : lang === 'hi' ? 'सारांश लॉक है' : 'Summary Locked',
-                                description: lang === 'kn'
-                                  ? 'ಸಾರಾಂಶವನ್ನು ವೀಕ್ಷಿಸಲು ದಯವಿಟ್ಟು ಎಲ್ಲಾ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ.'
-                                  : lang === 'ta'
-                                    ? 'சுருக்கத்தைப் பார்க்க அனைத்துக் கேள்விகளுக்கும் பதில் அளிக்கவும்.'
-                                    : lang === 'hi'
-                                      ? 'सारांश अनलॉक करने के लिए कृपया सभी मुख्य प्रश्नों का उत्तर दें।'
-                                      : 'Please answer all core questions to unlock the summary.',
-                                variant: 'destructive',
-                              });
-                              return;
-                            }
-                            setCurrentSection(nextSection);
-                            window.scrollTo(0, 0);
-                          }
-                        }}
+                        onClick={() => saveSection(currentSection)}
+                        disabled={savingSection !== null || isReadOnly}
                         className="w-full sm:w-auto border-orange-200 text-orange-700 hover:bg-orange-50"
                       >
-                        {lang === 'kn' ? 'ಮುಂದಿನ ಭಾಗ' : lang === 'ta' ? 'அடுத்த பகுதி' : lang === 'hi' ? 'अगला भाग' : 'Next Section'}
-                      </Button>
-                    ) : (
-                      <Button
-                        onClick={submitAssessment}
-                        disabled={!canSubmit() || submitting || isReadOnly}
-                        className="w-full sm:w-auto bg-orange-600 hover:bg-orange-700 text-white"
-                      >
-                        {submitting ? (
+                        {savingSection ? (
                           <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                            {t('submitting')}
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
+                            {lang === 'kn' ? 'ಉಳಿಸುತ್ತಿದೆ...' : lang === 'ta' ? 'சேமித்து கொண்டிருக்கிறது...' : lang === 'hi' ? 'सहेजा जा रहा है...' : 'Saving...'}
                           </>
                         ) : (
                           <>
-                            <Palette className="w-4 h-4 mr-2" />
-                            {t('submitAssessment')}
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            {t('saveProgress')}
                           </>
                         )}
                       </Button>
-                    )}
+
+                      {sections.indexOf(currentSection) < sections.length - 1 ? (
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            const idx = sections.indexOf(currentSection);
+                            if (idx < sections.length - 1) {
+                              const nextSection = sections[idx + 1];
+                              if (nextSection === 'summary' && !areCoreSectionsComplete()) {
+                                toast({
+                                  title: lang === 'kn' ? 'ಸಾರಾಂಶ ಲಾಕ್ ಆಗಿದೆ' : lang === 'ta' ? 'சுருக்கம் பூட்டப்பட்டுள்ளது' : lang === 'hi' ? 'सारांश लॉक है' : 'Summary Locked',
+                                  description: lang === 'kn'
+                                    ? 'ಸಾರಾಂಶವನ್ನು ವೀಕ್ಷಿಸಲು ದಯವಿಟ್ಟು ಎಲ್ಲಾ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ.'
+                                    : lang === 'ta'
+                                      ? 'சுருக்கத்தைப் பார்க்க அனைத்துக் கேள்விகளுக்கும் பதில் அளிக்கவும்.'
+                                      : lang === 'hi'
+                                        ? 'सारांश अनलॉक करने के लिए कृपया सभी मुख्य प्रश्नों का उत्तर दें।'
+                                        : 'Please answer all core questions to unlock the summary.',
+                                  variant: 'destructive',
+                                });
+                                return;
+                              }
+                              setCurrentSection(nextSection);
+                              window.scrollTo(0, 0);
+                            }
+                          }}
+                          className="w-full sm:w-auto border-orange-200 text-orange-700 hover:bg-orange-50"
+                        >
+                          {(() => {
+                            const idx = sections.indexOf(currentSection);
+                            const nextSec = sections[idx + 1];
+                            return nextSec === 'summary'
+                              ? (lang === 'kn' ? 'ಸಾರಾಂಶ →' : lang === 'ta' ? 'சுருக்கம் →' : lang === 'hi' ? 'सारांश →' : 'Summary →')
+                              : (lang === 'kn' ? 'ಮುಂದಿನ ಭಾಗ' : lang === 'ta' ? 'அடுத்த பகுதி' : lang === 'hi' ? 'अगला भाग' : 'Next Section');
+                          })()}
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={submitAssessment}
+                          disabled={!canSubmit() || submitting || isReadOnly}
+                          className="w-full sm:w-auto bg-orange-600 hover:bg-orange-700 text-white"
+                        >
+                          {submitting ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                              {t('submitting')}
+                            </>
+                          ) : (
+                            <>
+                              <Palette className="w-4 h-4 mr-2" />
+                              {t('submitAssessment')}
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
