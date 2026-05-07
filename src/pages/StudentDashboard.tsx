@@ -6,6 +6,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Zap, Activity, Sparkles, School, Users, Palette, Lock, CheckCircle,
   Play, Star, BookOpen, Heart, Target, User, Globe
@@ -70,8 +71,8 @@ export default function StudentDashboard() {
     const userMsg: ChatMsg = { id: crypto.randomUUID(), role: 'user', text: content };
     const newMessages = [...ccMessages, userMsg];
     setCcMessages(newMessages);
-    ccScrollToBottom();
     setCcLoading(true);
+    ccScrollToBottom();
     try {
       const history = ccMessages.map(m => ({ id: m.id, role: m.role, text: m.text }));
       const response = await aiChatService.sendMessage(history, content);
@@ -81,11 +82,13 @@ export default function StudentDashboard() {
         throw new Error(response.error || 'Unknown error');
       }
       ccScrollToBottom();
-    } catch (err: any) {
-      setCcMessages(prev => [...prev, {
-        id: crypto.randomUUID(), role: 'model',
-        text: `I'm having trouble connecting right now. (${err.message || 'Network error'}). Please try again later.`
-      }]);
+    } catch {
+      const errorText =
+        resolvedLang === 'kn' ? 'ಸದ್ಯ ಸಂಪರ್ಕಿಸಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.' :
+        resolvedLang === 'ta' ? 'இப்போது இணைக்க முடியவில்லை. தயவு செய்து மீண்டும் முயற்சிக்கவும்.' :
+        resolvedLang === 'hi' ? 'अभी जुड़ने में समस्या है। कृपया बाद में पुनः प्रयास करें।' :
+        'Having trouble connecting right now. Please try again later.';
+      setCcMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'model', text: errorText }]);
     } finally { setCcLoading(false); }
   };
 
@@ -100,6 +103,9 @@ export default function StudentDashboard() {
       logger.log('Language prompt disabled via code');
     }
   }, [userProfile?.role, userProfile?.has_selected_language]);
+
+  // ── Progress loaded flag — roadmap redirect must not fire until confirmed ──
+  const [progressLoaded, setProgressLoaded] = useState(false);
 
   // ── Assessment progress ───────────────────────────────────────────
   const [assessmentProgress, setAssessmentProgress] = useState<Record<string, any> | null>(null);
@@ -160,7 +166,7 @@ export default function StudentDashboard() {
     if (!studentId) return;
     try {
       const { data, error } = await supabase.from('assessment_responses').select('*')
-        .eq('student_id', studentId).eq('assessment_type', 'inspiration').eq('assessment_title', 'My Inspiration')
+        .eq('student_id', studentId).eq('assessment_type', 'inspiration')
         .order('completed_at', { ascending: false, nullsFirst: false }).order('updated_at', { ascending: false }).limit(1).maybeSingle();
       if (data && !error) { setAssessmentProgress(data); }
     } catch { }
@@ -171,7 +177,7 @@ export default function StudentDashboard() {
     if (!studentId) return;
     try {
       const { data, error } = await supabase.from('assessment_responses').select('*')
-        .eq('student_id', studentId).eq('assessment_type', 'about_me').eq('assessment_title', 'About Me')
+        .eq('student_id', studentId).eq('assessment_type', 'about_me')
         .order('completed_at', { ascending: false, nullsFirst: false }).order('updated_at', { ascending: false }).limit(1).maybeSingle();
       if (data && !error) { setAboutMeProgress(data); }
     } catch { }
@@ -182,7 +188,7 @@ export default function StudentDashboard() {
     if (!studentId) return;
     try {
       const { data, error } = await supabase.from('assessment_responses').select('*')
-        .eq('student_id', studentId).eq('assessment_type', 'dreams').eq('assessment_title', 'My Dreams')
+        .eq('student_id', studentId).eq('assessment_type', 'dreams')
         .order('completed_at', { ascending: false, nullsFirst: false }).order('updated_at', { ascending: false }).limit(1).maybeSingle();
       if (data && !error) { setDreamsProgress(data); }
     } catch { }
@@ -193,7 +199,7 @@ export default function StudentDashboard() {
     if (!studentId) return;
     try {
       const { data, error } = await supabase.from('assessment_responses').select('*')
-        .eq('student_id', studentId).eq('assessment_type', 'school_learning').eq('assessment_title', 'My School, My Learning and I')
+        .eq('student_id', studentId).eq('assessment_type', 'school_learning')
         .order('completed_at', { ascending: false, nullsFirst: false }).order('updated_at', { ascending: false }).limit(1).maybeSingle();
       if (data && !error) { setSchoolLearningProgress(data); }
     } catch { }
@@ -204,13 +210,9 @@ export default function StudentDashboard() {
     if (!studentId) return;
     try {
       const { data, error } = await supabase.from('assessment_responses').select('*')
-        .eq('student_id', studentId).eq('assessment_type', 'role_models').eq('assessment_title', 'My Role Models')
-        .order('updated_at', { ascending: false }).limit(5);
-      if (data && !error && data.length > 0) {
-        const completedRecord = data.find(r => r.completed_at);
-        const activeRecord = completedRecord || data[0];
-        setRoleModelsProgress(activeRecord);
-      }
+        .eq('student_id', studentId).eq('assessment_type', 'role_models')
+        .order('completed_at', { ascending: false, nullsFirst: false }).order('updated_at', { ascending: false }).limit(1).maybeSingle();
+      if (data && !error) { setRoleModelsProgress(data); }
     } catch { }
   };
 
@@ -219,8 +221,8 @@ export default function StudentDashboard() {
     if (!studentId) return;
     try {
       const { data, error } = await supabase.from('assessment_responses').select('*')
-        .eq('student_id', studentId).eq('assessment_type', 'hobbies').eq('assessment_title', 'My Talents and Hobbies')
-        .not('completed_at', 'is', null).order('completed_at', { ascending: false }).limit(1).maybeSingle();
+        .eq('student_id', studentId).eq('assessment_type', 'hobbies')
+        .order('completed_at', { ascending: false, nullsFirst: false }).order('updated_at', { ascending: false }).limit(1).maybeSingle();
       if (data && !error) { setHobbiesProgress(data); }
     } catch { }
   };
@@ -230,12 +232,9 @@ export default function StudentDashboard() {
     if (!studentId) return;
     try {
       const { data, error } = await supabase.from('assessment_responses').select('*')
-        .eq('student_id', studentId).eq('assessment_type', 'personality').eq('assessment_title', 'Holland Code (RIASEC) Test')
-        .order('updated_at', { ascending: false }).limit(5);
-      if (data && !error && data.length > 0) {
-        const completedRecord = data.find(r => r.completed_at);
-        setHollandCodeProgress(completedRecord || data[0]);
-      }
+        .eq('student_id', studentId).eq('assessment_type', 'personality')
+        .order('completed_at', { ascending: false, nullsFirst: false }).order('updated_at', { ascending: false }).limit(1).maybeSingle();
+      if (data && !error) { setHollandCodeProgress(data); }
     } catch { }
   };
 
@@ -244,8 +243,8 @@ export default function StudentDashboard() {
     if (!studentId) return;
     try {
       const { data, error } = await supabase.from('assessment_responses').select('*')
-        .eq('student_id', studentId).eq('assessment_type', 'career_guidance_tools').eq('assessment_title', 'Exploring Career Guidance Tools')
-        .not('completed_at', 'is', null).order('updated_at', { ascending: false }).limit(1).maybeSingle();
+        .eq('student_id', studentId).eq('assessment_type', 'career_guidance_tools')
+        .order('completed_at', { ascending: false, nullsFirst: false }).order('updated_at', { ascending: false }).limit(1).maybeSingle();
       if (data && !error) setCareerGuidanceToolsProgress(data);
     } catch { }
   };
@@ -266,15 +265,18 @@ export default function StudentDashboard() {
 
   useEffect(() => {
     if (!userProfile?.id) return;
+    setProgressLoaded(false);
     fetchData();
-    checkAssessmentProgress();
-    checkAboutMeProgress();
-    checkDreamsProgress();
-    checkSchoolLearningProgress();
-    checkHobbiesProgress();
-    checkRoleModelsProgress();
-    checkHollandCodeProgress();
-    checkCareerGuidanceToolsProgress();
+    Promise.all([
+      checkAssessmentProgress(),
+      checkAboutMeProgress(),
+      checkDreamsProgress(),
+      checkSchoolLearningProgress(),
+      checkHobbiesProgress(),
+      checkRoleModelsProgress(),
+      checkHollandCodeProgress(),
+      checkCareerGuidanceToolsProgress(),
+    ]).finally(() => setProgressLoaded(true));
   }, [userProfile?.id]);
 
   // Real-time summary subscription + periodic refresh disabled (AI summary flow disconnected)
@@ -292,9 +294,8 @@ export default function StudentDashboard() {
   }, [assessmentProgress, aboutMeProgress, dreamsProgress, stateLearningProgress, hobbiesProgress, roleModelsProgress, hollandCodeProgress, careerGuidanceToolsProgress]);
 
   // ── Auto-open summary from URL params — redirects to assessment directly ──
-  const autoOpenHandled = useRef(false);
   useEffect(() => {
-    if (autoOpenHandled.current) return;
+    if (!progressLoaded) return;
     const assessment = searchParams.get('assessment');
     const tab = searchParams.get('tab');
     if (!assessment || tab !== 'summary') return;
@@ -302,11 +303,11 @@ export default function StudentDashboard() {
     const validTypes = ['inspiration', 'about_me', 'dreams', 'school_learning', 'hobbies', 'role_models'] as const;
     type ValidType = typeof validTypes[number];
     if (!validTypes.includes(assessment as ValidType)) return;
+    if (!getCompletionStatus(assessment)) return;
 
-    autoOpenHandled.current = true;
     setSearchParams({}, { replace: true });
     handleViewSummary(assessment);
-  }, [searchParams, setSearchParams]);
+  }, [searchParams, progressLoaded]);
 
   // ── Auto-open chat from URL param (?openChat=true) ────────────────
   useEffect(() => {
@@ -386,9 +387,10 @@ export default function StudentDashboard() {
       return;
     }
 
-    // First-time open: redirect to career roadmap to fill milestone first
+    // First-time open: redirect to career roadmap to fill milestone first.
+    // Guard on progressLoaded — hasProgress() is meaningless while queries are still running.
     const milestone = ROADMAP_TRIGGERS[assessmentType];
-    if (milestone && !hasProgress(assessmentType) && !roadmapRedirectedRef.current.has(assessmentType)) {
+    if (progressLoaded && milestone && !hasProgress(assessmentType) && !roadmapRedirectedRef.current.has(assessmentType)) {
       roadmapRedirectedRef.current.add(assessmentType);
       navigate(`/student/career-roadmap?highlight=${milestone}`);
       return;
@@ -417,14 +419,14 @@ export default function StudentDashboard() {
   // ═══════════════════════════════════════════════════════════════════
 
   const assessmentCards: AssessmentCardData[] = [
-    { key: 'inspiration', number: 1, titleKey: 'assessment_inspiration', descriptionEn: 'Discover what inspires you', descriptionKn: 'ನಿಮ್ಮನ್ನು ಪ್ರೇರೇಪಿಸುವುವುದನ್ನು ಹುಡುಕಿ', descriptionTa: 'உங்களை ஊக்கப்படுத்தும் விஷயங்களை கண்டறியுங்கள்', descriptionHi: 'जानें कि आपको क्या प्रेरित करता है', assessmentStatus: getAssessmentStatus('inspiration'), isCompleted: getCompletionStatus('inspiration'), isUnlocked: isAssessmentUnlocked('inspiration'), hasProgress: !!assessmentProgress, summaryState: 'none' as SummaryState },
-    { key: 'about_me', number: 2, titleKey: 'assessment_about_me', descriptionEn: 'Reflect about yourself and your strengths', descriptionKn: 'ನಿಮ್ಮ ಬಗ್ಗೆ ಮತ್ತು ನಿಮ್ಮ ಬಲಗಳನ್ನು ಆಲೋಚಿಸಿ', descriptionTa: 'உங்களைப் பற்றியும் உங்கள் பலங்களைப் பற்றியும் சிந்தியுங்கள்', descriptionHi: 'अपने बारे में और अपनी ताकतों पर विचार करें', assessmentStatus: getAssessmentStatus('about_me'), isCompleted: getCompletionStatus('about_me'), isUnlocked: isAssessmentUnlocked('about_me'), hasProgress: false, summaryState: 'none' as SummaryState },
-    { key: 'dreams', number: 3, titleKey: 'assessment_dreams', descriptionEn: 'Explore your future aspirations', descriptionKn: 'ನಿಮ್ಮ ಭವಿಷ್ಯದ ಆಸೆಗಳನ್ನು ಅನ್ವೇಷಿಸಿ', descriptionTa: 'உங்கள் எதிர்கால கனவுகள் மற்றும் இலக்குகளை ஆராயுங்கள்', descriptionHi: 'अपने भविष्य की आकांक्षाओं को जानें', assessmentStatus: getAssessmentStatus('dreams'), isCompleted: getCompletionStatus('dreams'), isUnlocked: isAssessmentUnlocked('dreams'), hasProgress: false, summaryState: 'none' as SummaryState },
-    { key: 'school_learning', number: 4, titleKey: 'assessment_school_learning', descriptionEn: 'Reflect on your learning journey', descriptionKn: 'ನಿಮ್ಮ ಕಲಿಕೆಯ ಪ್ರಯಾಣದ ಬಗ್ಗೆ ಚಿಂತಿಸಿರಿ', descriptionTa: 'உங்கள் கற்றல் பயணத்தை பற்றிச் சிந்தியுங்கள்', descriptionHi: 'अपनी सीखने की यात्रा पर विचार करें', assessmentStatus: getAssessmentStatus('school_learning'), isCompleted: getCompletionStatus('school_learning'), isUnlocked: isAssessmentUnlocked('school_learning'), hasProgress: false, summaryState: 'none' as SummaryState },
-    { key: 'hobbies', number: 5, titleKey: 'assessment_hobbies', descriptionEn: 'Discover career paths from your interests', descriptionKn: 'ನಿಮ್ಮ ಆಸಕ್ತಿಗಳಿಂದ ವೃತ್ತಿ ಮಾರ್ಗಗಳನ್ನು ಅನ್ವೇಷಿಸಿ', descriptionTa: 'உங்கள் ஆர்வங்களிலிருந்து தொழில் பாதைகளை அறியுங்கள்', descriptionHi: 'अपनी रुचियों से करियर पथ खोजें', assessmentStatus: getAssessmentStatus('hobbies'), isCompleted: getCompletionStatus('hobbies'), isUnlocked: isAssessmentUnlocked('hobbies'), hasProgress: false, summaryState: 'none' as SummaryState },
-    { key: 'role_models', number: 6, titleKey: 'assessment_role_models', descriptionEn: 'Identify your inspiring role models', descriptionKn: 'ನಿಮ್ಮನ್ನು ಪ್ರೇರೇಪಿಸುವ ಮಾದರಿಗಳನ್ನು ಗುರುತಿಸಿ', descriptionTa: 'உங்களை ஊக்கப்படுத்தும் முன்னுதாரணங்களை கண்டறியுங்கள்', descriptionHi: 'अपने प्रेरणादायक आदर्शों को पहचानें', assessmentStatus: getAssessmentStatus('role_models'), isCompleted: getCompletionStatus('role_models'), isUnlocked: isAssessmentUnlocked('role_models'), hasProgress: false, summaryState: 'none' as SummaryState },
-    { key: 'holland_code', number: 7, titleKey: 'assessment_holland_code', descriptionEn: 'Identify your personality type', descriptionKn: 'ನಿಮ್ಮ ವ್ಯಕ್ತಿತ್ವದ ಪ್ರಕಾರವನ್ನು ಗುರುತಿಸಿ', descriptionTa: 'உங்கள் நற்பண்பு வகையை அறியுங்கள்', descriptionHi: 'अपने व्यक्तित्व का प्रकार पहचानें', assessmentStatus: getAssessmentStatus('holland_code'), isCompleted: getCompletionStatus('holland_code'), isUnlocked: isAssessmentUnlocked('holland_code'), hasProgress: false, summaryState: 'none' as SummaryState },
-    { key: 'career_guidance_tools', number: 8, titleKey: 'assessment_career_guidance', descriptionEn: 'Explore career guidance tools and resources', descriptionKn: 'ವೃತ್ತಿ ಮಾರ್ಗದರ್ಶನ ಸಾಧನಗಳನ್ನು ಅನ್ವೇಷಿಸಿ', descriptionTa: 'தொழில் வழிகாட்டல் கருவிகள் மற்றும் ஆதாரங்களை ஆராயுங்கள்', descriptionHi: 'करियर मार्गदर्शन उपकरणों और संसाधनों की खोज करें', assessmentStatus: getAssessmentStatus('career_guidance_tools'), isCompleted: getCompletionStatus('career_guidance_tools'), isUnlocked: isAssessmentUnlocked('career_guidance_tools'), hasProgress: false, summaryState: 'none' as SummaryState },
+    { key: 'inspiration', number: 1, titleKey: 'assessment_inspiration', descriptionEn: 'Discover what inspires you', descriptionKn: 'ನಿಮ್ಮನ್ನು ಪ್ರೇರೇಪಿಸುವುವುದನ್ನು ಹುಡುಕಿ', descriptionTa: 'உங்களை ஊக்கப்படுத்தும் விஷயங்களை கண்டறியுங்கள்', descriptionHi: 'जानें कि आपको क्या प्रेरित करता है', assessmentStatus: getAssessmentStatus('inspiration'), isCompleted: getCompletionStatus('inspiration'), isUnlocked: isAssessmentUnlocked('inspiration'), hasProgress: !!assessmentProgress, hasSummary: true, summaryState: 'none' as SummaryState },
+    { key: 'about_me', number: 2, titleKey: 'assessment_about_me', descriptionEn: 'Reflect about yourself and your strengths', descriptionKn: 'ನಿಮ್ಮ ಬಗ್ಗೆ ಮತ್ತು ನಿಮ್ಮ ಬಲಗಳನ್ನು ಆಲೋಚಿಸಿ', descriptionTa: 'உங்களைப் பற்றியும் உங்கள் பலங்களைப் பற்றியும் சிந்தியுங்கள்', descriptionHi: 'अपने बारे में और अपनी ताकतों पर विचार करें', assessmentStatus: getAssessmentStatus('about_me'), isCompleted: getCompletionStatus('about_me'), isUnlocked: isAssessmentUnlocked('about_me'), hasProgress: hasProgress('about_me'), hasSummary: true, summaryState: 'none' as SummaryState },
+    { key: 'dreams', number: 3, titleKey: 'assessment_dreams', descriptionEn: 'Explore your future aspirations', descriptionKn: 'ನಿಮ್ಮ ಭವಿಷ್ಯದ ಆಸೆಗಳನ್ನು ಅನ್ವೇಷಿಸಿ', descriptionTa: 'உங்கள் எதிர்கால கனவுகள் மற்றும் இலக்குகளை ஆராயுங்கள்', descriptionHi: 'अपने भविष्य की आकांक्षाओं को जानें', assessmentStatus: getAssessmentStatus('dreams'), isCompleted: getCompletionStatus('dreams'), isUnlocked: isAssessmentUnlocked('dreams'), hasProgress: hasProgress('dreams'), hasSummary: true, summaryState: 'none' as SummaryState },
+    { key: 'school_learning', number: 4, titleKey: 'assessment_school_learning', descriptionEn: 'Reflect on your learning journey', descriptionKn: 'ನಿಮ್ಮ ಕಲಿಕೆಯ ಪ್ರಯಾಣದ ಬಗ್ಗೆ ಚಿಂತಿಸಿರಿ', descriptionTa: 'உங்கள் கற்றல் பயணத்தை பற்றிச் சிந்தியுங்கள்', descriptionHi: 'अपनी सीखने की यात्रा पर विचार करें', assessmentStatus: getAssessmentStatus('school_learning'), isCompleted: getCompletionStatus('school_learning'), isUnlocked: isAssessmentUnlocked('school_learning'), hasProgress: hasProgress('school_learning'), hasSummary: true, summaryState: 'none' as SummaryState },
+    { key: 'hobbies', number: 5, titleKey: 'assessment_hobbies', descriptionEn: 'Discover career paths from your interests', descriptionKn: 'ನಿಮ್ಮ ಆಸಕ್ತಿಗಳಿಂದ ವೃತ್ತಿ ಮಾರ್ಗಗಳನ್ನು ಅನ್ವೇಷಿಸಿ', descriptionTa: 'உங்கள் ஆர்வங்களிலிருந்து தொழில் பாதைகளை அறியுங்கள்', descriptionHi: 'अपनी रुचियों से करियर पथ खोजें', assessmentStatus: getAssessmentStatus('hobbies'), isCompleted: getCompletionStatus('hobbies'), isUnlocked: isAssessmentUnlocked('hobbies'), hasProgress: hasProgress('hobbies'), hasSummary: true, summaryState: 'none' as SummaryState },
+    { key: 'role_models', number: 6, titleKey: 'assessment_role_models', descriptionEn: 'Identify your inspiring role models', descriptionKn: 'ನಿಮ್ಮನ್ನು ಪ್ರೇರೇಪಿಸುವ ಮಾದರಿಗಳನ್ನು ಗುರುತಿಸಿ', descriptionTa: 'உங்களை ஊக்கப்படுத்தும் முன்னுதாரணங்களை கண்டறியுங்கள்', descriptionHi: 'अपने प्रेरणादायक आदर्शों को पहचानें', assessmentStatus: getAssessmentStatus('role_models'), isCompleted: getCompletionStatus('role_models'), isUnlocked: isAssessmentUnlocked('role_models'), hasProgress: hasProgress('role_models'), hasSummary: true, summaryState: 'none' as SummaryState },
+    { key: 'holland_code', number: 7, titleKey: 'assessment_holland_code', descriptionEn: 'Identify your personality type', descriptionKn: 'ನಿಮ್ಮ ವ್ಯಕ್ತಿತ್ವದ ಪ್ರಕಾರವನ್ನು ಗುರುತಿಸಿ', descriptionTa: 'உங்கள் நற்பண்பு வகையை அறியுங்கள்', descriptionHi: 'अपने व्यक्तित्व का प्रकार पहचानें', assessmentStatus: getAssessmentStatus('holland_code'), isCompleted: getCompletionStatus('holland_code'), isUnlocked: isAssessmentUnlocked('holland_code'), hasProgress: hasProgress('holland_code'), hasSummary: false, summaryState: 'none' as SummaryState },
+    { key: 'career_guidance_tools', number: 8, titleKey: 'assessment_career_guidance', descriptionEn: 'Explore career guidance tools and resources', descriptionKn: 'ವೃತ್ತಿ ಮಾರ್ಗದರ್ಶನ ಸಾಧನಗಳನ್ನು ಅನ್ವೇಷಿಸಿ', descriptionTa: 'தொழில் வழிகாட்டல் கருவிகள் மற்றும் ஆதாரங்களை ஆராயுங்கள்', descriptionHi: 'करियर मार्गदर्शन उपकरणों और संसाधनों की खोज करें', assessmentStatus: getAssessmentStatus('career_guidance_tools'), isCompleted: getCompletionStatus('career_guidance_tools'), isUnlocked: isAssessmentUnlocked('career_guidance_tools'), hasProgress: hasProgress('career_guidance_tools'), hasSummary: false, summaryState: 'none' as SummaryState },
   ];
 
   // ═══════════════════════════════════════════════════════════════════
@@ -464,19 +466,33 @@ export default function StudentDashboard() {
         </Card>
 
         {/* Assessment Cards */}
-        <AssessmentGrid
-          cards={assessmentCards}
-          resolvedLang={resolvedLang}
-          t={t}
-          onStartAssessment={startAssessment}
-          onViewSummary={handleViewSummary}
-        />
+        {!progressLoaded ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="rounded-lg border bg-white p-6 space-y-3">
+                <Skeleton className="h-12 w-12 rounded-full mx-auto" />
+                <Skeleton className="h-4 w-3/4 mx-auto" />
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-5/6 mx-auto" />
+                <Skeleton className="h-6 w-20 mx-auto rounded-full" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <AssessmentGrid
+            cards={assessmentCards}
+            resolvedLang={resolvedLang}
+            t={t}
+            onStartAssessment={startAssessment}
+            onViewSummary={handleViewSummary}
+          />
+        )}
 
         {/* Career Spotlight + Chat */}
         <CareerChatSection
           resolvedLang={resolvedLang}
           t={t}
-          ccMessages={ccMessages as any}
+          ccMessages={ccMessages}
           ccInput={ccInput}
           setCcInput={setCcInput}
           ccCanSend={ccCanSend}

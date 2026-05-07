@@ -54,10 +54,29 @@ Deno.serve(async (req) => {
           headers: { 'Content-Type': 'application/json' },
         })
       }
+
+      // Replay protection: reject requests older than 5 minutes
+      const now = Math.floor(Date.now() / 1000)
+      const ts = parseInt(webhookTimestamp, 10)
+      if (isNaN(ts) || Math.abs(now - ts) > 300) {
+        return new Response(JSON.stringify({ error: 'Webhook timestamp expired' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
     }
 
     // --- MSG91 credentials check ---
     const authKey = Deno.env.get('MSG91_AUTH_KEY')
+    // If MSG91 is live but the webhook secret is absent, any unsigned POST would trigger real SMS.
+    // Refuse rather than silently send from an unprotected endpoint.
+    if (authKey && !hookSecret) {
+      console.error('send-sms-hook: MSG91_AUTH_KEY is set but SEND_SMS_HOOK_SECRET is not — refusing SMS send to prevent unauthenticated trigger')
+      return new Response(JSON.stringify({ error: 'Webhook not configured securely — contact admin' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
     if (!authKey) {
       // Placeholder fallback: credentials not yet set — allow auth flow to proceed silently
       console.warn('send-sms-hook: MSG91_AUTH_KEY not set — skipping SMS send (placeholder mode)')
@@ -93,18 +112,34 @@ Deno.serve(async (req) => {
     const mobiles = phone.replace(/^\+/, '')
 
     // --- Call MSG91 Flow API ---
-    const msg91Response = await fetch('https://control.msg91.com/api/v5/flow/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'authkey': authKey,
-      },
-      body: JSON.stringify({
-        flow_id: flowId,
-        sender: senderId,
-        recipients: [{ mobiles, VAR1: otp }],
-      }),
-    })
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 15_000)
+    let msg91Response: Response
+    try {
+      msg91Response = await fetch('https://control.msg91.com/api/v5/flow/', {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'authkey': authKey,
+        },
+        body: JSON.stringify({
+          flow_id: flowId,
+          sender: senderId,
+          recipients: [{ mobiles, VAR1: otp }],
+        }),
+      })
+    } catch (fetchErr) {
+      if ((fetchErr as Error).name === 'AbortError') {
+        return new Response(JSON.stringify({ error: 'MSG91 API timed out' }), {
+          status: 504,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
+      throw fetchErr
+    } finally {
+      clearTimeout(timeoutId)
+    }
 
     if (!msg91Response.ok) {
       const errorText = await msg91Response.text()

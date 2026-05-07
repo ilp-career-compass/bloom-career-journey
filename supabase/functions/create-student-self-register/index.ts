@@ -61,6 +61,9 @@ Deno.serve(async (req) => {
 
     // 1. Validate MSG91 OTP token server-side (enforced when MSG91_AUTH_KEY is configured)
     const msg91AuthKey = Deno.env.get('MSG91_AUTH_KEY')
+    if (!msg91AuthKey) {
+      console.warn('[create-student-self-register] MSG91_AUTH_KEY not configured — OTP verification bypassed')
+    }
     if (msg91AuthKey) {
       if (!accessToken) {
         return new Response(
@@ -137,9 +140,14 @@ Deno.serve(async (req) => {
     })
 
     if (authError || !authData.user) {
+      console.error('[create-student-self-register] auth.admin.createUser failed:', JSON.stringify(authError))
+      // Supabase Auth returns 422 for a phone that already exists in auth.users. Surface as 400.
+      const isDuplicate = (authError as { status?: number })?.status === 422 ||
+        authError?.message?.toLowerCase().includes('already registered') ||
+        authError?.message?.toLowerCase().includes('already been registered')
       return new Response(
-        JSON.stringify({ error: authError?.message || 'Failed to create auth account' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        JSON.stringify({ error: isDuplicate ? 'Phone number already registered' : (authError?.message || 'Failed to create auth account') }),
+        { status: isDuplicate ? 400 : 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       )
     }
 

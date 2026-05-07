@@ -7,7 +7,7 @@ function toE164Indian(phone: string): string {
   return phone;
 }
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { StateInfo, SchoolClass } from '@/integrations/supabase/types';
@@ -28,7 +28,6 @@ import {
 } from '@/components/teacher/StudentModals';
 import AssessmentResponsesView from '@/components/teacher/AssessmentResponsesView';
 import ResourcesSection from '@/components/teacher/ResourcesSection';
-import ChatbotDialog from '@/components/ChatbotDialog';
 import ChatBubble from '@/components/chat/ChatBubble';
 import ContactIlpDialog from '@/components/ContactIlpDialog';
 import ProfileDialog from '@/components/ProfileDialog';
@@ -42,6 +41,7 @@ interface StudentStats {
 export default function TeacherDashboard() {
   const { user, userProfile, signOut } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { lang: rawLang } = useLang();
   const lang = rawLang as TeacherLang;
@@ -86,7 +86,16 @@ export default function TeacherDashboard() {
   const [contactOpen, setContactOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const [teacherRow, setTeacherRow] = useState<{ id: string; state_id: string } | null>(null);
+
+  // Auto-open chat bubble from notification deep link (?openChat=true)
+  useEffect(() => {
+    if (searchParams.get('openChat') === 'true') {
+      setIsChatOpen(true);
+      setSearchParams(prev => { prev.delete('openChat'); return prev; });
+    }
+  }, [searchParams]);
 
   // ═══════════════════════════════════════════════════════════════════
   //  DATA LOADING
@@ -568,9 +577,8 @@ export default function TeacherDashboard() {
         stateId={teacherRow?.state_id ?? ''}
         onImported={loadStudents}
       />
-      <ChatbotDialog open={false} onOpenChange={() => { }} />
       <ContactIlpDialog open={contactOpen} onOpenChange={setContactOpen} />
-      <ChatBubble role="teacher" />
+      <ChatBubble role="teacher" isOpen={isChatOpen} onOpenChange={setIsChatOpen} />
 
       <AddStudentModal
         open={isAddStudentOpen} onOpenChange={setIsAddStudentOpen}

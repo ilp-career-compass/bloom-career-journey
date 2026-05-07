@@ -19,21 +19,11 @@ class AIChatService {
     // API calls routed through gemini-proxy Edge Function — no client-side key needed
   }
 
-  isConfigured(): boolean {
-    return true; // API calls routed through gemini-proxy Edge Function
-  }
-
   async sendMessage(history: ChatMessage[], newMessage: string): Promise<ChatResponse> {
-    if (!this.isConfigured()) {
-      return {
-        success: false,
-        error: 'AI chat service is not available. Please try again later.'
-      };
-    }
-
     try {
-      // Construct the prompt history
-      const contents = history.map(msg => ({
+      // Construct the prompt history — cap to last 30 messages to stay within Edge Function body limits
+      const MAX_HISTORY = 30;
+      const contents = history.slice(-MAX_HISTORY).map(msg => ({
         role: msg.role === 'user' ? 'user' : 'model',
         parts: [{ text: msg.text }]
       }));
@@ -76,13 +66,14 @@ Keep responses short — 3-5 sentences maximum. Be encouraging and positive alwa
         },
       };
 
-      // Try models in order: 2.0-flash → 2.0-flash-lite → 1.5-flash
-      for (const model of ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash']) {
+      // Try models in order: 2.0-flash → 2.0-flash-lite
+      const models = ['gemini-2.0-flash', 'gemini-2.0-flash-lite'];
+      for (const [i, model] of models.entries()) {
         try {
           return await this.callApi(model, requestBody);
         } catch (error) {
           logger.warn(`Model ${model} failed:`, error);
-          if (model === 'gemini-1.5-flash') throw error;
+          if (i === models.length - 1) throw error;
         }
       }
 
@@ -97,7 +88,7 @@ Keep responses short — 3-5 sentences maximum. Be encouraging and positive alwa
 
   private async callApi(model: string, body: any): Promise<ChatResponse> {
     const { data, error } = await supabase.functions.invoke('gemini-proxy', {
-      body: { model, contents: body.contents, generationConfig: body.generationConfig },
+      body: { model, contents: body.contents, generationConfig: body.generationConfig, systemInstruction: body.systemInstruction },
     });
 
     if (error) {
@@ -106,11 +97,11 @@ Keep responses short — 3-5 sentences maximum. Be encouraging and positive alwa
     
     // Validate response structure
     if (!data.candidates || data.candidates.length === 0) {
-      // Check for safety blocks
+      // Safety block — return the same on-topic redirect the system prompt instructs, not the raw block reason
       if (data.promptFeedback?.blockReason) {
         return {
-            success: false,
-            error: `I cannot answer that. (Safety Block: ${data.promptFeedback.blockReason})`
+          success: true,
+          text: "I'm here to help with your career journey! Ask me about careers, subjects, or your future goals 😊"
         };
       }
       throw new Error('No response candidates returned.');

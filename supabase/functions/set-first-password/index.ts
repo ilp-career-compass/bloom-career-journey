@@ -60,6 +60,44 @@ Deno.serve(async (req) => {
       )
     }
 
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
+
+    // Look up the user BEFORE consuming the OTP — the role check below must not burn a teacher's
+    // OTP session as a side effect of returning 403.
+    const { data: userRow, error: userError } = await supabaseAdmin
+      .from('users')
+      .select('id, role')
+      .eq('mobile', mobile)
+      .maybeSingle()
+
+    // G20: maybeSingle() returns PGRST116 when multiple rows match — surface a clear 409
+    if (userError) {
+      const isDuplicate = (userError as { code?: string }).code === 'PGRST116'
+      return new Response(
+        JSON.stringify({ error: isDuplicate
+          ? 'Multiple accounts found for this number — please contact support'
+          : 'No account found for this mobile number' }),
+        { status: isDuplicate ? 409 : 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
+    }
+    if (!userRow) {
+      return new Response(
+        JSON.stringify({ error: 'No account found for this mobile number' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
+    }
+
+    // G19: First Login is only for students — check BEFORE OTP so a teacher calling this endpoint
+    // does not have their OTP consumed before getting the 403.
+    if (userRow.role !== 'student') {
+      return new Response(
+        JSON.stringify({ error: 'This flow is only available for student accounts' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
+    }
+
     // G25: skip OTP verification in dev/staging when MSG91_AUTH_KEY is not configured —
     // matches the bypass behaviour of create-teacher and create-student-self-register.
     const msg91AuthKey = Deno.env.get('MSG91_AUTH_KEY')
@@ -92,43 +130,6 @@ Deno.serve(async (req) => {
           { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
         )
       }
-    }
-
-    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    })
-
-    // Look up the user in public.users by mobile (stored as E.164)
-    const { data: userRow, error: userError } = await supabaseAdmin
-      .from('users')
-      .select('id, role')
-      .eq('mobile', mobile)
-      .maybeSingle()
-
-    // G20: maybeSingle() returns PGRST116 when multiple rows match — surface a clear 409
-    if (userError) {
-      const isDuplicate = (userError as { code?: string }).code === 'PGRST116'
-      return new Response(
-        JSON.stringify({ error: isDuplicate
-          ? 'Multiple accounts found for this number — please contact support'
-          : 'No account found for this mobile number' }),
-        { status: isDuplicate ? 409 : 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      )
-    }
-    if (!userRow) {
-      return new Response(
-        JSON.stringify({ error: 'No account found for this mobile number' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      )
-    }
-
-    // G19: First Login is only for students — teachers/admins must not be able to bypass
-    // their current password via OTP alone.
-    if (userRow.role !== 'student') {
-      return new Response(
-        JSON.stringify({ error: 'This flow is only available for student accounts' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      )
     }
 
     // Set the student's chosen password via Supabase Auth admin API

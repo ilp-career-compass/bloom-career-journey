@@ -284,7 +284,7 @@ export default function ChatBubble({ role, isOpen: controlledIsOpen, onOpenChang
               p_type: 'chat_message',
               p_title: notifTitle,
               p_message: notifMessage,
-              p_link: '/student?openChat=true',
+              p_link: role === 'student' ? '/teacher?openChat=true' : '/student?openChat=true',
             });
             if (notifError) logger.error('Chat notification error:', notifError);
           } catch (err) {

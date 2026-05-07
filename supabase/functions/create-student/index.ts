@@ -1,8 +1,11 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+function getCorsHeaders(req: Request): Record<string, string> {
+  const allowedOrigin = Deno.env.get('ALLOWED_ORIGIN')
+  const base = { 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' }
+  if (!allowedOrigin) return { ...base, 'Access-Control-Allow-Origin': '*' }
+  const origin = req.headers.get('Origin') ?? ''
+  return { ...base, 'Access-Control-Allow-Origin': origin === allowedOrigin ? origin : allowedOrigin, 'Vary': 'Origin' }
 }
 
 interface StudentInput {
@@ -43,6 +46,7 @@ function isValidE164(phone: string): boolean {
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req)
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -196,17 +200,6 @@ Deno.serve(async (req) => {
           { onConflict: 'user_id' },
         )
         if (studentError) throw new Error(`students upsert: ${studentError.message}`)
-
-        // 7. Upsert into public.student_auth_credentials
-        const { error: credError } = await supabaseAdmin.from('student_auth_credentials').upsert(
-          {
-            user_id: authUserId,
-            mobile: phone,
-            is_active: true,
-          },
-          { onConflict: 'user_id' },
-        )
-        if (credError) throw new Error(`student_auth_credentials upsert: ${credError.message}`)
 
         created.push({ fullName, phone, userId: authUserId })
       } catch (dbError: unknown) {

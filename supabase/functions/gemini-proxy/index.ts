@@ -1,3 +1,12 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+const ALLOWED_MODELS = new Set([
+  'gemini-2.0-flash',
+  'gemini-2.0-flash-lite',
+  'gemini-1.5-flash',
+  'gemini-1.5-flash-latest',
+])
+
 function getCorsHeaders(req: Request): Record<string, string> {
   const allowedOrigin = Deno.env.get('ALLOWED_ORIGIN')
   const base = { 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' }
@@ -21,7 +30,43 @@ Deno.serve(async (req) => {
       )
     }
 
-    const { model, contents, generationConfig, systemInstruction } = await req.json()
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return new Response(
+        JSON.stringify({ error: 'Missing server configuration' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Require a valid Supabase user JWT — CORS alone does not protect server-side callers
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const rawBody = await req.text()
+    if (rawBody.length > 100_000) {
+      return new Response(
+        JSON.stringify({ error: 'Request payload too large' }),
+        { status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    const { model, contents, generationConfig, systemInstruction } = JSON.parse(rawBody)
 
     if (!model || !contents) {
       return new Response(
@@ -30,9 +75,17 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Whitelist models to prevent cost escalation and path traversal in the URL
+    if (!ALLOWED_MODELS.has(model)) {
+      return new Response(
+        JSON.stringify({ error: `Model not allowed: ${model}` }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`
 
-    const geminiBody: any = { contents }
+    const geminiBody: Record<string, unknown> = { contents }
     if (generationConfig) geminiBody.generationConfig = generationConfig
     if (systemInstruction) geminiBody.systemInstruction = systemInstruction
 
