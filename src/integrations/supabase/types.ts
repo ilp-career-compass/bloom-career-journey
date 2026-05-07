@@ -694,6 +694,41 @@ export type Database = {
           created_at?: string
         }
       }
+      things_that_interest_me: {
+        Row: {
+          id: string
+          student_id: string
+          subject: string
+          lesson_chapter: string
+          why_factors: string
+          compatible_career: string
+          source_assessment: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          student_id: string
+          subject?: string
+          lesson_chapter?: string
+          why_factors?: string
+          compatible_career?: string
+          source_assessment?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          student_id?: string
+          subject?: string
+          lesson_chapter?: string
+          why_factors?: string
+          compatible_career?: string
+          source_assessment?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never

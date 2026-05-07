@@ -9,7 +9,10 @@ import { Input } from '@/components/ui/input';
 import { ArrowLeft, Plus, Trash2, Loader2, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
+type EditableField = 'subject' | 'lesson_chapter' | 'why_factors' | 'compatible_career';
+
 interface InterestRow {
+  _key: string;        // stable client-side identity (DB id for loaded rows, UUID for new ones)
   id?: string;
   subject: string;
   lesson_chapter: string;
@@ -19,6 +22,12 @@ interface InterestRow {
   _dirty?: boolean;
   _new?: boolean;
 }
+
+const MAX_ROWS = 20;
+
+// Safe {key} interpolation — replaces all {word} placeholders, unknown keys left verbatim.
+const interpolate = (template: string, vars: Record<string, string>): string =>
+  template.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? `{${k}}`);
 
 const STRINGS: Record<string, Record<string, string>> = {
   en: {
@@ -34,6 +43,7 @@ const STRINGS: Record<string, Record<string, string>> = {
     save_failed: 'Save failed',
     delete_failed: 'Delete failed',
     empty: 'No entries yet. Add your first interest!',
+    row_limit: `You can add up to ${MAX_ROWS} entries.`,
     from_banner: 'Based on your {name} responses, add any subjects or topics that interest you.',
     assessment_inspiration: 'My Inspiration',
     assessment_about_me: 'About Me',
@@ -41,6 +51,8 @@ const STRINGS: Record<string, Record<string, string>> = {
     assessment_school_learning: 'My School, My Learning and I',
     assessment_hobbies: 'My Talents and Hobbies',
     assessment_role_models: 'My Role Models',
+    assessment_personality: 'Holland Code (RIASEC) Test',
+    assessment_career_guidance_tools: 'Exploring Career Guidance Tools',
   },
   kn: {
     title: 'ನನಗೆ ಆಸಕ್ತಿ ಇರುವ ವಿಷಯಗಳು',
@@ -55,6 +67,7 @@ const STRINGS: Record<string, Record<string, string>> = {
     save_failed: 'ಉಳಿಸಲು ವಿಫಲವಾಯಿತು',
     delete_failed: 'ಅಳಿಸಲು ವಿಫಲವಾಯಿತು',
     empty: 'ಇನ್ನೂ ಯಾವುದೇ ನಮೂದುಗಳಿಲ್ಲ. ನಿಮ್ಮ ಮೊದಲ ಆಸಕ್ತಿಯನ್ನು ಸೇರಿಸಿ!',
+    row_limit: `ನೀವು ಗರಿಷ್ಠ ${MAX_ROWS} ನಮೂದುಗಳನ್ನು ಸೇರಿಸಬಹುದು.`,
     from_banner: 'ನಿಮ್ಮ {name} ಉತ್ತರಗಳ ಆಧಾರದ ಮೇಲೆ, ನಿಮಗೆ ಆಸಕ್ತಿ ಇರುವ ವಿಷಯಗಳನ್ನು ಸೇರಿಸಿ.',
     assessment_inspiration: 'ನನ್ನ ಪ್ರೇರಣೆ',
     assessment_about_me: 'ನನ್ನ ಬಗ್ಗೆ',
@@ -62,6 +75,8 @@ const STRINGS: Record<string, Record<string, string>> = {
     assessment_school_learning: 'ನನ್ನ ಶಾಲೆ, ನನ್ನ ಕಲಿಕೆ',
     assessment_hobbies: 'ನನ್ನ ಪ್ರತಿಭೆಗಳು ಮತ್ತು ಹವ್ಯಾಸಗಳು',
     assessment_role_models: 'ನನ್ನ ಆದರ್ಶ ವ್ಯಕ್ತಿ',
+    assessment_personality: 'ಹಾಲೆಂಡ್ ಕೋಡ್ (RIASEC) ಪರೀಕ್ಷೆ',
+    assessment_career_guidance_tools: 'ವೃತ್ತಿ ಮಾರ್ಗದರ್ಶನ ಸಾಧನಗಳನ್ನು ಅನ್ವೇಷಿಸಿ',
   },
   ta: {
     title: 'எனக்கு ஆர்வமான விஷயங்கள்',
@@ -76,6 +91,7 @@ const STRINGS: Record<string, Record<string, string>> = {
     save_failed: 'சேமிக்க தவறியது',
     delete_failed: 'நீக்கத் தவறியது',
     empty: 'இன்னும் எந்த பதிவும் இல்லை. உங்கள் முதல் ஆர்வத்தைச் சேர்க்கவும்!',
+    row_limit: `நீங்கள் அதிகபட்சம் ${MAX_ROWS} பதிவுகளை சேர்க்கலாம்.`,
     from_banner: 'உங்கள் {name} பதில்களின் அடிப்படையில், உங்களுக்கு ஆர்வமான பாடங்களைச் சேர்க்கவும்.',
     assessment_inspiration: 'என் உத்வேகம்',
     assessment_about_me: 'என்னைப் பற்றி',
@@ -83,6 +99,8 @@ const STRINGS: Record<string, Record<string, string>> = {
     assessment_school_learning: 'நானும், என் பள்ளியும், என் கற்றலும்',
     assessment_hobbies: 'என் திறமைகள் மற்றும் பொழுதுபோக்குகள்',
     assessment_role_models: 'என் முன்மாதிரி நபர்',
+    assessment_personality: 'ஹாலண்ட் குறியீடு (RIASEC) தேர்வு',
+    assessment_career_guidance_tools: 'தொழில் வழிகாட்டல் கருவிகளை அறிதல்',
   },
   hi: {
     title: 'मुझे जिन चीज़ों में रुचि है',
@@ -97,6 +115,7 @@ const STRINGS: Record<string, Record<string, string>> = {
     save_failed: 'सहेजने में विफल',
     delete_failed: 'हटाने में विफल',
     empty: 'अभी तक कोई प्रविष्टि नहीं। अपनी पहली रुचि जोड़ें!',
+    row_limit: `आप अधिकतम ${MAX_ROWS} प्रविष्टियाँ जोड़ सकते हैं।`,
     from_banner: 'आपके {name} उत्तरों के आधार पर, अपनी रुचि के विषय जोड़ें।',
     assessment_inspiration: 'मेरी प्रेरणा',
     assessment_about_me: 'मेरे बारे में',
@@ -104,6 +123,8 @@ const STRINGS: Record<string, Record<string, string>> = {
     assessment_school_learning: 'मेरा विद्यालय, मेरी पढ़ाई और मैं',
     assessment_hobbies: 'मेरी प्रतिभाएं और शौक',
     assessment_role_models: 'मेरे आदर्श',
+    assessment_personality: 'हॉलैंड कोड (RIASEC) परीक्षा',
+    assessment_career_guidance_tools: 'करियर मार्गदर्शन उपकरणों की खोज',
   },
 };
 
@@ -114,12 +135,14 @@ const ASSESSMENT_NAME_KEYS: Record<string, string> = {
   school_learning: 'assessment_school_learning',
   hobbies: 'assessment_hobbies',
   role_models: 'assessment_role_models',
+  personality: 'assessment_personality',
+  career_guidance_tools: 'assessment_career_guidance_tools',
 };
 
 export default function ThingsInterestMePage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { userProfile } = useAuth();
+  const { userProfile, loading: authLoading } = useAuth();
   const { lang } = useLang();
   const { toast } = useToast();
 
@@ -128,110 +151,131 @@ export default function ThingsInterestMePage() {
 
   const [rows, setRows] = useState<InterestRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [savingIds, setSavingIds] = useState<Set<number>>(new Set());
-  const debounceTimers = useRef<Record<number, NodeJS.Timeout>>({});
+  const [savingKeys, setSavingKeys] = useState<Set<string>>(new Set());
+  // Keyed by row._key so deletions cannot shift another row's timer.
+  const debounceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   const fromAssessment = searchParams.get('from');
 
-  // Load existing entries
+  // Clear all pending timers on unmount to avoid setState on an unmounted component.
   useEffect(() => {
-    if (!userProfile?.id) return;
+    return () => { Object.values(debounceTimers.current).forEach(clearTimeout); };
+  }, []);
+
+  // Load existing entries.
+  useEffect(() => {
+    if (!userProfile?.id) {
+      // Auth has finished loading but there is no profile — stop the spinner.
+      if (!authLoading) setLoading(false);
+      return;
+    }
     (async () => {
       try {
         const { data, error } = await supabase
-          .from('things_that_interest_me' as any)
+          .from('things_that_interest_me')
           .select('*')
           .eq('student_id', userProfile.id)
           .order('created_at', { ascending: true });
 
         if (error) throw error;
-        setRows((data as any[])?.map((r: any) => ({
+        setRows(data?.map(r => ({
+          _key: r.id,
           id: r.id,
-          subject: r.subject || '',
-          lesson_chapter: r.lesson_chapter || '',
-          why_factors: r.why_factors || '',
-          compatible_career: r.compatible_career || '',
-          source_assessment: r.source_assessment,
-        })) || []);
+          subject: r.subject,
+          lesson_chapter: r.lesson_chapter,
+          why_factors: r.why_factors,
+          compatible_career: r.compatible_career,
+          source_assessment: r.source_assessment ?? undefined,
+        })) ?? []);
       } catch (err) {
         logger.error('Error loading interests:', err);
       } finally {
         setLoading(false);
       }
     })();
-  }, [userProfile?.id]);
+  }, [userProfile?.id, authLoading]);
 
-  const saveRow = useCallback(async (index: number, row: InterestRow) => {
+  const saveRow = useCallback(async (key: string, row: InterestRow) => {
     if (!userProfile?.id) return;
-    setSavingIds(prev => new Set(prev).add(index));
+    setSavingKeys(prev => new Set(prev).add(key));
 
     try {
       if (row.id && !row._new) {
-        // Update existing
+        // Update existing — updated_at is handled by the DB trigger.
         const { error } = await supabase
-          .from('things_that_interest_me' as any)
+          .from('things_that_interest_me')
           .update({
             subject: row.subject,
             lesson_chapter: row.lesson_chapter,
             why_factors: row.why_factors,
             compatible_career: row.compatible_career,
-            updated_at: new Date().toISOString(),
-          } as any)
+          })
           .eq('id', row.id);
         if (error) throw error;
       } else {
-        // Insert new
+        // Insert new.
         const { data, error } = await supabase
-          .from('things_that_interest_me' as any)
+          .from('things_that_interest_me')
           .insert({
             student_id: userProfile.id,
             subject: row.subject,
             lesson_chapter: row.lesson_chapter,
             why_factors: row.why_factors,
             compatible_career: row.compatible_career,
-            source_assessment: row.source_assessment || fromAssessment || null,
-          } as any)
+            source_assessment: row.source_assessment ?? null,
+          })
           .select()
           .single();
         if (error) throw error;
-        // Update row with DB id
-        setRows(prev => prev.map((r, i) => i === index ? { ...r, id: (data as any).id, _new: false, _dirty: false } : r));
+        // Only update id and _new; preserve _dirty so keystrokes that arrived
+        // while the insert was in-flight are not lost (C3 fix).
+        setRows(prev => prev.map(r => r._key === key ? { ...r, id: data.id, _new: false } : r));
       }
     } catch (err) {
       logger.error('Error saving interest row:', err);
       toast({ title: t('save_failed'), variant: 'destructive' });
     } finally {
-      setSavingIds(prev => { const n = new Set(prev); n.delete(index); return n; });
+      setSavingKeys(prev => { const n = new Set(prev); n.delete(key); return n; });
     }
-  }, [userProfile?.id, fromAssessment, toast]);
+  }, [userProfile?.id, toast]);
 
-  const handleChange = useCallback((index: number, field: keyof InterestRow, value: string) => {
-    setRows(prev => prev.map((r, i) => i === index ? { ...r, [field]: value, _dirty: true } : r));
+  const handleChange = useCallback((key: string, field: EditableField, value: string) => {
+    setRows(prev => prev.map(r => r._key === key ? { ...r, [field]: value, _dirty: true } : r));
 
-    // Debounced save
-    if (debounceTimers.current[index]) clearTimeout(debounceTimers.current[index]);
-    debounceTimers.current[index] = setTimeout(() => {
+    // Debounced save keyed by _key, not array index.
+    if (debounceTimers.current[key]) clearTimeout(debounceTimers.current[key]);
+    debounceTimers.current[key] = setTimeout(() => {
       setRows(prev => {
-        const row = prev[index];
-        if (row?._dirty) saveRow(index, row);
+        const row = prev.find(r => r._key === key);
+        if (row?._dirty) saveRow(key, row);
         return prev;
       });
     }, 1000);
   }, [saveRow]);
 
   const addRow = () => {
+    if (rows.length >= MAX_ROWS) {
+      toast({ title: t('row_limit'), variant: 'destructive' });
+      return;
+    }
+    const key = crypto.randomUUID();
     setRows(prev => [...prev, {
+      _key: key,
       subject: '', lesson_chapter: '', why_factors: '', compatible_career: '',
       source_assessment: fromAssessment || undefined, _new: true, _dirty: false,
     }]);
   };
 
-  const deleteRow = async (index: number) => {
-    const row = rows[index];
+  const deleteRow = async (key: string) => {
+    if (!window.confirm(t('delete_confirm'))) return;
+
+    const row = rows.find(r => r._key === key);
+    if (!row) return;
+
     if (row.id && !row._new) {
       try {
         const { error } = await supabase
-          .from('things_that_interest_me' as any)
+          .from('things_that_interest_me')
           .delete()
           .eq('id', row.id);
         if (error) throw error;
@@ -241,12 +285,16 @@ export default function ThingsInterestMePage() {
         return;
       }
     }
-    if (debounceTimers.current[index]) clearTimeout(debounceTimers.current[index]);
-    setRows(prev => prev.filter((_, i) => i !== index));
+
+    if (debounceTimers.current[key]) {
+      clearTimeout(debounceTimers.current[key]);
+      delete debounceTimers.current[key];
+    }
+    setRows(prev => prev.filter(r => r._key !== key));
   };
 
   const fromBanner = fromAssessment && ASSESSMENT_NAME_KEYS[fromAssessment]
-    ? t('from_banner').replace('{name}', t(ASSESSMENT_NAME_KEYS[fromAssessment]))
+    ? interpolate(t('from_banner'), { name: t(ASSESSMENT_NAME_KEYS[fromAssessment]) })
     : null;
 
   if (loading) {
@@ -294,30 +342,34 @@ export default function ThingsInterestMePage() {
               {rows.length === 0 && (
                 <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">{t('empty')}</td></tr>
               )}
-              {rows.map((row, i) => (
-                <tr key={row.id || `new-${i}`} className="border-b border-gray-100 hover:bg-gray-50">
+              {rows.map(row => (
+                <tr key={row._key} className="border-b border-gray-100 hover:bg-gray-50">
                   <td className="px-2 py-2">
-                    <Input value={row.subject} onChange={e => handleChange(i, 'subject', e.target.value)}
+                    <Input value={row.subject} onChange={e => handleChange(row._key, 'subject', e.target.value)}
+                      aria-label={t('col_subject')}
                       className="text-sm h-9" />
                   </td>
                   <td className="px-2 py-2">
-                    <Input value={row.lesson_chapter} onChange={e => handleChange(i, 'lesson_chapter', e.target.value)}
+                    <Input value={row.lesson_chapter} onChange={e => handleChange(row._key, 'lesson_chapter', e.target.value)}
+                      aria-label={t('col_lesson')}
                       className="text-sm h-9" />
                   </td>
                   <td className="px-2 py-2">
-                    <Input value={row.why_factors} onChange={e => handleChange(i, 'why_factors', e.target.value)}
+                    <Input value={row.why_factors} onChange={e => handleChange(row._key, 'why_factors', e.target.value)}
+                      aria-label={t('col_why')}
                       className="text-sm h-9" />
                   </td>
                   <td className="px-2 py-2">
-                    <Input value={row.compatible_career} onChange={e => handleChange(i, 'compatible_career', e.target.value)}
+                    <Input value={row.compatible_career} onChange={e => handleChange(row._key, 'compatible_career', e.target.value)}
+                      aria-label={t('col_career')}
                       className="text-sm h-9" />
                   </td>
                   <td className="px-2 py-2 text-center">
-                    {savingIds.has(i) ? (
+                    {savingKeys.has(row._key) ? (
                       <Loader2 className="w-4 h-4 animate-spin text-gray-400 mx-auto" />
                     ) : (
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-red-400 hover:text-red-600 hover:bg-red-50"
-                        onClick={() => deleteRow(i)}>
+                        onClick={() => deleteRow(row._key)}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     )}
@@ -333,36 +385,44 @@ export default function ThingsInterestMePage() {
           {rows.length === 0 && (
             <div className="text-center text-gray-400 py-8">{t('empty')}</div>
           )}
-          {rows.map((row, i) => (
-            <div key={row.id || `new-${i}`} className="bg-white rounded-lg shadow p-4 space-y-3 relative">
+          {rows.map(row => (
+            <div key={row._key} className="bg-white rounded-lg shadow p-4 space-y-3 relative">
               <div className="absolute top-2 right-2">
-                {savingIds.has(i) ? (
+                {savingKeys.has(row._key) ? (
                   <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
                 ) : (
                   <Button variant="ghost" size="icon" className="h-7 w-7 text-red-400 hover:text-red-600"
-                    onClick={() => deleteRow(i)}>
+                    onClick={() => deleteRow(row._key)}>
                     <Trash2 className="w-3.5 h-3.5" />
                   </Button>
                 )}
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-500">{t('col_subject')}</label>
-                <Input value={row.subject} onChange={e => handleChange(i, 'subject', e.target.value)}
+                <label htmlFor={`${row._key}-subject`} className="text-xs font-medium text-gray-500">{t('col_subject')}</label>
+                <Input id={`${row._key}-subject`} value={row.subject}
+                  onChange={e => handleChange(row._key, 'subject', e.target.value)}
+                  onFocus={e => { const el = e.currentTarget; setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
                   className="text-sm mt-1" />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-500">{t('col_lesson')}</label>
-                <Input value={row.lesson_chapter} onChange={e => handleChange(i, 'lesson_chapter', e.target.value)}
+                <label htmlFor={`${row._key}-lesson`} className="text-xs font-medium text-gray-500">{t('col_lesson')}</label>
+                <Input id={`${row._key}-lesson`} value={row.lesson_chapter}
+                  onChange={e => handleChange(row._key, 'lesson_chapter', e.target.value)}
+                  onFocus={e => { const el = e.currentTarget; setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
                   className="text-sm mt-1" />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-500">{t('col_why')}</label>
-                <Input value={row.why_factors} onChange={e => handleChange(i, 'why_factors', e.target.value)}
+                <label htmlFor={`${row._key}-why`} className="text-xs font-medium text-gray-500">{t('col_why')}</label>
+                <Input id={`${row._key}-why`} value={row.why_factors}
+                  onChange={e => handleChange(row._key, 'why_factors', e.target.value)}
+                  onFocus={e => { const el = e.currentTarget; setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
                   className="text-sm mt-1" />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-500">{t('col_career')}</label>
-                <Input value={row.compatible_career} onChange={e => handleChange(i, 'compatible_career', e.target.value)}
+                <label htmlFor={`${row._key}-career`} className="text-xs font-medium text-gray-500">{t('col_career')}</label>
+                <Input id={`${row._key}-career`} value={row.compatible_career}
+                  onChange={e => handleChange(row._key, 'compatible_career', e.target.value)}
+                  onFocus={e => { const el = e.currentTarget; setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
                   className="text-sm mt-1" />
               </div>
             </div>
