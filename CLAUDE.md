@@ -315,7 +315,7 @@ students + teachers → chat_channels →1:N→ chat_messages
 | `sarvamStreamingService.ts` | `connect()`, `sendAudioChunk()`, `disconnect()` |
 | `assessmentService.ts` | `getAssessmentTemplate()`, `getMediaSources()`, `getHollandCodeData()` |
 | `summaryDatabaseService.ts` | `createAISummary()`, `approveSummary()`, `rejectSummary()`, `updateTeacherSummary()`, `requestRevision()`, `updateStudentSummary()`, `getPendingSummariesForTeacher()`, `getTeacherSummaryOverview()` |
-| `notificationService.ts` | `getUnreadCount()`, `list()`, `markRead()`, `create()` |
+| `notificationService.ts` | `list(userId, limit?)`, `markRead(ids, userId?)`, `markAllReadForUser(userId)`, `create()` |
 | `audioResponseManager.ts` | `processAudioResponse()`, `syncOfflineQueue()` |
 | `supabaseUploadService.ts` | `uploadFile()`, `queueUpload()`, `processQueue()` |
 
@@ -396,7 +396,7 @@ Three scenarios require OTP verification before account creation or password set
 
 ## 12. Current Implementation Status
 
-**Last verified build:** 2026-05-10
+**Last verified build:** 2026-05-06
 
 ### Assessment Module Status
 | Assessment | UI | DB | AI Summary | Approval | Wired |
@@ -448,4 +448,5 @@ Feature work phases 0A–14C, PR 2a/2b, and full audit fix passes (auth 19-point
 
 | Phase | Description |
 |-------|-------------|
+| **notification-audit** | Notification system 25-point gap analysis + High/Medium/Low fix pass (May 2026). **High** — `markAllRead` only cleared the visible 15-item window (fixed with `markAllReadForUser` server-side UPDATE, no limit); `summary_rejected` notification type was dead/never sent (added `buildRejectionNotif` + fire-and-forget in `handleReject`); profile card approval/rejection notifications were hardcoded English (added `buildProfileCardApprovedNotif`/`buildProfileCardRejectedNotif` helpers using `studentLang` in both `ProfileCardPage` and `ProfileCardModulesPanel`); panel used `top-14` (56 px) but header is `h-16` (64 px), overlapping 8 px on mobile (fixed to `top-16`). **Medium** — single DB call in `refresh()` (count derived from `list` result, `getUnreadCount` call removed; limit raised to 50); optimistic clear on mark-all-read; localized assessment title inside multilingual notification body (added `ASSESSMENT_TITLES_KN/TA/HI` + `getLocalizedAssessmentTitle`); chat notifications English-only (recipient `preferred_language` fetched before RPC); `student_user_id` null silent drop replaced with `resolveStudentUserId` fallback join; deep links (`link: '/student'`) added to all summary notifications; `NotificationType` TS union updated to match DB enum (added `profile_card_approved`, `profile_card_rejected`, `chat_message`); mobile scroll lock; `touchstart` alongside `mousedown`; Escape key closes panel; Tab focus trap; `aria-expanded`/`aria-haspopup`/`role="dialog"` added. **Low** — empty-state copy "No new notifications" → "No notifications"; `refresh()` after `navigate()` replaced with optimistic single-item update (avoids setState on unmounted); `markRead` accepts optional `userId` for client-side row guard; panel closes on route change via `useLocation`; `open` reset on `userId` prop change. |
 | **i18n-audit** | Multilingual / i18n 18-point gap analysis + full fix pass (May 2026). **Critical** — `t('error')`, `t('success')`, `t('passwordUpdated')` added to DICT for all 4 languages (were returning empty string in ProfileDialog password toasts and AudioRecorder error toasts). **High** — `teacherStrings.ts` Hindi block fully translated (was English fallback with TODO); `signIn` catch block translated for all 4 languages; `signOut` now emits translated toast; `localStorage.lang` cleared on sign-out (shared-device fix). **Medium** — `TeacherDashboard` replaced manual lang derivation + localStorage write effect with `useLang()` (now reactive to ProfileDialog language changes); `cachedLang` in auth fallback path validated against whitelist; `ProfileDialog` 25+ inline ternary translation chains replaced with module-level `PD` map (4 languages × 28 keys); `langNames` redundant nested lookup simplified to `PD[selectedLang].langUpdated`; `LangProvider` `initial` state validated via `validateLang` helper (removes unsafe cast); Hindi `videoProgressSaved` emoji parity with kn/ta. **Low** — `urlLang` parsed with `validateLang` (invalid codes like `?lang=fr` produce `null` immediately); `t()` logs `logger.warn` in dev mode for missing keys; roadmap milestone Hindi labels confirmed complete (stale CLAUDE.md note removed). |

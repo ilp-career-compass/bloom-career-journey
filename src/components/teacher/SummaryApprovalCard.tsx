@@ -62,11 +62,75 @@ const ASSESSMENT_TITLES: Record<string, string> = {
   role_models: 'My Role Models'
 };
 
+const ASSESSMENT_TITLES_KN: Record<string, string> = {
+  inspiration: 'ನನ್ನ ಪ್ರೇರಣೆ',
+  about_me: 'ನನ್ನ ಬಗ್ಗೆ',
+  dreams: 'ನನ್ನ ಕನಸುಗಳು',
+  school_learning: 'ನನ್ನ ಶಾಲೆ, ನನ್ನ ಕಲಿಕೆ ಮತ್ತು ನಾನು',
+  hobbies: 'ನನ್ನ ಪ್ರತಿಭೆಗಳು ಮತ್ತು ಹವ್ಯಾಸಗಳು',
+  role_models: 'ನನ್ನ ಆದರ್ಶ ವ್ಯಕ್ತಿಗಳು',
+};
+const ASSESSMENT_TITLES_TA: Record<string, string> = {
+  inspiration: 'என் உத்வேகம்',
+  about_me: 'என்னைப் பற்றி',
+  dreams: 'என் கனவுகள்',
+  school_learning: 'என் பள்ளி, என் கல்வி மற்றும் நான்',
+  hobbies: 'என் திறமைகளும் பொழுதுபோக்குகளும்',
+  role_models: 'என் முன்மாதிரிகள்',
+};
+const ASSESSMENT_TITLES_HI: Record<string, string> = {
+  inspiration: 'मेरी प्रेरणा',
+  about_me: 'मेरे बारे में',
+  dreams: 'मेरे सपने',
+  school_learning: 'मेरा स्कूल, मेरी पढ़ाई और मैं',
+  hobbies: 'मेरी प्रतिभाएं और शौक',
+  role_models: 'मेरे आदर्श',
+};
+
+const getLocalizedAssessmentTitle = (lang: string, key: string): string => {
+  const fallback = ASSESSMENT_TITLES[key] || 'Assessment';
+  if (lang === 'kn') return ASSESSMENT_TITLES_KN[key] || fallback;
+  if (lang === 'ta') return ASSESSMENT_TITLES_TA[key] || fallback;
+  if (lang === 'hi') return ASSESSMENT_TITLES_HI[key] || fallback;
+  return fallback;
+};
+
+// Resolves the student's users.id from the summary — falls back to a DB lookup when
+// student_user_id was not populated on older summaries.
+async function resolveStudentUserId(
+  summary: { student_user_id?: string | null; assessment_response_id: string }
+): Promise<string | null> {
+  if (summary.student_user_id) return summary.student_user_id;
+  try {
+    const { data } = await supabase
+      .from('assessment_responses')
+      .select('student_id, students!inner(user_id)')
+      .eq('id', summary.assessment_response_id)
+      .maybeSingle();
+    if (data) {
+      const students = (data as any).students;
+      return Array.isArray(students)
+        ? (students[0]?.user_id ?? null)
+        : (students?.user_id ?? null);
+    }
+  } catch {
+    // non-fatal
+  }
+  return null;
+}
+
 const buildApprovalNotif = (lang: string, title: string) => {
   if (lang === 'kn') return { notifTitle: 'ಸಾರಾಂಶ ಅನುಮೋದಿಸಲಾಗಿದೆ ✅', notifMessage: `ನಿಮ್ಮ "${title}" ಸಾರಾಂಶ ಶಿಕ್ಷಕರಿಂದ ಅನುಮೋದಿಸಲ್ಪಟ್ಟಿದೆ.` };
   if (lang === 'ta') return { notifTitle: 'சுருக்கம் அனுமதிக்கப்பட்டது ✅', notifMessage: `உங்கள் "${title}" சுருக்கம் ஆசிரியரால் அனுமதிக்கப்பட்டது.` };
   if (lang === 'hi') return { notifTitle: 'सारांश अनुमोदित ✅', notifMessage: `आपकी "${title}" सारांश शिक्षक द्वारा अनुमोदित की गई है।` };
   return { notifTitle: 'Summary Approved ✅', notifMessage: `Your "${title}" summary has been approved by your teacher.` };
+};
+
+const buildRejectionNotif = (lang: string, title: string) => {
+  if (lang === 'kn') return { notifTitle: 'ಸಾರಾಂಶ ತಿರಸ್ಕರಿಸಲಾಗಿದೆ', notifMessage: `ನಿಮ್ಮ "${title}" ಸಾರಾಂಶ ತಿರಸ್ಕರಿಸಲ್ಪಟ್ಟಿದೆ. ಹೊಸ ಸಾರಾಂಶ ರಚಿಸಲಾಗುತ್ತಿದೆ.` };
+  if (lang === 'ta') return { notifTitle: 'சுருக்கம் நிராகரிக்கப்பட்டது', notifMessage: `உங்கள் "${title}" சுருக்கம் நிராகரிக்கப்பட்டது. புதிய சுருக்கம் உருவாக்கப்படுகிறது.` };
+  if (lang === 'hi') return { notifTitle: 'सारांश अस्वीकृत', notifMessage: `आपकी "${title}" सारांश अस्वीकृत की गई है। एक नई सारांश तैयार की जा रही है।` };
+  return { notifTitle: 'Summary Rejected', notifMessage: `Your "${title}" summary was rejected. A new summary is being generated.` };
 };
 
 const buildRevisionNotif = (lang: string, title: string) => {
@@ -401,28 +465,32 @@ export default function SummaryApprovalCard({
         });
 
         // Fire-and-forget: notify student in their preferred language
-        if (summary.student_user_id) {
-          const assessmentTitle = ASSESSMENT_TITLES[assessmentType || ''] || 'Assessment';
-          void (async () => {
-            try {
-              const { data: userData } = await supabase
-                .from('users')
-                .select('preferred_language')
-                .eq('id', summary.student_user_id!)
-                .maybeSingle();
-              const lang = userData?.preferred_language || 'en';
-              const { notifTitle, notifMessage } = buildApprovalNotif(lang, assessmentTitle);
-              await notificationService.create({
-                userId: summary.student_user_id!,
-                type: 'summary_approved',
-                title: notifTitle,
-                message: notifMessage
-              });
-            } catch (notifErr) {
-              logger.warn('Non-fatal: approval notification failed', notifErr);
+        void (async () => {
+          try {
+            const studentUserId = summary.student_user_id ?? await resolveStudentUserId(summary);
+            if (!studentUserId) {
+              logger.warn('Non-fatal: could not resolve student_user_id for approval notification');
+              return;
             }
-          })();
-        }
+            const { data: userData } = await supabase
+              .from('users')
+              .select('preferred_language')
+              .eq('id', studentUserId)
+              .maybeSingle();
+            const lang = userData?.preferred_language || 'en';
+            const assessmentTitle = getLocalizedAssessmentTitle(lang, assessmentType || '');
+            const { notifTitle, notifMessage } = buildApprovalNotif(lang, assessmentTitle);
+            await notificationService.create({
+              userId: studentUserId,
+              type: 'summary_approved',
+              title: notifTitle,
+              message: notifMessage,
+              link: '/student',
+            });
+          } catch (notifErr) {
+            logger.warn('Non-fatal: approval notification failed', notifErr);
+          }
+        })();
 
         setIsEditing(false);
         onSummaryUpdated?.();
@@ -521,6 +589,34 @@ export default function SummaryApprovalCard({
       });
       setShowRejectDialog(false);
       setRejectionReason('');
+
+      // Fire-and-forget: notify student in their preferred language
+      void (async () => {
+        try {
+          const studentUserId = summary.student_user_id ?? await resolveStudentUserId(summary);
+          if (!studentUserId) {
+            logger.warn('Non-fatal: could not resolve student_user_id for rejection notification');
+            return;
+          }
+          const { data: userData } = await supabase
+            .from('users')
+            .select('preferred_language')
+            .eq('id', studentUserId)
+            .maybeSingle();
+          const lang = userData?.preferred_language || 'en';
+          const assessmentTitle = getLocalizedAssessmentTitle(lang, assessmentType || '');
+          const { notifTitle, notifMessage } = buildRejectionNotif(lang, assessmentTitle);
+          await notificationService.create({
+            userId: studentUserId,
+            type: 'summary_rejected',
+            title: notifTitle,
+            message: notifMessage,
+            link: '/student',
+          });
+        } catch (notifErr) {
+          logger.warn('Non-fatal: rejection notification failed', notifErr);
+        }
+      })();
 
       // Trigger regeneration - pass the summary's student_user_id if available
       await handleRegenerate();
@@ -770,28 +866,32 @@ export default function SummaryApprovalCard({
       });
 
       // Fire-and-forget: notify student in their preferred language
-      if (summary.student_user_id) {
-        const assessmentTitle = ASSESSMENT_TITLES[assessmentType || ''] || 'Assessment';
-        void (async () => {
-          try {
-            const { data: userData } = await supabase
-              .from('users')
-              .select('preferred_language')
-              .eq('id', summary.student_user_id!)
-              .maybeSingle();
-            const lang = userData?.preferred_language || 'en';
-            const { notifTitle, notifMessage } = buildRevisionNotif(lang, assessmentTitle);
-            await notificationService.create({
-              userId: summary.student_user_id!,
-              type: 'revision_requested',
-              title: notifTitle,
-              message: notifMessage
-            });
-          } catch (notifErr) {
-            logger.warn('Non-fatal: revision notification failed', notifErr);
+      void (async () => {
+        try {
+          const studentUserId = summary.student_user_id ?? await resolveStudentUserId(summary);
+          if (!studentUserId) {
+            logger.warn('Non-fatal: could not resolve student_user_id for revision notification');
+            return;
           }
-        })();
-      }
+          const { data: userData } = await supabase
+            .from('users')
+            .select('preferred_language')
+            .eq('id', studentUserId)
+            .maybeSingle();
+          const lang = userData?.preferred_language || 'en';
+          const assessmentTitle = getLocalizedAssessmentTitle(lang, assessmentType || '');
+          const { notifTitle, notifMessage } = buildRevisionNotif(lang, assessmentTitle);
+          await notificationService.create({
+            userId: studentUserId,
+            type: 'revision_requested',
+            title: notifTitle,
+            message: notifMessage,
+            link: '/student',
+          });
+        } catch (notifErr) {
+          logger.warn('Non-fatal: revision notification failed', notifErr);
+        }
+      })();
 
       setShowRevisionDialog(false);
       setRevisionNotes('');

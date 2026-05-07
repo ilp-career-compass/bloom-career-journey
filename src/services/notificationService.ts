@@ -1,7 +1,16 @@
 ﻿import { logger } from '@/lib/logger';
 import { supabase } from '@/integrations/supabase/client';
 
-export type NotificationType = 'summary_approved' | 'teacher_message' | 'assessment_submitted' | 'system' | 'revision_requested' | 'summary_rejected';
+export type NotificationType =
+  | 'summary_approved'
+  | 'summary_rejected'
+  | 'revision_requested'
+  | 'teacher_message'
+  | 'assessment_submitted'
+  | 'system'
+  | 'profile_card_approved'
+  | 'profile_card_rejected'
+  | 'chat_message';
 
 export interface AppNotification {
   id: string;
@@ -36,13 +45,25 @@ class NotificationService {
     return (data as AppNotification[]) || [];
   }
 
-  async markRead(ids: string[]): Promise<void> {
+  async markRead(ids: string[], userId?: string): Promise<void> {
     if (!ids.length) return;
-    const { error } = await supabase
+    let query = supabase
       .from('notifications')
       .update({ read_at: new Date().toISOString() })
       .in('id', ids);
+    if (userId) query = query.eq('user_id', userId);
+    const { error } = await query;
     if (error) logger.error('Notification markRead error:', error);
+  }
+
+  async markAllReadForUser(userId: string): Promise<void> {
+    if (!userId) return;
+    const { error } = await supabase
+      .from('notifications')
+      .update({ read_at: new Date().toISOString() })
+      .eq('user_id', userId)
+      .is('read_at', null);
+    if (error) logger.error('Notification markAllReadForUser error:', error);
   }
 
   async create(params: {

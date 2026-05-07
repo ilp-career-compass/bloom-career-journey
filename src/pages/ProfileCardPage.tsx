@@ -36,6 +36,20 @@ const MODULES: ModuleConfig[] = [
   { key: 'role_models', assessmentType: 'role_models', titleKey: 'assessment_role_models', stripColor: 'bg-rose-500', dotColor: 'bg-rose-400', titleColor: 'text-rose-700', icon: Users },
 ];
 
+const buildProfileCardApprovedNotif = (lang: string) => {
+  if (lang === 'kn') return { title: 'ಪ್ರೊಫೈಲ್ ಕಾರ್ಡ್ ಮಾಡ್ಯೂಲ್ ಅನುಮೋದಿಸಲಾಗಿದೆ', message: 'ನಿಮ್ಮ ಶಿಕ್ಷಕರು ನಿಮ್ಮ ಕರಿಯರ್ ಕಾಂಪಾಸ್‌ನಲ್ಲಿ ಒಂದು ವಿಭಾಗವನ್ನು ಅನುಮೋದಿಸಿದ್ದಾರೆ.' };
+  if (lang === 'ta') return { title: 'சுயவிவர அட்டை தொகுதி அனுமதிக்கப்பட்டது', message: 'உங்கள் ஆசிரியர் உங்கள் கரியர் காம்பஸ்ஸில் ஒரு பகுதியை அனுமதித்துள்ளார்.' };
+  if (lang === 'hi') return { title: 'प्रोफाइल कार्ड मॉड्यूल अनुमोदित', message: 'आपके शिक्षक ने आपके करियर कम्पास में एक मॉड्यूल अनुमोदित किया है।' };
+  return { title: 'Profile card module approved', message: 'Your teacher has approved a module in your Career Compass.' };
+};
+
+const buildProfileCardRejectedNotif = (lang: string) => {
+  if (lang === 'kn') return { title: 'ಪ್ರೊಫೈಲ್ ಕಾರ್ಡ್ ಮಾಡ್ಯೂಲ್ ಪರಿಷ್ಕರಣೆ ಅಗತ್ಯವಿದೆ', message: 'ನಿಮ್ಮ ಶಿಕ್ಷಕರು ನಿಮ್ಮ ಕರಿಯರ್ ಕಾಂಪಾಸ್‌ನಲ್ಲಿ ಒಂದು ವಿಭಾಗದಲ್ಲಿ ಬದಲಾವಣೆ ಕೋರಿದ್ದಾರೆ. ಪ್ರತಿಕ್ರಿಯೆ ನೋಡಲು ನಿಮ್ಮ ಪ್ರೊಫೈಲ್ ಕಾರ್ಡ್ ನೋಡಿ.' };
+  if (lang === 'ta') return { title: 'சுயவிவர அட்டை தொகுதி திருத்தம் தேவை', message: 'உங்கள் ஆசிரியர் உங்கள் கரியர் காம்பஸ்ஸில் ஒரு பகுதியில் மாற்றம் கோரியுள்ளார். கருத்துக்களை பார்க்க உங்கள் சுயவிவர அட்டையை பார்வையிடுங்கள்.' };
+  if (lang === 'hi') return { title: 'प्रोफाइल कार्ड मॉड्यूल में संशोधन आवश्यक', message: 'आपके शिक्षक ने आपके करियर कम्पास में एक मॉड्यूल में बदलाव का अनुरोध किया है। कृपया अपना प्रोफाइल कार्ड देखें।' };
+  return { title: 'Profile card module needs revision', message: 'Your teacher has requested changes to a module in your Career Compass. Please visit your profile card to see the feedback.' };
+};
+
 const PAGE_TITLE: Record<string, string> = {
   en: 'My Career Compass',
   kn: 'ನನ್ನ ವೃತ್ತಿ ದಿಕ್ಸೂಚಿ',
@@ -98,6 +112,7 @@ export default function ProfileCardPage({ readOnly }: ProfileCardPageProps) {
   const [rejectionCounts, setRejectionCounts] = useState<Record<string, number>>({});
   const { toast } = useToast();
   const [studentName, setStudentName] = useState('');
+  const [studentLang, setStudentLang] = useState<string>('en');
   const [cacheTimestamps, setCacheTimestamps] = useState<Record<string, string>>({});
 
   const fetchData = useCallback(async () => {
@@ -111,13 +126,19 @@ export default function ProfileCardPage({ readOnly }: ProfileCardPageProps) {
         const { data: stu } = await supabase.from('students').select('user_id').eq('id', studentId).maybeSingle();
         if (!stu?.user_id) { setLoading(false); return; }
         resolvedCacheUserId = stu.user_id;
-        const { data: u } = await supabase.from('users').select('full_name').eq('id', stu.user_id).single();
-        if (u) setStudentName(u.full_name || '');
+        const { data: u } = await supabase.from('users').select('full_name, preferred_language').eq('id', stu.user_id).single();
+        if (u) {
+          setStudentName(u.full_name || '');
+          setStudentLang((u as any).preferred_language || 'en');
+        }
       } else {
         // Student view: userId is already users.id
         resolvedCacheUserId = userId;
-        const { data: profile } = await supabase.from('users').select('full_name').eq('id', userId).single();
-        if (profile) setStudentName(profile.full_name || '');
+        const { data: profile } = await supabase.from('users').select('full_name, preferred_language').eq('id', userId).single();
+        if (profile) {
+          setStudentName(profile.full_name || '');
+          setStudentLang((profile as any).preferred_language || 'en');
+        }
       }
       setCacheUserId(resolvedCacheUserId);
 
@@ -340,11 +361,12 @@ export default function ProfileCardPage({ readOnly }: ProfileCardPageProps) {
       toast({ title: 'Module approved' });
 
       if (cacheUserId) {
+        const approvedNotif = buildProfileCardApprovedNotif(studentLang);
         supabase.rpc('create_notification_secure', {
           p_user_id: cacheUserId,
           p_type: 'profile_card_approved',
-          p_title: 'Profile card module approved',
-          p_message: 'Your teacher has approved a module in your Career Compass.',
+          p_title: approvedNotif.title,
+          p_message: approvedNotif.message,
           p_link: '/student/profile-card',
         }).then(({ error: notifError }) => {
           if (notifError) logger.error('Profile card approval notification error:', notifError);
@@ -385,11 +407,12 @@ export default function ProfileCardPage({ readOnly }: ProfileCardPageProps) {
       setRejectReason('');
 
       if (cacheUserId) {
+        const rejectedNotif = buildProfileCardRejectedNotif(studentLang);
         supabase.rpc('create_notification_secure', {
           p_user_id: cacheUserId,
           p_type: 'profile_card_rejected',
-          p_title: 'Profile card module needs revision',
-          p_message: 'Your teacher has requested changes to a module in your Career Compass. Please visit your profile card to see the feedback.',
+          p_title: rejectedNotif.title,
+          p_message: rejectedNotif.message,
           p_link: '/student/profile-card',
         }).then(({ error: notifError }) => {
           if (notifError) logger.error('Profile card rejection notification error:', notifError);

@@ -258,18 +258,39 @@ export default function ChatBubble({ role, isOpen: controlledIsOpen, onOpenChang
         .eq('id', channelId);
       if (updateError) logger.error('Error updating last_message_at:', updateError);
 
-      // Fire-and-forget: notify the other party
+      // Fire-and-forget: notify the other party in their preferred language
       if (otherPartyUserId) {
         const senderName = userProfile?.full_name || (role === 'student' ? 'Student' : 'Teacher');
-        supabase.rpc('create_notification_secure', {
-          p_user_id: otherPartyUserId,
-          p_type: 'chat_message',
-          p_title: 'New message',
-          p_message: `${senderName} sent you a message`,
-          p_link: '/student?openChat=true',
-        }).then(({ error: notifError }) => {
-          if (notifError) logger.error('Chat notification error:', notifError);
-        });
+        void (async () => {
+          try {
+            const { data: recipientData } = await supabase
+              .from('users')
+              .select('preferred_language')
+              .eq('id', otherPartyUserId)
+              .maybeSingle();
+            const rl = recipientData?.preferred_language || 'en';
+            const notifTitle =
+              rl === 'kn' ? 'ಹೊಸ ಸಂದೇಶ' :
+              rl === 'ta' ? 'புதிய செய்தி' :
+              rl === 'hi' ? 'नया संदेश' :
+              'New message';
+            const notifMessage =
+              rl === 'kn' ? `${senderName} ನಿಮಗೆ ಒಂದು ಸಂದೇಶ ಕಳುಹಿಸಿದ್ದಾರೆ` :
+              rl === 'ta' ? `${senderName} உங்களுக்கு ஒரு செய்தி அனுப்பியுள்ளார்` :
+              rl === 'hi' ? `${senderName} ने आपको एक संदेश भेजा है` :
+              `${senderName} sent you a message`;
+            const { error: notifError } = await supabase.rpc('create_notification_secure', {
+              p_user_id: otherPartyUserId,
+              p_type: 'chat_message',
+              p_title: notifTitle,
+              p_message: notifMessage,
+              p_link: '/student?openChat=true',
+            });
+            if (notifError) logger.error('Chat notification error:', notifError);
+          } catch (err) {
+            logger.warn('Non-fatal: chat notification failed', err);
+          }
+        })();
       }
 
       setNewMessage('');
