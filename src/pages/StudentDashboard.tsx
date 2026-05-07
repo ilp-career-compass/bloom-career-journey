@@ -54,6 +54,7 @@ export default function StudentDashboard() {
   const [ccInput, setCcInput] = useState('');
   const [ccLoading, setCcLoading] = useState(false);
   const ccListRef = useRef<HTMLDivElement | null>(null);
+  const roadmapRedirectedRef = useRef<Set<string>>(new Set());
   const ccCanSend = useMemo(() => !!ccInput.trim() && !ccLoading, [ccInput, ccLoading]);
 
   const ccScrollToBottom = () => {
@@ -387,7 +388,8 @@ export default function StudentDashboard() {
 
     // First-time open: redirect to career roadmap to fill milestone first
     const milestone = ROADMAP_TRIGGERS[assessmentType];
-    if (milestone && !hasProgress(assessmentType)) {
+    if (milestone && !hasProgress(assessmentType) && !roadmapRedirectedRef.current.has(assessmentType)) {
+      roadmapRedirectedRef.current.add(assessmentType);
       navigate(`/student/career-roadmap?highlight=${milestone}`);
       return;
     }

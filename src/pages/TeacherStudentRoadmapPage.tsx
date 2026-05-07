@@ -1,94 +1,110 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useLang } from '@/hooks/useLang';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, Lock } from 'lucide-react';
+import { ArrowLeft, Loader2, Lock, AlertCircle } from 'lucide-react';
+import { MilestoneKey, MilestoneConfig, MILESTONES, COLUMN_LABELS, RoadmapRow, getMilestoneLabel } from '@/utils/roadmapConfig';
 
-type MilestoneKey =
-  | 'beginning_9th' | 'midterm_9th' | 'end_9th' | 'beginning_10th'
-  | 'midterm_10th' | 'post_exam_10th' | 'before_results_10th' | 'final_decision';
-
-interface MilestoneConfig {
-  key: MilestoneKey;
-  labelEn: string;
-  labelKn: string;
-  labelTa: string;
-  labelHi: string;
-  editable: boolean;
-}
-
-const MILESTONES: MilestoneConfig[] = [
-  { key: 'beginning_9th', labelEn: 'Beginning of 9th Standard', labelKn: '9ನೇ ತರಗತಿಯ ಆರಂಭ', labelTa: '9ஆம் வகுப்பின் ஆரம்பம்', labelHi: '9वीं कक्षा की शुरुआत', editable: true },
-  { key: 'midterm_9th', labelEn: 'Midterm of 9th Standard', labelKn: '9ನೇ ತರಗತಿಯ ಮಧ್ಯಾವಧಿ', labelTa: '9ஆம் வகுப்பின் இடைப்பருவம்', labelHi: '9वीं कक्षा का मध्यावधि', editable: true },
-  { key: 'end_9th', labelEn: 'End of 9th Standard', labelKn: '9ನೇ ತರಗತಿಯ ಅಂತ್ಯ', labelTa: '9ஆம் வகுப்பின் முடிவு', labelHi: '9वीं कक्षा का अंत', editable: true },
-  { key: 'beginning_10th', labelEn: 'Beginning of 10th Standard', labelKn: '10ನೇ ತರಗತಿಯ ಆರಂಭ', labelTa: '10ஆம் வகுப்பின் ஆரம்பம்', labelHi: '10वीं कक्षा की शुरुआत', editable: false },
-  { key: 'midterm_10th', labelEn: 'Mid-term of 10th Standard', labelKn: '10ನೇ ತರಗತಿಯ ಮಧ್ಯಾವಧಿ', labelTa: '10ஆம் வகுப்பின் இடைப்பருவம்', labelHi: '10वीं कक्षा का मध्यावधि', editable: false },
-  { key: 'post_exam_10th', labelEn: 'Post exams of 10th Standard', labelKn: '10ನೇ ತರಗತಿ ಪರೀಕ್ಷೆಗಳ ನಂತರ', labelTa: '10ஆம் வகுப்பு தேர்வுக்குப் பிறகு', labelHi: '10वीं कक्षा की परीक्षा के बाद', editable: false },
-  { key: 'before_results_10th', labelEn: 'Before results of 10th Standard', labelKn: '10ನೇ ತರಗತಿ ಫಲಿತಾಂಶಗಳ ಮೊದಲು', labelTa: '10ஆம் வகுப்பு தேர்வு முடிவுகளுக்கு முன்', labelHi: '10वीं कक्षा के परिणाम से पहले', editable: false },
-  { key: 'final_decision', labelEn: 'Finally decided Career choices', labelKn: 'ಅಂತಿಮವಾಗಿ ನಿರ್ಧರಿಸಿದ ವೃತ್ತಿ ಆಯ್ಕೆಗಳು', labelTa: 'இறுதியாக முடிவு செய்த தொழில் தேர்வுகள்', labelHi: 'अंतिम रूप से तय किए गए करियर विकल्प', editable: false },
-];
-
-const COLUMN_LABELS: Record<string, { milestone: string; planA: string; planB: string; planC: string }> = {
-  en: { milestone: 'Milestone', planA: 'Plan A', planB: 'Plan B', planC: 'Plan C' },
-  kn: { milestone: 'ಮೈಲಿಗಲ್ಲು', planA: 'ಯೋಜನೆ A', planB: 'ಯೋಜನೆ B', planC: 'ಯೋಜನೆ C' },
-  ta: { milestone: 'நிலை', planA: 'திட்டம் A', planB: 'திட்டம் B', planC: 'திட்டம் C' },
-  hi: { milestone: 'पड़ाव', planA: 'योजना A', planB: 'योजना B', planC: 'योजना C' },
+const PAGE_TITLE: Record<string, string> = {
+  en: 'Career Roadmap',
+  kn: 'ವೃತ್ತಿ ರೋಡ್‌ಮ್ಯಾಪ್',
+  ta: 'தொழில் வழிகாட்டி',
+  hi: 'करियर रोडमैप',
 };
 
-type RoadmapRow = { plan_a: string; plan_b: string; plan_c: string };
+const FETCH_ERROR_MSG: Record<string, string> = {
+  en: 'Could not load roadmap data.',
+  kn: 'ರೋಡ್‌ಮ್ಯಾಪ್ ಡೇಟಾ ಲೋಡ್ ಆಗಲಿಲ್ಲ.',
+  ta: 'வழிகாட்டி தரவை ஏற்ற முடியவில்லை.',
+  hi: 'रोडमैप डेटा लोड नहीं हो सका।',
+};
+
+const NO_DATA_MSG: Record<string, string> = {
+  en: "Student hasn't filled in their career plans yet.",
+  kn: 'ವಿದ್ಯಾರ್ಥಿ ಇನ್ನೂ ತಮ್ಮ ವೃತ್ತಿ ಯೋಜನೆಗಳನ್ನು ಭರ್ತಿ ಮಾಡಿಲ್ಲ.',
+  ta: 'மாணவர் இன்னும் தங்கள் தொழில் திட்டங்களை நிரப்பவில்லை.',
+  hi: 'छात्र ने अभी तक अपनी करियर योजनाएं नहीं भरी हैं।',
+};
 
 export default function TeacherStudentRoadmapPage() {
   const navigate = useNavigate();
   const { studentId } = useParams<{ studentId: string }>();
+  const { lang: currentLang } = useLang();
+  const teacherLang = (currentLang || 'en') as string;
+
   const [rows, setRows] = useState<Record<MilestoneKey, RoadmapRow>>(() => {
     const init: Record<string, RoadmapRow> = {};
     for (const m of MILESTONES) init[m.key] = { plan_a: '', plan_b: '', plan_c: '' };
     return init as Record<MilestoneKey, RoadmapRow>;
   });
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [studentName, setStudentName] = useState('');
   const [studentLang, setStudentLang] = useState<string>('en');
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
   useEffect(() => {
     if (!studentId) return;
     (async () => {
       setLoading(true);
-      // Fetch student name
-      const { data: student } = await supabase
-        .from('students').select('user_id, users:user_id(full_name, preferred_language)')
-        .eq('id', studentId).maybeSingle();
-      setStudentName((student as any)?.users?.full_name || 'Student');
-      setStudentLang((student as any)?.users?.preferred_language || 'en');
+      setFetchError(false);
+      try {
+        const { data: student, error: studentError } = await supabase
+          .from('students').select('user_id, users:user_id(full_name, preferred_language)')
+          .eq('id', studentId).maybeSingle();
 
-      // Fetch roadmap — career_roadmap.student_id references users.id, not students.id
-      const userId = (student as any)?.user_id;
-      if (!userId) { setLoading(false); return; }
-      const { data } = await supabase
-        .from('career_roadmap')
-        .select('milestone, plan_a, plan_b, plan_c')
-        .eq('student_id', userId);
-      if (data) {
-        setRows(prev => {
-          const next = { ...prev };
+        if (studentError) {
+          setFetchError(true);
+          setLoading(false);
+          return;
+        }
+
+        setStudentName((student as any)?.users?.full_name || 'Student');
+        setStudentLang((student as any)?.users?.preferred_language || 'en');
+
+        // career_roadmap.student_id references users.id, not students.id
+        const userId = (student as any)?.user_id;
+        if (!userId) { setLoading(false); return; }
+
+        const { data, error: roadmapError } = await supabase
+          .from('career_roadmap')
+          .select('milestone, plan_a, plan_b, plan_c, updated_at')
+          .eq('student_id', userId);
+
+        if (roadmapError) {
+          setFetchError(true);
+          setLoading(false);
+          return;
+        }
+
+        if (data) {
+          let maxUpdated: string | null = null;
           for (const row of data) {
-            const key = row.milestone as MilestoneKey;
-            if (next[key]) next[key] = { plan_a: row.plan_a || '', plan_b: row.plan_b || '', plan_c: row.plan_c || '' };
+            if (row.updated_at && (!maxUpdated || row.updated_at > maxUpdated)) maxUpdated = row.updated_at;
           }
-          return next;
-        });
+          if (maxUpdated) setLastUpdated(maxUpdated);
+          setRows(prev => {
+            const next = { ...prev };
+            for (const row of data) {
+              const key = row.milestone as MilestoneKey;
+              if (next[key]) next[key] = { plan_a: row.plan_a || '', plan_b: row.plan_b || '', plan_c: row.plan_c || '' };
+            }
+            return next;
+          });
+        }
+      } catch {
+        setFetchError(true);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     })();
   }, [studentId]);
 
-  const getMilestoneLabel = (m: MilestoneConfig) => {
-    if (studentLang === 'kn') return m.labelKn;
-    if (studentLang === 'ta') return m.labelTa;
-    if (studentLang === 'hi') return m.labelHi;
-    return m.labelEn;
-  };
+  const hasAnyData = MILESTONES.some(m => rows[m.key].plan_a || rows[m.key].plan_b || rows[m.key].plan_c);
 
-  const cols = COLUMN_LABELS[studentLang] || COLUMN_LABELS['en'];
+  // Column headers in teacher's own language; milestone labels in student's language
+  const cols = COLUMN_LABELS[teacherLang] || COLUMN_LABELS['en'];
 
   if (loading) {
     return (
@@ -103,17 +119,33 @@ export default function TeacherStudentRoadmapPage() {
       <div className="bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-700 text-white">
         <div className="container mx-auto px-4 py-10">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="text-white/80 hover:text-white hover:bg-white/10" onClick={() => navigate(-1)}>
+            <Button variant="ghost" size="icon" className="text-white/80 hover:text-white hover:bg-white/10" onClick={() => { if (window.history.state?.idx > 0) navigate(-1); else navigate('/teacher'); }}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
-              <h1 className="text-xl md:text-2xl font-bold">Career Roadmap</h1>
+              <h1 className="text-xl md:text-2xl font-bold">{PAGE_TITLE[teacherLang] || PAGE_TITLE.en}</h1>
               <p className="text-white/70 text-sm">{studentName}</p>
+              {lastUpdated && (
+                <p className="text-white/50 text-xs">
+                  {new Date(lastUpdated).toLocaleDateString(teacherLang === 'en' ? 'en-IN' : teacherLang, { year: 'numeric', month: 'short', day: 'numeric' })}
+                </p>
+              )}
             </div>
           </div>
         </div>
       </div>
       <div className="container mx-auto px-4 py-6">
+        {fetchError && (
+          <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+            <AlertCircle className="h-5 w-5 text-red-500 shrink-0" />
+            <p className="text-gray-700 text-sm">{FETCH_ERROR_MSG[teacherLang] || FETCH_ERROR_MSG.en}</p>
+          </div>
+        )}
+        {!fetchError && !hasAnyData && (
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+            <p className="text-gray-500 text-sm italic">{NO_DATA_MSG[teacherLang] || NO_DATA_MSG.en}</p>
+          </div>
+        )}
         <div className="overflow-x-auto rounded-xl shadow-sm bg-white border border-gray-200">
           <table className="w-full text-sm">
             <thead>
@@ -132,7 +164,7 @@ export default function TeacherStudentRoadmapPage() {
                     <td className="px-6 py-4 bg-gray-50 font-medium text-gray-800 align-top w-48">
                       <div className="flex items-center gap-2">
                         {!m.editable && <Lock className="h-3.5 w-3.5 text-gray-400 shrink-0" />}
-                        <span className={!m.editable ? 'text-gray-500' : ''}>{getMilestoneLabel(m)}</span>
+                        <span className={!m.editable ? 'text-gray-500' : ''}>{getMilestoneLabel(m, studentLang)}</span>
                       </div>
                     </td>
                     {(['plan_a', 'plan_b', 'plan_c'] as const).map(field => (

@@ -7,30 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Lock, Check, AlertCircle, Info, Loader2, ArrowRight } from 'lucide-react';
 import { useStudentStrings } from '@/components/student/studentStrings';
-
-type MilestoneKey =
-  | 'beginning_9th' | 'midterm_9th' | 'end_9th' | 'beginning_10th'
-  | 'midterm_10th' | 'post_exam_10th' | 'before_results_10th' | 'final_decision';
-
-interface MilestoneConfig {
-  key: MilestoneKey;
-  labelEn: string;
-  labelKn: string;
-  labelTa: string;
-  labelHi: string;
-  editable: boolean;
-}
-
-const MILESTONES: MilestoneConfig[] = [
-  { key: 'beginning_9th', labelEn: 'Beginning of 9th Standard', labelKn: '9ನೇ ತರಗತಿಯ ಆರಂಭ', labelTa: '9ஆம் வகுப்பின் ஆரம்பம்', labelHi: '9वीं कक्षा की शुरुआत', editable: true },
-  { key: 'midterm_9th', labelEn: 'Midterm of 9th Standard', labelKn: '9ನೇ ತರಗತಿಯ ಮಧ್ಯಾವಧಿ', labelTa: '9ஆம் வகுப்பின் இடைப்பருவம்', labelHi: '9वीं कक्षा का मध्यावधि', editable: true },
-  { key: 'end_9th', labelEn: 'End of 9th Standard', labelKn: '9ನೇ ತರಗತಿಯ ಅಂತ್ಯ', labelTa: '9ஆம் வகுப்பின் முடிவு', labelHi: '9वीं कक्षा का अंत', editable: true },
-  { key: 'beginning_10th', labelEn: 'Beginning of 10th Standard', labelKn: '10ನೇ ತರಗತಿಯ ಆರಂಭ', labelTa: '10ஆம் வகுப்பின் ஆரம்பம்', labelHi: '10वीं कक्षा की शुरुआत', editable: false },
-  { key: 'midterm_10th', labelEn: 'Mid-term of 10th Standard', labelKn: '10ನೇ ತರಗತಿಯ ಮಧ್ಯಾವಧಿ', labelTa: '10ஆம் வகுப்பின் இடைப்பருவம்', labelHi: '10वीं कक्षा का मध्यावधि', editable: false },
-  { key: 'post_exam_10th', labelEn: 'Post exams of 10th Standard', labelKn: '10ನೇ ತರಗತಿ ಪರೀಕ್ಷೆಗಳ ನಂತರ', labelTa: '10ஆம் வகுப்பு தேர்வுக்குப் பிறகு', labelHi: '10वीं कक्षा की परीक्षा के बाद', editable: false },
-  { key: 'before_results_10th', labelEn: 'Before results of 10th Standard', labelKn: '10ನೇ ತರಗತಿ ಫಲಿತಾಂಶಗಳ ಮೊದಲು', labelTa: '10ஆம் வகுப்பு தேர்வு முடிவுகளுக்கு முன்', labelHi: '10वीं कक्षा के परिणाम से पहले', editable: false },
-  { key: 'final_decision', labelEn: 'Finally decided Career choices', labelKn: 'ಅಂತಿಮವಾಗಿ ನಿರ್ಧರಿಸಿದ ವೃತ್ತಿ ಆಯ್ಕೆಗಳು', labelTa: 'இறுதியாக முடிவு செய்த தொழில் தேர்வுகள்', labelHi: 'अंतिम रूप से तय किए गए करियर विकल्प', editable: false },
-];
+import { MilestoneKey, MilestoneConfig, MILESTONES, COLUMN_LABELS, RoadmapRow, getMilestoneLabel } from '@/utils/roadmapConfig';
 
 const PAGE_TITLE: Record<string, string> = {
   en: 'My Career Roadmap',
@@ -44,13 +21,6 @@ const INTRO_TEXT: Record<string, string> = {
   kn: 'ನಿಮ್ಮ ಆಲೋಚನೆಗಳು ಕಾಲಾನುಕ್ರಮದಲ್ಲಿ ಹೇಗೆ ಬದಲಾಗುತ್ತವೆ ಎಂದು ಟ್ರ್ಯಾಕ್ ಮಾಡಲು ಕೆಳಗಿನ ಕೋಷ್ಟಕದಲ್ಲಿ ವಿವಿಧ ಹಂತಗಳಲ್ಲಿ ನಿಮ್ಮ ವೃತ್ತಿ ಆಯ್ಕೆಗಳನ್ನು ನಮೂದಿಸಿ. ಮೊದಲಿಗೆ, ನೀವು ಪರಿಗಣಿಸುತ್ತಿರುವ ವೃತ್ತಿಗಳನ್ನು A, B ಮತ್ತು C ಕಾಲಮ್‌ಗಳಲ್ಲಿ ಆದ್ಯತೆಯ ಕ್ರಮದಲ್ಲಿ ಬರೆಯಿರಿ.',
   ta: 'உங்கள் எண்ணங்கள் காலப்போக்கில் எவ்வாறு மாறுகின்றன என்பதைக் கண்காணிக்க, கீழே உள்ள அட்டவணையில் வெவ்வேறு நிலைகளில் உங்கள் தொழில் தேர்வுகளை உள்ளிடவும். முதலில், நீங்கள் பரிசீலிக்கும் தொழில்களை A, B, C நெடுவரிசைகளில் விருப்ப வரிசையில் எழுதுங்கள்.',
   hi: 'समय के साथ अपने विचारों के विकास को ट्रैक करने के लिए नीचे दी गई तालिका में विभिन्न चरणों में अपने करियर विकल्प दर्ज करें। सबसे पहले, A, B और C कॉलम में अपनी पसंद के क्रम में करियर लिखें।',
-};
-
-const COLUMN_LABELS: Record<string, { milestone: string; planA: string; planB: string; planC: string }> = {
-  en: { milestone: 'Milestone', planA: 'Plan A', planB: 'Plan B', planC: 'Plan C' },
-  kn: { milestone: 'ಮೈಲಿಗಲ್ಲು', planA: 'ಯೋಜನೆ A', planB: 'ಯೋಜನೆ B', planC: 'ಯೋಜನೆ C' },
-  ta: { milestone: 'நிலை', planA: 'திட்டம் A', planB: 'திட்டம் B', planC: 'திட்டம் C' },
-  hi: { milestone: 'पड़ाव', planA: 'योजना A', planB: 'योजना B', planC: 'योजना C' },
 };
 
 // Milestone → assessment route mapping (for "Continue to Assessment" button)
@@ -74,7 +44,19 @@ const FILL_PROMPT: Record<string, string> = {
   hi: 'इस मूल्यांकन को शुरू करने से पहले, कृपया इस पड़ाव के लिए अपनी करियर योजनाएं भरें।',
 };
 
-type RoadmapRow = { plan_a: string; plan_b: string; plan_c: string };
+const FETCH_ERROR_MSG: Record<string, string> = {
+  en: 'Could not load your roadmap. Please try again.',
+  kn: 'ನಿಮ್ಮ ರೋಡ್‌ಮ್ಯಾಪ್ ಲೋಡ್ ಆಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
+  ta: 'உங்கள் வழிகாட்டியை ஏற்ற முடியவில்லை. மீண்டும் முயற்சிக்கவும்.',
+  hi: 'आपका रोडमैप लोड नहीं हो सका। कृपया पुनः प्रयास करें।',
+};
+
+const RETRY_LABEL: Record<string, string> = {
+  en: 'Retry',
+  kn: 'ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ',
+  ta: 'மீண்டும் முயற்சி',
+  hi: 'पुनः प्रयास करें',
+};
 
 export default function CareerRoadmapPage() {
   const navigate = useNavigate();
@@ -87,6 +69,7 @@ export default function CareerRoadmapPage() {
 
   const highlightMilestone = searchParams.get('highlight') as MilestoneKey | null;
   const highlightRef = useRef<HTMLTableRowElement | null>(null);
+  const highlightedIsEditable = MILESTONES.find(m => m.key === highlightMilestone)?.editable ?? false;
 
   const [rows, setRows] = useState<Record<MilestoneKey, RoadmapRow>>(() => {
     const init: Record<string, RoadmapRow> = {};
@@ -94,14 +77,18 @@ export default function CareerRoadmapPage() {
     return init as Record<MilestoneKey, RoadmapRow>;
   });
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingSavesRef = useRef<Map<string, RoadmapRow>>(new Map());
   const isSavingRef = useRef(false);
+  const debouncedSaveRef = useRef<() => void>(() => {});
+  const dbMilestonesRef = useRef<Set<string>>(new Set());
 
   const fetchData = useCallback(async () => {
     if (!studentId) return;
     setLoading(true);
+    setFetchError(false);
     try {
       const { data, error } = await supabase
         .from('career_roadmap')
@@ -110,16 +97,19 @@ export default function CareerRoadmapPage() {
 
       if (error) {
         logger.error('Error fetching roadmap:', error);
+        setFetchError(true);
         return;
       }
 
       if (data && data.length > 0) {
+        dbMilestonesRef.current.clear();
         setRows(prev => {
           const next = { ...prev };
           for (const row of data) {
             const key = row.milestone as MilestoneKey;
             if (next[key]) {
               next[key] = { plan_a: row.plan_a || '', plan_b: row.plan_b || '', plan_c: row.plan_c || '' };
+              if (row.plan_a || row.plan_b || row.plan_c) dbMilestonesRef.current.add(key);
             }
           }
           return next;
@@ -127,6 +117,7 @@ export default function CareerRoadmapPage() {
       }
     } catch (err) {
       logger.error('Error loading roadmap data:', err);
+      setFetchError(true);
     } finally {
       setLoading(false);
     }
@@ -144,6 +135,7 @@ export default function CareerRoadmapPage() {
   const debouncedSave = useCallback(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
+      // Another save is in flight — bail; the finally block will reschedule
       if (isSavingRef.current) return;
       const pending = new Map(pendingSavesRef.current);
       pendingSavesRef.current.clear();
@@ -167,32 +159,53 @@ export default function CareerRoadmapPage() {
 
         if (error) {
           logger.error('Save error:', error);
+          // Re-queue rows that failed without overwriting any newer user edits
+          for (const [k, v] of pending.entries()) {
+            if (!pendingSavesRef.current.has(k)) pendingSavesRef.current.set(k, v);
+          }
           setSaveStatus('error');
         } else {
           setSaveStatus('saved');
+          for (const [k, v] of pending.entries()) {
+            if (v.plan_a || v.plan_b || v.plan_c) dbMilestonesRef.current.add(k);
+          }
         }
         setTimeout(() => setSaveStatus('idle'), 2000);
       } catch (err) {
         logger.error('Save failed:', err);
+        for (const [k, v] of pending.entries()) {
+          if (!pendingSavesRef.current.has(k)) pendingSavesRef.current.set(k, v);
+        }
         setSaveStatus('error');
         setTimeout(() => setSaveStatus('idle'), 2000);
       } finally {
         isSavingRef.current = false;
+        // If changes arrived while this save was in flight, flush them now
+        if (pendingSavesRef.current.size > 0) debouncedSaveRef.current();
       }
     }, 1000);
   }, [studentId]);
 
+  // Keep ref in sync so the finally-block reschedule always calls the latest closure
+  useEffect(() => { debouncedSaveRef.current = debouncedSave; }, [debouncedSave]);
+
+  // Cancel any pending debounce timer on unmount to prevent post-unmount state updates
+  useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
+
   const handleChange = (milestone: MilestoneKey, field: 'plan_a' | 'plan_b' | 'plan_c', value: string) => {
     setRows(prev => {
       const updated = { ...prev, [milestone]: { ...prev[milestone], [field]: value } };
-      pendingSavesRef.current.set(milestone, updated[milestone]);
+      const row = updated[milestone];
+      const hasData = !!(row.plan_a || row.plan_b || row.plan_c);
+      if (hasData || dbMilestonesRef.current.has(milestone)) {
+        pendingSavesRef.current.set(milestone, row);
+      } else {
+        pendingSavesRef.current.delete(milestone);
+      }
       return updated;
     });
     debouncedSave();
   };
-
-  const getMilestoneLabel = (m: MilestoneConfig) =>
-    lang === 'kn' ? m.labelKn : lang === 'ta' ? m.labelTa : lang === 'hi' ? m.labelHi : m.labelEn;
 
   const handleContinueToAssessment = () => {
     if (!highlightMilestone) return;
@@ -213,13 +226,23 @@ export default function CareerRoadmapPage() {
     );
   }
 
+  if (fetchError) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-gray-50 p-6">
+        <AlertCircle className="h-10 w-10 text-red-500" />
+        <p className="text-gray-700 text-center">{FETCH_ERROR_MSG[lang] || FETCH_ERROR_MSG.en}</p>
+        <Button onClick={fetchData} variant="outline">{RETRY_LABEL[lang] || RETRY_LABEL.en}</Button>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-700 text-white">
         <div className="container mx-auto px-4 py-10">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="text-white/80 hover:text-white hover:bg-white/10" onClick={() => navigate(-1)}>
+            <Button variant="ghost" size="icon" className="text-white/80 hover:text-white hover:bg-white/10" onClick={() => { if (window.history.state?.idx > 0) navigate(-1); else navigate('/student'); }}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <h1 className="text-xl md:text-2xl font-bold">{PAGE_TITLE[lang] || PAGE_TITLE.en}</h1>
@@ -228,8 +251,8 @@ export default function CareerRoadmapPage() {
       </div>
 
       <div className="container mx-auto px-4 py-6">
-        {/* Highlighted milestone prompt */}
-        {highlightMilestone && (
+        {/* Highlighted milestone prompt — only for editable milestones */}
+        {highlightMilestone && highlightedIsEditable && (
           <div className="flex gap-3 bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4 animate-in fade-in duration-300">
             <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
             <p className="text-gray-700 text-sm md:text-base leading-relaxed">{FILL_PROMPT[lang] || FILL_PROMPT.en}</p>
@@ -264,13 +287,13 @@ export default function CareerRoadmapPage() {
                     ref={isHighlighted ? highlightRef : undefined}
                     className={`
                       ${isEditable ? 'border-l-4 border-l-blue-400' : 'border-l-4 border-l-gray-200 bg-gray-50'}
-                      ${isHighlighted ? 'ring-2 ring-blue-400 ring-inset bg-blue-50 animate-pulse' : ''}
+                      ${isHighlighted ? 'ring-2 ring-blue-400 ring-inset bg-blue-50' : ''}
                     `}
                   >
                     <td className="px-6 py-4 bg-gray-50 font-medium text-gray-800 align-top w-48">
                       <div className="flex items-center gap-2">
                         {!isEditable && <Lock className="h-3.5 w-3.5 text-gray-400 shrink-0" />}
-                        <span className={!isEditable ? 'text-gray-500' : ''}>{getMilestoneLabel(m)}</span>
+                        <span className={!isEditable ? 'text-gray-500' : ''}>{getMilestoneLabel(m, lang)}</span>
                       </div>
                     </td>
                     {(['plan_a', 'plan_b', 'plan_c'] as const).map(field => (
@@ -280,12 +303,13 @@ export default function CareerRoadmapPage() {
                             value={row[field]}
                             onChange={e => handleChange(m.key, field, e.target.value)}
                             rows={2}
+                            maxLength={500}
                             className="w-full min-h-[60px] border-0 bg-transparent rounded-md p-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-200 focus:bg-white transition-colors"
                             placeholder={t('roadmap_enter_career')}
                           />
                         ) : (
-                          <div className="p-2 text-gray-400 italic text-sm">
-                            {row[field] || t('roadmap_available_later')}
+                          <div className="p-2 text-gray-400 text-sm">
+                            {row[field] || '—'}
                           </div>
                         )}
                       </td>
@@ -319,8 +343,8 @@ export default function CareerRoadmapPage() {
           )}
         </div>
 
-        {/* Continue to Assessment button (only when redirected from dashboard) */}
-        {highlightMilestone && MILESTONE_ASSESSMENT_ROUTE[highlightMilestone] && (
+        {/* Continue to Assessment button — only for editable highlighted milestones */}
+        {highlightMilestone && highlightedIsEditable && MILESTONE_ASSESSMENT_ROUTE[highlightMilestone] && (
           <div className="mt-6 text-center">
             <Button
               onClick={handleContinueToAssessment}
