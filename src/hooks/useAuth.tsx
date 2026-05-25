@@ -240,13 +240,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         kn: { title: 'ಸೈನ್ ಇನ್ ವಿಫಲವಾಗಿದೆ' },
         hi: { title: 'साइन इन विफल' },
       };
-
+      // console.log("sign in test case 1")
+console.log(phone,password,phone.trim());
       const { data: signInData, error } = await supabase.auth.signInWithPassword({
         phone: phone.trim(),
         password,
       });
+      // console.log("sign in test case 2")
 
       if (error) {
+        console.log("sign in test case 3",error);
         logger.error('❌ Sign in error:', error);
         const failLang = (typeof window !== 'undefined' ? localStorage.getItem('lang') : null) || 'en';
         const failMsg = signInFailToasts[failLang] || signInFailToasts['en'];
