@@ -79,7 +79,8 @@ function passwordStrength(pw: string): { label: string; color: string } {
   const hasLetter = /[a-zA-Z]/.test(pw);
   const hasDigit = /\d/.test(pw);
   const isAllSame = pw.split('').every(c => c === pw[0]);
-  if (isAllSame || (!hasLetter && !hasDigit)) return { label: 'Very weak', color: 'text-red-500' };
+  if (isAllSame || (!hasLetter && !hasDigit)) return { label: 'Weak', color: 'text-red-500' };
+  if (pw.length < 8 && hasLetter && hasDigit) return { label: 'Weak', color: 'text-red-500' };
   if (pw.length >= 8 && hasLetter && hasDigit) return { label: 'Strong', color: 'text-green-600' };
   return { label: 'Fair', color: 'text-yellow-600' };
 }
@@ -975,11 +976,12 @@ export default function AuthPage() {
                         onChange={(e) => setFirstLoginForm({ ...firstLoginForm, newPassword: e.target.value })}
                         required
                       />
-                      {firstLoginForm.newPassword.length > 0 && firstLoginForm.newPassword.length < 6 ? (
-                        <p className="text-xs text-red-500">Password must be at least 6 characters</p>
-                      ) : (
-                        <p className="text-xs text-muted-foreground">At least 6 characters</p>
-                      )}
+                      {(() => {
+                        const { label, color } = passwordStrength(firstLoginForm.newPassword);
+                        return label
+                          ? <p className={`text-xs ${color}`}>{label}</p>
+                          : <p className="text-xs text-muted-foreground">At least 6 characters</p>;
+                      })()}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="firstlogin-confirmpassword">Confirm Password</Label>
