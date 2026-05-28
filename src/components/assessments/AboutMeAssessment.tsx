@@ -568,7 +568,6 @@ export default function AboutMeAssessment() {
         }
         aiSummaryService.generateAndCacheProfileCardKeywords('about_me', responses, userProfile.id, lang);
         setIsCompleted(true);
-        setTimeout(() => navigate('/student/things-interest-me?from=about_me'), 2000);
       }
     } catch (e) {
       logger.error('Error saving:', e);
@@ -929,54 +928,87 @@ export default function AboutMeAssessment() {
                   {t('saveProgress')}
                 </Button>
 
-                {sections.indexOf(currentSection) < sections.length - 1 ? (
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      const idx = sections.indexOf(currentSection);
-                      if (idx < sections.length - 1) {
-                        const nextSection = sections[idx + 1];
-                        if (nextSection === 'Summary' && !areCoreSectionsComplete()) {
-                          toast({
-                            title: lang === 'kn' ? 'ಸಾರಾಂಶ ಲಾಕ್ ಆಗಿದೆ' : lang === 'ta' ? 'சுருக்கம் பூட்டப்பட்டுள்ளது' : lang === 'hi' ? 'सारांश लॉक है' : 'Summary Locked',
-                            description: lang === 'kn'
-                              ? 'ಸಾರಾಂಶವನ್ನು ವೀಕ್ಷಿಸಲು ದಯವಿಟ್ಟು ಎಲ್ಲಾ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ.'
-                              : lang === 'ta'
-                                ? 'சுருக்கத்தைப் பார்க்க அனைத்துக் கேள்விகளுக்கும் பதில் அளிக்கவும்.'
-                                : lang === 'hi'
-                                  ? 'सारांश अनलॉक करने के लिए कृपया सभी मुख्य प्रश्नों का उत्तर दें।'
-                                  : 'Please answer all core questions to unlock the summary.',
-                            variant: 'destructive',
-                          });
-                          return;
-                        }
-                        setCurrentSection(nextSection);
-                      }
-                    }}
+                {(() => {
+                  const idx = sections.indexOf(currentSection);
+                  const isLastContentSection = idx === sections.length - 2 && sections[sections.length - 1] === 'Summary';
 
-                    className="w-full sm:w-auto border-blue-200 text-blue-700 hover:bg-blue-50"
-                  >
-                    {t('next')}
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={() => save(true)}
-                    disabled={submitting || !canSubmit()}
-                    className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700"
-                  >
-                    {submitting ? (
-                      <div className="flex items-center gap-2">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        <span>{lang === 'kn' ? 'ಸಲ್ಲಿಸುತ್ತಿದೆ...' : lang === 'ta' ? 'சமர்ப்பிக்கிறது...' : lang === 'hi' ? 'जमा किया जा रहा है...' : 'Submitting...'}</span>
-                      </div>
-                    ) : (
-                      <>
-                        <Badge className="w-4 h-4 mr-2 bg-transparent border-0 p-0"><CheckCircle className="w-4 h-4" /></Badge>
-                        {t('submitAssessment')}
-                      </>
-                    )}
-                  </Button>
-                )}
+                  if (isLastContentSection) {
+                    return (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          const nextSection = sections[idx + 1];
+                          if (nextSection === 'Summary' && !areCoreSectionsComplete()) {
+                            toast({
+                              title: lang === 'kn' ? 'ಸಾರಾಂಶ ಲಾಕ್ ಆಗಿದೆ' : lang === 'ta' ? 'சுருக்கம் பூட்டப்பட்டுள்ளது' : lang === 'hi' ? 'सारांश लॉक है' : 'Summary Locked',
+                              description: lang === 'kn'
+                                ? 'ಸಾರಾಂಶವನ್ನು ವೀಕ್ಷಿಸಲು ದಯವಿಟ್ಟು ಎಲ್ಲಾ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ.'
+                                : lang === 'ta'
+                                  ? 'சுருக்கத்தைப் பார்க்க அனைத்துக் கேள்விகளுக்கும் பதில் அளிக்கவும்.'
+                                  : lang === 'hi'
+                                    ? 'सारांश अनलॉक करने के लिए कृपया सभी मुख्य प्रश्नों का उत्तर दें।'
+                                    : 'Please answer all core questions to unlock the summary.',
+                              variant: 'destructive',
+                            });
+                            return;
+                          }
+                          setCurrentSection(nextSection);
+                        }}
+                        className="w-full sm:w-auto border-blue-200 text-blue-700 hover:bg-blue-50"
+                      >
+                        {t('summary')}
+                      </Button>
+                    );
+                  }
+
+                  return idx < sections.length - 1 ? (
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        if (idx < sections.length - 1) {
+                          const nextSection = sections[idx + 1];
+                          if (nextSection === 'Summary' && !areCoreSectionsComplete()) {
+                            toast({
+                              title: lang === 'kn' ? 'ಸಾರಾಂಶ ಲಾಕ್ ಆಗಿದೆ' : lang === 'ta' ? 'சுருக்கம் பூட்டப்பட்டுள்ளது' : lang === 'hi' ? 'सारांश लॉक है' : 'Summary Locked',
+                              description: lang === 'kn'
+                                ? 'ಸಾರಾಂಶವನ್ನು ವೀಕ್ಷಿಸಲು ದಯವಿಟ್ಟು ಎಲ್ಲಾ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ.'
+                                : lang === 'ta'
+                                  ? 'சுருக்கத்தைப் பார்க்க அனைத்துக் கேள்விகளுக்கும் பதில் அளிக்கவும்.'
+                                  : lang === 'hi'
+                                    ? 'सारांश अनलॉक करने के लिए कृपया सभी मुख्य प्रश्नों का उत्तर दें।'
+                                    : 'Please answer all core questions to unlock the summary.',
+                              variant: 'destructive',
+                            });
+                            return;
+                          }
+                          setCurrentSection(nextSection);
+                        }
+                      }}
+
+                      className="w-full sm:w-auto border-blue-200 text-blue-700 hover:bg-blue-50"
+                    >
+                      {t('next')}
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => save(true)}
+                      disabled={submitting || !canSubmit()}
+                      className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700"
+                    >
+                      {submitting ? (
+                        <div className="flex items-center gap-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          <span>{lang === 'kn' ? 'ಸಲ್ಲಿಸುತ್ತಿದೆ...' : lang === 'ta' ? 'சமர்ப்பிக்கிறது...' : lang === 'hi' ? 'जमा किया जा रहा है...' : 'Submitting...'}</span>
+                        </div>
+                      ) : (
+                        <>
+                          <Badge className="w-4 h-4 mr-2 bg-transparent border-0 p-0"><CheckCircle className="w-4 h-4" /></Badge>
+                          {t('submitAssessment')}
+                        </>
+                      )}
+                    </Button>
+                  );
+                })()}
               </div>
             </div>
           </CardContent>

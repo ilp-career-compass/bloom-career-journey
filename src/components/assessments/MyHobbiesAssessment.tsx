@@ -233,11 +233,11 @@ export default function MyHobbiesAssessment() {
           // Fetch summary title from content_translations (future-proofing)
           try {
             const titleRows = await fetchTranslations('hobbies_module', ['summary_title'], lang);
-            const tTitle = titleRows.find(r => r.resource_key === 'summary_title')?.text;
+            const tTitle = titleRows['summary_title'];
             if (tTitle) setDbSummaryTitle(tTitle);
           } catch (e) { /* no-op */ }
 
-          // Set initial section
+          // Set initial section 
           const firstSection = questionsWithTranslations[0]?.section || 'section1';
           setCurrentSection(firstSection);
         }

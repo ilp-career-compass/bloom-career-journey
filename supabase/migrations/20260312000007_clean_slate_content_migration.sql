@@ -3329,7 +3329,7 @@ VALUES ('hobbies_module', 'intro', 'ta', $$இந்த செயல்பாட
 ON CONFLICT (resource_type, resource_key, lang) DO UPDATE SET text = EXCLUDED.text;
 
 INSERT INTO content_translations (resource_type, resource_key, lang, text)
-VALUES ('hobbies_module', 'intro', 'en', $$In this practice section, we delve into your interests, hobbies, pastimes, and activities that bring you joy, exploring the depths of your creativity. By delving into your hobbies and interests, you can not only fi nd happiness but also identify your unique learning style and potential professions aligned with your passions.
+VALUES ('hobbies_module', 'intro', 'en', $$In this practice section, we delve into your interests, hobbies, pastimes, and activities that bring you joy, exploring the depths of your creativity. By delving into your hobbies and interests, you can not only find happiness but also identify your unique learning style and potential professions aligned with your passions.
 Through this activity, you will explore your talents, hobbies, and the work/activities that bring you joy. This will help you understand your interests, hobbies, and areas of talent, and guide you in identifying careers that suit your personality, interests, and passions."$$)
 ON CONFLICT (resource_type, resource_key, lang) DO UPDATE SET text = EXCLUDED.text;
 

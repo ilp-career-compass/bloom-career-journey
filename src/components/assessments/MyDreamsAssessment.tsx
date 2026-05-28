@@ -47,6 +47,38 @@ interface DreamAssessmentResponse {
   [questionId: string]: string;
 }
 
+interface DreamSummaryQuestion {
+  id: string;
+  text: string;
+}
+
+const getDreamSummaryFallback = (language: string): DreamSummaryQuestion[] => {
+  const fallbackByLang: Record<string, DreamSummaryQuestion[]> = {
+    en: [
+      { id: 'summary_q1', text: 'Which quality/ value/ ability that you already have will help you achieve your dream?' },
+      { id: 'summary_q2', text: 'What do you need to do to make sure this dream does not fail?' },
+      { id: 'summary_q3', text: 'To achieve this dream, what do you need to study after Class 10? (if applicable)' },
+    ],
+    kn: [
+      { id: 'summary_q1', text: 'ನಿಮ್ಮಲ್ಲಿ ಈಗಾಗಲೇ ಇರುವ ಯಾವ ಗುಣ/ಮೌಲ್ಯ/ಸಾಮರ್ಥ್ಯ ನಿಮ್ಮ ಕನಸನ್ನು ಸಾಧಿಸಲು ಸಹಾಯ ಮಾಡುತ್ತದೆ?' },
+      { id: 'summary_q2', text: 'ಈ ಕನಸು ವಿಫಲವಾಗದಂತೆ ಖಚಿತಪಡಿಸಿಕೊಳ್ಳಲು ನೀವು ಏನು ಮಾಡಬೇಕಾಗುತ್ತದೆ?' },
+      { id: 'summary_q3', text: 'ಈ ಕನಸನ್ನು ಸಾಧಿಸಲು 10ನೇ ತರಗತಿಯ ನಂತರ ನೀವು ಏನು ಅಧ್ಯಯನ ಮಾಡಬೇಕು? (ಅನ್ವಯಿಸಿದರೆ)' },
+    ],
+    ta: [
+      { id: 'summary_q1', text: 'உங்களிடம் ஏற்கனவே உள்ள எந்த குணம் / மதிப்பு / திறன் இந்த கனவை அடைய உங்களுக்கு உதவும்?' },
+      { id: 'summary_q2', text: 'இந்த கனவு தோல்வியடையாமல் இருக்க நீங்கள் என்ன செய்ய வேண்டும்?' },
+      { id: 'summary_q3', text: 'இந்த கனவை அடைய 10ஆம் வகுப்பிற்குப் பிறகு நீங்கள் என்ன படிக்க வேண்டும்? (தேவையானால்)' },
+    ],
+    hi: [
+      { id: 'summary_q1', text: 'आपके भीतर पहले से मौजूद कौन से गुण/मूल्य/क्षमता आपके सपने को हासिल करने में मदद करेंगे?' },
+      { id: 'summary_q2', text: 'यह सुनिश्चित करने के लिए कि आपका सपना विफल न हो, आपको क्या करने की आवश्यकता है?' },
+      { id: 'summary_q3', text: 'इस सपने को पूरा करने के लिए आपको 10वीं कक्षा के बाद क्या अध्ययन करना चाहिए? (यदि लागू हो)' },
+    ],
+  };
+
+  return fallbackByLang[language] || fallbackByLang.en;
+};
+
 export default function MyDreamsAssessment() {
   const { userProfile } = useAuth();
   const { t, lang } = useLang();
@@ -68,11 +100,34 @@ export default function MyDreamsAssessment() {
   const [saving, setSaving] = useState(false);
 
   // Summary questions state
-  const [summaryQuestions, setSummaryQuestions] = useState<{ id: string, text: string }[]>([]);
+  const [summaryQuestions, setSummaryQuestions] = useState<DreamSummaryQuestion[]>(getDreamSummaryFallback('en'));
   const [dbSummaryTitle, setDbSummaryTitle] = useState<string | null>(null);
+
+  const visibleSummaryQuestions = summaryQuestions.length > 0 ? summaryQuestions : getDreamSummaryFallback(lang);
 
   const saveProgress = async () => {
     if (isReadOnly) return;
+
+    const answeredSummary = visibleSummaryQuestions.filter((question) => {
+      const value = responses[question.id] || '';
+      return value.trim() !== '';
+    });
+
+    if (visibleSummaryQuestions.length === 0 || answeredSummary.length === 0) {
+      toast({
+        title: lang === 'kn' ? 'ಸಾರಾಂಶವನ್ನು ಪೂರ್ಣಗೊಳಿಸಿ' : lang === 'ta' ? 'சுருக்கத்தை முடிக்கவும்' : lang === 'hi' ? 'सारांश पूरा करें' : 'Complete the summary first',
+        description: lang === 'kn'
+          ? 'ಸರಿಯಾದ ಸಾರಾಂಶ ಪ್ರತಿಗಳನ್ನು ನಮೂದಿಸಿ ಅಥವಾ ಮೊದಲು ಪ್ರಶ್ನೆಗಳ ಪಟ್ಟಿಯನ್ನು ನೋಡಲು ಪುಟವನ್ನು ರೀಫ್ರೆಶ್ ಮಾಡಿ.'
+          : lang === 'ta'
+            ? 'தேவையான சுருக்கப் பதில்களை உள்ளிடவும் அல்லது கேள்வித் தொகுப்பை ஏற்றுவதற்கு பக்கத்தை புதுப்பிக்கவும்.'
+            : lang === 'hi'
+              ? 'कृपया सारांश के आवश्यक उत्तर भरें या प्रश्न सूची लोड करने के लिए पृष्ठ को रीफ्रेश करें।'
+              : 'Please enter the summary responses before saving, or refresh the page to load the summary prompts.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     const studentId = await getStudentId();
     if (!studentId) return;
 
@@ -214,6 +269,20 @@ export default function MyDreamsAssessment() {
     fetchModuleContent();
   }, [lang]);
 
+  useEffect(() => {
+    const fallbackSummaryQuestions = getDreamSummaryFallback(lang);
+    setSummaryQuestions(fallbackSummaryQuestions);
+    setResponses((prev) => {
+      const seeded = { ...prev };
+      fallbackSummaryQuestions.forEach((question) => {
+        if (seeded[question.id] === undefined) {
+          seeded[question.id] = '';
+        }
+      });
+      return seeded;
+    });
+  }, [lang]);
+
   // Load questions from database with i18n support
   useEffect(() => {
     const loadQuestions = async () => {
@@ -272,17 +341,26 @@ export default function MyDreamsAssessment() {
 
             // Fetch summary questions specifically via RPC
             const { data: summaryData } = await supabase.rpc('get_dreams_summary_questions_i18n', { p_lang: lang } as any);
-            if (summaryData && Array.isArray(summaryData)) {
+            if (summaryData && Array.isArray(summaryData) && summaryData.length > 0) {
               const formattedSummaryQuestions = summaryData.map((item: any, index: number) => ({
                 id: `summary_q${item.sequence_number || index + 1}`,
                 text: item.translated_text || item.question_text || ''
               }));
               setSummaryQuestions(formattedSummaryQuestions);
+              setResponses((prev) => {
+                const seeded = { ...prev };
+                formattedSummaryQuestions.forEach((question) => {
+                  if (seeded[question.id] === undefined) {
+                    seeded[question.id] = '';
+                  }
+                });
+                return seeded;
+              });
             }
 
             // Fetch summary title from content_translations
             const titleRows = await fetchTranslations('dreams_module', ['summary_title'], lang);
-            const tTitle = titleRows.find(r => r.resource_key === 'summary_title')?.text;
+            const tTitle = titleRows['summary_title'];
             if (tTitle) setDbSummaryTitle(tTitle);
           } catch (e) {
             logger.warn('Could not load i18n translations, using default:', e);
@@ -498,16 +576,20 @@ export default function MyDreamsAssessment() {
   };
 
   const getProgressPercentage = () => {
-    if (dreamsQuestions.length === 0) return 0;
+    const totalSummaryQuestions = visibleSummaryQuestions.length;
+    if (dreamsQuestions.length === 0 && totalSummaryQuestions === 0) return 0;
+
     const answeredMain = dreamsQuestions.filter(q => {
       const response = responses[q.id];
       return response && response.trim() !== '';
     }).length;
-    const answeredSummary = summaryQuestions.filter(q => {
+
+    const answeredSummary = visibleSummaryQuestions.filter(q => {
       const response = responses[q.id];
       return response && response.trim() !== '';
     }).length;
-    const total = dreamsQuestions.length + summaryQuestions.length;
+
+    const total = dreamsQuestions.length + totalSummaryQuestions;
     return total > 0 ? ((answeredMain + answeredSummary) / total) * 100 : 0;
   };
 
@@ -519,13 +601,35 @@ export default function MyDreamsAssessment() {
     });
   };
 
+  const isSummaryComplete = () => {
+    if (visibleSummaryQuestions.length === 0) return false;
+    return visibleSummaryQuestions.every(q => {
+      const response = responses[q.id];
+      return response && response.trim() !== '';
+    });
+  };
+
   const canSubmit = () => {
     if (isReadOnly) return false;
-    return areCoreSectionsComplete();
+    return areCoreSectionsComplete() && isSummaryComplete();
   };
 
   const submitAssessment = async () => {
     if (isReadOnly) return;
+    if (!canSubmit()) {
+      toast({
+        title: lang === 'kn' ? 'ಸಾರಾಂಶ ಇನ್ನೂ ಪೂರ್ಣಗೊಂಡಿಲ್ಲ' : lang === 'ta' ? 'சுருக்கம் இன்னும் முடிக்கப்படவில்லை' : lang === 'hi' ? 'सारांश अब तक पूरा नहीं हुआ' : 'Summary not completed yet',
+        description: lang === 'kn'
+          ? 'ದಯವಿಟ್ಟು ಎಲ್ಲಾ ಮುಖ್ಯ ಪ್ರಶ್ನೆಗಳನ್ನು ಮತ್ತು ಸಾರಾಂಶದ ಪ್ರತಿಗಳನ್ನು ಪೂರ್ಣಗೊಳಿಸಿ.'
+          : lang === 'ta'
+            ? 'தயவுசெய்து அனைத்து முக்கிய கேள்விகளையும் சுருக்கப் பகுதிகளையும் முடிக்கவும்.'
+            : lang === 'hi'
+              ? 'कृपया सभी मुख्य प्रश्नों और सारांश भागों को पूरा करें।'
+              : 'Please complete all core questions and the summary section before submitting.',
+        variant: 'destructive',
+      });
+      return;
+    }
     if (!userProfile) {
       toast({
         title: lang === 'kn' ? 'ದೋಷ' : lang === 'ta' ? 'பிழை' : lang === 'hi' ? 'त्रुटि' : 'Error',
@@ -917,7 +1021,7 @@ export default function MyDreamsAssessment() {
                   </CardHeader>
                   <CardContent className="p-6">
                     <div className="space-y-6">
-                      {summaryQuestions.map((q) => (
+                      {visibleSummaryQuestions.map((q) => (
                         <div key={q.id}>
                           <label className="block text-base font-medium text-gray-800 mb-2">
                             {q.text}<span className="text-red-500 text-sm ml-1">*</span>
