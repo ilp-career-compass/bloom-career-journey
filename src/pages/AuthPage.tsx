@@ -1083,7 +1083,8 @@ export default function AuthPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="mx-auto w-12 h-12 md:w-16 md:h-16 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center mb-4">
-            <GraduationCap className="w-6 h-6 md:w-8 md:h-8 text-white" />
+            {/* <GraduationCap className="w-6 h-6 md:w-8 md:h-8 text-white" /> */}
+          <img src="/logo/ILP-new-logo.jpeg" alt="logo" className="w-20 h-20 md:w-20 md:h-20 rounded-full" />
           </div>
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">Career Compass</h1>
           <p className="text-sm sm:text-base text-muted-foreground mt-1">an <span className="font-semibold">India Literacy Project</span> initiative</p>
