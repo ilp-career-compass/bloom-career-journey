@@ -1,6 +1,8 @@
 // Internal-only Edge Function: called by create-teacher, create-student-self-register, set-first-password.
 // No CORS headers — browsers should never call this directly.
-Deno.serve(async (req) => {
+declare const Deno: any;
+
+Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 204 })
   }
@@ -16,7 +18,18 @@ Deno.serve(async (req) => {
       )
     }
 
-    const authKey = Deno.env.get('MSG91_AUTH_KEY')
+    let authKey = Deno.env.get('MSG91_AUTH_KEY')
+    if (authKey) {
+      authKey = authKey.trim().replace(/^["']|["']$/g, '')
+    }
+
+    console.log('[verify-msg91-token] Server Configuration:')
+    console.log(`  - MSG91_AUTH_KEY configured: ${!!authKey}`)
+    if (authKey) {
+      console.log(`  - MSG91_AUTH_KEY clean length: ${authKey.length}`)
+      console.log(`  - MSG91_AUTH_KEY mask: ${authKey.slice(0, 4)}...${authKey.slice(-4)}`)
+    }
+
     if (!authKey) {
       return new Response(
         JSON.stringify({ error: 'MSG91_AUTH_KEY not configured on server' }),
@@ -26,6 +39,13 @@ Deno.serve(async (req) => {
 
     const body = await req.json()
     const accessToken: string | undefined = body?.access_token
+
+    console.log('[verify-msg91-token] Request Payload:')
+    console.log(`  - access_token received: ${!!accessToken}`)
+    if (accessToken) {
+      console.log(`  - access_token length: ${accessToken.length}`)
+      console.log(`  - access_token mask: ${accessToken.slice(0, 8)}...${accessToken.slice(-8)}`)
+    }
 
     if (!accessToken) {
       return new Response(
@@ -39,6 +59,7 @@ Deno.serve(async (req) => {
     const timeoutId = setTimeout(() => controller.abort(), 10_000)
     let upstream: Response
     try {
+      console.log('[verify-msg91-token] Dispatching fetch to MSG91 verifyAccessToken...')
       upstream = await fetch('https://api.msg91.com/api/v5/widget/verifyAccessToken', {
         method: 'POST',
         signal: controller.signal,
@@ -50,19 +71,24 @@ Deno.serve(async (req) => {
       })
     } catch (fetchErr) {
       if ((fetchErr as Error).name === 'AbortError') {
+        console.error('[verify-msg91-token] MSG91 call timed out after 10s')
         return new Response(
           JSON.stringify({ success: false, error: 'MSG91 API timed out' }),
           { status: 504, headers: { 'Content-Type': 'application/json' } },
         )
       }
+      console.error('[verify-msg91-token] Fetch network error calling MSG91:', fetchErr)
       throw fetchErr
     } finally {
       clearTimeout(timeoutId)
     }
 
+    console.log(`[verify-msg91-token] Upstream MSG91 Response Status: ${upstream.status}`)
+    const rawBody = await upstream.text()
+    console.log('[verify-msg91-token] Upstream MSG91 Response Body:', rawBody)
+
     if (!upstream.ok) {
-      const body = await upstream.text()
-      console.error('[verify-msg91-token] MSG91 upstream error:', upstream.status, body.slice(0, 200))
+      console.error('[verify-msg91-token] MSG91 upstream HTTP error:', upstream.status, rawBody.slice(0, 200))
       return new Response(
         JSON.stringify({ success: false, error: `MSG91 API error: ${upstream.status}` }),
         { status: 502, headers: { 'Content-Type': 'application/json' } },
@@ -71,7 +97,7 @@ Deno.serve(async (req) => {
 
     let data: Record<string, unknown>
     try {
-      data = await upstream.json()
+      data = JSON.parse(rawBody)
     } catch {
       console.error('[verify-msg91-token] MSG91 returned non-JSON response')
       return new Response(
@@ -88,22 +114,26 @@ Deno.serve(async (req) => {
       // If MSG91 returns success without a mobile (unexpected), treat as failure rather than silently
       // skipping the cross-check in callers.
       if (!mobile) {
+        console.error('[verify-msg91-token] MSG91 success response was missing mobile data')
         return new Response(
           JSON.stringify({ success: false, error: 'MSG91 verified OTP but did not return mobile — cannot confirm phone ownership' }),
           { status: 400, headers: { 'Content-Type': 'application/json' } },
         )
       }
+      console.log(`[verify-msg91-token] Success! Mobile confirmed: ${mobile}`)
       return new Response(
         JSON.stringify({ success: true, mobile }),
         { status: 200, headers: { 'Content-Type': 'application/json' } },
       )
     }
 
+    console.warn('[verify-msg91-token] Verification rejected by MSG91 backend:', data?.message || 'Unknown reason')
     return new Response(
       JSON.stringify({ success: false, error: 'OTP verification failed' }),
       { status: 400, headers: { 'Content-Type': 'application/json' } },
     )
   } catch (err) {
+    console.error('[verify-msg91-token] Uncaught error in Edge Function:', err)
     return new Response(
       JSON.stringify({ error: (err as Error).message || 'Internal server error' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } },

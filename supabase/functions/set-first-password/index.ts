@@ -12,7 +12,9 @@ function isValidE164(phone: string): boolean {
   return /^\+\d{10,15}$/.test(phone)
 }
 
-Deno.serve(async (req) => {
+declare const Deno: any;
+
+Deno.serve(async (req: Request) => {
   const corsHeaders = getCorsHeaders(req)
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -66,11 +68,21 @@ Deno.serve(async (req) => {
 
     // Look up the user BEFORE consuming the OTP — the role check below must not burn a teacher's
     // OTP session as a side effect of returning 403.
+    // Normalise mobile lookup to handle format variants (+91XXXXXXXXXX, XXXXXXXXXX, 91XXXXXXXXXX)
+    const bareMobile = (mobile || '').replace(/\D/g, '').slice(-10)
+    const searchNumbers = [
+      mobile,
+      bareMobile,
+      `+91${bareMobile}`,
+      `91${bareMobile}`
+    ].filter((val, index, self) => val && self.indexOf(val) === index)
+
     const { data: userRow, error: userError } = await supabaseAdmin
       .from('users')
       .select('id, role')
-      .eq('mobile', mobile)
+      .in('mobile', searchNumbers)
       .maybeSingle()
+
 
     // G20: maybeSingle() returns PGRST116 when multiple rows match — surface a clear 409.
     // Any other userError is a genuine DB/RLS failure — return 500, not 404.
@@ -104,7 +116,10 @@ Deno.serve(async (req) => {
 
     // G25: skip OTP verification in dev/staging when MSG91_AUTH_KEY is not configured —
     // matches the bypass behaviour of create-teacher and create-student-self-register.
-    const msg91AuthKey = Deno.env.get('MSG91_AUTH_KEY')
+    let msg91AuthKey = Deno.env.get('MSG91_AUTH_KEY')
+    if (msg91AuthKey) {
+      msg91AuthKey = msg91AuthKey.trim().replace(/^["']|["']$/g, '')
+    }
     if (msg91AuthKey) {
       const verifyResponse = await fetch(`${supabaseUrl}/functions/v1/verify-msg91-token`, {
         method: 'POST',
@@ -146,6 +161,16 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: updateError.message || 'Failed to set password' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       )
+    }
+
+    // G26: Sync the new password to student_auth_credentials if a record exists
+    try {
+      await supabaseAdmin
+        .from('student_auth_credentials')
+        .update({ password_hash: newPassword, updated_at: new Date().toISOString() })
+        .eq('user_id', userRow.id)
+    } catch (dbErr) {
+      console.warn('[set-first-password] Failed to sync password to student_auth_credentials:', dbErr)
     }
 
     return new Response(

@@ -1,6 +1,6 @@
-﻿import { logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 import { useState, useEffect } from 'react';
-import { MessageSquare, X, Send, Loader2 } from 'lucide-react';
+import { MessageSquare, X, Send, Loader2, Pencil, Trash2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,9 +46,10 @@ interface ChatBubbleProps {
   isOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
   hideTrigger?: boolean;
+  initialStudentUserId?: string | null;
 }
 
-export default function ChatBubble({ role, isOpen: controlledIsOpen, onOpenChange, hideTrigger = false }: ChatBubbleProps) {
+export default function ChatBubble({ role, isOpen: controlledIsOpen, onOpenChange, hideTrigger = false, initialStudentUserId }: ChatBubbleProps) {
   const { userProfile, user } = useAuth();
   const { toast } = useToast();
   const { t, lang } = useLang();
@@ -76,6 +77,12 @@ export default function ChatBubble({ role, isOpen: controlledIsOpen, onOpenChang
   const [otherPartyAvatar, setOtherPartyAvatar] = useState<string | undefined>();
   const [otherPartyUserId, setOtherPartyUserId] = useState<string | null>(null);
   const [noTeacherAssigned, setNoTeacherAssigned] = useState(false);
+
+  // Edit and Delete States
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingContent, setEditingContent] = useState('');
+  const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
+  const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
 
   // For teacher: student selection
   const [students, setStudents] = useState<any[]>([]);
@@ -284,7 +291,7 @@ export default function ChatBubble({ role, isOpen: controlledIsOpen, onOpenChang
               p_type: 'chat_message',
               p_title: notifTitle,
               p_message: notifMessage,
-              p_link: role === 'student' ? '/teacher?openChat=true' : '/student?openChat=true',
+              p_link: role === 'student' ? `/teacher?openChat=true&studentUserId=${user.id}` : '/student?openChat=true',
             });
             if (notifError) logger.error('Chat notification error:', notifError);
           } catch (err) {
@@ -308,6 +315,67 @@ export default function ChatBubble({ role, isOpen: controlledIsOpen, onOpenChang
       });
     } finally {
       setSending(false);
+    }
+  };
+
+  // Save edited message content
+  const saveEdit = async (messageId: string) => {
+    if (!editingContent.trim() || !channelId) return;
+
+    try {
+      const { error } = await supabase
+        .from('chat_messages')
+        .update({ content: editingContent.trim() })
+        .eq('id', messageId);
+
+      if (error) throw error;
+
+      setEditingMessageId(null);
+      setEditingContent('');
+      await loadMessages(channelId);
+    } catch (error) {
+      logger.error('Error editing message:', error);
+      toast({
+        title: lang === 'kn' ? "ದೋಷ" : lang === 'ta' ? "பிழை" : lang === 'hi' ? "त्रुटि" : "Error",
+        description: lang === 'kn'
+          ? "ಸಂದೇಶವನ್ನು ಸಂಪಾದಿಸಲು ವಿಫಲವಾಗಿದೆ."
+          : lang === 'ta'
+            ? "செய்தியைத் தொகுக்க முடியவில்லை."
+            : lang === 'hi'
+              ? "संदेश संपादित करने में विफल।"
+              : "Failed to edit message.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Delete message
+  const deleteMessage = async (messageId: string) => {
+    if (!channelId) return;
+
+    try {
+      const { error } = await supabase
+        .from('chat_messages')
+        .delete()
+        .eq('id', messageId);
+
+      if (error) throw error;
+
+      setDeletingMessageId(null);
+      await loadMessages(channelId);
+    } catch (error) {
+      logger.error('Error deleting message:', error);
+      toast({
+        title: lang === 'kn' ? "ದೋಷ" : lang === 'ta' ? "பிழை" : lang === 'hi' ? "त्रुटि" : "Error",
+        description: lang === 'kn'
+          ? "ಸಂದೇಶವನ್ನು ಅಳಿಸಲು ವಿಫಲವಾಗಿದೆ."
+          : lang === 'ta'
+            ? "செய்தியை அழிக்க முடியவில்லை."
+            : lang === 'hi'
+              ? "संदेश हटाने में विफल।"
+              : "Failed to delete message.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -391,7 +459,7 @@ export default function ChatBubble({ role, isOpen: controlledIsOpen, onOpenChang
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*',
           schema: 'public',
           table: 'chat_messages',
           filter: `channel_id=eq.${channelId}`,
@@ -416,6 +484,17 @@ export default function ChatBubble({ role, isOpen: controlledIsOpen, onOpenChang
       loadStudents();
     }
   }, [isOpen, role]);
+
+  // Auto-select student if initialStudentUserId is provided
+  useEffect(() => {
+    if (isOpen && role === 'teacher' && initialStudentUserId && students.length > 0) {
+      const match = students.find(s => s.user?.id === initialStudentUserId);
+      if (match) {
+        setSelectedStudentId(match.id);
+        setShowStudentList(false);
+      }
+    }
+  }, [isOpen, role, initialStudentUserId, students]);
 
   // Initialize channel when opened
   useEffect(() => {
@@ -491,17 +570,17 @@ export default function ChatBubble({ role, isOpen: controlledIsOpen, onOpenChang
               <div>
                 <CardTitle className="text-lg text-gray-800 font-semibold">
                   {role === 'teacher' && showStudentList
-                    ? (lang === 'kn' ? 'ವಿದ್ಯಾರ್ಥಿಗೆ ಸಂದೇಶ ಕಳುಹಿಸಿ' : 'Message a Student')
+                    ? (lang === 'kn' ? 'ವಿದ್ಯಾರ್ಥಿಗೆ ಸಂದೇಶ ಕಳುಹಿಸಿ' : lang === 'ta' ? 'மாணவருக்கு செய்தி அனுப்பு' : lang === 'hi' ? 'छात्र को संदेश भेजें' : 'Message a Student')
                     : role === 'student'
-                      ? otherPartyName || (lang === 'kn' ? 'ವಿದ್ಯಾ ಸಾಥಿ' : 'Vidya Saathi')
-                      : otherPartyName || (lang === 'kn' ? 'ವಿದ್ಯಾರ್ಥಿ' : 'Student')
+                      ? otherPartyName || (lang === 'kn' ? 'ವಿದ್ಯಾ ಸಾಥಿ' : lang === 'ta' ? 'வித்யா சாதி' : lang === 'hi' ? 'विद्या साथी' : 'Vidya Saathi')
+                      : otherPartyName || (lang === 'kn' ? 'ವಿದ್ಯಾರ್ಥಿ' : lang === 'ta' ? 'மாணவர்' : lang === 'hi' ? 'छात्र' : 'Student')
                   }
                 </CardTitle>
                 {!showStudentList && (
                   <p className="text-xs text-blue-700">
                     {role === 'student'
-                      ? (lang === 'kn' ? 'ನಿಮ್ಮ ವಿದ್ಯಾ ಸಾಥಿ' : 'Your Vidya Saathi')
-                      : (lang === 'kn' ? 'ವಿದ್ಯಾರ್ಥಿ' : 'Student')
+                      ? (lang === 'kn' ? 'ನಿಮ್ಮ ವಿದ್ಯಾ ಸಾಥಿ' : lang === 'ta' ? 'உங்கள் வித்யா சாதி' : lang === 'hi' ? 'आपका विद्या साथी' : 'Your Vidya Saathi')
+                      : (lang === 'kn' ? 'ವಿದ್ಯಾರ್ಥಿ' : lang === 'ta' ? 'மாணவர்' : lang === 'hi' ? 'छात्र' : 'Student')
                     }
                   </p>
                 )}
@@ -609,7 +688,7 @@ export default function ChatBubble({ role, isOpen: controlledIsOpen, onOpenChang
                             {student.user?.full_name?.charAt(0) || 'S'}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="font-medium text-gray-700">{student.user?.full_name || 'Student'}</span>
+                        <span className="font-medium text-gray-700">{student.user?.full_name || (lang === 'kn' ? 'ವಿದ್ಯಾರ್ಥಿ' : lang === 'ta' ? 'மாணவர்' : lang === 'hi' ? 'छात्र' : 'Student')}</span>
                       </Button>
                     ))}
                   </div>
@@ -638,26 +717,140 @@ export default function ChatBubble({ role, isOpen: controlledIsOpen, onOpenChang
                         return (
                           <div
                             key={message.id}
-                            className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
+                            className={`flex ${isOwn ? 'justify-end' : 'justify-start'} items-center gap-2 group mb-4`}
                           >
+                            {isOwn && editingMessageId !== message.id && deletingMessageId !== message.id && (
+                              <div className="flex items-center gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-200 shrink-0">
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingMessageId(message.id);
+                                    setEditingContent(message.content);
+                                    setDeletingMessageId(null);
+                                    setSelectedMessageId(null);
+                                  }}
+                                  className="h-8 w-8 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full"
+                                  title={lang === 'kn' ? 'ಸಂಪಾದಿಸಿ' : lang === 'ta' ? 'தொகு' : lang === 'hi' ? 'संपादित करें' : 'Edit'}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDeletingMessageId(message.id);
+                                    setEditingMessageId(null);
+                                    setSelectedMessageId(null);
+                                  }}
+                                  className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full"
+                                  title={lang === 'kn' ? 'ಅಳಿಸಿ' : lang === 'ta' ? 'அழி' : lang === 'hi' ? 'हटाएं' : 'Delete'}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            )}
+
                             <div
-                              className={`max-w-[75%] rounded-2xl px-4 py-3 shadow-sm ${isOwn
-                                ? 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-br-md'
+                              onClick={() => {
+                                if (isOwn && editingMessageId !== message.id && deletingMessageId !== message.id) {
+                                  setSelectedMessageId(selectedMessageId === message.id ? null : message.id);
+                                }
+                              }}
+                              className={`max-w-[75%] rounded-2xl px-4 py-3 shadow-sm transition-all duration-200 ${isOwn
+                                ? 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-br-md cursor-pointer hover:shadow-md'
                                 : 'bg-white border border-gray-200 text-gray-900 rounded-bl-md'
                                 }`}
                             >
-                              <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
-                                {message.content}
-                              </p>
-                              <p
-                                className={`text-xs mt-1.5 ${isOwn ? 'text-blue-100' : 'text-gray-400'
-                                  }`}
-                              >
-                                {new Date(message.created_at).toLocaleTimeString([], {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                })}
-                              </p>
+                              {editingMessageId === message.id ? (
+                                <div className="space-y-2 min-w-[200px]" onClick={(e) => e.stopPropagation()}>
+                                  <Input
+                                    value={editingContent}
+                                    onChange={(e) => setEditingContent(e.target.value)}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="bg-white/10 text-white border-white/20 focus:border-white focus:ring-1 focus:ring-white h-8 text-sm"
+                                    autoFocus
+                                    onKeyDown={(e) => {
+                                      e.stopPropagation();
+                                      if (e.key === 'Enter') {
+                                        saveEdit(message.id);
+                                      } else if (e.key === 'Escape') {
+                                        setEditingMessageId(null);
+                                      }
+                                    }}
+                                  />
+                                  <div className="flex gap-1.5 justify-end">
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setEditingMessageId(null);
+                                      }}
+                                      className="h-6 text-[10px] px-2 text-blue-100 hover:bg-blue-700/30 hover:text-white"
+                                    >
+                                      {lang === 'kn' ? 'ರದ್ದು' : lang === 'ta' ? 'ரத்து' : lang === 'hi' ? 'रद्द करें' : 'Cancel'}
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        saveEdit(message.id);
+                                      }}
+                                      disabled={!editingContent.trim()}
+                                      className="h-6 text-[10px] px-2 bg-white text-blue-700 hover:bg-blue-50"
+                                    >
+                                      {lang === 'kn' ? 'ಉಳಿಸಿ' : lang === 'ta' ? 'சேமி' : lang === 'hi' ? 'सहेजें' : 'Save'}
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : deletingMessageId === message.id ? (
+                                <div className="space-y-2 min-w-[200px]">
+                                  <p className="text-xs text-blue-100 font-medium">
+                                    {lang === 'kn'
+                                      ? 'ಈ ಸಂದೇಶವನ್ನು ಅಳಿಸುವುದೇ?'
+                                      : lang === 'ta'
+                                        ? 'இந்தச் செய்தியை அழிக்கவா?'
+                                        : lang === 'hi'
+                                          ? 'क्या आप इस संदेश को हटाना चाहते हैं?'
+                                          : 'Delete this message?'}
+                                  </p>
+                                  <div className="flex gap-1.5 justify-end">
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => setDeletingMessageId(null)}
+                                      className="h-6 text-[10px] px-2 text-blue-100 hover:bg-blue-700/30 hover:text-white"
+                                    >
+                                      {lang === 'kn' ? 'ರದ್ದು' : lang === 'ta' ? 'ரத்து' : lang === 'hi' ? 'रद्द करें' : 'Cancel'}
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={() => deleteMessage(message.id)}
+                                      className="h-6 text-[10px] px-2 bg-red-600 hover:bg-red-700 text-white border-0"
+                                    >
+                                      {lang === 'kn' ? 'ಅಳಿಸಿ' : lang === 'ta' ? 'அழி' : lang === 'hi' ? 'हटाएं' : 'Delete'}
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <>
+                                  <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
+                                    {message.content}
+                                  </p>
+                                  <div className="flex items-center gap-2 mt-1.5 justify-between">
+                                    <p className={`text-xs ${isOwn ? 'text-blue-100' : 'text-gray-400'}`}>
+                                      {new Date(message.created_at).toLocaleTimeString([], {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                      })}
+                                    </p>
+                                  </div>
+                                </>
+                              )}
                             </div>
                           </div>
                         );

@@ -1,4 +1,4 @@
-﻿import { logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 import { supabase } from '@/integrations/supabase/client';
 
@@ -19,7 +19,7 @@ class AIChatService {
     // API calls routed through gemini-proxy Edge Function — no client-side key needed
   }
 
-  async sendMessage(history: ChatMessage[], newMessage: string): Promise<ChatResponse> {
+  async sendMessage(history: ChatMessage[], newMessage: string, lang?: string): Promise<ChatResponse> {
     try {
       // Construct the prompt history — cap to last 30 messages to stay within Edge Function body limits
       const MAX_HISTORY = 30;
@@ -34,6 +34,20 @@ class AIChatService {
         parts: [{ text: newMessage }]
       });
 
+      // Build a language-specific reply instruction so the AI respects the selected interface language.
+      const langInstruction = (() => {
+        switch (lang) {
+          case 'kn':
+            return '\n\nIMPORTANT — Language instruction: You MUST always reply in Kannada (ಕನ್ನಡ) script, regardless of the language the student uses to type. Do not switch to English unless the student explicitly asks you to.';
+          case 'ta':
+            return '\n\nIMPORTANT — Language instruction: You MUST always reply in Tamil (தமிழ்) script, regardless of the language the student uses to type. Do not switch to English unless the student explicitly asks you to.';
+          case 'hi':
+            return '\n\nIMPORTANT — Language instruction: You MUST always reply in Hindi (हिंदी) using Devanagari script, regardless of the language the student uses to type. Do not switch to English unless the student explicitly asks you to.';
+          default:
+            return '\n\nIMPORTANT — Language instruction: Always reply in clear, simple English.';
+        }
+      })();
+
       const systemPrompt = `You are Vidya Saathi, a friendly and encouraging career guidance assistant for students in grades 8-12 in rural India, created by India Literacy Project.
 
 Your role:
@@ -41,19 +55,14 @@ Your role:
 - Answer questions about careers, subjects, study habits, skills, and motivation
 - Be warm, simple, and encouraging — like a trusted elder sibling or mentor
 
-Language:
-- Students may write in English, Tanglish (Tamil in English letters), Kanglish, or Hinglish
-- Understand their meaning even if written in Roman script (e.g. "naan doctor aganum" means "I want to become a doctor" in Tamil)
-- Reply in simple English always, UNLESS the student writes in native script (Tamil, Kannada, or Devanagari characters). Tanglish/Kanglish/Hinglish (Indian languages written in English/Roman letters) is NOT native script — reply in English for these. Only switch to Tamil/Kannada/Hindi script if the student actually types those scripts.
-
 Safety guardrails:
-- STRICT RULE: You MUST NOT answer any question that is not directly about careers, education, subjects, study tips, skills, or personal strengths. This includes general knowledge questions, current events, politics, sports, entertainment, relationships, or anything else. For ANY off-topic question, respond ONLY with: "I'm here to help with your career journey! Ask me about careers, subjects, or your future goals 😊" — do not answer the question at all, even partially.
+- STRICT RULE: You MUST NOT answer any question that is not directly about careers, education, subjects, study tips, skills, or personal strengths. This includes general knowledge questions, current events, politics, sports, entertainment, relationships, or anything else. For ANY off-topic question, respond ONLY with the equivalent of: "I'm here to help with your career journey! Ask me about careers, subjects, or your future goals 😊" — do not answer the question at all, even partially.
 - Never give medical, legal, or financial advice
 - Never discuss violence, adult content, or anything inappropriate for school-age students
 - If a student seems distressed, respond with empathy and suggest they speak to a trusted teacher or family member
-- Do not make up facts about specific colleges, entrance exams, or job salaries — say "I don't have exact details on that, but I can help you think about the right direction"
+- Do not make up facts about specific colleges, entrance exams, or job salaries — say you don't have exact details but can help think about the right direction
 
-Keep responses short — 3-5 sentences maximum. Be encouraging and positive always.`;
+Keep responses short — 3-5 sentences maximum. Be encouraging and positive always.${langInstruction}`;
 
       const requestBody = {
         contents,
@@ -66,8 +75,8 @@ Keep responses short — 3-5 sentences maximum. Be encouraging and positive alwa
         },
       };
 
-      // Try models in order: 2.0-flash → 2.0-flash-lite
-      const models = ['gemini-2.0-flash', 'gemini-2.0-flash-lite'];
+      // Try models in order: 2.0-flash → 2.0-flash-lite → 1.5-flash → 1.5-flash-latest
+      const models = ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash', 'gemini-1.5-flash-latest'];
       for (const [i, model] of models.entries()) {
         try {
           return await this.callApi(model, requestBody);
@@ -92,7 +101,23 @@ Keep responses short — 3-5 sentences maximum. Be encouraging and positive alwa
     });
 
     if (error) {
-      throw new Error(error.message || `Gemini proxy error for model ${model}`);
+      let detailedMessage = '';
+      try {
+        if (error.context && typeof error.context.text === 'function') {
+          const bodyText = await error.context.text();
+          try {
+            const parsed = JSON.parse(bodyText);
+            detailedMessage = parsed.error?.message || parsed.error || bodyText;
+          } catch {
+            detailedMessage = bodyText;
+          }
+        }
+      } catch (err) {
+        logger.warn('Failed to parse error context body:', err);
+      }
+      
+      const errMsg = detailedMessage || error.message || `Gemini proxy error for model ${model}`;
+      throw new Error(errMsg);
     }
     
     // Validate response structure

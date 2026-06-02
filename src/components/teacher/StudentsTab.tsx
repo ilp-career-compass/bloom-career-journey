@@ -2,6 +2,7 @@ import React from 'react';
 import { logger } from '@/lib/logger';
 import { LANG_LABELS } from '@/lib/langLabels';
 import { useNavigate } from 'react-router-dom';
+import { useLang } from '@/hooks/useLang';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -87,6 +88,7 @@ interface StudentsTabProps {
     onImportCsv: () => void;
     onViewDetails: (student: Student) => void;
     onUnenroll: (student: Student) => void;
+    onReactivate: (student: Student) => void;
     loadStudents: () => void;
 }
 
@@ -118,8 +120,10 @@ export default function StudentsTab({
     onImportCsv,
     onViewDetails,
     onUnenroll,
+    onReactivate,
 }: StudentsTabProps) {
     const navigate = useNavigate();
+    const { lang } = useLang();
 
     return (
         <div className="space-y-6">
@@ -180,7 +184,6 @@ export default function StudentsTab({
                             {t('importCsv')}
                         </Button>
                     </div>
-                    <div className="text-xs text-gray-500 mt-2">{t('temporaryPassword')} <span className="font-semibold">temporary123</span></div>
                 </CardContent>
             </Card>
 
@@ -189,7 +192,10 @@ export default function StudentsTab({
                 <CardHeader>
                     <CardTitle className="text-xl text-gray-800">{t('studentManagement')}</CardTitle>
                     <CardDescription>
-                        Manage your enrolled students and track their progress
+                        {lang === 'kn' ? 'ನಿಮ್ಮ ನೋಂದಾಯಿತ ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು ನಿರ್ವಹಿಸಿ ಮತ್ತು ಅವರ ಪ್ರಗತಿಯನ್ನು ಟ್ರ್ಯಾಕ್ ಮಾಡಿ'
+                          : lang === 'ta' ? 'உங்கள் சேர்க்கப்பட்ட மாணவர்களை நிர்வகிக்கவும் மற்றும் அவர்களின் முன்னேற்றத்தை கண்காணிக்கவும்'
+                          : lang === 'hi' ? 'अपने नामांकित छात्रों का प्रबंधन करें और उनकी प्रगति को ट्रैक करें'
+                          : 'Manage your enrolled students and track their progress'}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -281,32 +287,41 @@ export default function StudentsTab({
                                                             </Button>
                                                         </DropdownMenuTrigger>
                                                         <DropdownMenuContent>
-                                                            <DropdownMenuItem onClick={() => navigate(`/student/${student.id}/summary`)}>
+                                                            <DropdownMenuItem onClick={() => navigate(`/student/${student.id}/summary?lang=${lang}`)}>
                                                                 <FileText className="w-4 h-4 mr-2" />
                                                                 {t('viewSummary')}
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => navigate(`/teacher/student-responses/${student.id}`)}>
+                                                            <DropdownMenuItem onClick={() => navigate(`/teacher/student-responses/${student.id}?lang=${lang}`)}>
                                                                 <ClipboardList className="w-4 h-4 mr-2" />
                                                                 {t('viewResponses')}
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => navigate(`/teacher/student-roadmap/${student.id}`)}>
+                                                            <DropdownMenuItem onClick={() => navigate(`/teacher/student-roadmap/${student.id}?lang=${lang}`)}>
                                                                 <Map className="w-4 h-4 mr-2" />
                                                                 {t('viewCareerRoadmap')}
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => navigate(`/teacher/student-interests/${student.id}`)}>
+                                                            <DropdownMenuItem onClick={() => navigate(`/teacher/student-interests/${student.id}?lang=${lang}`)}>
                                                                 <Heart className="w-4 h-4 mr-2" />
                                                                 {t('viewInterests')}
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => navigate(`/teacher/student-profile-card/${student.id}`)}>
+                                                            <DropdownMenuItem onClick={() => navigate(`/teacher/student-profile-card/${student.id}?lang=${lang}`)}>
                                                                 <Compass className="w-4 h-4 mr-2" />
                                                                 {t('viewProfileCard')}
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem
-                                                                className="text-red-600"
-                                                                onClick={() => onUnenroll(student)}
-                                                            >
-                                                                {t('unenroll')}
-                                                            </DropdownMenuItem>
+                                                            {student.enrollment_status === 'inactive' ? (
+                                                                <DropdownMenuItem
+                                                                    className="text-green-600 font-medium"
+                                                                    onClick={() => onReactivate(student)}
+                                                                >
+                                                                    {t('reactivate')}
+                                                                </DropdownMenuItem>
+                                                            ) : (
+                                                                <DropdownMenuItem
+                                                                    className="text-red-600"
+                                                                    onClick={() => onUnenroll(student)}
+                                                                >
+                                                                    {t('unenroll')}
+                                                                </DropdownMenuItem>
+                                                            )}
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>
                                                 </div>

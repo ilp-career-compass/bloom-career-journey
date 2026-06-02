@@ -1,4 +1,4 @@
-﻿import { logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 import { useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useAuth } from '@/hooks/useAuth';
@@ -10,6 +10,8 @@ import { User, Calendar, CheckCircle, AlertCircle, Eye, Volume2, FileText } from
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ProfileCardModulesPanel from '@/components/teacher/ProfileCardModulesPanel';
+import { useSearchParams } from 'react-router-dom';
+import { useLang } from '@/hooks/useLang';
 
 interface Student {
   id: string;
@@ -17,6 +19,7 @@ interface Student {
   full_name: string;
   class_name: string;
   assessment_count: number;
+  assessments?: Array<{ assessment_type: string; review_status: string }>;
 }
 
 interface Assessment {
@@ -36,10 +39,56 @@ interface StudentAssessmentReviewProps {
 export default function StudentAssessmentReview({ onReviewUpdate }: StudentAssessmentReviewProps) {
   const { userProfile } = useAuth();
   const { toast } = useToast();
+  const { lang } = useLang();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const reviewFilter = searchParams.get('reviewFilter') || 'all';
+
+  const handleFilterChange = (newFilter: string) => {
+    setSearchParams(prev => {
+      if (newFilter === 'all') {
+        prev.delete('reviewFilter');
+      } else {
+        prev.set('reviewFilter', newFilter);
+      }
+      return prev;
+    });
+  };
+
   const [loading, setLoading] = useState(true);
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
+
+  const filteredStudentsList = students.filter(student => {
+    if (reviewFilter === 'all') return true;
+    if (!student.assessments) return false;
+    
+    if (reviewFilter === 'unreviewed') {
+      return student.assessments.some(a => a.review_status === 'unreviewed');
+    }
+    if (reviewFilter === 'needs_attention') {
+      return student.assessments.some(a => a.review_status === 'needs_revision' || a.review_status === 'flagged');
+    }
+    if (reviewFilter === 'reviewed') {
+      return student.assessments.some(a => a.review_status === 'reviewed');
+    }
+    return true;
+  });
+
+  const filteredAssessmentsList = assessments.filter(assessment => {
+    if (reviewFilter === 'all') return true;
+    const status = assessment.review_status || 'unreviewed';
+    if (reviewFilter === 'unreviewed') {
+      return status === 'unreviewed';
+    }
+    if (reviewFilter === 'needs_attention') {
+      return status === 'needs_revision' || status === 'flagged';
+    }
+    if (reviewFilter === 'reviewed') {
+      return status === 'reviewed';
+    }
+    return true;
+  });
   const [loadingAssessments, setLoadingAssessments] = useState(false);
   const [expandedAssessment, setExpandedAssessment] = useState<string | null>(null);
   const [inspirationQuestions, setInspirationQuestions] = useState<any[]>([]);
@@ -433,6 +482,21 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
           : assessment
       ));
 
+      // Update local students list assessments status for reactive updates
+      setStudents(prevStudents => prevStudents.map(s => {
+        if (s.id === selectedStudent?.id) {
+          const updatedAssessments = s.assessments?.map(a => {
+            const match = assessments.find(as => as.id === assessmentId);
+            if (match && a.assessment_type === match.assessment_type) {
+              return { ...a, review_status: status };
+            }
+            return a;
+          });
+          return { ...s, assessments: updatedAssessments };
+        }
+        return s;
+      }));
+
       toast({
         title: "Status Updated",
         description: `Assessment marked as ${status.replace('_', ' ')}`,
@@ -493,7 +557,7 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
           // Get all assessments for this student
           const { data: assessments } = await supabase
             .from('assessment_responses')
-            .select('assessment_type')
+            .select('assessment_type, review_status')
             .eq('student_id', student.id);
 
           // Count unique assessment types
@@ -504,7 +568,11 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
             user_id: student.user_id,
             full_name: student.users?.full_name || 'Unknown',
             class_name: student.classes?.name || 'No class',
-            assessment_count: uniqueTypes.size
+            assessment_count: uniqueTypes.size,
+            assessments: (assessments || []).map(a => ({
+              assessment_type: a.assessment_type,
+              review_status: a.review_status || 'unreviewed'
+            }))
           };
         })
       );
@@ -642,7 +710,7 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
 
   const countNonEmptyResponses = (responses: any): number => {
     if (!responses || typeof responses !== 'object') return 0;
-    return Object.values(responses).reduce((count: number, value: any) => {
+    return (Object.values(responses) as any[]).reduce((count: number, value: any) => {
       if (typeof value === 'string') {
         return value.trim() ? count + 1 : count;
       }
@@ -1786,7 +1854,9 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Loading students...</div>
+        <div className="text-gray-500">
+          {lang === 'kn' ? 'ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...' : lang === 'ta' ? 'மாணவர்களை ஏற்றுகிறது...' : lang === 'hi' ? 'छात्रों को लोड किया जा रहा है...' : 'Loading students...'}
+        </div>
       </div>
     );
   }
@@ -1799,17 +1869,39 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <User className="w-5 h-5" />
-              Students ({students.length})
+              {lang === 'kn' ? `ವಿದ್ಯಾರ್ಥಿಗಳು (${filteredStudentsList.length})` : lang === 'ta' ? `மாணவர்கள் (${filteredStudentsList.length})` : lang === 'hi' ? `छात्र (${filteredStudentsList.length})` : `Students (${filteredStudentsList.length})`}
             </CardTitle>
-            <CardDescription>Click on a student to view their assessments</CardDescription>
+            <CardDescription>
+              {lang === 'kn' ? 'ಮೌಲ್ಯಮಾಪನಗಳನ್ನು ವೀಕ್ಷಿಸಲು ವಿದ್ಯಾರ್ಥಿಯ ಮೇಲೆ ಕ್ಲಿಕ್ ಮಾಡಿ' : lang === 'ta' ? 'மதிப்பீடுகளை காண மாணவர் மீது கிளிக் செய்யவும்' : lang === 'hi' ? 'मूल्यांकन देखने के लिए छात्र पर क्लिक करें' : 'Click on a student to view their assessments'}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            {students.length === 0 ? (
+            <div className="flex flex-wrap gap-1.5 p-1.5 bg-gray-50 border rounded-lg mb-4">
+              {[
+                { id: 'all',              label: lang === 'kn' ? 'ಎಲ್ಲಾ'          : lang === 'ta' ? 'அனைத்தும்'     : lang === 'hi' ? 'सभी'              : 'All',             color: 'hover:bg-gray-200 text-gray-700',  activeColor: 'bg-white text-gray-900 border shadow-sm font-semibold' },
+                { id: 'unreviewed',       label: lang === 'kn' ? 'ನಿರೀಕ್ಷಿಸಲಾಗುತ್ತಿದೆ' : lang === 'ta' ? 'நிலுவையில்'    : lang === 'hi' ? 'प्रतीक्षित'       : 'Awaiting',        color: 'hover:bg-blue-50 text-blue-600',   activeColor: 'bg-blue-100 text-blue-800 font-semibold' },
+                { id: 'needs_attention',  label: lang === 'kn' ? 'ಗಮನ ಬೇಕಿದೆ'    : lang === 'ta' ? 'கவனம் தேவை'   : lang === 'hi' ? 'ध्यान आवश्यक'    : 'Needs Attention', color: 'hover:bg-amber-50 text-amber-600', activeColor: 'bg-amber-100 text-amber-800 font-semibold' },
+                { id: 'reviewed',         label: lang === 'kn' ? 'ಪರಿಶೀಲಿಸಲಾಗಿದೆ' : lang === 'ta' ? 'மதிப்பாய்வு செய்யப்பட்டது' : lang === 'hi' ? 'समीक्षित'        : 'Reviewed',        color: 'hover:bg-green-50 text-green-600', activeColor: 'bg-green-100 text-green-800 font-semibold' },
+              ].map(pill => (
+                <button
+                  key={pill.id}
+                  onClick={() => handleFilterChange(pill.id)}
+                  className={`px-3 py-1 text-xs rounded-full transition-all flex-1 text-center whitespace-nowrap ${
+                    reviewFilter === pill.id ? pill.activeColor : `bg-transparent ${pill.color}`
+                  }`}
+                >
+                  {pill.label}
+                </button>
+              ))}
+            </div>
+            {filteredStudentsList.length === 0 ? (
               <div className="text-sm text-gray-500 py-4 text-center">
-                No students assigned to you yet
+                {reviewFilter === 'all'
+                  ? (lang === 'kn' ? 'ಇನ್ನೂ ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು ನಿಯೋಜಿಸಲಾಗಿಲ್ಲ' : lang === 'ta' ? 'இன்னும் மாணவர்கள் ஒதுக்கப்படவில்லை' : lang === 'hi' ? 'अभी तक कोई छात्र नियुक्त नहीं किया गया' : 'No students assigned to you yet')
+                  : (lang === 'kn' ? 'ಫಿಲ್ಟರ್‌ಗೆ ಹೊಂದಿಕೆಯಾಗುವ ವಿದ್ಯಾರ್ಥಿಗಳಿಲ್ಲ' : lang === 'ta' ? 'வடிகட்டலுக்கு பொருந்தும் மாணவர்கள் இல்லை' : lang === 'hi' ? 'फ़िल्टर से मेल खाने वाले छात्र नहीं हैं' : 'No students matching filter')}
               </div>
             ) : (
-              students.map((student) => (
+              filteredStudentsList.map((student) => (
                 <div
                   key={student.id}
                   onClick={() => handleStudentClick(student)}
@@ -1858,14 +1950,14 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
                 <TabsContent value="assessments">
               {loadingAssessments ? (
                 <div className="text-center py-8 text-gray-500">Loading assessments...</div>
-              ) : assessments.length === 0 ? (
+              ) : filteredAssessmentsList.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <AlertCircle className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                  <p>This student hasn't completed any assessments yet</p>
+                  <p>{assessments.length === 0 ? "This student hasn't completed any assessments yet" : "No assessments match the selected filter"}</p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {assessments.map((assessment) => (
+                  {filteredAssessmentsList.map((assessment) => (
                     <div key={assessment.id} className="border rounded-lg overflow-hidden">
                       <div
                         className="p-4 bg-gray-50 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
@@ -1941,28 +2033,30 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
                           <div className="mt-4 flex gap-2">
                             <Button
                               size="sm"
-                              className="bg-green-600 hover:bg-green-700"
+                              className={assessment.review_status === 'reviewed' ? "bg-green-100 text-green-800 border border-green-200 cursor-default hover:bg-green-100" : "bg-green-600 hover:bg-green-700"}
                               onClick={() => updateReviewStatus(assessment.id, 'reviewed')}
-                              disabled={updatingStatus === assessment.id}
+                              disabled={updatingStatus === assessment.id || assessment.review_status === 'reviewed'}
                             >
                               <CheckCircle className="w-4 h-4 mr-1" />
-                              {updatingStatus === assessment.id ? 'Updating...' : 'Mark as Reviewed'}
+                              {updatingStatus === assessment.id ? 'Updating...' : assessment.review_status === 'reviewed' ? 'Reviewed' : 'Mark as Reviewed'}
                             </Button>
                             <Button
                               size="sm"
-                              variant="outline"
+                              variant={assessment.review_status === 'needs_revision' ? "secondary" : "outline"}
+                              className={assessment.review_status === 'needs_revision' ? "bg-orange-100 text-orange-800 border border-orange-200 cursor-default hover:bg-orange-100" : ""}
                               onClick={() => updateReviewStatus(assessment.id, 'needs_revision')}
-                              disabled={updatingStatus === assessment.id}
+                              disabled={updatingStatus === assessment.id || assessment.review_status === 'needs_revision'}
                             >
-                              Needs Revision
+                              {assessment.review_status === 'needs_revision' ? 'Revision Requested' : 'Needs Revision'}
                             </Button>
                             <Button
                               size="sm"
-                              variant="outline"
+                              variant={assessment.review_status === 'flagged' ? "secondary" : "outline"}
+                              className={assessment.review_status === 'flagged' ? "bg-red-100 text-red-800 border border-red-200 cursor-default hover:bg-red-100" : ""}
                               onClick={() => updateReviewStatus(assessment.id, 'flagged')}
-                              disabled={updatingStatus === assessment.id}
+                              disabled={updatingStatus === assessment.id || assessment.review_status === 'flagged'}
                             >
-                              Flag for Follow-up
+                              {assessment.review_status === 'flagged' ? 'Flagged' : 'Flag for Follow-up'}
                             </Button>
                           </div>
                         </div>

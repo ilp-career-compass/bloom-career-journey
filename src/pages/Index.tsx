@@ -1,4 +1,4 @@
-﻿import { logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 import { useAuth } from '@/hooks/useAuth';
 import { Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -51,9 +51,10 @@ const Index = () => {
 
   // Redirect authenticated users to their appropriate dashboard
   if (user && userProfile && !loading) {
-    const redirectPath = userProfile.role === 'admin' ? '/admin'
-      : userProfile.role === 'teacher' ? '/teacher'
-        : `/student?lang=${userProfile.preferred_language || 'en'}`;
+    const activeLang = (typeof window !== 'undefined' ? localStorage.getItem('lang') : null) || userProfile.preferred_language || 'en';
+    const redirectPath = userProfile.role === 'admin' ? `/admin?lang=${activeLang}`
+      : userProfile.role === 'teacher' ? `/teacher?lang=${activeLang}`
+        : `/student?lang=${activeLang}`;
     logger.log('Redirecting to:', redirectPath);
     return <Navigate to={redirectPath} replace />;
   }

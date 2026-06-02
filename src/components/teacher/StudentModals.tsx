@@ -48,6 +48,7 @@ interface AddStudentModalProps {
     newStudent: { fullName: string; phone: string; grade: string; preferredLanguage?: string };
     setNewStudent: React.Dispatch<React.SetStateAction<{ fullName: string; phone: string; grade: string; stateId?: string; preferredLanguage?: string }>>;
     onSubmit: () => void;
+    t?: (k: string) => string;
 }
 
 function isValidPhone(phone: string): boolean {
@@ -55,7 +56,7 @@ function isValidPhone(phone: string): boolean {
     return /^\+91\d{10}$/.test(phone) || /^\d{10}$/.test(phone);
 }
 
-export function AddStudentModal({ open, onOpenChange, newStudent, setNewStudent, onSubmit }: AddStudentModalProps) {
+export function AddStudentModal({ open, onOpenChange, newStudent, setNewStudent, onSubmit, t }: AddStudentModalProps) {
     const phoneError = newStudent.phone && !isValidPhone(newStudent.phone)
         ? 'Please enter a 10-digit mobile number'
         : '';
@@ -73,6 +74,9 @@ export function AddStudentModal({ open, onOpenChange, newStudent, setNewStudent,
                 <div className="space-y-6 py-4">
                     <div className="space-y-4">
                         <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Student Information</h3>
+                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800 mb-4">
+                            <span className="font-semibold">Notice:</span> {t ? t('temporaryPassword') : 'Temporary password for new student accounts:'} <strong className="font-bold text-blue-900">temporary123</strong>
+                        </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="fullName">Full Name *</Label>

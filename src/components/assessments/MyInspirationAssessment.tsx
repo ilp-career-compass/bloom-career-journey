@@ -1,5 +1,6 @@
 import { logger } from '@/lib/logger';
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { validateResponses } from '@/utils/englishValidation';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -29,6 +30,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLang } from '@/hooks/useLang';
 import { fetchTranslations } from '@/services/translationService';
+import { geminiTranslationService } from '@/services/geminiTranslationService';
+import { useRef } from 'react';
+
 import { safeObjectEntries, handleDatabaseError, validateApiResponse } from '@/utils/errorHandler';
 import { AudioRecorder } from '@/components/ui/AudioRecorder';
 
@@ -245,6 +249,33 @@ export default function MyInspirationAssessment() {
   const [submitting, setSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [saving, setSaving] = useState(false);
+  const isTranslatingRef = useRef(false);
+
+  // Reactively translate responses when language changes
+  useEffect(() => {
+    const translateActiveResponses = async () => {
+      // Check if responses have content before translating
+      const hasContent = Object.values(responses).some(videoObj => 
+        videoObj && typeof videoObj === 'object' && Object.values(videoObj).some(val => typeof val === 'string' && val.trim().length > 0)
+      );
+      if (!hasContent) return;
+
+      try {
+        isTranslatingRef.current = true;
+        const translated = await geminiTranslationService.translateStructure(responses, lang);
+        setResponses(translated);
+      } catch (err) {
+        logger.error('Failed to reactively translate inspiration responses:', err);
+      } finally {
+        setTimeout(() => {
+          isTranslatingRef.current = false;
+        }, 1000);
+      }
+    };
+
+    translateActiveResponses();
+  }, [lang]);
+
   const [videoProgress, setVideoProgress] = useState<VideoProgress[]>([]);
   const [helpOpen, setHelpOpen] = useState<Record<string, boolean>>({});
   const navigate = useNavigate();
@@ -549,7 +580,7 @@ export default function MyInspirationAssessment() {
 
   // Auto-save draft on changes (debounced)
   useEffect(() => {
-    if (loading || isCompleted || dataLoading) return;
+    if (loading || isCompleted || dataLoading || isTranslatingRef.current) return;
     const t = setTimeout(async () => {
       try {
         if (!userProfile?.id) return;
@@ -1070,6 +1101,15 @@ export default function MyInspirationAssessment() {
       return;
     }
 
+    if (!validateResponses(responses)) {
+      toast({
+        title: lang === 'kn' ? 'ಉಳಿಸಲು ವಿಫಲವಾಗಿದೆ' : lang === 'ta' ? 'சேமிக்க இயலவில்லை' : lang === 'hi' ? 'सहेजने में विफल' : 'Validation Error',
+        description: "Answers should be entered only in English.",
+        variant: 'destructive'
+      });
+      return;
+    }
+
     // Resolve student_id from students table; do not fallback to users.id
     let studentId = userProfile.studentProfile?.id as string | undefined;
     if (!studentId) {
@@ -1208,6 +1248,15 @@ export default function MyInspirationAssessment() {
 
   const saveSummaryProgress = async () => {
     if (readOnlyView || !userProfile) return;
+
+    if (!validateResponses(responses)) {
+      toast({
+        title: lang === 'kn' ? 'ಉಳಿಸಲು ವಿಫಲವಾಗಿದೆ' : lang === 'ta' ? 'சேமிக்க இயலவில்லை' : lang === 'hi' ? 'सहेजने में विफल' : 'Validation Error',
+        description: "Answers should be entered only in English.",
+        variant: 'destructive'
+      });
+      return;
+    }
     let studentId = userProfile.studentProfile?.id as string | undefined;
     if (!studentId) {
       const { data: studentRow } = await supabase.from('students').select('id').eq('user_id', userProfile.id).maybeSingle();
@@ -1246,6 +1295,15 @@ export default function MyInspirationAssessment() {
 
   const submitAssessment = async () => {
     if (readOnlyView) return;
+
+    if (!validateResponses(responses)) {
+      toast({
+        title: lang === 'kn' ? 'ಉಳಿಸಲು ವಿಫಲವಾಗಿದೆ' : lang === 'ta' ? 'சேமிக்க இயலவில்லை' : lang === 'hi' ? 'सहेजने में विफल' : 'Validation Error',
+        description: "Answers should be entered only in English.",
+        variant: 'destructive'
+      });
+      return;
+    }
     if (!userProfile) {
       toast({
         title: t('errorSavingVideoProgress'),

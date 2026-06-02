@@ -1,4 +1,4 @@
-﻿import { logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -184,11 +184,15 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
         setMeta({
           mobile: (userProfile as any).mobile || null,
           state:
-            studentRes.data?.classes?.states?.state_name ||
-            teacherRes.data?.states?.state_name ||
+            (Array.isArray((studentRes.data as any)?.classes?.states)
+              ? (studentRes.data as any)?.classes?.states[0]?.state_name
+              : (studentRes.data as any)?.classes?.states?.state_name) ||
+            (Array.isArray((teacherRes.data as any)?.states)
+              ? (teacherRes.data as any)?.states[0]?.state_name
+              : (teacherRes.data as any)?.states?.state_name) ||
             (userStateRes.data as any)?.states?.state_name ||
             '',
-          className: studentRes.data?.classes?.name || teacherRes.data?.classes?.name || '',
+          className: (studentRes.data as any)?.classes?.name || (teacherRes.data as any)?.classes?.name || '',
           teacherName: (studentRes.data as any)?.teachers?.users?.full_name || '',
         });
       } catch (e) {
@@ -297,7 +301,7 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
         }
       }
 
-      toast({ title: PD[lang].profileUpdated, description: PD[lang].profileUpdatedDesc });
+      toast({ title: PD[selectedLang].profileUpdated, description: PD[selectedLang].profileUpdatedDesc });
 
       // Refresh user profile so userProfile.preferred_language is up-to-date
       // (must happen before setLang so derivedLang in LangProvider doesn't revert it)
@@ -314,9 +318,9 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
       logger.error('Profile save error:', err);
       const rawMessage = (err && err.message ? String(err.message) : '').toLowerCase();
       const description = rawMessage.includes('avatars') && rawMessage.includes('bucket')
-        ? PD[lang].avatarBucketError
-        : PD[lang].updateFailedDesc;
-      toast({ title: PD[lang].updateFailed, description, variant: 'destructive' });
+        ? PD[selectedLang].avatarBucketError
+        : PD[selectedLang].updateFailedDesc;
+      toast({ title: PD[selectedLang].updateFailed, description, variant: 'destructive' });
     } finally {
       setSaving(false);
     }
@@ -324,60 +328,60 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto w-[95vw] md:w-full" lang={lang} dir="auto">
+      <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto w-[95vw] md:w-full" lang={selectedLang} dir="auto">
         <DialogHeader>
-          <DialogTitle>{PD[lang].profileTitle}</DialogTitle>
-          <DialogDescription>{PD[lang].profileDesc}</DialogDescription>
+          <DialogTitle>{PD[selectedLang].profileTitle}</DialogTitle>
+          <DialogDescription>{PD[selectedLang].profileDesc}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div>
-            <Label>{PD[lang].labelFullName}</Label>
-            <Input lang={lang} value={fullName} onChange={(e) => setFullName(e.target.value)} />
+            <Label>{PD[selectedLang].labelFullName}</Label>
+            <Input lang={selectedLang} value={fullName} onChange={(e) => setFullName(e.target.value)} />
           </div>
           <div>
-            <Label>{PD[lang].labelPhoneEmail}</Label>
+            <Label>{PD[selectedLang].labelPhoneEmail}</Label>
             <Input value={contactLabel} disabled />
           </div>
           <div>
-            <Label>{PD[lang].labelGender}</Label>
+            <Label>{PD[selectedLang].labelGender}</Label>
             <Select value={gender} onValueChange={(v: any) => setGender(v)}>
-              <SelectTrigger><SelectValue placeholder={PD[lang].selectGender} /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder={PD[selectedLang].selectGender} /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="male">{PD[lang].genderMale}</SelectItem>
-                <SelectItem value="female">{PD[lang].genderFemale}</SelectItem>
+                <SelectItem value="male">{PD[selectedLang].genderMale}</SelectItem>
+                <SelectItem value="female">{PD[selectedLang].genderFemale}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <Label>{PD[lang].labelState}</Label>
+              <Label>{PD[selectedLang].labelState}</Label>
               <Input value={meta?.state || ''} disabled />
             </div>
             <div>
-              <Label>{PD[lang].labelSchool}</Label>
-              <Input lang={lang} value={school} onChange={(e) => setSchool(e.target.value)} placeholder={PD[lang].placeholderSchool} />
+              <Label>{PD[selectedLang].labelSchool}</Label>
+              <Input lang={selectedLang} value={school} onChange={(e) => setSchool(e.target.value)} placeholder={PD[selectedLang].placeholderSchool} />
             </div>
           </div>
           {!isTeacher && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <Label>{PD[lang].labelTeacher}</Label>
+                <Label>{PD[selectedLang].labelTeacher}</Label>
                 <Input value={meta?.teacherName || ''} disabled />
               </div>
               <div>
-                <Label>{PD[lang].labelClass}</Label>
+                <Label>{PD[selectedLang].labelClass}</Label>
                 <Input value={meta?.className || ''} disabled />
               </div>
             </div>
           )}
           {!isTeacher && (
             <div>
-              <Label>{PD[lang].labelAspiration}</Label>
-              <Input lang={lang} value={goal} onChange={(e) => setGoal(e.target.value)} placeholder={PD[lang].placeholderAspiration} />
+              <Label>{PD[selectedLang].labelAspiration}</Label>
+              <Input lang={selectedLang} value={goal} onChange={(e) => setGoal(e.target.value)} placeholder={PD[selectedLang].placeholderAspiration} />
             </div>
           )}
           <div>
-            <Label>{PD[lang].labelPreferredLang}</Label>
+            <Label>{PD[selectedLang].labelPreferredLang}</Label>
             <Select value={selectedLang} onValueChange={(v: 'en' | 'kn' | 'ta' | 'hi') => setSelectedLang(v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -389,19 +393,19 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
             </Select>
           </div>
           <div>
-            <Label>{PD[lang].labelProfilePicture}</Label>
+            <Label>{PD[selectedLang].labelProfilePicture}</Label>
             <Input type="file" accept="image/*" onChange={(e) => setAvatarFile(e.target.files?.[0] || null)} />
           </div>
           <div>
-            <Label>{PD[lang].labelChangePassword}</Label>
-            <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={PD[lang].placeholderNewPassword} />
+            <Label>{PD[selectedLang].labelChangePassword}</Label>
+            <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={PD[selectedLang].placeholderNewPassword} />
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>
-              {PD[lang].btnClose}
+              {PD[selectedLang].btnClose}
             </Button>
             <Button className="bg-green-600 hover:bg-green-700" onClick={saveProfile} disabled={saving}>
-              {saving ? PD[lang].btnSaving : PD[lang].btnSave}
+              {saving ? PD[selectedLang].btnSaving : PD[selectedLang].btnSave}
             </Button>
           </div>
         </div>

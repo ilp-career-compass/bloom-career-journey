@@ -1,5 +1,6 @@
 import { logger } from '@/lib/logger';
 import { useState, useEffect, useMemo } from 'react';
+import { validateResponses } from '@/utils/englishValidation';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -31,6 +32,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLang } from '@/hooks/useLang';
 import { fetchTranslations } from '@/services/translationService';
+import { geminiTranslationService } from '@/services/geminiTranslationService';
+import { useRef } from 'react';
+
 
 import { checkAssessmentUnlock } from '@/utils/assessmentUnlock';
 
@@ -98,6 +102,29 @@ export default function MyDreamsAssessment() {
   const [helpOpen, setHelpOpen] = useState<Record<string, boolean>>({});
   const toggleHelp = (k: string) => setHelpOpen(prev => ({ ...prev, [k]: !prev[k] }));
   const [saving, setSaving] = useState(false);
+  const isTranslatingRef = useRef(false);
+
+  // Reactively translate responses when language changes
+  useEffect(() => {
+    const translateActiveResponses = async () => {
+      const hasContent = Object.values(responses).some(val => typeof val === 'string' && val.trim().length > 0);
+      if (!hasContent) return;
+
+      try {
+        isTranslatingRef.current = true;
+        const translated = await geminiTranslationService.translateStructure(responses, lang);
+        setResponses(translated);
+      } catch (err) {
+        logger.error('Failed to reactively translate dreams responses:', err);
+      } finally {
+        setTimeout(() => {
+          isTranslatingRef.current = false;
+        }, 1000);
+      }
+    };
+
+    translateActiveResponses();
+  }, [lang]);
 
   // Summary questions state
   const [summaryQuestions, setSummaryQuestions] = useState<DreamSummaryQuestion[]>(getDreamSummaryFallback('en'));
@@ -107,6 +134,15 @@ export default function MyDreamsAssessment() {
 
   const saveProgress = async () => {
     if (isReadOnly) return;
+
+    if (!validateResponses(responses)) {
+      toast({
+        title: lang === 'kn' ? 'ಉಳಿಸಲು ವಿಫಲವಾಗಿದೆ' : lang === 'ta' ? 'சேமிக்க இயலவில்லை' : lang === 'hi' ? 'सहेजने में विफल' : 'Validation Error',
+        description: "Answers should be entered only in English.",
+        variant: 'destructive'
+      });
+      return;
+    }
 
     const answeredSummary = visibleSummaryQuestions.filter((question) => {
       const value = responses[question.id] || '';
@@ -428,7 +464,7 @@ export default function MyDreamsAssessment() {
 
   // Auto-save draft when responses change (debounced)
   useEffect(() => {
-    if (loading || isReadOnly) return;
+    if (loading || isReadOnly || isTranslatingRef.current) return;
     const t = setTimeout(async () => {
       try {
         if (!userProfile?.id) return;
@@ -616,6 +652,14 @@ export default function MyDreamsAssessment() {
 
   const submitAssessment = async () => {
     if (isReadOnly) return;
+    if (!validateResponses(responses)) {
+      toast({
+        title: lang === 'kn' ? 'ಉಳಿಸಲು ವಿಫಲವಾಗಿದೆ' : lang === 'ta' ? 'சேமிக்க இயலவில்லை' : lang === 'hi' ? 'सहेजने में विफल' : 'Validation Error',
+        description: "Answers should be entered only in English.",
+        variant: 'destructive'
+      });
+      return;
+    }
     if (!canSubmit()) {
       toast({
         title: lang === 'kn' ? 'ಸಾರಾಂಶ ಇನ್ನೂ ಪೂರ್ಣಗೊಂಡಿಲ್ಲ' : lang === 'ta' ? 'சுருக்கம் இன்னும் முடிக்கப்படவில்லை' : lang === 'hi' ? 'सारांश अब तक पूरा नहीं हुआ' : 'Summary not completed yet',

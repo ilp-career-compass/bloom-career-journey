@@ -69,18 +69,20 @@ export default function StudentDashboard() {
     setCcLoading(true);
     try {
       const history = ccMessages.slice(-20).map(m => ({ id: m.id, role: m.role, text: m.text }));
-      const response = await aiChatService.sendMessage(history, content);
+      const response = await aiChatService.sendMessage(history, content, resolvedLang);
       if (response.success && response.text) {
         setCcMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'model', text: response.text! }]);
       } else {
         throw new Error(response.error || 'Unknown error');
       }
-    } catch {
+    } catch (err: any) {
+      logger.error('CareerChat Send Error:', err);
+      const errMsg = err?.message || 'Unknown connection error';
       const errorText =
-        resolvedLang === 'kn' ? 'ಸದ್ಯ ಸಂಪರ್ಕಿಸಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.' :
-        resolvedLang === 'ta' ? 'இப்போது இணைக்க முடியவில்லை. தயவு செய்து மீண்டும் முயற்சிக்கவும்.' :
-        resolvedLang === 'hi' ? 'अभी जुड़ने में समस्या है। कृपया बाद में पुनः प्रयास करें।' :
-        'Having trouble connecting right now. Please try again later.';
+        resolvedLang === 'kn' ? `ಸದ್ಯ ಸಂಪರ್ಕಿಸಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ. (${errMsg}) ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.` :
+        resolvedLang === 'ta' ? `இப்போது இணைக்க முடியவில்லை. (${errMsg}) தயவு செய்து மீண்டும் முயற்சிக்கவும்.` :
+        resolvedLang === 'hi' ? `अभी जुड़ने में समस्या है। (${errMsg}) कृपया बाद में पुनः प्रयास करें।` :
+        `Having trouble connecting right now. (${errMsg}) Please try again later.`;
       setCcMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'model', text: errorText }]);
     } finally { setCcLoading(false); }
   };

@@ -1,5 +1,6 @@
-﻿import { logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { validateResponses } from '@/utils/englishValidation';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -219,6 +220,15 @@ export default function CareerGuidanceToolsAssessment() {
   };
 
   const submitAssessment = async () => {
+    if (!validateResponses(responses)) {
+      toast({
+        title: lang === 'kn' ? 'ದೋಷ' : lang === 'ta' ? 'பிழை' : 'Validation Error',
+        description: "Answers should be entered only in English.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!userProfile) {
       toast({
         title: "Error",

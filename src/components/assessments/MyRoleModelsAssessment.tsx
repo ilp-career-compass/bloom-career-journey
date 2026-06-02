@@ -1,5 +1,6 @@
 import { logger } from '@/lib/logger';
 import { useState, useEffect } from 'react';
+import { validateResponses } from '@/utils/englishValidation';
 import { fetchTranslations } from '@/services/translationService';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -31,6 +32,9 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLang } from '@/hooks/useLang';
+import { geminiTranslationService } from '@/services/geminiTranslationService';
+import { useRef } from 'react';
+
 
 import { checkAssessmentUnlock } from '@/utils/assessmentUnlock';
 
@@ -109,6 +113,35 @@ export default function MyRoleModelsAssessment() {
     question12: '',
     question13: ''
   });
+  const isTranslatingRef = useRef(false);
+
+  // Reactively translate responses when language changes
+  useEffect(() => {
+    const translateActiveResponses = async () => {
+      // Check if responses have content before translating
+      const hasContent = Object.values(responses).some(val => {
+        if (typeof val === 'string') return val.trim().length > 0;
+        if (val && typeof val === 'object') return Object.values(val).some(innerVal => typeof innerVal === 'string' && innerVal.trim().length > 0);
+        return false;
+      });
+      if (!hasContent) return;
+
+      try {
+        isTranslatingRef.current = true;
+        const translated = await geminiTranslationService.translateStructure(responses, lang);
+        setResponses(translated);
+      } catch (err) {
+        logger.error('Failed to reactively translate role models responses:', err);
+      } finally {
+        setTimeout(() => {
+          isTranslatingRef.current = false;
+        }, 1000);
+      }
+    };
+
+    translateActiveResponses();
+  }, [lang]);
+
   const [helpText, setHelpText] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -259,7 +292,7 @@ export default function MyRoleModelsAssessment() {
 
   // Auto-save drafts on changes (debounced)
   useEffect(() => {
-    if (loading || isCompleted || readOnlyView) return;
+    if (loading || isCompleted || readOnlyView || isTranslatingRef.current) return;
     const t = setTimeout(async () => {
       try {
         if (!userProfile?.id) return;
@@ -346,6 +379,15 @@ export default function MyRoleModelsAssessment() {
 
   const saveProgress = async () => {
     if (!userProfile) return;
+
+    if (!validateResponses(responses)) {
+      toast({
+        title: lang === 'kn' ? 'ಉಳಿಸಲು ವಿಫಲವಾಗಿದೆ' : lang === 'ta' ? 'சேமிக்க இயலவில்லை' : lang === 'hi' ? 'सहेजने में विफल' : 'Validation Error',
+        description: "Answers should be entered only in English.",
+        variant: 'destructive'
+      });
+      return;
+    }
     // Resolve student_id from students table; do not fallback to users.id
     let studentId = userProfile.studentProfile?.id as string | undefined;
     if (!studentId) {
@@ -475,6 +517,15 @@ export default function MyRoleModelsAssessment() {
   };
 
   const submitAssessment = async () => {
+    if (!validateResponses(responses)) {
+      toast({
+        title: lang === 'kn' ? 'ಉಳಿಸಲು ವಿಫಲವಾಗಿದೆ' : lang === 'ta' ? 'சேமிக்க இயலவில்லை' : lang === 'hi' ? 'सहेजने में विफल' : 'Validation Error',
+        description: "Answers should be entered only in English.",
+        variant: 'destructive'
+      });
+      return;
+    }
+
     if (!userProfile) {
       toast({
         title: lang === 'kn' ? 'ದೋಷ' : lang === 'ta' ? 'பிழை' : lang === 'hi' ? 'त्रुटि' : 'Error',

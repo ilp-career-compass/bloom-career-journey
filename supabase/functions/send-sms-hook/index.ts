@@ -1,4 +1,6 @@
-Deno.serve(async (req) => {
+declare const Deno: any;
+
+Deno.serve(async (req: Request) => {
   // Only accept POST
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
@@ -76,7 +78,10 @@ Deno.serve(async (req) => {
     }
 
     // --- MSG91 credentials check ---
-    const authKey = Deno.env.get('MSG91_AUTH_KEY')
+    let authKey = Deno.env.get('MSG91_AUTH_KEY')
+    if (authKey) {
+      authKey = authKey.trim().replace(/^["']|["']$/g, '')
+    }
     // If MSG91 is live but the webhook secret is absent, any unsigned POST would trigger real SMS.
     // Refuse rather than silently send from an unprotected endpoint.
     if (authKey && !hookSecret) {

@@ -22,7 +22,7 @@ export default function HollandTest() {
               className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-2 sm:px-4"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              {lang === 'kn' ? 'ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ಗೆ ಹಿಂತಿರುಗಿ' : lang === 'ta' ? 'முதல் பக்கத்திற்கு திரும்பு' : 'Back to Dashboard'}
+              {lang === 'kn' ? 'ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ಗೆ ಹಿಂತಿರುಗಿ' : lang === 'ta' ? 'முதல் பக்கத்திற்கு திரும்பு' : lang === 'hi' ? 'डैशबोर्ड पर वापस जाएं' : 'Back to Dashboard'}
             </Button>
           </div>
           <div className="text-center flex-1">
@@ -31,21 +31,27 @@ export default function HollandTest() {
                 ? '🧭 ಮಾನಸಿಕ ಪರೀಕ್ಷೆಗಳು – ಹಾಲೆಂಡ್ ಕೋಡ್ ಅಸೆಸ್ಮೆಂಟ್'
                 : lang === 'ta'
                   ? '🧭 மனப்பாங்கு சோதனை – ஹால்லண்ட் கோட் மதிப்பீடு'
-                  : '🧭 Psychometric Tests – Holland Code Assessment'}
+                  : lang === 'hi'
+                    ? '🧭 मनोवैज्ञानिक परीक्षण - हॉलैंड कोड मूल्यांकन'
+                    : '🧭 Psychometric Tests – Holland Code Assessment'}
             </h1>
             <p className="text-blue-600 text-lg">
               {lang === 'kn'
-                ? 'ನಿಮ್ಮ ಹಾಲೆಂಡ್ ಕೋಡ್ פרೊಫೈಲ್ ಅನ್ನು ಕಂಡುಹಿಡಿಯಲು ಎಲ್ಲಾ ಪ್ರಶ್ನೆಗಳಿಗೆ ಪ್ರಾಮಾಣಿಕವಾಗಿ ಉತ್ತರಿಸಿ.'
+                ? 'ನಿಮ್ಮ ಹಾಲೆಂಡ್ ಕೋಡ್ ಪ್ರೊಫೈಲ್ ಅನ್ನು ಕಂಡುಹಿಡಿಯಲು ಎಲ್ಲಾ ಪ್ರಶ್ನೆಗಳಿಗೆ ಪ್ರಾಮಾಣಿಕವಾಗಿ ಉತ್ತರಿಸಿ.'
                 : lang === 'ta'
                   ? 'உங்கள் ஹால்லண்ட் கோட் (RIASEC) வகையை அறிய, எல்லா கேள்விகளுக்கும் நியாயமாக, உண்மையாக பதில் சொல்லுங்கள்.'
-                  : 'Answer all questions honestly to discover your Holland Code profile.'}
+                  : lang === 'hi'
+                    ? 'अपने हॉलैंड कोड प्रोफ़ाइल को जानने के लिए सभी प्रश्नों के उत्तर ईमानदारी से दें।'
+                    : 'Answer all questions honestly to discover your Holland Code profile.'}
             </p>
             <p className="text-gray-600 mt-2">
               {lang === 'kn'
                 ? 'ನಿಮ್ಮ RIASEC ಪ್ರಕಾರವನ್ನು ಬಹಿರಂಗಪಡಿಸಲು ಪ್ರತಿ ಗುಂಪಿನಲ್ಲಿ ನೀವು ಆನಂದಿಸುವ ಚಟುವಟಿಕೆಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ.'
                 : lang === 'ta'
                   ? 'ஒவ்வொரு குழுவிலும் உங்களுக்கு பிடித்த செயல்பாடுகளைத் தேர்வு செய்யுங்கள். அதன் அடிப்படையில் உங்கள் RIASEC வகை தெரிய வரும்.'
-                  : 'Select activities you enjoy across each group to reveal your RIASEC type.'}
+                  : lang === 'hi'
+                    ? 'अपने RIASEC प्रकार को जानने के लिए प्रत्येक समूह में उन गतिविधियों का चयन करें जिनका आप आनंद लेते हैं।'
+                    : 'Select activities you enjoy across each group to reveal your RIASEC type.'}
             </p>
           </div>
           <div className="w-20"></div>
@@ -57,12 +63,16 @@ export default function HollandTest() {
                 ? 'ಹಾಲೆಂಡ್ ಕೋಡ್ ಉಳಿಸಲಾಗಿದೆ'
                 : lang === 'ta'
                   ? 'ஹால்லண்ட் கோட் சேமிக்கப்பட்டது'
-                  : 'Holland Code Saved',
+                  : lang === 'hi'
+                    ? 'हॉलैंड कोड सहेजा गया'
+                    : 'Holland Code Saved',
               description: lang === 'kn'
                 ? `ನಿಮ್ಮ ಕೋಡ್: ${code}`
                 : lang === 'ta'
                   ? `உங்கள் கோட்: ${code}`
-                  : `Your code: ${code}`,
+                  : lang === 'hi'
+                    ? `आपका कोड: ${code}`
+                    : `Your code: ${code}`,
             })
           }
         />

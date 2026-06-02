@@ -1,4 +1,4 @@
-﻿import { logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 import { useAuth } from '@/hooks/useAuth';
 import { Navigate, useLocation } from 'react-router-dom';
 import { LoaderCircle } from 'lucide-react';
@@ -65,10 +65,10 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
       logger.log('🔒 ProtectedRoute: Unknown role, redirecting to auth');
       return <Navigate to="/auth" state={{ from: location }} replace />;
     }
-    const lang = userProfile.preferred_language || 'en';
-    const redirectPath = userProfile.role === 'admin' ? `/admin?lang=${lang}`
-                        : userProfile.role === 'teacher' ? `/teacher?lang=${lang}`
-                        : `/student?lang=${lang}`;
+    const activeLang = (typeof window !== 'undefined' ? localStorage.getItem('lang') : null) || userProfile.preferred_language || 'en';
+    const redirectPath = userProfile.role === 'admin' ? `/admin?lang=${activeLang}`
+                        : userProfile.role === 'teacher' ? `/teacher?lang=${activeLang}`
+                        : `/student?lang=${activeLang}`;
     return <Navigate to={redirectPath} state={{ from: location }} replace />;
   }
 

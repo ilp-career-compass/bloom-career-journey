@@ -8,8 +8,9 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { GraduationCap } from 'lucide-react';
+import { GraduationCap, Check, X, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { FunctionsHttpError } from '@supabase/supabase-js';
 import { StateInfo } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import IlpFooter from '@/components/IlpFooter';
@@ -71,18 +72,139 @@ function sendOtpWithTimeout(
 }
 
 // Must match the expiry configured in the MSG91 widget dashboard (default: 15 min)
-const OTP_EXPIRY_SECONDS = 900;
+const OTP_EXPIRY_SECONDS = 60;
 
 function passwordStrength(pw: string): { label: string; color: string } {
   if (pw.length === 0) return { label: '', color: '' };
   if (pw.length < 6) return { label: 'Too short', color: 'text-red-500' };
-  const hasLetter = /[a-zA-Z]/.test(pw);
+
+  // 1. Complexity Criteria Checks
+  const hasUppercase = /[A-Z]/.test(pw);
+  const hasLowercase = /[a-z]/.test(pw);
   const hasDigit = /\d/.test(pw);
+  const hasSpecial = /[^A-Za-z0-9]/.test(pw);
+
+  // Variety score (0 to 4)
+  let varietyCount = 0;
+  if (hasUppercase) varietyCount++;
+  if (hasLowercase) varietyCount++;
+  if (hasDigit) varietyCount++;
+  if (hasSpecial) varietyCount++;
+
+  // 2. Predictable / Common Patterns Detection
   const isAllSame = pw.split('').every(c => c === pw[0]);
-  if (isAllSame || (!hasLetter && !hasDigit)) return { label: 'Weak', color: 'text-red-500' };
-  if (pw.length < 8 && hasLetter && hasDigit) return { label: 'Weak', color: 'text-red-500' };
-  if (pw.length >= 8 && hasLetter && hasDigit) return { label: 'Strong', color: 'text-green-600' };
-  return { label: 'Fair', color: 'text-yellow-600' };
+  
+  // Sequential characters of length 4 or more (e.g. "1234", "abcd", "dcba")
+  let hasLongSequence = false;
+  const lowerPw = pw.toLowerCase();
+  for (let i = 0; i < lowerPw.length - 3; i++) {
+    const c1 = lowerPw.charCodeAt(i);
+    const c2 = lowerPw.charCodeAt(i + 1);
+    const c3 = lowerPw.charCodeAt(i + 2);
+    const c4 = lowerPw.charCodeAt(i + 3);
+    if ((c2 === c1 + 1 && c3 === c2 + 1 && c4 === c3 + 1) ||
+        (c2 === c1 - 1 && c3 === c2 - 1 && c4 === c3 - 1)) {
+      hasLongSequence = true;
+      break;
+    }
+  }
+
+  // Common predictable passwords (case-insensitive)
+  const commonPasswords = [
+    'password', 'admin', '123456', '12345678', '123456789', 'welcome', 'qwerty', 
+    'pass123', 'p@ssword', 'letmein', 'password123', 'admin123'
+  ];
+  const isCommon = commonPasswords.some(common => lowerPw.includes(common));
+
+  // 3. Scoring & Threshold Conditions
+  // Under 8 characters is always Weak
+  if (pw.length < 8) {
+    return { label: 'Weak', color: 'text-red-500' };
+  }
+
+  // Identical characters, common passwords, or long sequences are always Weak
+  if (isAllSame || isCommon || hasLongSequence) {
+    return { label: 'Weak', color: 'text-red-500' };
+  }
+
+  // If variety is very low (only 1 category, or only 2 categories and length < 10)
+  if (varietyCount <= 1 || (varietyCount === 2 && pw.length < 10)) {
+    return { label: 'Weak', color: 'text-red-500' };
+  }
+
+  // Strong criteria:
+  // Must be at least 8 characters.
+  // Must satisfy at least 3 variety conditions AND must include both uppercase and lowercase,
+  // OR satisfy all 4 variety conditions.
+  // AND must not have major predictable structures.
+  const hasBothCases = hasUppercase && hasLowercase;
+  const isStrong = pw.length >= 8 && (
+    (varietyCount === 4) ||
+    (varietyCount === 3 && hasBothCases) ||
+    (varietyCount === 3 && pw.length >= 10)
+  );
+
+  if (isStrong) {
+    return { label: 'Strong', color: 'text-green-600' };
+  }
+
+  // Medium criteria: if it is not Weak and not Strong, it is Medium
+  return { label: 'Medium', color: 'text-amber-600' };
+}
+
+function PasswordStrengthWidget({ value }: { value: string }) {
+  if (!value) return <p className="text-xs text-muted-foreground mt-1">At least 6 characters (8+ recommended for strength)</p>;
+
+  const strength = passwordStrength(value);
+
+  const criteria = [
+    { id: 'length', label: 'At least 8 characters', met: value.length >= 8 },
+    { id: 'lowercase', label: 'One lowercase letter (a-z)', met: /[a-z]/.test(value) },
+    { id: 'uppercase', label: 'One uppercase letter (A-Z)', met: /[A-Z]/.test(value) },
+    { id: 'number', label: 'One number (0-9)', met: /\d/.test(value) },
+    { id: 'special', label: 'One special character (e.g. @, #, $, !)', met: /[^A-Za-z0-9]/.test(value) },
+  ];
+
+  return (
+    <div className="mt-2 p-3 bg-muted/30 border rounded-lg space-y-2.5 animate-in fade-in-50 duration-200">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-semibold text-foreground">Password Strength:</span>
+        <span className={`text-xs font-bold ${strength.color}`}>{strength.label}</span>
+      </div>
+
+      {/* Visual meter */}
+      <div className="flex gap-1.5">
+        <div className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
+          strength.label === 'Too short' || strength.label === 'Weak' ? 'bg-red-500' : 
+          strength.label === 'Medium' ? 'bg-amber-500' : 'bg-green-600'
+        }`} />
+        <div className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
+          strength.label === 'Too short' || strength.label === 'Weak' ? 'bg-gray-200' : 
+          strength.label === 'Medium' ? 'bg-amber-500' : 'bg-green-600'
+        }`} />
+        <div className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
+          strength.label === 'Too short' || strength.label === 'Weak' || strength.label === 'Medium' ? 'bg-gray-200' : 
+          'bg-green-600'
+        }`} />
+      </div>
+
+      {/* Criteria Checklist */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-1 border-t border-muted/50">
+        {criteria.map((item) => (
+          <div key={item.id} className="flex items-center gap-1.5">
+            {item.met ? (
+              <Check className="w-3.5 h-3.5 text-green-600 shrink-0" />
+            ) : (
+              <X className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0" />
+            )}
+            <span className={`text-[11px] transition-colors duration-200 ${item.met ? 'text-green-700 dark:text-green-400 font-medium' : 'text-muted-foreground'}`}>
+              {item.label}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 // Must match the OTP length configured in the MSG91 widget dashboard (set via VITE_MSG91_OTP_LENGTH)
 const OTP_LENGTH = Number(import.meta.env.VITE_MSG91_OTP_LENGTH) || 4;
@@ -157,13 +279,29 @@ function OtpScreen({
     inputRefs.current[Math.min(pasted.length, otpLength - 1)]?.focus();
   };
 
+  // Derived display state
+  const isExpired = timeLeft === 0;
+  const expiryPercent = Math.round((timeLeft / initialTimeLeft) * 100);
+  const expiryColor =
+    expiryPercent > 50 ? 'bg-green-500' :
+    expiryPercent > 20 ? 'bg-amber-500' :
+    'bg-red-500';
+  const expiryTextColor =
+    expiryPercent > 50 ? 'text-green-700' :
+    expiryPercent > 20 ? 'text-amber-700' :
+    'text-red-600';
+
   return (
-    <form onSubmit={onVerify} className="space-y-4">
-      <p className="text-sm text-muted-foreground">
+    <form onSubmit={onVerify} className="space-y-5">
+
+      {/* Phone hint */}
+      <p className="text-sm text-muted-foreground text-center">
         Enter the {otpLength}-digit OTP sent to{' '}
-        <span className="font-medium">{toE164Indian(phone)}</span>
+        <span className="font-semibold text-foreground">{toE164Indian(phone)}</span>
       </p>
-      <div className="flex justify-center gap-3">
+
+      {/* OTP digit inputs */}
+      <div className="flex justify-center gap-2 sm:gap-3">
         {Array.from({ length: otpLength }, (_, i) => (
           <input
             key={i}
@@ -177,20 +315,55 @@ function OtpScreen({
             onKeyDown={(e) => handleKeyDown(i, e)}
             onPaste={handlePaste}
             onFocus={(e) => e.target.select()}
-            className="w-12 h-12 text-center text-lg font-semibold border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
+            className="w-11 h-12 sm:w-12 sm:h-14 text-center text-xl font-bold border-2 border-input rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background transition-shadow"
           />
         ))}
       </div>
-      <p className="text-sm text-center text-muted-foreground">
-        {timeLeft > 0 ? (
-          <>OTP expires in <span className="font-medium text-foreground">{formatTime(timeLeft)}</span></>
-        ) : (
-          <span className="text-destructive font-medium">OTP expired. Please request a new one.</span>
-        )}
-      </p>
-      <Button type="submit" className="w-full" disabled={verifyLoading || otpValue.length < otpLength || timeLeft === 0}>
-        {verifyLoading ? 'Verifying...' : 'Verify OTP'}
+
+      {/* ── Timer section ─────────────────────────────────────── */}
+      <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 space-y-2.5">
+
+        {/* OTP Expiry */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              {/* clock icon */}
+              <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+              </svg>
+              OTP expires in
+            </span>
+            {isExpired ? (
+              <span className="text-red-600 font-semibold">Expired</span>
+            ) : (
+              <span className={`font-bold tabular-nums text-sm ${expiryTextColor}`}>{formatTime(timeLeft)}</span>
+            )}
+          </div>
+          {/* Progress bar */}
+          <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-1000 ${isExpired ? 'bg-red-500 w-0' : expiryColor}`}
+              style={{ width: `${expiryPercent}%` }}
+            />
+          </div>
+          {isExpired && (
+            <p className="text-xs text-red-600 font-medium text-center pt-0.5">
+              OTP has expired — please request a new one below.
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Verify button */}
+      <Button
+        type="submit"
+        className="w-full"
+        disabled={verifyLoading || otpValue.length < otpLength || isExpired}
+      >
+        {verifyLoading ? 'Verifying…' : 'Verify OTP'}
       </Button>
+
+      {/* Resend button */}
       <Button
         type="button"
         variant="outline"
@@ -198,8 +371,11 @@ function OtpScreen({
         onClick={onResend}
         disabled={verifyLoading || resendCooldown > 0}
       >
-        {resendCooldown > 0 ? `Resend OTP (${resendCooldown}s)` : 'Resend OTP'}
+        {resendCooldown > 0
+          ? `Resend OTP — available in ${resendCooldown}s`
+          : 'Resend OTP'}
       </Button>
+
       {onBack && (
         <Button
           type="button"
@@ -214,6 +390,7 @@ function OtpScreen({
     </form>
   );
 }
+
 
 export default function AuthPage() {
   logger.log('AuthPage: Component rendering');
@@ -291,6 +468,12 @@ export default function AuthPage() {
 
   const [signUpResendCooldown, setSignUpResendCooldown] = useState(0);
   const [firstLoginResendCooldown, setFirstLoginResendCooldown] = useState(0);
+
+  const [showSignInPassword, setShowSignInPassword] = useState(false);
+  const [showFirstLoginNewPassword, setShowFirstLoginNewPassword] = useState(false);
+  const [showFirstLoginConfirmPassword, setShowFirstLoginConfirmPassword] = useState(false);
+  const [showSignUpPassword, setShowSignUpPassword] = useState(false);
+  const [showSignUpConfirmPassword, setShowSignUpConfirmPassword] = useState(false);
   const signUpCooldownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const firstLoginCooldownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -339,20 +522,37 @@ export default function AuthPage() {
 
   // Load MSG91 OTP widget script and initialise with widget credentials
   useEffect(() => {
-    const widgetId = import.meta.env.VITE_MSG91_WIDGET_ID as string;
-    const tokenAuth = import.meta.env.VITE_MSG91_TOKEN_AUTH as string;
-    if (!widgetId || !tokenAuth) return;
+    const rawWidgetId = import.meta.env.VITE_MSG91_WIDGET_ID as string;
+    const rawTokenAuth = import.meta.env.VITE_MSG91_TOKEN_AUTH as string;
+    const widgetId = rawWidgetId?.trim().replace(/^["']|["']$/g, '');
+    const tokenAuth = rawTokenAuth?.trim().replace(/^["']|["']$/g, '');
+    if (!widgetId || !tokenAuth) {
+      logger.error('MSG91 credentials missing! widgetId:', !!widgetId, 'tokenAuth:', !!tokenAuth);
+      return;
+    }
 
     const doInit = () => {
-      if (!window.initSendOTP) return;
+      if (!window.initSendOTP) {
+        logger.error('window.initSendOTP not found during doInit');
+        return;
+      }
       try {
+        logger.log('Calling initSendOTP with cleaned credentials...', {
+          widgetIdLength: widgetId.length,
+          tokenAuthLength: tokenAuth.length,
+          widgetIdFirstChars: widgetId.slice(0, 4)
+        });
         window.initSendOTP({
           widgetId,
           tokenAuth,
           exposeMethods: true,
           captchaRenderId: '',        // G1: suppress the built-in MSG91 captcha/popup
-          success: (_data: unknown) => {},
-          failure: (_error: unknown) => {},
+          success: (data: unknown) => {
+            logger.log('MSG91 widget success callback triggered:', JSON.stringify(data));
+          },
+          failure: (error: unknown) => {
+            logger.error('MSG91 widget failure callback triggered:', JSON.stringify(error));
+          },
         });
       } catch (err) {
         logger.error('MSG91 initSendOTP threw:', err);
@@ -457,10 +657,10 @@ export default function AuthPage() {
   }, [user, userProfile]);
 
   if (user && userProfile) {
-    const lang = userProfile.preferred_language || 'en';
-    const redirectPath = userProfile.role === 'admin' ? `/admin?lang=${lang}`
-      : userProfile.role === 'teacher' ? `/teacher?lang=${lang}`
-        : `/student?lang=${lang}`;
+    const activeLang = (typeof window !== 'undefined' ? localStorage.getItem('lang') : null) || userProfile.preferred_language || 'en';
+    const redirectPath = userProfile.role === 'admin' ? `/admin?lang=${activeLang}`
+      : userProfile.role === 'teacher' ? `/teacher?lang=${activeLang}`
+        : `/student?lang=${activeLang}`;
     logger.log('AuthPage: Redirecting to:', redirectPath);
     return <Navigate to={redirectPath} replace />;
   }
@@ -628,7 +828,22 @@ export default function AuthPage() {
             });
 
             if (error || fnData?.error) {
-              const msg = fnData?.error || error?.message || 'Could not create account. Please try again.';
+              let msg = fnData?.error || 'Could not create account. Please try again.';
+              if (error) {
+                if (error instanceof FunctionsHttpError) {
+                  try {
+                    const body = await error.context.json();
+                    msg = body.error || msg;
+                  } catch {
+                    try {
+                      const text = await error.context.text();
+                      msg = text || msg;
+                    } catch {}
+                  }
+                } else {
+                  msg = error.message || msg;
+                }
+              }
               logger.error('Student sign up error:', msg);
               toast({ title: 'Sign Up Failed', description: msg, variant: 'destructive' });
               return;
@@ -661,8 +876,23 @@ export default function AuthPage() {
           console.log("create teacher")
 
           if (error || fnData?.error) {
-            console.log("error is ",error,fnData)
-            const msg = fnData?.error || error?.message || 'Could not create account. Please try again.';
+            console.log("error is ", error, fnData);
+            let msg = fnData?.error || 'Could not create account. Please try again.';
+            if (error) {
+              if (error instanceof FunctionsHttpError) {
+                try {
+                  const body = await error.context.json();
+                  msg = body.error || msg;
+                } catch {
+                  try {
+                    const text = await error.context.text();
+                    msg = text || msg;
+                  } catch {}
+                }
+              } else {
+                msg = error.message || msg;
+              }
+            }
             logger.error('Teacher sign up error:', msg);
             toast({ title: 'Sign Up Failed', description: msg, variant: 'destructive' });
             return;
@@ -811,7 +1041,22 @@ export default function AuthPage() {
     });
 
     if (error || data?.error) {
-      const msg = data?.error || error?.message || 'Could not set password. Please try again.';
+      let msg = data?.error || 'Could not set password. Please try again.';
+      if (error) {
+        if (error instanceof FunctionsHttpError) {
+          try {
+            const body = await error.context.json();
+            msg = body.error || msg;
+          } catch {
+            try {
+              const text = await error.context.text();
+              msg = text || msg;
+            } catch {}
+          }
+        } else {
+          msg = error.message || msg;
+        }
+      }
       logger.error('First login set-password error:', msg);
       toast({ title: 'Error', description: msg, variant: 'destructive' });
       setLoading(false);
@@ -873,15 +1118,29 @@ export default function AuthPage() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="signin-password">{t('password')}</Label>
-                      <Input
-                        id="signin-password"
-                        type="password"
-                        autoComplete="current-password"
-                        placeholder="Enter your password"
-                        value={signInForm.password}
-                        onChange={(e) => setSignInForm({ ...signInForm, password: e.target.value })}
-                        required
-                      />
+                      <div className="relative">
+                        <Input
+                          id="signin-password"
+                          type={showSignInPassword ? "text" : "password"}
+                          autoComplete="current-password"
+                          placeholder="Enter your password"
+                          value={signInForm.password}
+                          onChange={(e) => setSignInForm({ ...signInForm, password: e.target.value })}
+                          className="pr-10"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowSignInPassword(!showSignInPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
+                        >
+                          {showSignInPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
                     </div>
                     <Button type="submit" className="w-full" disabled={loading || signInLockCountdown > 0}>
                       {loading ? 'Signing In...' : signInLockCountdown > 0 ? `Too many attempts — wait ${signInLockCountdown}s` : t('signInBtn')}
@@ -966,34 +1225,57 @@ export default function AuthPage() {
                     </p>
                     <div className="space-y-2">
                       <Label htmlFor="firstlogin-newpassword">New Password</Label>
-                      <Input
-                        id="firstlogin-newpassword"
-                        type="password"
-                        autoComplete="new-password"
-                        minLength={6}
-                        placeholder="Create a password"
-                        value={firstLoginForm.newPassword}
-                        onChange={(e) => setFirstLoginForm({ ...firstLoginForm, newPassword: e.target.value })}
-                        required
-                      />
-                      {(() => {
-                        const { label, color } = passwordStrength(firstLoginForm.newPassword);
-                        return label
-                          ? <p className={`text-xs ${color}`}>{label}</p>
-                          : <p className="text-xs text-muted-foreground">At least 6 characters</p>;
-                      })()}
+                      <div className="relative">
+                        <Input
+                          id="firstlogin-newpassword"
+                          type={showFirstLoginNewPassword ? "text" : "password"}
+                          autoComplete="new-password"
+                          minLength={6}
+                          placeholder="Create a password"
+                          value={firstLoginForm.newPassword}
+                          onChange={(e) => setFirstLoginForm({ ...firstLoginForm, newPassword: e.target.value })}
+                          className="pr-10"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowFirstLoginNewPassword(!showFirstLoginNewPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
+                        >
+                          {showFirstLoginNewPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
+                      <PasswordStrengthWidget value={firstLoginForm.newPassword} />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="firstlogin-confirmpassword">Confirm Password</Label>
-                      <Input
-                        id="firstlogin-confirmpassword"
-                        type="password"
-                        autoComplete="new-password"
-                        placeholder="Confirm your password"
-                        value={firstLoginForm.confirmPassword}
-                        onChange={(e) => setFirstLoginForm({ ...firstLoginForm, confirmPassword: e.target.value })}
-                        required
-                      />
+                      <div className="relative">
+                        <Input
+                          id="firstlogin-confirmpassword"
+                          type={showFirstLoginConfirmPassword ? "text" : "password"}
+                          autoComplete="new-password"
+                          placeholder="Confirm your password"
+                          value={firstLoginForm.confirmPassword}
+                          onChange={(e) => setFirstLoginForm({ ...firstLoginForm, confirmPassword: e.target.value })}
+                          className="pr-10"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowFirstLoginConfirmPassword(!showFirstLoginConfirmPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
+                        >
+                          {showFirstLoginConfirmPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
                     </div>
                     <Button type="submit" className="w-full" disabled={loading}>
                       {loading ? 'Setting Password...' : 'Set Password & Login'}
@@ -1077,34 +1359,57 @@ export default function AuthPage() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="signup-password">{t('password')}</Label>
-                      <Input
-                        id="signup-password"
-                        type="password"
-                        autoComplete="new-password"
-                        minLength={6}
-                        placeholder={t('createPassword')}
-                        value={signUpForm.password}
-                        onChange={(e) => setSignUpForm({ ...signUpForm, password: e.target.value })}
-                        required
-                      />
-                      {(() => {
-                        const { label, color } = passwordStrength(signUpForm.password);
-                        return label
-                          ? <p className={`text-xs ${color}`}>{label}</p>
-                          : <p className="text-xs text-muted-foreground">At least 6 characters</p>;
-                      })()}
+                      <div className="relative">
+                        <Input
+                          id="signup-password"
+                          type={showSignUpPassword ? "text" : "password"}
+                          autoComplete="new-password"
+                          minLength={6}
+                          placeholder={t('createPassword')}
+                          value={signUpForm.password}
+                          onChange={(e) => setSignUpForm({ ...signUpForm, password: e.target.value })}
+                          className="pr-10"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowSignUpPassword(!showSignUpPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
+                        >
+                          {showSignUpPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
+                      <PasswordStrengthWidget value={signUpForm.password} />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="signup-confirm-password">Confirm Password</Label>
-                      <Input
-                        id="signup-confirm-password"
-                        type="password"
-                        autoComplete="new-password"
-                        placeholder="Re-enter your password"
-                        value={signUpForm.confirmPassword}
-                        onChange={(e) => setSignUpForm({ ...signUpForm, confirmPassword: e.target.value })}
-                        required
-                      />
+                      <div className="relative">
+                        <Input
+                          id="signup-confirm-password"
+                          type={showSignUpConfirmPassword ? "text" : "password"}
+                          autoComplete="new-password"
+                          placeholder="Re-enter your password"
+                          value={signUpForm.confirmPassword}
+                          onChange={(e) => setSignUpForm({ ...signUpForm, confirmPassword: e.target.value })}
+                          className="pr-10"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowSignUpConfirmPassword(!showSignUpConfirmPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
+                        >
+                          {showSignUpConfirmPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
                       {signUpForm.confirmPassword.length > 0 && signUpForm.password !== signUpForm.confirmPassword && (
                         <p className="text-xs text-red-500">Passwords do not match</p>
                       )}

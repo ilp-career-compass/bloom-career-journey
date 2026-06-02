@@ -34,6 +34,7 @@ const strings: Record<TeacherLang, Record<string, any>> = {
         viewInterests: 'View Interests',
         viewProfileCard: 'View Profile Card',
         unenroll: 'Unenroll',
+        reactivate: 'Reactivate',
     },
     kn: {
         brand: 'ವಿದ್ಯಾ ಸಾಥಿ',
@@ -68,6 +69,7 @@ const strings: Record<TeacherLang, Record<string, any>> = {
         viewInterests: 'ಆಸಕ್ತಿಗಳನ್ನು ನೋಡಿ',
         viewProfileCard: 'ಪ್ರೊಫೈಲ್ ಕಾರ್ಡ್ ನೋಡಿ',
         unenroll: 'ನೋಂದಣಿ ರದ್ದು',
+        reactivate: 'ಮರುಸಕ್ರಿಯಗೊಳಿಸು',
     },
     ta: {
         brand: 'வித்யா சாதி',
@@ -102,6 +104,7 @@ const strings: Record<TeacherLang, Record<string, any>> = {
         viewInterests: 'ஆர்வங்களை பார்க்க',
         viewProfileCard: 'சுயவிவர அட்டை பார்க்க',
         unenroll: 'பதிவு நீக்கம்',
+        reactivate: 'மீண்டும் செயல்படுத்து',
     },
     hi: {
         brand: 'विद्या साथी',
@@ -136,6 +139,7 @@ const strings: Record<TeacherLang, Record<string, any>> = {
         viewInterests: 'रुचियां देखें',
         viewProfileCard: 'प्रोफ़ाइल कार्ड देखें',
         unenroll: 'नामांकन रद्द करें',
+        reactivate: 'पुनः सक्रिय करें',
     },
 };
 

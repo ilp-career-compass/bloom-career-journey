@@ -1,5 +1,6 @@
 import { logger } from '@/lib/logger';
 import { useEffect, useMemo, useState } from 'react';
+import { validateResponses } from '@/utils/englishValidation';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -523,6 +524,16 @@ export default function AboutMeAssessment() {
     if (!userProfile) return;
     const studentId = await studentIdPromise;
     if (!studentId) return;
+    
+    if (!validateResponses(responses)) {
+      toast({
+        title: lang === 'kn' ? 'ಉಳಿಸಲು ವಿಫಲವಾಗಿದೆ' : lang === 'ta' ? 'சேமிக்க இயலவில்லை' : lang === 'hi' ? 'सहेजने में विफल' : 'Validation Error',
+        description: "Answers should be entered only in English.",
+        variant: 'destructive'
+      });
+      return;
+    }
+
     setSubmitting(true);
     try {
       const payload = {

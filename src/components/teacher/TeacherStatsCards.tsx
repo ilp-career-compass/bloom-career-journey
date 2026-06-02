@@ -14,7 +14,7 @@ interface TeacherStatsCardsProps {
     totalStudents: number;
     reviewOverview: ReviewOverview;
     pendingProfileCardMap: Record<string, number>;
-    onTabChange: (tab: string) => void;
+    onTabChange: (tab: string, filter?: string) => void;
 }
 
 export default function TeacherStatsCards({ totalStudents, reviewOverview, pendingProfileCardMap, onTabChange }: TeacherStatsCardsProps) {
@@ -30,8 +30,11 @@ export default function TeacherStatsCards({ totalStudents, reviewOverview, pendi
 
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-            {/* Total Students — not clickable */}
-            <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100">
+            {/* Total Students */}
+            <Card 
+                className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100 cursor-pointer hover:shadow-xl transition-shadow"
+                onClick={() => onTabChange('students')}
+            >
                 <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                         <div>
@@ -46,7 +49,7 @@ export default function TeacherStatsCards({ totalStudents, reviewOverview, pendi
             {/* Assessments Reviewed X/Y */}
             <Card
                 className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-green-100 cursor-pointer hover:shadow-xl transition-shadow"
-                onClick={() => onTabChange('reviews')}
+                onClick={() => onTabChange('reviews', 'reviewed')}
             >
                 <CardContent className="p-6">
                     <div className="flex items-center justify-between">
@@ -65,7 +68,7 @@ export default function TeacherStatsCards({ totalStudents, reviewOverview, pendi
             {/* Awaiting Review */}
             <Card
                 className="border-0 shadow-lg bg-gradient-to-br from-sky-50 to-sky-100 cursor-pointer hover:shadow-xl transition-shadow"
-                onClick={() => onTabChange('reviews')}
+                onClick={() => onTabChange('reviews', 'unreviewed')}
             >
                 <CardContent className="p-6">
                     <div className="flex items-center justify-between">
@@ -81,7 +84,7 @@ export default function TeacherStatsCards({ totalStudents, reviewOverview, pendi
             {/* Needs Attention (needs_revision + flagged) */}
             <Card
                 className={`border-0 shadow-lg cursor-pointer hover:shadow-xl transition-shadow ${needsAttention > 0 ? 'bg-gradient-to-br from-amber-50 to-amber-100' : 'bg-gradient-to-br from-gray-50 to-gray-100'}`}
-                onClick={() => onTabChange('reviews')}
+                onClick={() => onTabChange('reviews', 'needs_attention')}
             >
                 <CardContent className="p-6">
                     <div className="flex items-center justify-between">

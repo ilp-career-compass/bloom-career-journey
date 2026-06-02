@@ -1,4 +1,4 @@
-﻿import { logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 // SummaryViewDialog - Student view and edit component for approved summaries
 
@@ -34,6 +34,8 @@ import {
 } from '@/types/assessmentSummary';
 import { summaryDatabaseService } from '@/services/summaryDatabaseService';
 import { supabase } from '@/integrations/supabase/client';
+import { geminiTranslationService } from '@/services/geminiTranslationService';
+
 
 interface SummaryViewDialogProps {
   open: boolean;
@@ -56,6 +58,7 @@ export default function SummaryViewDialog({
   const { lang } = useLang();
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
   const isAboutMeAssessment = assessmentType === 'about_me';
   const isDreamsAssessment = assessmentType === 'dreams';
   const isSchoolLearningAssessment = assessmentType === 'school_learning';
@@ -222,11 +225,24 @@ export default function SummaryViewDialog({
     // 2. AND we are not currently in edit mode (to avoid overwriting student's unsaved changes)
     if (summary && open && !isEditing) {
       const displaySummary = getDisplaySummary(summary);
-      const newEditedSummary: any = { ...displaySummary };
-      setEditedSummary(newEditedSummary);
+      
+      const performTranslation = async () => {
+        setIsTranslating(true);
+        try {
+          const translatedSummary = await geminiTranslationService.translateStructure(displaySummary, lang);
+          setEditedSummary(translatedSummary);
+        } catch (err) {
+          logger.error('Failed to translate summary in dialog:', err);
+          setEditedSummary(displaySummary);
+        } finally {
+          setIsTranslating(false);
+        }
+      };
+
+      performTranslation();
       logger.log('📝 SummaryViewDialog: Loaded/Updated summary content because not in edit mode');
     }
-  }, [summary, open, isEditing]);
+  }, [summary, open, isEditing, lang]);
 
   const handleDialogOpenChange = (newOpen: boolean) => {
     if (!newOpen && isEditing) {
@@ -523,6 +539,12 @@ export default function SummaryViewDialog({
         </DialogHeader>
 
         <div className="space-y-6 mt-4">
+          {isTranslating && (
+            <div className="bg-blue-50 text-blue-700 px-4 py-2 border border-blue-200 rounded-md text-sm flex items-center gap-2 animate-pulse mb-4 justify-center">
+              <Sparkles className="h-4 w-4 animate-spin text-purple-600" />
+              <span>Translating summary to {lang === 'kn' ? 'ಕನ್ನಡ' : lang === 'ta' ? 'தமிழ்' : lang === 'hi' ? 'हिंदी' : 'English'}...</span>
+            </div>
+          )}
           {/* Revision request banner — shown when teacher has asked student to revise */}
           {summary.approval_status === 'revision_requested' && (
             <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">

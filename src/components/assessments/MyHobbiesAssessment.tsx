@@ -1,5 +1,6 @@
 import { logger } from '@/lib/logger';
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { validateResponses } from '@/utils/englishValidation';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -34,6 +35,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLang } from '@/hooks/useLang';
 import { fetchTranslations } from '@/services/translationService';
+import { geminiTranslationService } from '@/services/geminiTranslationService';
+
 
 import { checkAssessmentUnlock } from '@/utils/assessmentUnlock';
 
@@ -67,6 +70,27 @@ export default function MyHobbiesAssessment() {
   const [savingSection, setSavingSection] = useState<string | null>(null);
   const autoSaveErrorRef = useRef(false);
   const isDirtyRef = useRef(false);
+
+  // Reactively translate responses when language changes
+  useEffect(() => {
+    const translateActiveResponses = async () => {
+      // Check if responses have content before translating
+      const hasContent = Object.values(responses).some(val => typeof val === 'string' && val.trim().length > 0);
+      if (!hasContent) return;
+
+      try {
+        const translated = await geminiTranslationService.translateStructure(responses, lang);
+        // Temporarily disable isDirtyRef during state update to prevent auto-save
+        isDirtyRef.current = false;
+        setResponses(translated);
+      } catch (err) {
+        logger.error('Failed to reactively translate hobbies responses:', err);
+      }
+    };
+
+    translateActiveResponses();
+  }, [lang]);
+
   const toggleHelp = (k: string) => setHelpOpen(prev => ({ ...prev, [k]: !prev[k] }));
   const [searchParams] = useSearchParams();
   const viewParam = (searchParams.get('readonly') || searchParams.get('view') || '').toLowerCase();
@@ -138,6 +162,14 @@ export default function MyHobbiesAssessment() {
   const [dbTitle, setDbTitle] = useState<string>('');
   const [dbIntro, setDbIntro] = useState<string>('');
 
+  const normalizeBrokenText = (value: string) => {
+    if (!value) return value;
+    return value
+      .replace(/\bfi\s+nd\b/gi, 'find')
+      .replace(/\u00A0/g, ' ')
+      .replace(/[ \t]{2,}/g, ' ');
+  };
+
   // Fetch module content (title, intro)
   useEffect(() => {
     const fetchModuleContent = async () => {
@@ -152,8 +184,8 @@ export default function MyHobbiesAssessment() {
         if (data) {
           const tTitle = data.find(i => i.resource_key === 'title')?.text;
           const tIntro = data.find(i => i.resource_key === 'intro')?.text;
-          if (tTitle) setDbTitle(tTitle);
-          if (tIntro) setDbIntro(tIntro);
+          if (tTitle) setDbTitle(normalizeBrokenText(tTitle));
+          if (tIntro) setDbIntro(normalizeBrokenText(tIntro));
         }
       } catch (e) {
         logger.error('Error fetching module content:', e);
@@ -311,6 +343,15 @@ export default function MyHobbiesAssessment() {
   // Save section function
   const saveSection = async (section: string) => {
     if (isReadOnly || !userProfile) return;
+
+    if (!validateResponses(responses)) {
+      toast({
+        title: lang === 'kn' ? 'ಉಳಿಸಲು ವಿಫಲವಾಗಿದೆ' : lang === 'ta' ? 'சேமிக்க இயலவில்லை' : lang === 'hi' ? 'सहेजने में विफल' : 'Validation Error',
+        description: "Answers should be entered only in English.",
+        variant: 'destructive'
+      });
+      return;
+    }
 
     const studentId = await getStudentId();
     if (!studentId) {
@@ -518,6 +559,14 @@ export default function MyHobbiesAssessment() {
 
   const submitAssessment = async () => {
     if (isReadOnly) return;
+    if (!validateResponses(responses)) {
+      toast({
+        title: lang === 'kn' ? 'ಉಳಿಸಲು ವಿಫಲವಾಗಿದೆ' : lang === 'ta' ? 'சேமிக்க இயலவில்லை' : lang === 'hi' ? 'सहेजने में विफल' : 'Validation Error',
+        description: "Answers should be entered only in English.",
+        variant: 'destructive'
+      });
+      return;
+    }
     if (!userProfile) {
       toast({
         title: lang === 'kn' ? 'ದೋಷ' : lang === 'ta' ? 'பிழை' : lang === 'hi' ? 'त्रुटि' : 'Error',
@@ -727,9 +776,17 @@ export default function MyHobbiesAssessment() {
           </h1>
 
           {/* Description Text */}
-          <div className="max-w-3xl mx-auto space-y-4 text-gray-700 mt-4">
-            <p className="text-base leading-relaxed whitespace-pre-wrap">
-              {dbIntro || (lang === 'kn'
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 text-left text-gray-700 mt-4">
+            <p
+              className="text-base leading-relaxed whitespace-pre-wrap break-normal hyphens-auto text-left"
+              style={{
+                wordBreak: 'normal',
+                overflowWrap: 'normal',
+                letterSpacing: 'normal',
+                wordSpacing: 'normal'
+              }}
+            >
+              {normalizeBrokenText(dbIntro) || (lang === 'kn'
                 ? 'ಈ ಅಭ್ಯಾಸ ಭಾಗದಲ್ಲಿ, ನಿಮ್ಮ ಆಸಕ್ತಿಗಳು, ಹವ್ಯಾಸಗಳು ಮತ್ತು ನಿಮಗೆ ಸಂತೋಷ ನೀಡುವ ಚಟುವಟಿಕೆಗಳನ್ನು ಅನ್ವೇಷಿಸುತ್ತೇವೆ. ನಿಮ್ಮ ಹವ್ಯಾಸಗಳನ್ನು ಆಳವಾಗಿ ನೋಡಿದಾಗ, ಸಂತೋಷದ ಜೊತೆಗೆ ನಿಮ್ಮ ಕಲಿಕೆಯ ಶೈಲಿ ಮತ್ತು ಭವಿಷ್ಯದ ವೃತ್ತಿ ಸಾಧ್ಯತೆಗಳನ್ನು ಸಹ ಗುರುತಿಸಬಹುದು.'
                 : lang === 'ta'
                   ? 'இந்த பயிற்சி பகுதியில், உங்களுக்கு மகிழ்ச்சி தரும் உங்கள் ஆர்வங்கள், பொழுதுபோக்குகள் மற்றும் செயல்பாடுகளை ஆராய்கிறோம். உங்கள் பொழுதுபோக்குகள் மற்றும் ஆர்வங்களை ஆழமாக ஆராய்வதன் மூலம், நீங்கள் மகிழ்ச்சியையும், உங்கள் தனிப்பட்ட கற்றல் முறையையும், உங்களுக்கு பொருந்தும் தொழில் வாய்ப்புகளையும் கண்டறிய முடியும்.'

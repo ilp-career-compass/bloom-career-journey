@@ -21,7 +21,9 @@ function isValidE164(phone: string): boolean {
   return /^\+\d{10,15}$/.test(phone)
 }
 
-Deno.serve(async (req) => {
+declare const Deno: any;
+
+Deno.serve(async (req: Request) => {
   const corsHeaders = getCorsHeaders(req)
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -74,7 +76,10 @@ Deno.serve(async (req) => {
     }
 
     // 2. Validate MSG91 OTP token server-side (enforced when MSG91_AUTH_KEY is configured)
-    const msg91AuthKey = Deno.env.get('MSG91_AUTH_KEY')
+    let msg91AuthKey = Deno.env.get('MSG91_AUTH_KEY')
+    if (msg91AuthKey) {
+      msg91AuthKey = msg91AuthKey.trim().replace(/^["']|["']$/g, '')
+    }
     if (!msg91AuthKey) {
       console.warn('[create-teacher] MSG91_AUTH_KEY not configured — OTP verification bypassed')
     }
@@ -160,10 +165,12 @@ Deno.serve(async (req) => {
       // 4. Insert into public.users
       const VALID_LANGUAGES = ['en', 'kn', 'ta', 'hi']
       const lang = VALID_LANGUAGES.includes(preferredLanguage) ? preferredLanguage : 'en'
+      const email = `${phone.replace(/\+/g, '')}@internal.app`
       const { error: userError } = await supabaseAdmin.from('users').insert({
         id: authUserId,
         full_name: fullName.trim(),
         mobile: phone,
+        email: email,
         role: 'teacher',
         state_id: stateId,
         preferred_language: lang,

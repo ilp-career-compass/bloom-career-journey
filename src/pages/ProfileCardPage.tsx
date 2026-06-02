@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useLang } from '@/hooks/useLang';
 import { supabase } from '@/integrations/supabase/client';
 import { aiSummaryService } from '@/services/aiSummaryService';
+import { geminiTranslationService } from '@/services/geminiTranslationService';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -71,14 +72,102 @@ const SECTIONS_COMPLETE: Record<string, (n: number) => string> = {
   hi: (n) => `6 में से ${n} मॉड्यूल स्वीकृत`,
 };
 
+const PCP_DICT: Record<string, Record<string, string>> = {
+  en: {
+    approve: 'Approve',
+    requestChanges: 'Request Changes',
+    cancel: 'Cancel',
+    submitFeedback: 'Submit Feedback',
+    submitting: 'Submitting...',
+    teacherFeedback: 'Teacher feedback:',
+    provideFeedbackDesc: 'Provide feedback for the student on what to improve.',
+    rejectionPlaceholder: 'e.g. Please provide more specific answers...',
+    studentPendingReview: 'Your profile card is being reviewed by your teacher.',
+    careerPendingReview: 'Your career direction is being reviewed by your teacher.',
+    approvedBadge: 'Approved',
+    pendingBadge: 'Pending Review',
+    changesRequested: 'Changes Requested',
+    regenerating: 'Regenerating...',
+    toastModuleApproved: 'Module approved',
+    toastApprovalFailed: 'Approval failed',
+    toastMaxFeedback: 'Maximum feedback rounds reached — please approve or discuss with student directly',
+    toastFeedbackSubmitted: 'Feedback submitted — regenerating keywords with your input...',
+    toastRejectionFailed: 'Rejection failed',
+  },
+  kn: {
+    approve: 'ಅನುಮೋದಿಸಿ',
+    requestChanges: 'ಬದಲಾವಣೆಗಳನ್ನು ಕೋರಿ',
+    cancel: 'ರದ್ದುಗೊಳಿಸಿ',
+    submitFeedback: 'ಪ್ರತಿಕ್ರಿಯೆ ಸಲ್ಲಿಸಿ',
+    submitting: 'ಸಲ್ಲಿಸಲಾಗುತ್ತಿದೆ...',
+    teacherFeedback: 'ಶಿಕ್ಷಕರ ಪ್ರತಿಕ್ರಿಯೆ:',
+    provideFeedbackDesc: 'ವಿದ್ಯಾರ್ಥಿಗೆ ಸುಧಾರಿಸಲು ಪ್ರತಿಕ್ರಿಯೆ ನೀಡಿ.',
+    rejectionPlaceholder: 'ಉದಾ: ದಯವಿಟ್ಟು ಹೆಚ್ಚು ನಿರ್ದಿಷ್ಟವಾದ ಉತ್ತರಗಳನ್ನು ನೀಡಿ...',
+    studentPendingReview: 'ನಿಮ್ಮ ಪ್ರೊಫೈಲ್ ಕಾರ್ಡ್ ಅನ್ನು ನಿಮ್ಮ ಶಿಕ್ಷಕರು ಪರಿಶೀಲಿಸುತ್ತಿದ್ದಾರೆ.',
+    careerPendingReview: 'ನಿಮ್ಮ ವೃತ್ತಿಜೀವನದ ದಿಕ್ಕನ್ನು ನಿಮ್ಮ ಶಿಕ್ಷಕರು ಪರಿಶೀಲಿಸುತ್ತಿದ್ದಾರೆ.',
+    approvedBadge: 'ಅನುಮೋದಿಸಲಾಗಿದೆ',
+    pendingBadge: 'ಪರಿಶೀಲನೆ ಬಾಕಿ ಇದೆ',
+    changesRequested: 'ಬದಲಾವಣೆಗಳನ್ನು ಕೋರಲಾಗಿದೆ',
+    regenerating: 'ಮರುಉತ್ಪಾದಿಸಲಾಗುತ್ತಿದೆ...',
+    toastModuleApproved: 'ಮಾಡ್ಯೂಲ್ ಅನುಮೋದಿಸಲಾಗಿದೆ',
+    toastApprovalFailed: 'ಅನುಮೋದನೆ ವಿಫಲವಾಗಿದೆ',
+    toastMaxFeedback: 'ಗರಿಷ್ಠ ಪ್ರತಿಕ್ರಿಯೆ ಸುತ್ತುಗಳನ್ನು ತಲುಪಲಾಗಿದೆ — ದಯವಿಟ್ಟು ನೇರವಾಗಿ ವಿದ್ಯಾರ್ಥಿಯೊಂದಿಗೆ ಚರ್ಚಿಸಿ',
+    toastFeedbackSubmitted: 'ಪ್ರತಿಕ್ರಿಯೆ ಸಲ್ಲಿಸಲಾಗಿದೆ — ನಿಮ್ಮ ಇನ್‌ಪುಟ್‌ನೊಂದಿಗೆ ಕೀವರ್ಡ್‌ಗಳನ್ನು ಮರುಉತ್ಪಾದಿಸಲಾಗುತ್ತಿದೆ...',
+    toastRejectionFailed: 'ಪ್ರತಿಕ್ರಿಯೆ ಸಲ್ಲಿಕೆ ವಿಫಲವಾಗಿದೆ',
+  },
+  ta: {
+    approve: 'அங்கீகரி',
+    requestChanges: 'திருத்தங்கள் தேவை',
+    cancel: 'ரத்து செய்',
+    submitFeedback: 'கருத்தை சமர்ப்பிக்கவும்',
+    submitting: 'சமர்ப்பிக்கிறது...',
+    teacherFeedback: 'ஆசிரியர் கருத்து:',
+    provideFeedbackDesc: 'மாணவர் எதை மேம்படுத்த வேண்டும் என்பதற்கான கருத்தை வழங்கவும்.',
+    rejectionPlaceholder: 'உதாரணம்: தயவுசெய்து இன்னும் தெளிவான பதில்களை வழங்கவும்...',
+    studentPendingReview: 'உங்கள் சுயவிவர அட்டை உங்கள் ஆசிரியரால் மதிப்பாய்வு செய்யப்படுகிறது.',
+    careerPendingReview: 'உங்கள் தொழில் திசை உங்கள் ஆசிரியரால் மதிப்பாய்வு செய்யப்படுகிறது.',
+    approvedBadge: 'அங்கீகரிக்கப்பட்டது',
+    pendingBadge: 'மதிப்பாய்வில் உள்ளது',
+    changesRequested: 'மாற்றங்கள் கோரப்பட்டுள்ளன',
+    regenerating: 'மீண்டும் உருவாக்கப்படுகிறது...',
+    toastModuleApproved: 'தொகுதி அங்கீகரிக்கப்பட்டது',
+    toastApprovalFailed: 'அங்கீகரிப்பு தோல்வியடைந்தது',
+    toastMaxFeedback: 'அதிகபட்ச கருத்துச் சுற்றுகள் எட்டப்பட்டுள்ளன — தயவுசெய்து நேரடியாக மாணவருடன் கலந்துரையாடவும்',
+    toastFeedbackSubmitted: 'கருத்து சமர்ப்பிக்கப்பட்டது — உங்கள் உள்ளீட்டுடன் முக்கிய வார்த்தைகள் மீண்டும் உருவாக்கப்படுகின்றன...',
+    toastRejectionFailed: 'கருத்து சமர்ப்பிப்பு தோல்வி அடைந்தது',
+  },
+  hi: {
+    approve: 'अनुमोदित करें',
+    requestChanges: 'बदलाव का अनुरोध करें',
+    cancel: 'रद्द करें',
+    submitFeedback: 'फीडबैक सबमिट करें',
+    submitting: 'सबमिट हो रहा है...',
+    teacherFeedback: 'शिक्षक फीडबैक:',
+    provideFeedbackDesc: 'छात्र को सुधार के लिए फीडबैक दें।',
+    rejectionPlaceholder: 'उदा. कृपया अधिक विशिष्ट उत्तर प्रदान करें...',
+    studentPendingReview: 'आपके प्रोफाइल कार्ड की समीक्षा आपके शिक्षक द्वारा की जा रही है।',
+    careerPendingReview: 'आपकी career दिशा की समीक्षा आपके शिक्षक द्वारा की जा रही है।',
+    approvedBadge: 'अनुमोदित',
+    pendingBadge: 'समीक्षा के लिए लंबित',
+    changesRequested: 'बदलाव का अनुरोध किया गया',
+    regenerating: 'पुनरुत्पादित हो रहा है...',
+    toastModuleApproved: 'मॉड्यूल अनुमोदित',
+    toastApprovalFailed: 'अनुमोदन विफल',
+    toastMaxFeedback: 'अधिकतम फीडबैक सीमा समाप्त — कृपया सीधे छात्र से चर्चा करें',
+    toastFeedbackSubmitted: 'फीडबैक सबमिट किया गया — आपके इनपुट के साथ कीवर्ड फिर से तैयार हो रहे हैं...',
+    toastRejectionFailed: 'अस्वीकृति विफल',
+  },
+};
+
 type ProfileCardAnswers = Record<string, string>;
 type ProfileCardQuestionLabels = { key: string; label: string }[];
 
 interface ProfileCardPageProps {
   readOnly?: boolean;
+  studentIdOverride?: string;
 }
 
-export default function ProfileCardPage({ readOnly }: ProfileCardPageProps) {
+export default function ProfileCardPage({ readOnly, studentIdOverride }: ProfileCardPageProps) {
   const navigate = useNavigate();
   const { user, userProfile } = useAuth();
   const { lang: currentLang } = useLang();
@@ -87,10 +176,11 @@ export default function ProfileCardPage({ readOnly }: ProfileCardPageProps) {
   // assessment_responses.student_id → students(id)
   // profile_card_cache.student_id → users(id)
   // These are different FKs, so we need separate IDs for each table.
-  const studentId = params.studentId || userProfile?.studentProfile?.id || '';
+  const studentId = studentIdOverride || params.studentId || userProfile?.studentProfile?.id || '';
   const userId = user?.id || '';
   const lang = (currentLang || 'en') as 'en' | 'kn' | 'ta' | 'hi';
   const { t } = useStudentStrings(lang);
+  const pcp = PCP_DICT[lang] || PCP_DICT.en;
 
   // cacheUserId is the users.id used for all profile_card_cache operations.
   // Student view: userId (= user?.id = users.id) is available directly.
@@ -142,11 +232,11 @@ export default function ProfileCardPage({ readOnly }: ProfileCardPageProps) {
       }
       setCacheUserId(resolvedCacheUserId);
 
-      const responseMap: Record<string, { responses: any; updated_at: string } | null> = {};
+      const responseMap: Record<string, { responses: any; updated_at: string; review_status?: string } | null> = {};
       for (const mod of MODULES) {
         const { data: resp } = await supabase
           .from('assessment_responses')
-          .select('responses, updated_at')
+          .select('responses, updated_at, review_status')
           .eq('student_id', studentId)
           .eq('assessment_type', mod.assessmentType)
           .not('completed_at', 'is', null)
@@ -154,9 +244,9 @@ export default function ProfileCardPage({ readOnly }: ProfileCardPageProps) {
           .limit(1)
           .maybeSingle();
 
-        responseMap[mod.key] = resp ? { responses: resp.responses, updated_at: resp.updated_at } : null;
+        responseMap[mod.key] = resp ? { responses: resp.responses, updated_at: resp.updated_at, review_status: resp.review_status } : null;
       }
-      setCompletedModules(responseMap);
+      setCompletedModules(responseMap as any);
 
       // Fetch cached profile card answers
       const { data: cachedRows } = await supabase
@@ -182,16 +272,112 @@ export default function ProfileCardPage({ readOnly }: ProfileCardPageProps) {
           if (row.assessment_type === 'career_direction') {
             const kw = row.keywords as any;
             if (typeof kw === 'object' && kw.direction) {
-              setCareerDirection(kw.direction);
+              try {
+                const translatedDirection = await geminiTranslationService.translateStructure(kw.direction, lang);
+                setCareerDirection(translatedDirection);
+              } catch (err) {
+                logger.error('Failed to translate cached career direction:', err);
+                setCareerDirection(kw.direction);
+              }
             }
           } else {
             const kw = row.keywords as any;
             if (kw && typeof kw === 'object' && !Array.isArray(kw) && kw.question1) {
-              answerMap[row.assessment_type] = kw as ProfileCardAnswers;
+              try {
+                const translatedKw = await geminiTranslationService.translateStructure(kw, lang);
+                answerMap[row.assessment_type] = translatedKw as ProfileCardAnswers;
+              } catch (err) {
+                logger.error(`Failed to translate cached keywords for ${row.assessment_type}:`, err);
+                answerMap[row.assessment_type] = kw as ProfileCardAnswers;
+              }
             }
           }
         }
       }
+
+      // Fallback/Sync with assessment_responses review_status
+      for (const mod of MODULES) {
+        const resp = responseMap[mod.key];
+        if (resp) {
+          const rStatus = resp.review_status;
+          if (rStatus === 'reviewed') {
+            statusMap[mod.key] = 'approved';
+          } else if (rStatus === 'needs_revision' || rStatus === 'flagged') {
+            statusMap[mod.key] = 'rejected';
+          } else if (!statusMap[mod.key]) {
+            statusMap[mod.key] = 'pending';
+          }
+        }
+      }
+
+      // Fallback to raw responses if keyword cache is missing or empty
+      for (const mod of MODULES) {
+        if (!answerMap[mod.key] && responseMap[mod.key]?.responses) {
+          const rawResp = responseMap[mod.key].responses;
+          const fallbackAns: Record<string, string> = {};
+          
+          if (mod.key === 'inspiration') {
+            const videoKeys = Object.keys(rawResp).filter(k => k.startsWith('video')).sort();
+            if (videoKeys.length > 0) {
+              const firstVid = rawResp[videoKeys[0]] || {};
+              fallbackAns.question1 = firstVid.question1 || firstVid.question2 || firstVid.question3 || '';
+              fallbackAns.question2 = firstVid.question4 || firstVid.question5 || '';
+              fallbackAns.question3 = firstVid.question6 || firstVid.question7 || firstVid.question8 || '';
+            }
+          } else if (mod.key === 'about_me') {
+            fallbackAns.question1 = rawResp.question1 || rawResp.question2 || rawResp.question3 || '';
+            fallbackAns.question2 = rawResp.question12 || rawResp.question13 || '';
+            fallbackAns.question3 = rawResp.question14 || rawResp.question11 || '';
+          } else if (mod.key === 'dreams') {
+            const partKeys = Object.keys(rawResp).filter(k => k.startsWith('part')).sort();
+            if (partKeys.length > 0) {
+              const firstPart = rawResp[partKeys[0]] || {};
+              fallbackAns.question1 = firstPart.question1 || '';
+              fallbackAns.question2 = firstPart.question3 || '';
+              fallbackAns.question3 = firstPart.question5 || '';
+            }
+          } else if (mod.key === 'school_learning') {
+            const p1 = rawResp.part1 || {};
+            const p2 = rawResp.part2 || {};
+            const p3 = rawResp.part3 || {};
+            fallbackAns.question1 = p1.question1 || '';
+            fallbackAns.question2 = p2.question1 || '';
+            fallbackAns.question3 = p3.question2 || '';
+          } else if (mod.key === 'hobbies') {
+            const p1 = rawResp.part1 || {};
+            const p2 = rawResp.part2 || {};
+            
+            const hobbies: string[] = [];
+            const talents: string[] = [];
+            
+            Object.keys(p1).forEach(k => {
+              const item = p1[k] || {};
+              if (item.question1) hobbies.push(item.question1);
+            });
+            Object.keys(p2).forEach(k => {
+              const item = p2[k] || {};
+              if (item.question1) talents.push(item.question1);
+            });
+            
+            fallbackAns.question1 = hobbies.join(', ') || '—';
+            fallbackAns.question2 = talents.join(', ') || '—';
+            fallbackAns.question3 = p1.hobby1?.question3 || p2.talent1?.question3 || '—';
+          } else if (mod.key === 'role_models') {
+            const p1 = rawResp.part1 || {};
+            const questions: string[] = [];
+            Object.keys(p1).forEach(k => {
+              const item = p1[k] || {};
+              if (item.question3) questions.push(item.question3);
+            });
+            fallbackAns.question1 = questions.slice(0, 2).join('\n') || '—';
+          }
+          
+          if (Object.keys(fallbackAns).length > 0) {
+            answerMap[mod.key] = fallbackAns as any;
+          }
+        }
+      }
+
       setAnswers(answerMap);
       setCacheTimestamps(tsMap);
       setApprovalStatus(statusMap);
@@ -358,7 +544,7 @@ export default function ProfileCardPage({ readOnly }: ProfileCardPageProps) {
       if (error) throw error;
 
       setApprovalStatus(prev => ({ ...prev, [assessmentType]: 'approved' }));
-      toast({ title: 'Module approved' });
+      toast({ title: pcp.toastModuleApproved });
 
       if (cacheUserId) {
         const approvedNotif = buildProfileCardApprovedNotif(studentLang);
@@ -373,7 +559,7 @@ export default function ProfileCardPage({ readOnly }: ProfileCardPageProps) {
         });
       }
     } catch (err) {
-      toast({ title: 'Approval failed', variant: 'destructive' });
+      toast({ title: pcp.toastApprovalFailed, variant: 'destructive' });
     } finally {
       setSavingApproval(false);
     }
@@ -390,7 +576,7 @@ export default function ProfileCardPage({ readOnly }: ProfileCardPageProps) {
       if (currentCount >= 3) {
         setRejectingModule(null);
         setRejectReason('');
-        toast({ title: 'Maximum feedback rounds reached — please approve or discuss with student directly' });
+        toast({ title: pcp.toastMaxFeedback });
         return;
       }
 
@@ -420,7 +606,7 @@ export default function ProfileCardPage({ readOnly }: ProfileCardPageProps) {
       }
 
       setRejectionCounts(prev => ({ ...prev, [moduleBeingRejected]: currentCount + 1 }));
-      toast({ title: 'Feedback submitted — regenerating keywords with your input...' });
+      toast({ title: pcp.toastFeedbackSubmitted });
 
       const responses = completedModules[moduleBeingRejected]?.responses;
       if (responses) {
@@ -430,7 +616,7 @@ export default function ProfileCardPage({ readOnly }: ProfileCardPageProps) {
         });
       }
     } catch (err) {
-      toast({ title: 'Rejection failed', variant: 'destructive' });
+      toast({ title: pcp.toastRejectionFailed, variant: 'destructive' });
     } finally {
       setSavingApproval(false);
     }
@@ -450,7 +636,7 @@ export default function ProfileCardPage({ readOnly }: ProfileCardPageProps) {
       <div className="bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-700 text-white">
         <div className="container mx-auto px-4 py-10">
           <div className="flex items-center gap-3 mb-6">
-            <Button variant="ghost" size="icon" className="text-white/80 hover:text-white hover:bg-white/10" onClick={() => readOnly ? navigate('/teacher') : navigate(-1)}>
+            <Button variant="ghost" size="icon" className="text-white/80 hover:text-white hover:bg-white/10" onClick={() => readOnly ? navigate(`/teacher?lang=${lang}`) : navigate(`/student?lang=${lang}`)}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </div>
@@ -512,13 +698,13 @@ export default function ProfileCardPage({ readOnly }: ProfileCardPageProps) {
                     </div>
                     {isComplete && ans && (
                       isRegenerating ? (
-                        <Badge className="bg-blue-100 text-blue-700 text-[10px]"><Loader2 className="h-3 w-3 mr-1 animate-spin" />Regenerating...</Badge>
+                        <Badge className="bg-blue-100 text-blue-700 text-[10px]"><Loader2 className="h-3 w-3 mr-1 animate-spin" />{pcp.regenerating}</Badge>
                       ) : status === 'approved' ? (
-                        <Badge className="bg-green-100 text-green-700 text-[10px]"><CheckCircle className="h-3 w-3 mr-1" />Approved</Badge>
+                        <Badge className="bg-green-100 text-green-700 text-[10px]"><CheckCircle className="h-3 w-3 mr-1" />{pcp.approvedBadge}</Badge>
                       ) : status === 'rejected' ? (
-                        <Badge className="bg-red-100 text-red-700 text-[10px]"><XCircle className="h-3 w-3 mr-1" />Changes Requested</Badge>
+                        <Badge className="bg-red-100 text-red-700 text-[10px]"><XCircle className="h-3 w-3 mr-1" />{pcp.changesRequested}</Badge>
                       ) : (
-                        <Badge className="bg-yellow-100 text-yellow-700 text-[10px]"><Clock className="h-3 w-3 mr-1" />Pending Review</Badge>
+                        <Badge className="bg-yellow-100 text-yellow-700 text-[10px]"><Clock className="h-3 w-3 mr-1" />{pcp.pendingBadge}</Badge>
                       )
                     )}
                   </div>
@@ -529,13 +715,13 @@ export default function ProfileCardPage({ readOnly }: ProfileCardPageProps) {
                   {/* Rejection reason (student view) */}
                   {!readOnly && status === 'rejected' && reason && (
                     <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
-                      <strong>Teacher feedback:</strong> {reason}
+                      <strong>{pcp.teacherFeedback}</strong> {reason}
                     </div>
                   )}
 
                   {/* Student pending message */}
                   {!readOnly && isComplete && ans && status === 'pending' && (
-                    <p className="text-xs text-yellow-600 italic mb-3">Your profile card is being reviewed by your teacher.</p>
+                    <p className="text-xs text-yellow-600 italic mb-3">{pcp.studentPendingReview}</p>
                   )}
 
                   {/* Content: question label → answer */}
@@ -599,7 +785,7 @@ export default function ProfileCardPage({ readOnly }: ProfileCardPageProps) {
                           onClick={(e) => { e.stopPropagation(); handleApproveModule(mod.assessmentType); }}
                           disabled={savingApproval}
                         >
-                          <CheckCircle className="h-3 w-3 mr-1" /> Approve
+                          <CheckCircle className="h-3 w-3 mr-1" /> {pcp.approve}
                         </Button>
                       )}
                       {status !== 'rejected' && (
@@ -609,7 +795,7 @@ export default function ProfileCardPage({ readOnly }: ProfileCardPageProps) {
                           className="text-red-600 border-red-200 hover:bg-red-50 text-xs"
                           onClick={(e) => { e.stopPropagation(); setRejectingModule(mod.assessmentType); }}
                         >
-                          <XCircle className="h-3 w-3 mr-1" /> Request Changes
+                          <XCircle className="h-3 w-3 mr-1" /> {pcp.requestChanges}
                         </Button>
                       )}
                     </div>
@@ -634,9 +820,9 @@ export default function ProfileCardPage({ readOnly }: ProfileCardPageProps) {
                 </div>
                 {allComplete && careerDirection && !generatingDirection && (
                   dirStatus === 'approved' ? (
-                    <Badge className="bg-green-100 text-green-700 text-[10px]"><CheckCircle className="h-3 w-3 mr-1" />Approved</Badge>
+                    <Badge className="bg-green-100 text-green-700 text-[10px]"><CheckCircle className="h-3 w-3 mr-1" />{pcp.approvedBadge}</Badge>
                   ) : (
-                    <Badge className="bg-yellow-100 text-yellow-700 text-[10px]"><Clock className="h-3 w-3 mr-1" />Pending Review</Badge>
+                    <Badge className="bg-yellow-100 text-yellow-700 text-[10px]"><Clock className="h-3 w-3 mr-1" />{pcp.pendingBadge}</Badge>
                   )
                 )}
               </div>
@@ -644,7 +830,7 @@ export default function ProfileCardPage({ readOnly }: ProfileCardPageProps) {
               <div className="border-t border-gray-100 mb-4" />
 
               {!readOnly && allComplete && careerDirection && !generatingDirection && dirStatus === 'pending' && (
-                <p className="text-xs text-yellow-600 italic mb-3">Your career direction is being reviewed by your teacher.</p>
+                <p className="text-xs text-yellow-600 italic mb-3">{pcp.careerPendingReview}</p>
               )}
 
               {allComplete ? (
@@ -682,7 +868,7 @@ export default function ProfileCardPage({ readOnly }: ProfileCardPageProps) {
                     onClick={(e) => { e.stopPropagation(); handleApproveModule('career_direction'); }}
                     disabled={savingApproval}
                   >
-                    <CheckCircle className="h-3 w-3 mr-1" /> Approve
+                    <CheckCircle className="h-3 w-3 mr-1" /> {pcp.approve}
                   </Button>
                 </div>
               )}
@@ -694,19 +880,19 @@ export default function ProfileCardPage({ readOnly }: ProfileCardPageProps) {
         {rejectingModule && (
           <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setRejectingModule(null)}>
             <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Request Changes</h3>
-              <p className="text-sm text-gray-600 mb-4">Provide feedback for the student on what to improve.</p>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">{pcp.requestChanges}</h3>
+              <p className="text-sm text-gray-600 mb-4">{pcp.provideFeedbackDesc}</p>
               <Textarea
                 value={rejectReason}
                 onChange={e => setRejectReason(e.target.value)}
-                placeholder="e.g. Please provide more specific answers..."
+                placeholder={pcp.rejectionPlaceholder}
                 rows={3}
                 className="mb-4"
               />
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => { setRejectingModule(null); setRejectReason(''); }}>Cancel</Button>
+                <Button variant="outline" onClick={() => { setRejectingModule(null); setRejectReason(''); }}>{pcp.cancel}</Button>
                 <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={handleReject} disabled={savingApproval}>
-                  {savingApproval ? 'Submitting...' : 'Submit Feedback'}
+                  {savingApproval ? pcp.submitting : pcp.submitFeedback}
                 </Button>
               </div>
             </div>

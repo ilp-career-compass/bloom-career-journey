@@ -185,10 +185,12 @@ Deno.serve(async (req) => {
 
       try {
         // 5. Insert into public.users
+        const email = `${phone.replace(/\+/g, '')}@internal.app`
         const { error: userError } = await supabaseAdmin.from('users').insert({
           id: authUserId,
           full_name: fullName,
           mobile: phone,
+          email: email,
           role: 'student',
           state_id: stateId,
           password_hash: 'managed_by_supabase_auth',

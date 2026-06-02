@@ -2375,16 +2375,20 @@ Role Models: ${formatAnswers(roleModelsAnswers)}`;
         body: { model, contents: requestBody.contents, ...(requestBody.generationConfig ? { generationConfig: requestBody.generationConfig } : {}) },
       });
 
-    let result = await invoke('gemini-2.0-flash');
-    if (result.error) {
-      logger.warn('Primary Gemini model failed, trying fallback:', result.error);
-      result = await invoke('gemini-2.0-flash-lite');
+    const models = ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash', 'gemini-1.5-flash-latest'];
+    let lastError: any = null;
+
+    for (const model of models) {
+      const result = await invoke(model);
+      if (!result.error) {
+        return result.data;
+      }
+      lastError = result.error;
+      logger.warn(`Gemini model ${model} failed in proxy:`, result.error);
     }
-    if (result.error) {
-      logger.error('Both Gemini models failed:', result.error);
-      throw new Error('AI summary service is temporarily unavailable. Please try again in a few minutes.');
-    }
-    return result.data;
+
+    logger.error('All Gemini models failed in proxy:', lastError);
+    throw new Error('AI summary service is temporarily unavailable. Please try again in a few minutes.');
   }
 
   /**

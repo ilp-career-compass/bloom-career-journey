@@ -89,9 +89,117 @@ export default function ProfileCardModulesPanel({
           rejection_reason: (row as any).rejection_reason || null,
         };
       }
+
+      // 2. Fetch completed assessment responses for fallback / status sync
+      const { data: completedResps } = await supabase
+        .from('assessment_responses')
+        .select('assessment_type, responses, review_status')
+        .eq('student_id', studentId)
+        .not('completed_at', 'is', null);
+
+      const completedMap: Record<string, any> = {};
+      const responseStatusMap: Record<string, string> = {};
+      (completedResps || []).forEach(r => {
+        completedMap[r.assessment_type] = r.responses;
+        responseStatusMap[r.assessment_type] = r.review_status || 'unreviewed';
+      });
+
+      for (const mod of PROFILE_CARD_MODULES) {
+        if (completedMap[mod.key]) {
+          const rStatus = responseStatusMap[mod.key];
+          let mappedStatus = 'pending';
+          if (rStatus === 'reviewed') {
+            mappedStatus = 'approved';
+          } else if (rStatus === 'needs_revision' || rStatus === 'flagged') {
+            mappedStatus = 'rejected';
+          }
+
+          if (!rowMap[mod.key]) {
+            rowMap[mod.key] = {
+              keywords: null,
+              approval_status: mappedStatus,
+              rejection_reason: null
+            };
+          } else {
+            // Sync status with assessment review if cache is pending and review is already completed
+            if (rStatus === 'reviewed') {
+              rowMap[mod.key]!.approval_status = 'approved';
+            } else if (rStatus === 'needs_revision' || rStatus === 'flagged') {
+              rowMap[mod.key]!.approval_status = 'rejected';
+            }
+          }
+
+          // Build fallback keywords if not present in cache
+          if (!rowMap[mod.key]!.keywords) {
+            const rawResp = completedMap[mod.key];
+            const fallbackAns: Record<string, string> = {};
+
+            if (mod.key === 'inspiration') {
+              const videoKeys = Object.keys(rawResp).filter(k => k.startsWith('video')).sort();
+              if (videoKeys.length > 0) {
+                const firstVid = rawResp[videoKeys[0]] || {};
+                fallbackAns.question1 = firstVid.question1 || firstVid.question2 || firstVid.question3 || '';
+                fallbackAns.question2 = firstVid.question4 || firstVid.question5 || '';
+                fallbackAns.question3 = firstVid.question6 || firstVid.question7 || firstVid.question8 || '';
+              }
+            } else if (mod.key === 'about_me') {
+              fallbackAns.question1 = rawResp.question1 || rawResp.question2 || rawResp.question3 || '';
+              fallbackAns.question2 = rawResp.question12 || rawResp.question13 || '';
+              fallbackAns.question3 = rawResp.question14 || rawResp.question11 || '';
+            } else if (mod.key === 'dreams') {
+              const partKeys = Object.keys(rawResp).filter(k => k.startsWith('part')).sort();
+              if (partKeys.length > 0) {
+                const firstPart = rawResp[partKeys[0]] || {};
+                fallbackAns.question1 = firstPart.question1 || '';
+                fallbackAns.question2 = firstPart.question3 || '';
+                fallbackAns.question3 = firstPart.question5 || '';
+              }
+            } else if (mod.key === 'school_learning') {
+              const p1 = rawResp.part1 || {};
+              const p2 = rawResp.part2 || {};
+              const p3 = rawResp.part3 || {};
+              fallbackAns.question1 = p1.question1 || '';
+              fallbackAns.question2 = p2.question1 || '';
+              fallbackAns.question3 = p3.question2 || '';
+            } else if (mod.key === 'hobbies') {
+              const p1 = rawResp.part1 || {};
+              const p2 = rawResp.part2 || {};
+
+              const hobbies: string[] = [];
+              const talents: string[] = [];
+
+              Object.keys(p1).forEach(k => {
+                const item = p1[k] || {};
+                if (item.question1) hobbies.push(item.question1);
+              });
+              Object.keys(p2).forEach(k => {
+                const item = p2[k] || {};
+                if (item.question1) talents.push(item.question1);
+              });
+
+              fallbackAns.question1 = hobbies.join(', ') || '—';
+              fallbackAns.question2 = talents.join(', ') || '—';
+              fallbackAns.question3 = p1.hobby1?.question3 || p2.talent1?.question3 || '—';
+            } else if (mod.key === 'role_models') {
+              const p1 = rawResp.part1 || {};
+              const questions: string[] = [];
+              Object.keys(p1).forEach(k => {
+                const item = p1[k] || {};
+                if (item.question3) questions.push(item.question3);
+              });
+              fallbackAns.question1 = questions.slice(0, 2).join('\n') || '—';
+            }
+
+            if (Object.keys(fallbackAns).length > 0) {
+              rowMap[mod.key]!.keywords = fallbackAns;
+            }
+          }
+        }
+      }
+
       setCacheRows(rowMap);
 
-      // 2. Fetch student's preferred language for regen calls and label display
+      // 3. Fetch student's preferred language for regen calls and label display
       const { data: userData } = await supabase
         .from('users')
         .select('preferred_language')
@@ -100,7 +208,7 @@ export default function ProfileCardModulesPanel({
       const lang = userData?.preferred_language || 'en';
       setStudentLang(lang);
 
-      // 3. Fetch question labels in student's language
+      // 4. Fetch question labels in student's language
       const resourceTypes = PROFILE_CARD_MODULES.map(m => `profile_card_${m.key}`);
       const { data: labelRows } = await supabase
         .from('content_translations')

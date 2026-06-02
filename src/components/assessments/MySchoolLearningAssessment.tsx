@@ -1,5 +1,6 @@
 import { logger } from '@/lib/logger';
 import { useState, useEffect, useRef } from 'react';
+import { validateResponses } from '@/utils/englishValidation';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLang } from '@/hooks/useLang';
 import { fetchTranslations } from '@/services/translationService';
+import { geminiTranslationService } from '@/services/geminiTranslationService';
+
 
 import { checkAssessmentUnlock } from '@/utils/assessmentUnlock';
 
@@ -412,6 +415,28 @@ export default function MySchoolLearningAssessment() {
   const autoSaveErrorRef = useRef(false);
   const isDirtyRef = useRef(false);
 
+  // Reactively translate responses when language changes
+  useEffect(() => {
+    const translateActiveResponses = async () => {
+      // Check if responses have content before translating
+      const hasContent = Object.values(responses).some(section => 
+        Object.values(section).some(val => typeof val === 'string' && val.trim().length > 0)
+      );
+      if (!hasContent) return;
+
+      try {
+        const translated = await geminiTranslationService.translateStructure(responses, lang);
+        // Temporarily disable isDirtyRef during state update to prevent auto-save
+        isDirtyRef.current = false;
+        setResponses(translated);
+      } catch (err) {
+        logger.error('Failed to reactively translate school learning responses:', err);
+      }
+    };
+
+    translateActiveResponses();
+  }, [lang]);
+
   // Auto-save drafts on changes (debounced)
   useEffect(() => {
     if (loading || isCompleted || readOnlyView || !isDirtyRef.current) return;
@@ -497,6 +522,15 @@ export default function MySchoolLearningAssessment() {
 
   const saveSection = async (section: 'section1' | 'section2' | 'section3' | 'section4' | 'section5' | 'section6') => {
     if (!userProfile || isReadOnly) return;
+
+    if (!validateResponses(responses)) {
+      toast({
+        title: lang === 'kn' ? 'ಉಳಿಸಲು ವಿಫಲವಾಗಿದೆ' : lang === 'ta' ? 'சேமிக்க இயலவில்லை' : lang === 'hi' ? 'सहेजने में विफल' : 'Validation Error',
+        description: "Answers should be entered only in English.",
+        variant: 'destructive'
+      });
+      return;
+    }
     let studentId = userProfile.studentProfile?.id as string | undefined;
     if (!studentId) {
       const { data: studentRow } = await supabase
@@ -737,6 +771,15 @@ export default function MySchoolLearningAssessment() {
 
   const submitAssessment = async () => {
     if (isReadOnly || !userProfile) return;
+
+    if (!validateResponses(responses)) {
+      toast({
+        title: lang === 'kn' ? 'ಉಳಿಸಲು ವಿಫಲವಾಗಿದೆ' : lang === 'ta' ? 'சேமிக்க இயலவில்லை' : lang === 'hi' ? 'सहेजने में विफल' : 'Validation Error',
+        description: "Answers should be entered only in English.",
+        variant: 'destructive'
+      });
+      return;
+    }
     let studentId = userProfile.studentProfile?.id as string | undefined;
     if (!studentId) {
       const { data: studentRow } = await supabase

@@ -3,6 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useNavigate } from 'react-router-dom';
+import { useLang } from '@/hooks/useLang';
+import { ArrowLeft } from 'lucide-react';
 
 // Discover career images under public/career_cards (preferred) then src/assets/career_cards
 const publicImages = import.meta.glob('/career_cards/*.{png,jpg,jpeg,webp,svg}', {
@@ -24,6 +27,8 @@ const srcRootImages = import.meta.glob('/src/career_cards/*.{png,jpg,jpeg,webp,s
 }) as Record<string, string>;
 
 export default function CareersExplore() {
+  const navigate = useNavigate();
+  const { lang } = useLang();
   const [q, setQ] = useState('');
   const [viewUrl, setViewUrl] = useState<string | null>(null);
   const items = useMemo(() => {
@@ -48,11 +53,21 @@ export default function CareersExplore() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50" lang={lang} dir="auto">
       <div className="container mx-auto px-4 py-8">
         <Card className="border-0 shadow-lg mb-6">
-          <CardHeader>
-            <CardTitle className="text-2xl text-gray-800">Explore Careers</CardTitle>
+          <CardHeader className="pb-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <CardTitle className="text-2xl text-gray-800">Explore Careers</CardTitle>
+              <Button
+                variant="ghost"
+                onClick={() => navigate(`/student?lang=${lang}`)}
+                className="w-full sm:w-auto justify-start sm:justify-center text-blue-700 hover:text-blue-800 hover:bg-blue-50"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                {lang === 'kn' ? 'ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ಗೆ ಹಿಂತಿರುಗಿ' : lang === 'ta' ? 'முதல் பக்கத்திற்கு திரும்பு' : lang === 'hi' ? 'डैशबोर्ड पर वापस' : 'Back to Dashboard'}
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <Input placeholder="Search careers (e.g., Accountant, Animator)" value={q} onChange={(e) => setQ(e.target.value)} />

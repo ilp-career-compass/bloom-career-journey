@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useLang } from '@/hooks/useLang';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -283,6 +284,7 @@ const NotCompleted = ({ inProgress = false }: { inProgress?: boolean }) => (
 export default function TeacherStudentResponsesPage() {
   const navigate = useNavigate();
   const { userProfile } = useAuth();
+  const { lang } = useLang();
   const { studentId } = useParams<{ studentId: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const validTabs = ['inspiration','about_me','dreams','school_learning','hobbies','role_models','personality','career_guidance_tools'];
@@ -366,7 +368,7 @@ export default function TeacherStudentResponsesPage() {
               variant="ghost"
               size="icon"
               className="text-white/80 hover:text-white hover:bg-white/10"
-              onClick={() => { if (window.history.state?.idx > 0) navigate(-1); else navigate('/teacher'); }}
+              onClick={() => navigate(`/teacher?lang=${lang}`)}
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>

@@ -131,7 +131,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!dbError && freshProfile) {
         logger.log('✅ Fresh profile data loaded from database:', freshProfile);
         if (typeof window !== 'undefined' && freshProfile.preferred_language) {
-          localStorage.setItem('lang', freshProfile.preferred_language);
+          const currentStored = localStorage.getItem('lang');
+          if (!currentStored) {
+            localStorage.setItem('lang', freshProfile.preferred_language);
+          }
         }
 
         // Fetch role-specific data

@@ -1,4 +1,4 @@
-﻿import { logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 function toE164Indian(phone: string): string {
   const digits = phone.replace(/\D/g, '');
@@ -52,7 +52,15 @@ export default function TeacherDashboard() {
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
   const [studentStats, setStudentStats] = useState<StudentStats>({ totalStudents: 0 });
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('students');
+  const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || 'students');
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && tab !== activeTab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGrade, setSelectedGrade] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
@@ -91,13 +99,22 @@ export default function TeacherDashboard() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatStudentUserId, setChatStudentUserId] = useState<string | null>(null);
   const [teacherRow, setTeacherRow] = useState<{ id: string; state_id: string } | null>(null);
 
   // Auto-open chat bubble from notification deep link (?openChat=true)
   useEffect(() => {
     if (searchParams.get('openChat') === 'true') {
+      const studentUserId = searchParams.get('studentUserId');
+      if (studentUserId) {
+        setChatStudentUserId(studentUserId);
+      }
       setIsChatOpen(true);
-      setSearchParams(prev => { prev.delete('openChat'); return prev; });
+      setSearchParams(prev => {
+        prev.delete('openChat');
+        prev.delete('studentUserId');
+        return prev;
+      });
     }
   }, [searchParams]);
 
@@ -170,26 +187,30 @@ export default function TeacherDashboard() {
       const studsData = data || [];
       const userIds = studsData.map((s: any) => s.user_id).filter(Boolean);
       if (userIds.length > 0) {
-        supabase
-          .from('profile_card_cache')
-          .select('student_id, assessment_type')
-          .eq('approval_status', 'pending')
-          .in('student_id', userIds)
-          .then(({ data: pendingCards }) => {
-            if (pendingCards && pendingCards.length > 0) {
-              const userIdToStudentId: Record<string, string> = {};
-              studsData.forEach((s: any) => { if (s.user_id) userIdToStudentId[s.user_id] = s.id; });
-              const map: Record<string, number> = {};
-              pendingCards.forEach((c: any) => {
-                const sId = userIdToStudentId[c.student_id];
-                if (sId) map[sId] = (map[sId] || 0) + 1;
-              });
-              setPendingProfileCardMap(map);
-            } else {
-              setPendingProfileCardMap({});
-            }
-          })
-          .catch((err: any) => logger.error('Error fetching pending profile cards:', err));
+        try {
+          const { data: pendingCards, error: pcError } = await supabase
+            .from('profile_card_cache')
+            .select('student_id, assessment_type')
+            .eq('approval_status', 'pending')
+            .in('student_id', userIds);
+
+          if (pcError) throw pcError;
+
+          if (pendingCards && pendingCards.length > 0) {
+            const userIdToStudentId: Record<string, string> = {};
+            studsData.forEach((s: any) => { if (s.user_id) userIdToStudentId[s.user_id] = s.id; });
+            const map: Record<string, number> = {};
+            pendingCards.forEach((c: any) => {
+              const sId = userIdToStudentId[c.student_id];
+              if (sId) map[sId] = (map[sId] || 0) + 1;
+            });
+            setPendingProfileCardMap(map);
+          } else {
+            setPendingProfileCardMap({});
+          }
+        } catch (err: any) {
+          logger.error('Error fetching pending profile cards:', err);
+        }
       } else {
         setPendingProfileCardMap({});
       }
@@ -272,7 +293,7 @@ export default function TeacherDashboard() {
       }
       const { data, error } = await supabase.from('states').select('id, state_name, state_code, orgs(name)').order('state_name');
       if (error) throw error;
-      setStates(data?.map(state => ({ state_id: state.id, state_name: state.state_name, state_code: state.state_code, org_name: state.orgs?.name || 'ILP' })) || []);
+      setStates(data?.map(state => ({ state_id: state.id, state_name: state.state_name, state_code: state.state_code, org_name: (Array.isArray(state.orgs) ? state.orgs[0]?.name : (state.orgs as any)?.name) || 'ILP' })) || []);
     } catch (error) {
       logger.error('TeacherDashboard: Error loading states:', error);
       setStates([]);
@@ -294,7 +315,11 @@ export default function TeacherDashboard() {
       }
       const { data, error } = await supabase.from('classes').select('id, name').eq('state_id', stateId).order('name');
       if (error) throw error;
-      setClasses(data || []);
+      const formattedClasses = (data || []).map((c: any) => ({
+        class_id: c.id,
+        class_name: c.name,
+      }));
+      setClasses(formattedClasses);
     } catch (error) {
       logger.error('TeacherDashboard: Error loading classes:', error);
       setClasses([]);
@@ -312,35 +337,40 @@ export default function TeacherDashboard() {
       if (!studs || studs.length === 0) { setReviewOverview(zero); return; }
       const studentIds = studs.map(s => s.id);
 
-      // Fetch response IDs (no row limit — only IDs, small payload)
+      // Fetch responses with review_status (no row limit — small payload)
       const { data: responses } = await supabase
         .from('assessment_responses')
-        .select('id, student_id')
+        .select('id, student_id, review_status')
         .in('student_id', studentIds);
       if (!responses || responses.length === 0) { setReviewOverview(zero); return; }
-
-      const responseIds = responses.map(r => r.id);
-      const responseToStudent: Record<string, string> = {};
-      responses.forEach(r => { responseToStudent[r.id] = r.student_id; });
-
-      // Count from assessment_summaries.approval_status — aligns with the Reviews tab
-      const { data: summaries } = await supabase
-        .from('assessment_summaries')
-        .select('approval_status, assessment_response_id')
-        .in('assessment_response_id', responseIds);
 
       const counts = { ...zero };
       const perStudent: Record<string, { reviewed: number; total: number }> = {};
 
-      (summaries || []).forEach(s => {
-        const studentId = responseToStudent[s.assessment_response_id];
+      responses.forEach(r => {
+        const studentId = r.student_id;
         if (!perStudent[studentId]) perStudent[studentId] = { reviewed: 0, total: 0 };
         perStudent[studentId].total++;
-        switch (s.approval_status) {
-          case 'approved':            counts.reviewed_count++;       perStudent[studentId].reviewed++; break;
-          case 'pending_approval':    counts.unreviewed_count++;     break;
-          case 'revision_requested':  counts.needs_revision_count++; break;
-          case 'rejected':            counts.flagged_count++;        break;
+
+        const status = r.review_status || 'unreviewed';
+        switch (status) {
+          case 'reviewed':
+            counts.reviewed_count++;
+            perStudent[studentId].reviewed++;
+            break;
+          case 'unreviewed':
+          case 'in_review':
+            counts.unreviewed_count++;
+            break;
+          case 'needs_revision':
+            counts.needs_revision_count++;
+            break;
+          case 'flagged':
+            counts.flagged_count++;
+            break;
+          default:
+            counts.unreviewed_count++;
+            break;
         }
       });
 
@@ -440,6 +470,19 @@ export default function TeacherDashboard() {
     }
   };
 
+  const handleReactivate = async (student: Student) => {
+    if (!confirm('Reactivate this student? They will regain active status and access.')) return;
+    try {
+      const { error } = await supabase.from('students').update({ enrollment_status: 'active' }).eq('id', student.id);
+      if (error) throw error;
+      toast({ title: 'Student reactivated', description: 'Student marked as active successfully.' });
+      loadStudents();
+    } catch (err) {
+      logger.error('Reactivate error:', err);
+      toast({ title: 'Reactivate failed', description: 'Could not reactivate student', variant: 'destructive' });
+    }
+  };
+
   const handleSearchExisting = async () => {
     const normalizedQuery = existingQuery.trim();
     if (!normalizedQuery) {
@@ -513,14 +556,36 @@ export default function TeacherDashboard() {
           totalStudents={studentStats.totalStudents}
           reviewOverview={reviewOverview}
           pendingProfileCardMap={pendingProfileCardMap}
-          onTabChange={(tab) => {
+          onTabChange={(tab, filter) => {
             if (tab === 'reviews') setReviewsResetKey(k => k + 1);
+            setSearchParams(prev => {
+              prev.set('tab', tab);
+              if (filter) {
+                prev.set('reviewFilter', filter);
+              } else {
+                prev.delete('reviewFilter');
+              }
+              return prev;
+            });
             setActiveTab(tab);
           }}
         />
 
         {/* Main Content Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Tabs
+          value={activeTab}
+          onValueChange={(tab) => {
+            setActiveTab(tab);
+            setSearchParams(prev => {
+              prev.set('tab', tab);
+              if (tab !== 'reviews') {
+                prev.delete('reviewFilter');
+              }
+              return prev;
+            });
+          }}
+          className="space-y-6"
+        >
           <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 bg-white shadow-sm h-auto p-1">
             <TabsTrigger value="students" className="flex items-center space-x-2 py-2">
               <Users className="w-4 h-4" /><span>{t('studentsTab')}</span>
@@ -558,6 +623,7 @@ export default function TeacherDashboard() {
               }}
               onViewDetails={handleViewDetails}
               onUnenroll={handleUnenroll}
+              onReactivate={handleReactivate}
               loadStudents={loadStudents}
             />
           </TabsContent>
@@ -585,11 +651,22 @@ export default function TeacherDashboard() {
         onImported={loadStudents}
       />
       <ContactIlpDialog open={contactOpen} onOpenChange={setContactOpen} />
-      <ChatBubble role="teacher" isOpen={isChatOpen} onOpenChange={setIsChatOpen} />
+      <ChatBubble
+        role="teacher"
+        isOpen={isChatOpen}
+        onOpenChange={(open) => {
+          setIsChatOpen(open);
+          if (!open) {
+            setChatStudentUserId(null);
+          }
+        }}
+        initialStudentUserId={chatStudentUserId}
+      />
 
       <AddStudentModal
         open={isAddStudentOpen} onOpenChange={setIsAddStudentOpen}
         newStudent={newStudent} setNewStudent={setNewStudent as any} onSubmit={handleAddStudent}
+        t={t}
       />
       <StudentDetailsModal
         open={isDetailsOpen} onOpenChange={setIsDetailsOpen}

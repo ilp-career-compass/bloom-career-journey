@@ -52,7 +52,7 @@ export default function CareerSpotlight({ title = 'Career Spotlight' }: Spotligh
   }, [allImages]);
 
   const displayTitle = title === 'Career Spotlight' 
-    ? (lang === 'kn' ? 'ವೃತ್ತಿ ಸ್ಪಾಟ್ಲೈಟ್' : lang === 'ta' ? 'தொழில் அறிமுகம்' : 'Career Spotlight')
+    ? t('careerSpotlightTitle')
     : title;
 
   return (
@@ -66,32 +66,27 @@ export default function CareerSpotlight({ title = 'Career Spotlight' }: Spotligh
             <div className="rounded-lg overflow-hidden border bg-white">
               <img
                 src={pickDaily}
-                alt={lang === 'kn' ? 'ವೃತ್ತಿ ಕಾರ್ಡ್' : 'Career card'}
+                alt={t('careerCardAlt')}
                 className="w-full h-auto object-cover"
                 loading="lazy"
               />
             </div>
-            <div className="mt-3 flex justify_between items-center">
-              <span className="text-sm text-gray-600">
-                {lang === 'kn' ? 'ಪ್ರತಿದಿನ ಹೊಸ ಸ್ಪಾಟ್ಲೈಟ್' : lang === 'ta' ? 'ஒவ்வொரு நாளும் ஒரு புதிய தொழில் அட்டை' : 'New spotlight each day'}
+            <div className="mt-4 flex flex-col gap-3 items-stretch sm:flex-row sm:items-center sm:justify-between sm:gap-4 lg:flex-col lg:items-stretch lg:gap-3">
+              <span className="text-sm text-gray-600 leading-relaxed sm:pr-4 lg:pr-0">
+                {t('newSpotlightEachDay')}
               </span>
-              <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={() => navigate('/careers')}>
-                {lang === 'kn' ? 'ಎಲ್ಲಾ ವೃತ್ತಿಗಳನ್ನು ಅನ್ವೇಷಿಸಿ' : lang === 'ta' ? 'அனைத்து தொழில்களையும் பார்' : 'Explore all careers'}
+              <Button size="sm" className="w-full sm:w-auto lg:w-full shrink-0 whitespace-nowrap bg-blue-600 hover:bg-blue-700" onClick={() => navigate('/careers')}>
+                {t('exploreAllCareers')}
               </Button>
             </div>
           </div>
         ) : (
           <div className="text-center py-6">
             <div className="text-sm text-gray-600 mb-3">
-              {lang === 'kn' 
-                ? 'ವೃತ್ತಿ ಕಾರ್ಡ್‌ಗಳು ಕಂಡುಬಂದಿಲ್ಲ.'
-                : lang === 'ta'
-                ? 'தொழில் அட்டைகள் கிடைக்கவில்லை.'
-                : 'Career cards not found in public/career_cards, src/assets/career_cards, or src/career_cards.'
-              }
+              {t('careerCardsNotFound')}
             </div>
             <Button size="sm" variant="outline" onClick={() => navigate('/careers')}>
-              {lang === 'kn' ? 'ಎಲ್ಲಾ ವೃತ್ತಿಗಳನ್ನು ಅನ್ವೇಷಿಸಿ' : lang === 'ta' ? 'அனைத்து தொழில்களையும் பார்' : 'Explore all careers'}
+              {t('exploreAllCareers')}
             </Button>
           </div>
         )}

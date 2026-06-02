@@ -113,7 +113,7 @@ export default function TeacherStudentInterestsPage() {
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-gray-50 text-gray-500">
         <AlertCircle className="h-8 w-8 text-red-400" />
         <p>{notFound ? s.not_found : 'Could not load interests data.'}</p>
-        <Button variant="outline" onClick={() => { if (window.history.state?.idx > 0) navigate(-1); else navigate('/teacher'); }}>
+        <Button variant="outline" onClick={() => navigate(`/teacher?lang=${teacherLang}`)}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Go back
         </Button>
@@ -126,7 +126,7 @@ export default function TeacherStudentInterestsPage() {
       <div className="bg-gradient-to-r from-rose-600 via-pink-600 to-rose-700 text-white">
         <div className="container mx-auto px-4 py-10">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="text-white/80 hover:text-white hover:bg-white/10" onClick={() => { if (window.history.state?.idx > 0) navigate(-1); else navigate('/teacher'); }}>
+            <Button variant="ghost" size="icon" className="text-white/80 hover:text-white hover:bg-white/10" onClick={() => navigate(`/teacher?lang=${teacherLang}`)}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>

@@ -1,5 +1,6 @@
-﻿import { logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { validateResponses } from '@/utils/englishValidation';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLang } from '@/hooks/useLang';
 import { checkAssessmentUnlock } from '@/utils/assessmentUnlock';
 import { AssessmentService } from '@/services/assessmentService';
+import { getTranslatedHollandQuestion } from '@/utils/hollandTranslations';
 
 type CategoryKey = 'R' | 'I' | 'A' | 'S' | 'E' | 'C';
 
@@ -24,13 +26,39 @@ interface HollandQuestion {
   sequence_number: number;
 }
 
-const CATEGORY_LABELS: Record<CategoryKey, string> = {
-  R: 'Realistic',
-  I: 'Investigative',
-  A: 'Artistic',
-  S: 'Social',
-  E: 'Enterprising',
-  C: 'Conventional',
+const CATEGORY_LABELS: Record<'en' | 'kn' | 'ta' | 'hi', Record<CategoryKey, string>> = {
+  en: {
+    R: 'Realistic',
+    I: 'Investigative',
+    A: 'Artistic',
+    S: 'Social',
+    E: 'Enterprising',
+    C: 'Conventional',
+  },
+  kn: {
+    R: 'ವಾಸ್ತವಿಕ',
+    I: 'ವಿಚಾರಣಾತ್ಮಕ',
+    A: 'ಕಲಾತ್ಮಕ',
+    S: 'ಸಾಮಾಜಿಕ',
+    E: 'ಉದ್ಯಮಶೀಲ',
+    C: 'ಸಾಂಪ್ರದಾಯಿಕ',
+  },
+  ta: {
+    R: 'நடைமுறை வேலைகள்',
+    I: 'ஆராயும் வேலைகள்',
+    A: 'கலை சார்ந்த வேலைகள்',
+    S: 'மக்களுக்கு உதவும் வேலைகள்',
+    E: 'வியாபாரம் / தலைமை வேலைகள்',
+    C: 'அலுவலக வேலைகள்',
+  },
+  hi: {
+    R: 'व्यावहारिक',
+    I: 'विश्लेषणात्मक',
+    A: 'कलात्मक',
+    S: 'सामाजिक',
+    E: 'उद्यमशील',
+    C: 'पारंपरिक',
+  },
 };
 
 // Scoreboard mapping: which question numbers belong to which category
@@ -265,6 +293,24 @@ export default function HollandCodeAssessment() {
       return;
     }
 
+    const currentResponses: any = {};
+    questions.forEach((q, index) => {
+      const questionNum = index + 1;
+      currentResponses[`question${questionNum}`] = answers[questionNum] || false;
+    });
+    currentResponses.scores = scores;
+    currentResponses.topTwoTypes = topTwoTypes;
+    currentResponses.reflection = reflection;
+
+    if (!validateResponses(currentResponses)) {
+      toast({
+        title: lang === 'kn' ? 'ದೋಷ' : lang === 'ta' ? 'பிழை' : 'Validation Error',
+        description: "Answers should be entered only in English.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSubmitting(true);
     try {
       // Prepare responses object
@@ -375,7 +421,9 @@ export default function HollandCodeAssessment() {
         ? 'Holland Code ಮೌಲ್ಯಮಾಪನವನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...'
         : lang === 'ta'
           ? 'Holland Code மதிப்பீடு ஏற்றப்படுகிறது...'
-          : 'Loading Holland Code assessment...';
+          : lang === 'hi'
+            ? 'हॉलैंड कोड मूल्यांकन लोड हो रहा है...'
+            : 'Loading Holland Code assessment...';
 
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -388,21 +436,45 @@ export default function HollandCodeAssessment() {
   }
 
   if (isCompleted && !readOnlyView) {
+    const completedTitle =
+      lang === 'kn' ? 'ಹಾಲೆಂಡ್ ಕೋಡ್ ಮೌಲ್ಯಮಾಪನ ಪೂರ್ಣಗೊಂಡಿದೆ! 🧭' :
+      lang === 'ta' ? 'ஹாலண்ட் குறியீடு மதிப்பீடு முடிந்தது! 🧭' :
+      lang === 'hi' ? 'हॉलैंड कोड मूल्यांकन पूरा हुआ! 🧭' :
+      'Holland Code Assessment Completed! 🧭';
+
+    const completedDesc =
+      lang === 'kn' ? 'ನಿಮ್ಮ ವ್ಯಕ್ತಿತ್ವದ ಪ್ರಕಾರವನ್ನು ಗುರುತಿಸಲಾಗಿದೆ' :
+      lang === 'ta' ? 'உங்கள் ஆளுமை வகை அடையாளம் காணப்பட்டுள்ளது' :
+      lang === 'hi' ? 'आपके व्यक्तित्व प्रकार की पहचान की गई है' :
+      'Your personality type has been identified';
+
+    const topTypesLabel =
+      lang === 'kn' ? 'ನಿಮ್ಮ ಉನ್ನತ ಎರಡು ವ್ಯಕ್ತಿತ್ವ ಪ್ರಕಾರಗಳು:' :
+      lang === 'ta' ? 'உங்கள் சிறந்த இரண்டு ஆளுமை வகைகள்:' :
+      lang === 'hi' ? 'आपके शीर्ष दो व्यक्तित्व प्रकार:' :
+      'Your Top Two Personality Types:';
+
+    const viewAnswersLabel =
+      lang === 'kn' ? 'ನನ್ನ ಉತ್ತರಗಳನ್ನು ವೀಕ್ಷಿಸಿ' :
+      lang === 'ta' ? 'என் பதில்களைப் பார்க்க' :
+      lang === 'hi' ? 'मेरे उत्तर देखें' :
+      'View My Answers';
+
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-8">
         <div className="container mx-auto px-4">
           <Card className="max-w-2xl mx-auto border-0 shadow-lg">
             <CardHeader className="text-center bg-gradient-to-r from-blue-50 to-indigo-50">
               <CheckCircle className="w-16 h-16 text-blue-500 mx-auto mb-4" />
-              <CardTitle className="text-2xl text-blue-800">Holland Code Assessment Completed! 🧭</CardTitle>
+              <CardTitle className="text-2xl text-blue-800">{completedTitle}</CardTitle>
               <CardDescription className="text-blue-600">
-                Your personality type has been identified
+                {completedDesc}
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6">
               <div className="text-center space-y-4">
                 <div className="p-4 bg-blue-50 rounded-lg">
-                  <p className="text-sm text-blue-700 mb-2">Your Top Two Personality Types:</p>
+                  <p className="text-sm text-blue-700 mb-2">{topTypesLabel}</p>
                   <p className="text-2xl font-bold text-blue-900">{topTwoTypes}</p>
                 </div>
                 <div className="flex justify-center gap-4">
@@ -415,10 +487,10 @@ export default function HollandCodeAssessment() {
                       navigate(`/student/assessment/holland-code?${params.toString()}`);
                     }}
                   >
-                    {lang === 'kn' ? 'ನನ್ನ ಉತ್ತರಗಳನ್ನು ವೀಕ್ಷಿಸಿ' : lang === 'ta' ? 'என் பதில்களை பார்' : 'View My Answers'}
+                    {viewAnswersLabel}
                   </Button>
                   <Button onClick={() => navigate('/student')} className="bg-blue-600 hover:bg-blue-700">
-                    {lang === 'kn' ? 'ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ಗೆ ಹಿಂತಿರುಗಿ' : lang === 'ta' ? 'முதல் பக்கத்திற்கு போ' : 'Back to Dashboard'}
+                    {t('backToDashboard')}
                   </Button>
                 </div>
               </div>
@@ -428,6 +500,117 @@ export default function HollandCodeAssessment() {
       </div>
     );
   }
+
+  // Localized module text
+  const localizedTitle = t('assessment_holland_code');
+
+  const localizedDescription =
+    lang === 'kn' ? 'ನಿಮ್ಮ ವ್ಯಕ್ತಿತ್ವದ ಪ್ರಕಾರ ಮತ್ತು ವೃತ್ತಿ ಆಸಕ್ತಿಗಳನ್ನು ಅನ್ವೇಷಿಸಿ.' :
+    lang === 'ta' ? 'உங்கள் ஆளுமை வகை மற்றும் தொழில் சார்ந்த ஆர்வங்களை கண்டறியுங்கள்.' :
+    lang === 'hi' ? 'अपने व्यक्तित्व के प्रकार और करियर रुचियों को जानें।' :
+    description || 'Discover your personality type and career interests';
+
+  const localizedInstructions =
+    lang === 'kn' ? 'ನಿಮ್ಮ ಆದ್ಯತೆಗಳು ಮತ್ತು ಆಸಕ್ತಿಗಳ ಬಗ್ಗೆ ಪ್ರಾಮಾಣಿಕವಾಗಿ ಉತ್ತರಿಸಿ.' :
+    lang === 'ta' ? 'உங்கள் விருப்பங்கள் மற்றும் ஆர்வங்கள் குறித்து உண்மையாக பதிலளிக்கவும்.' :
+    lang === 'hi' ? 'अपनी प्राथमिकताओं और रुचियों के बारे में ईमानदारी से उत्तर दें।' :
+    instructions || 'Answer honestly about your preferences and interests.';
+
+  const instructionsHeader =
+    lang === 'kn' ? 'ಸೂಚನೆಗಳು' :
+    lang === 'ta' ? 'அறிவுறுத்தல்கள்' :
+    lang === 'hi' ? 'निर्देश' :
+    'Instructions';
+
+  const questionsSectionTitle =
+    lang === 'kn' ? '1. ನಿಧಾನವಾಗಿ ಯೋಚಿಸಿ ಮತ್ತು ಈ ವಿವರಗಳನ್ನು ಭರ್ತಿ ಮಾಡಿ' :
+    lang === 'ta' ? '1. நிதானமாக யோசித்து இந்த விவரங்களை நிரப்பவும்' :
+    lang === 'hi' ? '1. अपना समय लें और इन विवरणों को भरें' :
+    '1. Take your time and fill in these details';
+
+  const questionsSectionDesc =
+    lang === 'kn' ? 'ಪ್ರತಿ ಹೇಳಿಕೆಗೆ ಹೌದು ಅಥವಾ ಇಲ್ಲ ಎಂದು ಉತ್ತರಿಸಿ' :
+    lang === 'ta' ? 'ஒவ்வொரு கூற்றிற்கும் ஆம் அல்லது இல்லை என்று பதிலளிக்கவும்' :
+    lang === 'hi' ? 'प्रत्येक कथन के लिए हाँ या नहीं में उत्तर दें' :
+    'Answer Yes or No for each statement';
+
+  const yesLabel =
+    lang === 'kn' ? 'ಹೌದು (✔)' :
+    lang === 'ta' ? 'ஆம் (✔)' :
+    lang === 'hi' ? 'हाँ (✔)' :
+    'Yes (✔)';
+
+  const noLabel =
+    lang === 'kn' ? 'ಇಲ್ಲ (✗)' :
+    lang === 'ta' ? 'இல்லை (✗)' :
+    lang === 'hi' ? 'नहीं (✗)' :
+    'No (✗)';
+
+  const scoreboardTitle =
+    lang === 'kn' ? 'ಅಂಕಪಟ್ಟಿ - ನಿಮ್ಮ ಪ್ರತಿಕ್ರಿಯೆಗಳನ್ನು ಗುರುತಿಸಿ' :
+    lang === 'ta' ? 'மதிப்பெண் பலகை - உங்கள் பதில்களைக் குறிக்கவும்' :
+    lang === 'hi' ? 'स्कोरबोर्ड - अपनी प्रतिक्रियाएँ अंकित करें' :
+    'Scoreboard - Mark Your Responses';
+
+  const scoreboardDesc =
+    lang === 'kn' ? 'ಪ್ರತಿ ವರ್ಗಕ್ಕೆ "ಹೌದು" ಪ್ರತಿಕ್ರಿಯೆಗಳ ಸಂಖ್ಯೆಯನ್ನು ಎಣಿಸಿ ಮತ್ತು ಒಟ್ಟು ನಮೂದಿಸಿ' :
+    lang === 'ta' ? 'ஒவ்வொரு வகைக்கும் "ஆம்" பதில்களின் எண்ணிக்கையை எண்ணி மொத்தத்தை உள்ளிடவும்' :
+    lang === 'hi' ? 'प्रत्येक श्रेणी के लिए "हाँ" प्रतिक्रियाओं की संख्या गिनें और कुल दर्ज करें' :
+    'Count the number of "Yes" responses for each category and enter the total';
+
+  const tableHeaderCol1 =
+    lang === 'kn' ? 'ವ್ಯಕ್ತಿತ್ವದ ಪ್ರಕಾರ' :
+    lang === 'ta' ? 'ஆளுமை வகை' :
+    lang === 'hi' ? 'व्यक्तित्व प्रकार' :
+    'Personality Type';
+
+  const tableHeaderCol2 =
+    lang === 'kn' ? 'ಪ್ರಶ್ನೆ ಸಂಖ್ಯೆಗಳು' :
+    lang === 'ta' ? 'கேள்வி எண்கள்' :
+    lang === 'hi' ? 'प्रश्न संख्या' :
+    'Question Numbers';
+
+  const tableHeaderCol3 =
+    lang === 'kn' ? 'ಒಟ್ಟು "ಹೌದು" ಅಂಕಗಳು' :
+    lang === 'ta' ? 'மொத்த "ஆம்" மதிப்பெண்கள்' :
+    lang === 'hi' ? 'कुल "हाँ" अंक' :
+    'Total Yes Marks';
+
+  const myTwoMainAreasLabel =
+    lang === 'kn' ? 'ನನ್ನ ಎರಡು ಮುಖ್ಯ ಕ್ಷೇತ್ರಗಳು:' :
+    lang === 'ta' ? 'எனது இரண்டு முக்கிய பகுதிகள்:' :
+    lang === 'hi' ? 'मेरे दो मुख्य क्षेत्र हैं:' :
+    'My two main areas are:';
+
+  const basedOnYourScoresLabel =
+    lang === 'kn' ? 'ನಿಮ್ಮ ಅಂಕಗಳ ಆಧಾರದ ಮೇಲೆ:' :
+    lang === 'ta' ? 'உங்கள் மதிப்பெண்களின் அடிப்படையில்:' :
+    lang === 'hi' ? 'आपके अंकों के आधार पर:' :
+    'Based on your scores:';
+
+  const reflectionLabel =
+    lang === 'kn' ? 'ನಿಮ್ಮ ಉನ್ನತ ವ್ಯಕ್ತಿತ್ವ ಪ್ರಕಾರಗಳನ್ನು ನೀವು ಒಪ್ಪುತ್ತೀರಾ? ಹಾಗಿದ್ದರೆ, ಏಕೆ? ಇಲ್ಲದಿದ್ದರೆ, ಏಕೆ ಇಲ್ಲ?' :
+    lang === 'ta' ? 'உங்கள் சிறந்த ஆளுமை வகைகளை நீங்கள் ஒப்புக்கொள்கிறீர்களா? ஆம் என்றால், ஏன்? இல்லையென்றால், ஏன் இல்லை?' :
+    lang === 'hi' ? 'क्या आप अपने शीर्ष व्यक्तित्व प्रकारों से सहमत हैं? यदि हाँ, तो क्यों? यदि नहीं, तो क्यों नहीं?' :
+    'Do you agree with your top personality types? If so, why? If not, why not?';
+
+  const reflectionPlaceholder =
+    lang === 'kn' ? 'ನಿಮ್ಮ ಚಿಂತನೆಗಳನ್ನು ಇಲ್ಲಿ ಬರೆಯಿರಿ...' :
+    lang === 'ta' ? 'உங்கள் கருத்தை இங்கே எழுதவும்...' :
+    lang === 'hi' ? 'अपने विचार यहाँ लिखें...' :
+    'Write your reflection here...';
+
+  const submittingLabel =
+    lang === 'kn' ? 'ಸಲ್ಲಿಸಲಾಗುತ್ತಿದೆ...' :
+    lang === 'ta' ? 'அனுப்புகிறது...' :
+    lang === 'hi' ? 'जमा किया जा रहा है...' :
+    'Submitting...';
+
+  const submitAssessmentLabel =
+    lang === 'kn' ? 'ಮೌಲ್ಯಮಾಪನ ಸಲ್ಲಿಸಿ' :
+    lang === 'ta' ? 'மதிப்பீடு சமர்ப்பிக்கவும்' :
+    lang === 'hi' ? 'मूल्यांकन सबमिट करें' :
+    'Submit Assessment';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 py-8" lang={lang} dir="auto">
@@ -441,29 +624,29 @@ export default function HollandCodeAssessment() {
 
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-blue-800 mb-4">{assessmentTitle || 'Holland Code (RIASEC) Test'}</h1>
+          <h1 className="text-3xl font-bold text-blue-800 mb-4">{localizedTitle || assessmentTitle || 'Holland Code (RIASEC) Test'}</h1>
           <div className="text-left max-w-4xl mx-auto space-y-4 text-gray-700">
-            {description ? (
-              <div className="text-base leading-relaxed whitespace-pre-line">{description}</div>
+            {localizedDescription ? (
+              <div className="text-base leading-relaxed whitespace-pre-line">{localizedDescription}</div>
             ) : (
               <p className="text-base leading-relaxed">Loading description...</p>
             )}
 
             {/* Hardcoded generic explanation of RIASEC if needed, or rely on DB description containing it */}
             <ol className="list-decimal list-inside space-y-2 ml-4">
-              <li>Realistic</li>
-              <li>Investigative</li>
-              <li>Artistic</li>
-              <li>Social</li>
-              <li>Enterprising</li>
-              <li>Conventional</li>
+              <li>{CATEGORY_LABELS[lang as 'en' | 'kn' | 'ta' | 'hi']?.R || CATEGORY_LABELS.en.R}</li>
+              <li>{CATEGORY_LABELS[lang as 'en' | 'kn' | 'ta' | 'hi']?.I || CATEGORY_LABELS.en.I}</li>
+              <li>{CATEGORY_LABELS[lang as 'en' | 'kn' | 'ta' | 'hi']?.A || CATEGORY_LABELS.en.A}</li>
+              <li>{CATEGORY_LABELS[lang as 'en' | 'kn' | 'ta' | 'hi']?.S || CATEGORY_LABELS.en.S}</li>
+              <li>{CATEGORY_LABELS[lang as 'en' | 'kn' | 'ta' | 'hi']?.E || CATEGORY_LABELS.en.E}</li>
+              <li>{CATEGORY_LABELS[lang as 'en' | 'kn' | 'ta' | 'hi']?.C || CATEGORY_LABELS.en.C}</li>
             </ol>
 
-            {instructions && (
+            {localizedInstructions && (
               <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                <p className="font-semibold text-blue-800 mb-2">Instructions</p>
+                <p className="font-semibold text-blue-800 mb-2">{instructionsHeader}</p>
                 <div className="text-sm text-gray-700 whitespace-pre-line space-y-2">
-                  {instructions}
+                  {localizedInstructions}
                 </div>
               </div>
             )}
@@ -474,13 +657,21 @@ export default function HollandCodeAssessment() {
         <Card className="mb-6 border-0 shadow-lg">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-800">Your Progress</h2>
-              <Badge variant="secondary">{Math.round(getProgressPercentage())}% Complete</Badge>
+              <h2 className="text-lg font-semibold text-gray-800">{t('yourProgress', 'Your Progress')}</h2>
+              <Badge variant="secondary">{Math.round(getProgressPercentage())}% {t('completeSuffix', 'Complete')}</Badge>
             </div>
             <Progress value={getProgressPercentage()} className="h-3" />
             <div className="flex justify-between text-sm text-gray-600 mt-2">
-              <span>{questions.length} Questions Total</span>
-              <span>{Math.round(getProgressPercentage())}% Complete</span>
+              <span>
+                {lang === 'kn'
+                  ? `ಒಟ್ಟು ${questions.length} ಪ್ರಶ್ನೆಗಳು`
+                  : lang === 'ta'
+                    ? `மொத்தம் ${questions.length} கேள்விகள்`
+                    : lang === 'hi'
+                      ? `कुल ${questions.length} प्रश्न`
+                      : `${questions.length} Questions Total`}
+              </span>
+              <span>{Math.round(getProgressPercentage())}% {t('completeSuffix', 'Complete')}</span>
             </div>
           </CardContent>
         </Card>
@@ -488,9 +679,9 @@ export default function HollandCodeAssessment() {
         {/* Questions Section */}
         <Card className="mb-6 border-0 shadow-lg">
           <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
-            <CardTitle className="text-xl text-blue-800">1. Take your time and fill in these details</CardTitle>
+            <CardTitle className="text-xl text-blue-800">{questionsSectionTitle}</CardTitle>
             <CardDescription className="text-blue-600">
-              Answer Yes or No for each statement
+              {questionsSectionDesc}
             </CardDescription>
           </CardHeader>
           <CardContent className="p-6">
@@ -507,7 +698,7 @@ export default function HollandCodeAssessment() {
                     </div>
                     <div className="flex-1">
                       <label className="block text-base text-gray-800 mb-2 cursor-pointer">
-                        {question.question_text}
+                        {getTranslatedHollandQuestion(question.sequence_number, lang, question.question_text)}
                       </label>
                       <div className="flex gap-4">
                         <label className="flex items-center gap-2 cursor-pointer">
@@ -519,7 +710,7 @@ export default function HollandCodeAssessment() {
                             disabled={isCompleted}
                             className="w-4 h-4 text-blue-600"
                           />
-                          <span className="text-sm">Yes (✔)</span>
+                          <span className="text-sm">{yesLabel}</span>
                         </label>
                         <label className="flex items-center gap-2 cursor-pointer">
                           <input
@@ -530,7 +721,7 @@ export default function HollandCodeAssessment() {
                             disabled={isCompleted}
                             className="w-4 h-4 text-blue-600"
                           />
-                          <span className="text-sm">No (✗)</span>
+                          <span className="text-sm">{noLabel}</span>
                         </label>
                       </div>
                     </div>
@@ -544,9 +735,9 @@ export default function HollandCodeAssessment() {
         {/* Scoreboard */}
         <Card className="mb-6 border-0 shadow-lg">
           <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
-            <CardTitle className="text-xl text-blue-800">Scoreboard - Mark Your Responses</CardTitle>
+            <CardTitle className="text-xl text-blue-800">{scoreboardTitle}</CardTitle>
             <CardDescription className="text-blue-600">
-              Count the number of "Yes" responses for each category and enter the total
+              {scoreboardDesc}
             </CardDescription>
           </CardHeader>
           <CardContent className="p-6">
@@ -554,18 +745,19 @@ export default function HollandCodeAssessment() {
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-blue-100">
-                    <th className="border border-blue-300 p-3 text-left font-semibold text-blue-800">Personality Type</th>
-                    <th className="border border-blue-300 p-3 text-center font-semibold text-blue-800">Question Numbers</th>
-                    <th className="border border-blue-300 p-3 text-center font-semibold text-blue-800">Total Yes Marks</th>
+                    <th className="border border-blue-300 p-3 text-left font-semibold text-blue-800">{tableHeaderCol1}</th>
+                    <th className="border border-blue-300 p-3 text-center font-semibold text-blue-800">{tableHeaderCol2}</th>
+                    <th className="border border-blue-300 p-3 text-center font-semibold text-blue-800">{tableHeaderCol3}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {(Object.keys(CATEGORY_LABELS) as CategoryKey[]).map((category) => {
+                  {(['R', 'I', 'A', 'S', 'E', 'C'] as CategoryKey[]).map((category) => {
                     const questionNums = SCOREBOARD_MAPPING[category];
                     const score = scores[category];
+                    const categoryLabel = (CATEGORY_LABELS[lang as 'en' | 'kn' | 'ta' | 'hi'] || CATEGORY_LABELS.en)[category];
                     return (
                       <tr key={category} className="hover:bg-blue-50">
-                        <td className="border border-blue-300 p-3 font-semibold text-gray-800">{category}</td>
+                        <td className="border border-blue-300 p-3 font-semibold text-gray-800">{categoryLabel} ({category})</td>
                         <td className="border border-blue-300 p-3 text-center text-gray-700">
                           {questionNums.join(', ')}
                         </td>
@@ -582,7 +774,7 @@ export default function HollandCodeAssessment() {
             {/* Top Two Types */}
             <div className="mt-6 p-4 bg-blue-50 rounded-lg">
               <label className="block text-sm font-semibold text-blue-800 mb-2">
-                My two main areas are:
+                {myTwoMainAreasLabel}
               </label>
               <Input
                 type="text"
@@ -595,7 +787,7 @@ export default function HollandCodeAssessment() {
               />
               {topTwoPersonalityTypes && (
                 <p className="mt-2 text-sm text-gray-600">
-                  Based on your scores: {topTwoPersonalityTypes}
+                  {basedOnYourScoresLabel} {topTwoPersonalityTypes}
                 </p>
               )}
             </div>
@@ -603,13 +795,13 @@ export default function HollandCodeAssessment() {
             {/* Reflection Question */}
             <div className="mt-6">
               <label className="block text-sm font-semibold text-gray-800 mb-2">
-                Do you agree with your top personality types? If so, why? If not, why not?
+                {reflectionLabel}
               </label>
               <Textarea
                 value={reflection}
                 onChange={(e) => { isDirtyRef.current = true; setReflection(e.target.value); }}
                 disabled={isCompleted}
-                placeholder="Write your reflection here..."
+                placeholder={reflectionPlaceholder}
                 rows={4}
                 className="text-base"
               />
@@ -628,12 +820,12 @@ export default function HollandCodeAssessment() {
             {submitting ? (
               <>
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
-                Submitting...
+                {submittingLabel}
               </>
             ) : (
               <>
                 <CheckCircle className="w-5 h-5 mr-3" />
-                Submit Assessment
+                {submitAssessmentLabel}
               </>
             )}
           </Button>
