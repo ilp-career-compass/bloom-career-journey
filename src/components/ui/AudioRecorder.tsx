@@ -1,4 +1,4 @@
-﻿import { logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -307,62 +307,109 @@ export function AudioRecorder({
       }
       audioContextRef.current = audioCtx;
 
-      // Load AudioWorklet Module
-      try {
-        await audioCtx.audioWorklet.addModule('/sarvam-audio-processor.js');
-        logger.log('✅ AudioWorklet Module Loaded');
-      } catch (err) {
-        logger.error('❌ Failed to load AudioWorklet:', err);
-        throw err;
+      // Try loading AudioWorklet module, fallback to ScriptProcessor on failure
+      let useWorklet = false;
+      if (audioCtx.audioWorklet) {
+        try {
+          await audioCtx.audioWorklet.addModule('/sarvam-audio-processor.js');
+          logger.log('✅ AudioWorklet Module Loaded');
+          useWorklet = true;
+        } catch (err) {
+          logger.warn('⚠️ Failed to load AudioWorklet, falling back to ScriptProcessor:', err);
+        }
+      } else {
+        logger.log('ℹ️ AudioWorklet not supported by browser, falling back to ScriptProcessor');
       }
 
       const source = audioCtx.createMediaStreamSource(stream);
       sourceRef.current = source;
 
-      // Create Worklet Node
-      const workletNode = new AudioWorkletNode(audioCtx, 'sarvam-audio-processor');
-      processorRef.current = workletNode;
+      if (useWorklet) {
+        // Create Worklet Node
+        const workletNode = new AudioWorkletNode(audioCtx, 'sarvam-audio-processor');
+        processorRef.current = workletNode;
 
-      // Handle Audio Chunks from Worklet
-      workletNode.port.onmessage = (e) => {
-        // G14: use refs to avoid stale closure; stream only when recording and not paused
-        if (!isRecordingRef.current || isPausedRef.current) return;
+        // Handle Audio Chunks from Worklet
+        workletNode.port.onmessage = (e) => {
+          // G14: use refs to avoid stale closure; stream only when recording and not paused
+          if (!isRecordingRef.current || isPausedRef.current) return;
 
-        // e.data is Float32Array
-        const inputData = e.data;
+          // e.data is Float32Array
+          const inputData = e.data;
 
-        // Convert to Int16 with GAIN
-        const GAIN = 15.0; // Aggressive boost for quiet microphones
-        const buffer = new ArrayBuffer(inputData.length * 2);
-        const view = new DataView(buffer);
-        for (let i = 0; i < inputData.length; i++) {
-          let s = inputData[i] * GAIN;
-          s = Math.max(-1, Math.min(1, s));
-          s = s < 0 ? s * 32768 : s * 32767;
-          view.setInt16(i * 2, s, true);
-        }
+          // Convert to Int16 with GAIN
+          const GAIN = 15.0; // Aggressive boost for quiet microphones
+          const buffer = new ArrayBuffer(inputData.length * 2);
+          const view = new DataView(buffer);
+          for (let i = 0; i < inputData.length; i++) {
+            let s = inputData[i] * GAIN;
+            s = Math.max(-1, Math.min(1, s));
+            s = s < 0 ? s * 32768 : s * 32767;
+            view.setInt16(i * 2, s, true);
+          }
 
-        // Convert to Base64
-        let binary = '';
-        const bytes = new Uint8Array(buffer);
-        const len = bytes.byteLength;
-        for (let i = 0; i < len; i++) {
-          binary += String.fromCharCode(bytes[i]);
-        }
-        const base64Audio = window.btoa(binary);
+          // Convert to Base64
+          let binary = '';
+          const bytes = new Uint8Array(buffer);
+          const len = bytes.byteLength;
+          for (let i = 0; i < len; i++) {
+            binary += String.fromCharCode(bytes[i]);
+          }
+          const base64Audio = window.btoa(binary);
 
-        logger.log(`🎤 Generated Chunk: ${base64Audio.substring(0, 10)}...`);
-        sarvamStreamingService.sendAudioChunk(base64Audio);
-      };
+          logger.log(`🎤 Generated Chunk (Worklet): ${base64Audio.substring(0, 10)}...`);
+          sarvamStreamingService.sendAudioChunk(base64Audio);
+        };
 
-      source.connect(workletNode);
-      workletNode.connect(audioCtx.destination);
+        source.connect(workletNode);
+        workletNode.connect(audioCtx.destination);
+        logger.log('✅ Streaming Capture Started (AudioWorklet)');
+      } else {
+        // Fallback to ScriptProcessorNode
+        const scriptNode = audioCtx.createScriptProcessor(4096, 1, 1);
+        processorRef.current = scriptNode;
 
-      logger.log('✅ Streaming Capture Started (AudioWorklet)');
+        scriptNode.onaudioprocess = (e) => {
+          if (!isRecordingRef.current || isPausedRef.current) return;
+
+          // inputBuffer is already at 16000Hz because the audioCtx was created with sampleRate: 16000
+          const inputData = e.inputBuffer.getChannelData(0);
+
+          // Convert to Int16 with GAIN
+          const GAIN = 15.0;
+          const buffer = new ArrayBuffer(inputData.length * 2);
+          const view = new DataView(buffer);
+          for (let i = 0; i < inputData.length; i++) {
+            let s = inputData[i] * GAIN;
+            s = Math.max(-1, Math.min(1, s));
+            s = s < 0 ? s * 32768 : s * 32767;
+            view.setInt16(i * 2, s, true);
+          }
+
+          // Convert to Base64
+          let binary = '';
+          const bytes = new Uint8Array(buffer);
+          const len = bytes.byteLength;
+          for (let i = 0; i < len; i++) {
+            binary += String.fromCharCode(bytes[i]);
+          }
+          const base64Audio = window.btoa(binary);
+
+          logger.log(`🎤 Generated Chunk (ScriptProcessor): ${base64Audio.substring(0, 10)}...`);
+          sarvamStreamingService.sendAudioChunk(base64Audio);
+        };
+
+        source.connect(scriptNode);
+        scriptNode.connect(audioCtx.destination);
+        logger.log('✅ Streaming Capture Started (ScriptProcessor fallback)');
+      }
 
     } catch (e) {
       logger.error('Failed to start streaming capture:', e);
-      // Fallback: Don't fail the whole recording if streaming fails
+      // Clean up WS connection on start failure
+      sarvamStreamingService.disconnect().catch(() => {});
+      const baseLang = (lang || localStorage.getItem('lang') || 'en').split('-')[0];
+      setErrorState('warning', streamingUnavailableMessages[baseLang] || streamingUnavailableMessages.en);
     }
   };
 

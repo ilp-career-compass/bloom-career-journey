@@ -1,4 +1,4 @@
-declare const Deno: any;
+/// <reference path="../global.d.ts" />
 
 Deno.serve(async (req: Request) => {
   // Only accept POST

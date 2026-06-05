@@ -51,9 +51,23 @@ function parseCSV(text: string): Array<Record<string, string>> {
   });
 }
 
+function normalizeDigits(phone: string): string {
+  return Array.from(phone)
+    .map((ch) => {
+      const n = ch.codePointAt(0) ?? NaN;
+      if (n >= 0x30 && n <= 0x39) return ch; // ASCII digit fast-path
+      const numericValue = Number(ch);
+      if (!isNaN(numericValue) && numericValue >= 0 && numericValue <= 9) return String(numericValue);
+      return ch;
+    })
+    .join('')
+    .replace(/\D/g, '');
+}
+
 function toE164Indian(phone: string): string {
-  const digits = phone.replace(/\D/g, '');
+  const digits = normalizeDigits(phone);
   if (digits.length === 10) return `+91${digits}`;
+  if (digits.length === 11 && digits.startsWith('0')) return `+91${digits.slice(1)}`;
   if (digits.length === 12 && digits.startsWith('91')) return `+${digits}`;
   return phone;
 }

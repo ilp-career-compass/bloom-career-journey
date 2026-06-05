@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { User, ArrowLeft, CheckCircle, Lock, Sparkles } from 'lucide-react';
+import { User, ArrowLeft, CheckCircle, Lock, Sparkles, AlertTriangle } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { Badge } from '@/components/ui/badge';
@@ -47,6 +47,27 @@ export default function AboutMeAssessment() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [responses, setResponses] = useState<AboutMeResponses>({});
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchRejectionFeedback = async () => {
+      if (!userProfile?.id) return;
+      try {
+        const { data, error } = await supabase
+          .from('profile_card_cache')
+          .select('approval_status, rejection_reason')
+          .eq('student_id', userProfile.id)
+          .eq('assessment_type', 'about_me')
+          .maybeSingle();
+        if (data && data.approval_status === 'rejected') {
+          setRejectionReason(data.rejection_reason);
+        }
+      } catch (err) {
+        logger.error('Error fetching rejection reason:', err);
+      }
+    };
+    fetchRejectionFeedback();
+  }, [userProfile?.id]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -504,13 +525,14 @@ export default function AboutMeAssessment() {
 
   // Auto-save drafts on changes (debounced)
   useEffect(() => {
-    if (loading || isCompleted || readOnlyView || aboutMeFields.length === 0) return;
+    if (loading || (isCompleted && !rejectionReason) || readOnlyView || aboutMeFields.length === 0) return;
     const studentId = userProfile?.studentProfile?.id;
     if (!studentId) return;
     const timer = setTimeout(async () => {
       await supabase.from('assessment_responses').upsert({
         student_id: studentId,
         assessment_type: 'about_me',
+        assessment_title: 'About Me',
         responses,
         completed_at: null,
         updated_at: new Date().toISOString(),
@@ -552,6 +574,7 @@ export default function AboutMeAssessment() {
       if (error) throw error;
 
       toast({
+        duration: 6000,
         title: complete
           ? (lang === 'kn' ? 'ಮೌಲ್ಯಮಾಪನವನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಸಲ್ಲಿಸಲಾಗಿದೆ' : lang === 'ta' ? 'மதிப்பீடு வெற்றிகரமாக சமர்ப்பிக்கப்பட்டது' : lang === 'hi' ? 'मूल्यांकन सफलतापूर्वक जमा किया गया' : 'Assessment submitted successfully')
           : (lang === 'kn' ? 'ಪ್ರಗತಿಯನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಉಳಿಸಲಾಗಿದೆ' : lang === 'ta' ? 'முன்னேற்றம் வெற்றிகரமாக சேமிக்கப்பட்டது' : lang === 'hi' ? 'प्रगति सफलतापूर्वक सहेजी गई' : 'Progress saved successfully'),
@@ -588,7 +611,7 @@ export default function AboutMeAssessment() {
     }
   };
 
-  if (isCompleted && !readOnlyView) {
+  if (isCompleted && !readOnlyView && !rejectionReason) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-8">
         <div className="container mx-auto px-4">
@@ -664,6 +687,19 @@ export default function AboutMeAssessment() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 py-8" lang={lang} dir="auto">
       <div className="container mx-auto px-4">
+        {rejectionReason && (
+          <div className="max-w-3xl mx-auto mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
+            <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-semibold text-red-800 text-sm">
+                {t('revision_requested')}
+              </h3>
+              <p className="text-red-700 text-xs mt-1">
+                <strong>{t('teacher_feedback')}</strong> {rejectionReason}
+              </p>
+            </div>
+          </div>
+        )}
         {/* Header - match My Dreams */}
         <div className="text-center mb-8">
           <div className="text-left mb-2">
@@ -925,7 +961,7 @@ export default function AboutMeAssessment() {
                 disabled={sections.indexOf(currentSection) === 0}
                 className="w-full sm:w-auto border-blue-200 text-blue-700 hover:bg-blue-50"
               >
-                {t('previous')}
+                {t('previousSection')}
               </Button>
 
               <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -967,7 +1003,7 @@ export default function AboutMeAssessment() {
                         }}
                         className="w-full sm:w-auto border-blue-200 text-blue-700 hover:bg-blue-50"
                       >
-                        {t('summary')}
+                        {t('viewSummary')}
                       </Button>
                     );
                   }
@@ -998,7 +1034,7 @@ export default function AboutMeAssessment() {
 
                       className="w-full sm:w-auto border-blue-200 text-blue-700 hover:bg-blue-50"
                     >
-                      {t('next')}
+                      {t('nextSection')}
                     </Button>
                   ) : (
                     <Button
@@ -1014,7 +1050,7 @@ export default function AboutMeAssessment() {
                       ) : (
                         <>
                           <Badge className="w-4 h-4 mr-2 bg-transparent border-0 p-0"><CheckCircle className="w-4 h-4" /></Badge>
-                          {t('submitAssessment')}
+                          {readOnlyView ? (lang === 'kn' ? 'ಸಲ್ಲಿಸಲಾಗಿದೆ' : lang === 'ta' ? 'சமர்ப்பிக்கப்பட்டது' : lang === 'hi' ? 'जमा किया गया' : 'Submitted') : t('submitAssessment')}
                         </>
                       )}
                     </Button>

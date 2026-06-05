@@ -118,7 +118,7 @@ export default function AdminDashboard() {
   useEffect(() => { try { localStorage.setItem('lang', lang); } catch { } }, [lang]);
 
   // ── i18n ───────────────────────────────────────────────────────────────────
-  const strings: Record<'en' | 'kn' | 'ta' | 'hi', Record<string, string>> = {
+  const strings: Record<'en' | 'kn' | 'ta' | 'hi', Record<string, string | Function>> = {
     en: {
       adminDashboard: 'Admin Dashboard', adminPanel: 'CareerCompass Administration Panel',
       signOut: 'Sign Out', organizations: 'Organizations', schools: 'Schools',
@@ -511,10 +511,10 @@ export default function AdminDashboard() {
       if (summaryRes.error) throw summaryRes.error;
 
       setOrganizations(orgsRes.data || []);
-      setSchools(statesRes.data as StateRow[] || []);
-      setTeachers(teachersRes.data as Teacher[] || []);
-      setStudents(studentsRes.data as Student[] || []);
-      setClasses(classesRes.data as ClassRow[] || []);
+      setSchools(statesRes.data as unknown as StateRow[] || []);
+      setTeachers(teachersRes.data as unknown as Teacher[] || []);
+      setStudents(studentsRes.data as unknown as Student[] || []);
+      setClasses(classesRes.data as unknown as ClassRow[] || []);
       setAdminUsers(usersRes.data as AdminUser[] || []);
       setAssessmentTemplates(templatesRes as TemplateRow[]);
       setSummaryTemplates(summaryRes.data as SummaryTemplateRow[] || []);
@@ -536,22 +536,22 @@ export default function AdminDashboard() {
   const fetchSchools = async () => {
     const { data, error } = await supabase.from('states').select('id, name, state_code, org_id, orgs:org_id(name), created_at').order('created_at', { ascending: false }).limit(QUERY_LIMIT);
     if (error) logger.error('fetchSchools:', error);
-    else setSchools(data as StateRow[] || []);
+    else setSchools(data as unknown as StateRow[] || []);
   };
   const fetchClasses = async () => {
     const { data, error } = await supabase.from('classes').select('id, name, state_id, states:state_id(name)').order('name').limit(QUERY_LIMIT);
     if (error) logger.error('fetchClasses:', error);
-    else setClasses(data as ClassRow[] || []);
+    else setClasses(data as unknown as ClassRow[] || []);
   };
   const fetchTeachers = async () => {
     const { data, error } = await supabase.from('teachers').select('id, state_id, is_active, users:user_id(full_name, mobile), states:state_id(name), classes:class_id(name)').order('created_at', { ascending: false }).limit(QUERY_LIMIT);
     if (error) logger.error('fetchTeachers:', error);
-    else setTeachers(data as Teacher[] || []);
+    else setTeachers(data as unknown as Teacher[] || []);
   };
   const fetchStudents = async () => {
     const { data, error } = await supabase.from('students').select('id, enrollment_status, users:user_id(full_name, mobile), classes:class_id(name, states:state_id(name)), teachers:teacher_id(users:user_id(full_name), is_default)').order('created_at', { ascending: false }).limit(QUERY_LIMIT);
     if (error) logger.error('fetchStudents:', error);
-    else setStudents(data as Student[] || []);
+    else setStudents(data as unknown as Student[] || []);
   };
   const fetchUsers = async () => {
     const { data, error } = await supabase.from('users').select('id, full_name, email, role, preferred_language, mobile, bio, interests, career_goals, strengths, areas_for_growth, profile_picture_url, date_of_birth, gender, address, school').order('created_at', { ascending: false }).limit(QUERY_LIMIT);

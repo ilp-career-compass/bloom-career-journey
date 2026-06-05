@@ -54,6 +54,7 @@ export default function CareerGuidanceToolsAssessment() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const isReadOnly = isCompleted || readOnlyView;
   const [isDirty, setIsDirty] = useState(false);
   const [helpOpen, setHelpOpen] = useState<Record<string, boolean>>({});
   const toggleHelp = (k: string) => setHelpOpen(prev => ({ ...prev, [k]: !prev[k] }));
@@ -207,6 +208,7 @@ export default function CareerGuidanceToolsAssessment() {
   };
 
   const canSubmit = () => {
+    if (isReadOnly) return false;
     if (questions.length === 0) return false;
     return questions.every((q, index) => {
       const questionKey = `question${index + 1}` as keyof CareerGuidanceResponse;
@@ -273,6 +275,7 @@ export default function CareerGuidanceToolsAssessment() {
       if (error) throw error;
 
       toast({
+        duration: 6000,
         title: lang === 'kn' ? 'ವೃತ್ತಿ ಮಾರ್ಗದರ್ಶನ ಪರಿಕರಗಳ ಮೌಲ್ಯಮಾಪನ ಪೂರ್ಣ! 🌐' : lang === 'ta' ? 'தொழில் வழிகாட்டி கருவிகள் மதிப்பீடு முடிந்தது! 🌐' : lang === 'hi' ? 'करियर मार्गदर्शन उपकरण मूल्यांकन पूर्ण! 🌐' : 'Career Guidance Tools Assessment Completed! 🌐',
         description: lang === 'kn' ? 'ನಿಮ್ಮ ಉತ್ತರಗಳನ್ನು ಯಶಸ್ವಿಯಾಗಿ ದಾಖಲಿಸಲಾಗಿದೆ!' : lang === 'ta' ? 'உங்கள் பதில்கள் வெற்றிகரமாக பதிவு செய்யப்பட்டுள்ளன!' : lang === 'hi' ? 'आपकी प्रतिक्रियाएँ सफलतापूर्वक दर्ज की गई हैं!' : 'Your responses have been captured successfully!',
       });
@@ -471,7 +474,7 @@ After your teacher guides you through the career chart, career guidance workbook
                         placeholder={question.help_text}
                         value={typeof response === 'string' ? response : ''}
                         onChange={(e) => handleResponseChange(questionKey, e.target.value)}
-                        disabled={isCompleted}
+                        disabled={isReadOnly}
                         rows={4}
                         className="text-base border-purple-200 focus:border-purple-400"
                       />
@@ -482,7 +485,7 @@ After your teacher guides you through the career chart, career guidance workbook
                         placeholder={question.help_text}
                         value={typeof response === 'string' ? response : ''}
                         onChange={(e) => handleResponseChange(questionKey, e.target.value)}
-                        disabled={isCompleted}
+                        disabled={isReadOnly}
                         className="text-base border-purple-200 focus:border-purple-400"
                       />
                     )}
@@ -495,7 +498,7 @@ After your teacher guides you through the career chart, career guidance workbook
                             id={`${questionKey}-yes`}
                             checked={response === true}
                             onChange={() => handleResponseChange(questionKey, true)}
-                            disabled={isCompleted}
+                            disabled={isReadOnly}
                             className="w-4 h-4 text-purple-600 border-purple-300 focus:ring-purple-500"
                           />
                           <span className="text-sm font-medium text-gray-700">Yes</span>
@@ -507,7 +510,7 @@ After your teacher guides you through the career chart, career guidance workbook
                             id={`${questionKey}-no`}
                             checked={response === false}
                             onChange={() => handleResponseChange(questionKey, false)}
-                            disabled={isCompleted}
+                            disabled={isReadOnly}
                             className="w-4 h-4 text-purple-600 border-purple-300 focus:ring-purple-500"
                           />
                           <span className="text-sm font-medium text-gray-700">No</span>
@@ -525,9 +528,9 @@ After your teacher guides you through the career chart, career guidance workbook
         <div className="flex justify-center mt-8 mb-8">
           <Button
             onClick={submitAssessment}
-            disabled={!canSubmit() || submitting}
+            disabled={!canSubmit() || submitting || isReadOnly}
             size="lg"
-            className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-8 py-3 text-lg"
+            className={isReadOnly ? "bg-gray-100 text-gray-400 border border-gray-200 px-8 py-3 text-lg cursor-not-allowed" : "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-8 py-3 text-lg"}
           >
             {submitting ? (
               <>
@@ -537,7 +540,7 @@ After your teacher guides you through the career chart, career guidance workbook
             ) : (
               <>
                 <CheckCircle className="w-5 h-5 mr-3" />
-                Submit Assessment
+                {isReadOnly ? (lang === 'kn' ? 'ಸಲ್ಲಿಸಲಾಗಿದೆ' : lang === 'ta' ? 'சமர்ப்பிக்கப்பட்டது' : lang === 'hi' ? 'जमा किया गया' : 'Submitted') : 'Submit Assessment'}
               </>
             )}
           </Button>

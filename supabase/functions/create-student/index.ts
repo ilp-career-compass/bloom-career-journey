@@ -1,4 +1,6 @@
+/// <reference path="../global.d.ts" />
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
 
 function getCorsHeaders(req: Request): Record<string, string> {
   const allowedOrigin = Deno.env.get('ALLOWED_ORIGIN')
@@ -45,7 +47,7 @@ function isValidE164(phone: string): boolean {
   return /^\+\d{10,15}$/.test(phone)
 }
 
-Deno.serve(async (req) => {
+Deno.serve(async (req: Request) => {
   const corsHeaders = getCorsHeaders(req)
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })

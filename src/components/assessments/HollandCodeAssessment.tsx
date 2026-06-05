@@ -83,6 +83,7 @@ export default function HollandCodeAssessment() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const isReadOnly = isCompleted || readOnlyView;
   const [topTwoTypes, setTopTwoTypes] = useState<string>('');
   const [reflection, setReflection] = useState<string>('');
   const [description, setDescription] = useState<string>('');
@@ -261,6 +262,7 @@ export default function HollandCodeAssessment() {
   };
 
   const canSubmit = () => {
+    if (isReadOnly) return false;
     return questions.length > 0 && Object.keys(answers).length === questions.length && topTwoTypes.length === 2;
   };
 
@@ -707,7 +709,7 @@ export default function HollandCodeAssessment() {
                             name={`question-${questionNum}`}
                             checked={isYes}
                             onChange={() => handleToggle(questionNum, true)}
-                            disabled={isCompleted}
+                            disabled={isReadOnly}
                             className="w-4 h-4 text-blue-600"
                           />
                           <span className="text-sm">{yesLabel}</span>
@@ -718,7 +720,7 @@ export default function HollandCodeAssessment() {
                             name={`question-${questionNum}`}
                             checked={isNo}
                             onChange={() => handleToggle(questionNum, false)}
-                            disabled={isCompleted}
+                            disabled={isReadOnly}
                             className="w-4 h-4 text-blue-600"
                           />
                           <span className="text-sm">{noLabel}</span>
@@ -780,7 +782,7 @@ export default function HollandCodeAssessment() {
                 type="text"
                 value={topTwoTypes}
                 onChange={(e) => { isDirtyRef.current = true; setTopTwoTypes(e.target.value.toUpperCase()); }}
-                disabled={isCompleted}
+                disabled={isReadOnly}
                 placeholder="e.g., R, E"
                 maxLength={2}
                 className="max-w-xs font-bold text-lg"
@@ -800,7 +802,7 @@ export default function HollandCodeAssessment() {
               <Textarea
                 value={reflection}
                 onChange={(e) => { isDirtyRef.current = true; setReflection(e.target.value); }}
-                disabled={isCompleted}
+                disabled={isReadOnly}
                 placeholder={reflectionPlaceholder}
                 rows={4}
                 className="text-base"
@@ -813,9 +815,9 @@ export default function HollandCodeAssessment() {
         <div className="flex justify-center mb-8">
           <Button
             onClick={submitAssessment}
-            disabled={!canSubmit() || submitting}
+            disabled={!canSubmit() || submitting || isReadOnly}
             size="lg"
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-3 text-lg"
+            className={isReadOnly ? "bg-gray-100 text-gray-400 border border-gray-200 px-8 py-3 text-lg cursor-not-allowed" : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-3 text-lg"}
           >
             {submitting ? (
               <>
@@ -825,7 +827,7 @@ export default function HollandCodeAssessment() {
             ) : (
               <>
                 <CheckCircle className="w-5 h-5 mr-3" />
-                {submitAssessmentLabel}
+                {isReadOnly ? (lang === 'kn' ? 'ಸಲ್ಲಿಸಲಾಗಿದೆ' : lang === 'ta' ? 'சமர்ப்பிக்கப்பட்டது' : lang === 'hi' ? 'जማ किया गया' : 'Submitted') : submitAssessmentLabel}
               </>
             )}
           </Button>

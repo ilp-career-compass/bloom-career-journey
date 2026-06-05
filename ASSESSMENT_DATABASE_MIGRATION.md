@@ -99,8 +99,7 @@ Created `src/services/assessmentService.ts` with methods:
 - 6 inspirational videos with URLs
 - Question structure and validation
 
-### Holland Code Test
-- 42 questions across 6 categories (R, I, A, S, E, C)
+### - 42 questions across 6 categories (R, I, A, S, E, C)
 - Category labels and descriptions
 - Question mapping to categories
 

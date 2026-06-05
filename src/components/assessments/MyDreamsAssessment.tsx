@@ -91,13 +91,34 @@ export default function MyDreamsAssessment() {
   const [searchParams] = useSearchParams();
   const [dreamsQuestions, setDreamsQuestions] = useState<DreamQuestion[]>([]);
   const [responses, setResponses] = useState<DreamAssessmentResponse>({});
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchRejectionFeedback = async () => {
+      if (!userProfile?.id) return;
+      try {
+        const { data, error } = await supabase
+          .from('profile_card_cache')
+          .select('approval_status, rejection_reason')
+          .eq('student_id', userProfile.id)
+          .eq('assessment_type', 'dreams')
+          .maybeSingle();
+        if (data && data.approval_status === 'rejected') {
+          setRejectionReason(data.rejection_reason);
+        }
+      } catch (err) {
+        logger.error('Error fetching rejection reason:', err);
+      }
+    };
+    fetchRejectionFeedback();
+  }, [userProfile?.id]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const viewParam = (searchParams.get('readonly') || searchParams.get('view') || '').toLowerCase();
   const readOnlyView = viewParam === '1' || viewParam === 'true';
   const tabParam = searchParams.get('tab');
-  const isReadOnly = isCompleted || readOnlyView;
+  const isReadOnly = (isCompleted && !rejectionReason) || readOnlyView;
   const [currentSection, setCurrentSection] = useState<string>('section1');
   const [helpOpen, setHelpOpen] = useState<Record<string, boolean>>({});
   const toggleHelp = (k: string) => setHelpOpen(prev => ({ ...prev, [k]: !prev[k] }));
@@ -794,7 +815,7 @@ export default function MyDreamsAssessment() {
     );
   }
 
-  if (isCompleted && !readOnlyView) {
+  if (isCompleted && !readOnlyView && !rejectionReason) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-8">
         <div className="container mx-auto px-4">
@@ -874,6 +895,20 @@ export default function MyDreamsAssessment() {
             {t('backToDashboard')}
           </Button>
         </div>
+
+        {rejectionReason && (
+          <div className="max-w-3xl mx-auto mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 shadow-sm">
+            <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-semibold text-red-800 text-sm">
+                {lang === 'kn' ? 'ಪರಿಷ್ಕರಣೆ ಕೋರಲಾಗಿದೆ' : lang === 'ta' ? 'திருத்தம் கோரப்பட்டுள்ளது' : lang === 'hi' ? 'संशोधन का अनुरोध किया गया' : 'Revision Requested'}
+              </h3>
+              <p className="text-red-700 text-xs mt-1">
+                <strong>{lang === 'kn' ? 'ಶಿಕ್ಷಕರ ಪ್ರತಿಕ್ರಿಯೆ:' : lang === 'ta' ? 'ஆசிரியர் கருத்து:' : lang === 'hi' ? 'शिक्षक फीडबैक:' : 'Teacher Feedback:'}</strong> {rejectionReason}
+              </p>
+            </div>
+          </div>
+        )}
 
 
 

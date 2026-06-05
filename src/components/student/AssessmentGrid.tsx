@@ -30,6 +30,8 @@ export interface AssessmentCardData {
     hasProgress: boolean;
     hasSummary: boolean;
     summaryState: SummaryState;
+    isRejected?: boolean;
+    rejectionReason?: string | null;
 }
 
 interface AssessmentGridProps {
@@ -66,20 +68,29 @@ export default function AssessmentGrid({ cards, resolvedLang, t, onStartAssessme
                             <p className={`text-sm ${card.assessmentStatus.descriptionColor} mb-2`}>
                                 {desc}
                             </p>
-                            {card.isCompleted && (
+                            {card.isRejected ? (
+                                <Badge variant="destructive" className="mt-2 bg-red-600 hover:bg-red-700 text-white font-medium">{t('revision_requested')}</Badge>
+                            ) : card.isCompleted ? (
                                 <Badge variant="default" className="mt-2 bg-green-600">{t('completed')}</Badge>
-                            )}
-                            {!card.isCompleted && card.hasProgress && (
+                            ) : null}
+                            {!card.isRejected && !card.isCompleted && card.hasProgress && (
                                 <Badge variant="outline" className="mt-2 border-yellow-500 text-yellow-600">{t('in_progress')}</Badge>
                             )}
-                            {!card.isCompleted && !card.hasProgress && card.key === 'inspiration' && (
+                            {!card.isRejected && !card.isCompleted && !card.hasProgress && card.key === 'inspiration' && (
                                 <Badge variant="secondary" className="mt-2">{t('start_here')}</Badge>
                             )}
-                            {!card.isCompleted && !card.hasProgress && card.key !== 'inspiration' && card.isUnlocked && (
+                            {!card.isRejected && !card.isCompleted && !card.hasProgress && card.key !== 'inspiration' && card.isUnlocked && (
                                 <Badge variant="secondary" className="mt-2">{t('available')}</Badge>
                             )}
-                            {!card.isCompleted && !card.hasProgress && !card.isUnlocked && (
+                            {!card.isRejected && !card.isCompleted && !card.hasProgress && !card.isUnlocked && (
                                 <Badge variant="outline" className="mt-2">{t('locked')}</Badge>
+                            )}
+
+                            {card.isRejected && card.rejectionReason && (
+                                <div className="mt-3 p-2.5 bg-red-50 border border-red-200 rounded text-left text-xs text-red-700">
+                                    <strong className="block mb-0.5">{t('teacher_feedback')}</strong>
+                                    <span className="italic">"{card.rejectionReason}"</span>
+                                </div>
                             )}
 
                             {card.isCompleted && card.hasSummary && (

@@ -1,4 +1,5 @@
-import { logger } from '@/lib/logger';
+import {
+  logger } from '@/lib/logger';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { validateResponses } from '@/utils/englishValidation';
 import { useAuth } from '@/hooks/useAuth';
@@ -29,7 +30,8 @@ import {
   Award,
   Users,
   Lock,
-  Sparkles
+  Sparkles,
+  AlertTriangle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -55,6 +57,27 @@ interface HobbiesAssessmentResponse {
 
 export default function MyHobbiesAssessment() {
   const { userProfile } = useAuth();
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchRejectionFeedback = async () => {
+      if (!userProfile?.id) return;
+      try {
+        const { data, error } = await supabase
+          .from('profile_card_cache')
+          .select('approval_status, rejection_reason')
+          .eq('student_id', userProfile.id)
+          .eq('assessment_type', 'hobbies')
+          .maybeSingle();
+        if (data && data.approval_status === 'rejected') {
+          setRejectionReason(data.rejection_reason);
+        }
+      } catch (err) {
+        logger.error('Error fetching rejection reason:', err);
+      }
+    };
+    fetchRejectionFeedback();
+  }, [userProfile?.id]);
   const { t, lang } = useLang();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -69,6 +92,15 @@ export default function MyHobbiesAssessment() {
   const [helpOpen, setHelpOpen] = useState<Record<string, boolean>>({});
   const [savingSection, setSavingSection] = useState<string | null>(null);
   const autoSaveErrorRef = useRef(false);
+  const redirectTimeoutRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimeoutRef.current) {
+        clearTimeout(redirectTimeoutRef.current);
+      }
+    };
+  }, []);
   const isDirtyRef = useRef(false);
 
   // Reactively translate responses when language changes
@@ -96,7 +128,7 @@ export default function MyHobbiesAssessment() {
   const viewParam = (searchParams.get('readonly') || searchParams.get('view') || '').toLowerCase();
   const readOnlyView = viewParam === '1' || viewParam === 'true';
   const tabParam = searchParams.get('tab');
-  const isReadOnly = isCompleted || readOnlyView;
+  const isReadOnly = (isCompleted && !rejectionReason) || readOnlyView;
 
   // Helper function to get student ID
   const getStudentId = async () => {
@@ -288,10 +320,10 @@ export default function MyHobbiesAssessment() {
   }, [tabParam, readOnlyView, hobbiesQuestions]);
 
   useEffect(() => {
-    if (hobbiesQuestions.length > 0 && summaryQuestions.length > 0) {
+    if (userProfile && hobbiesQuestions.length > 0 && summaryQuestions.length > 0) {
       checkExistingResponse();
     }
-  }, [hobbiesQuestions, summaryQuestions]);
+  }, [hobbiesQuestions, summaryQuestions, userProfile]);
 
   // Keep URL ?lang in sync without re-rendering
   useEffect(() => {
@@ -311,7 +343,7 @@ export default function MyHobbiesAssessment() {
 
   // Auto-save drafts on changes (debounced)
   useEffect(() => {
-    if (loading || isCompleted || readOnlyView || !isDirtyRef.current || Object.keys(responses).length === 0) return;
+    if (loading || (isCompleted && !rejectionReason) || readOnlyView || !isDirtyRef.current || Object.keys(responses).length === 0) return;
     const timer = setTimeout(async () => {
       try {
         const studentId = await getStudentId();
@@ -319,6 +351,7 @@ export default function MyHobbiesAssessment() {
         const { error: autoSaveErr } = await supabase.from('assessment_responses').upsert({
           student_id: studentId,
           assessment_type: 'hobbies',
+          assessment_title: 'My Talents and Hobbies',
           responses,
           completed_at: null,
           updated_at: new Date().toISOString(),
@@ -417,6 +450,7 @@ export default function MyHobbiesAssessment() {
                 : sectionNamesEn[sectionNumber] || section;
 
       toast({
+        duration: 6000,
         title:
           lang === 'kn'
             ? 'ಭಾಗವು ಉಳಿಸಲಾಗಿದೆ! ✅'
@@ -614,6 +648,7 @@ export default function MyHobbiesAssessment() {
       if (error) throw error;
 
       toast({
+        duration: 6000,
         title:
           lang === 'kn'
             ? 'ಪ್ರತಿಭೆಗಳು ಮತ್ತು ಹವ್ಯಾಸಗಳ ಮೌಲ್ಯಮಾಪನ ಪೂರ್ಣಗೊಂಡಿದೆ! 🎨'
@@ -653,7 +688,7 @@ export default function MyHobbiesAssessment() {
       }
       aiSummaryService.generateAndCacheProfileCardKeywords('hobbies', responses, userProfile.id, lang);
       setIsCompleted(true);
-      setTimeout(() => navigate('/student/things-interest-me?from=hobbies'), 2000);
+      redirectTimeoutRef.current = setTimeout(() => navigate('/student/things-interest-me?from=hobbies'), 6000);
     } catch (error) {
       logger.error('Error submitting assessment:', error);
       toast({
@@ -686,7 +721,7 @@ export default function MyHobbiesAssessment() {
     );
   }
 
-  if (isCompleted && !readOnlyView) {
+  if (isCompleted && !readOnlyView && !rejectionReason) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-pink-50 py-8">
         <div className="container mx-auto px-4">
@@ -756,6 +791,19 @@ export default function MyHobbiesAssessment() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-pink-50 py-8" lang={lang} dir="auto">
       <div className="container mx-auto px-4">
+        {rejectionReason && (
+          <div className="max-w-3xl mx-auto mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
+            <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-semibold text-red-800 text-sm">
+                {t('revision_requested')}
+              </h3>
+              <p className="text-red-700 text-xs mt-1">
+                <strong>{t('teacher_feedback')}</strong> {rejectionReason}
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="text-left mb-2">
           <Button variant="ghost" onClick={() => navigate('/student')} className="text-orange-700 hover:text-orange-800 hover:bg-orange-50">
@@ -1176,9 +1224,7 @@ export default function MyHobbiesAssessment() {
                           {(() => {
                             const idx = sections.indexOf(currentSection);
                             const nextSec = sections[idx + 1];
-                            return nextSec === 'summary'
-                              ? (lang === 'kn' ? 'ಸಾರಾಂಶ →' : lang === 'ta' ? 'சுருக்கம் →' : lang === 'hi' ? 'सारांश →' : 'Summary →')
-                              : (lang === 'kn' ? 'ಮುಂದಿನ ಭಾಗ' : lang === 'ta' ? 'அடுத்த பகுதி' : lang === 'hi' ? 'अगला भाग' : 'Next Section');
+                            return nextSec === 'summary' ? t('viewSummary') : t('nextSection');
                           })()}
                         </Button>
                       ) : (
@@ -1195,7 +1241,7 @@ export default function MyHobbiesAssessment() {
                           ) : (
                             <>
                               <Palette className="w-4 h-4 mr-2" />
-                              {t('submitAssessment')}
+                              {isReadOnly ? (lang === 'kn' ? 'ಸಲ್ಲಿಸಲಾಗಿದೆ' : lang === 'ta' ? 'சமர்ப்பிக்கப்பட்டது' : lang === 'hi' ? 'जमा किया गया' : 'Submitted') : t('submitAssessment')}
                             </>
                           )}
                         </Button>

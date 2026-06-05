@@ -302,15 +302,16 @@ export default function ChatBubble({ role, isOpen: controlledIsOpen, onOpenChang
 
       setNewMessage('');
       await loadMessages(channelId);
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Error sending message:', error);
+      const errMsg = error?.message || error?.details || String(error);
       toast({
         title: lang === 'kn' ? "ದೋಷ" : lang === 'ta' ? "பிழை" : "Error",
-        description: lang === 'kn'
-          ? "ಸಂದೇಶವನ್ನು ಕಳುಹಿಸಲು ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ."
+        description: `${lang === 'kn'
+          ? "ಸಂದೇಶವನ್ನು ಕಳುಹಿಸಲು ವಿಫಲವಾಗಿದೆ."
           : lang === 'ta'
-            ? "செய்தியை அனுப்ப முடியவில்லை. தயவு செய்து மீண்டும் முயற்சிக்கவும்."
-            : "Failed to send message. Please try again.",
+            ? "செய்தியை அனுப்ப முடியவில்லை."
+            : "Failed to send message."} [${errMsg}]`,
         variant: "destructive",
       });
     } finally {
@@ -323,27 +324,32 @@ export default function ChatBubble({ role, isOpen: controlledIsOpen, onOpenChang
     if (!editingContent.trim() || !channelId) return;
 
     try {
-      const { error } = await supabase
-        .from('chat_messages')
-        .update({ content: editingContent.trim() })
-        .eq('id', messageId);
+      const { data: success, error } = await supabase
+        .rpc('edit_chat_message', {
+          p_message_id: messageId,
+          p_new_content: editingContent.trim(),
+        } as any);
 
       if (error) throw error;
+      if (!success) throw new Error('Not the message owner or message not found');
 
       setEditingMessageId(null);
       setEditingContent('');
       await loadMessages(channelId);
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Error editing message:', error);
+      const errMsg = error?.message || error?.details || String(error);
+      const errDetails = error?.details ? ` (${error.details})` : '';
+      const finalMsg = `${errMsg}${errDetails}`;
       toast({
         title: lang === 'kn' ? "ದೋಷ" : lang === 'ta' ? "பிழை" : lang === 'hi' ? "त्रुटि" : "Error",
-        description: lang === 'kn'
+        description: `${lang === 'kn'
           ? "ಸಂದೇಶವನ್ನು ಸಂಪಾದಿಸಲು ವಿಫಲವಾಗಿದೆ."
           : lang === 'ta'
             ? "செய்தியைத் தொகுக்க முடியவில்லை."
             : lang === 'hi'
               ? "संदेश संपादित करने में विफल।"
-              : "Failed to edit message.",
+              : "Failed to edit message."} [${finalMsg}]`,
         variant: "destructive",
       });
     }
@@ -354,26 +360,30 @@ export default function ChatBubble({ role, isOpen: controlledIsOpen, onOpenChang
     if (!channelId) return;
 
     try {
-      const { error } = await supabase
-        .from('chat_messages')
-        .delete()
-        .eq('id', messageId);
+      const { data: success, error } = await supabase
+        .rpc('delete_chat_message', {
+          p_message_id: messageId,
+        } as any);
 
       if (error) throw error;
+      if (!success) throw new Error('Not the message owner or message not found');
 
       setDeletingMessageId(null);
       await loadMessages(channelId);
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Error deleting message:', error);
+      const errMsg = error?.message || error?.details || String(error);
+      const errDetails = error?.details ? ` (${error.details})` : '';
+      const finalMsg = `${errMsg}${errDetails}`;
       toast({
-        title: lang === 'kn' ? "ದೋಷ" : lang === 'ta' ? "பிழை" : lang === 'hi' ? "त्रुटि" : "Error",
-        description: lang === 'kn'
+        title: lang === 'kn' ? "ದೋಷ" : lang === 'ta' ? "பிழை" : lang === 'hi' ? "ಭೂತ" : "Error",
+        description: `${lang === 'kn'
           ? "ಸಂದೇಶವನ್ನು ಅಳಿಸಲು ವಿಫಲವಾಗಿದೆ."
           : lang === 'ta'
             ? "செய்தியை அழிக்க முடியவில்லை."
             : lang === 'hi'
               ? "संदेश हटाने में विफल।"
-              : "Failed to delete message.",
+              : "Failed to delete message."} [${finalMsg}]`,
         variant: "destructive",
       });
     }

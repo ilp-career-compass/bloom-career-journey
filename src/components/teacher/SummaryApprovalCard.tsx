@@ -1,4 +1,4 @@
-﻿import { logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 // SummaryApprovalCard - Teacher component to review and approve AI-generated summaries
 
@@ -1266,16 +1266,38 @@ export default function SummaryApprovalCard({
                     return <div className="text-gray-500">No responses available</div>;
                   }
 
-                  return Object.entries(studentResponses).map(([key, value]) => {
+                  // Helper: detect if a key looks like a UUID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
+                  const isUuid = (k: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(k);
+
+                  // Build a sorted list of all entries so UUID keys get consistent Q1, Q2... numbering
+                  const allEntries = Object.entries(studentResponses).filter(([k, v]) => {
+                    if (v === null || v === undefined) return false;
+                    if (k.startsWith('video')) return false;
+                    return true;
+                  });
+
+                  // Assign sequential labels to UUID keys in the order they appear
+                  let uuidCounter = 0;
+                  const uuidLabelMap: Record<string, string> = {};
+                  allEntries.forEach(([k]) => {
+                    if (isUuid(k)) {
+                      uuidCounter++;
+                      uuidLabelMap[k] = `Q${uuidCounter}`;
+                    }
+                  });
+
+                  return allEntries.map(([key, value]) => {
                     if (value === null || value === undefined) return null;
 
-                    // Skip video keys if they somehow appear (should be handled by inspiration check)
-                    if (key.startsWith('video')) return null;
+                    // Determine display label: UUID → Q1/Q2..., else humanise the key
+                    const displayLabel = isUuid(key)
+                      ? uuidLabelMap[key]
+                      : key.replace(/_/g, ' ');
 
                     return (
                       <div key={key} className="border-l-2 border-blue-300 pl-3 py-2 mb-2">
                         <div className="font-medium text-gray-700 mb-1 capitalize">
-                          {key.replace(/_/g, ' ')}
+                          {displayLabel}
                         </div>
                         <div className="text-gray-600 whitespace-pre-wrap">
                           {Array.isArray(value) ? (
