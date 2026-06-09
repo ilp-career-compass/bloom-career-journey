@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Loader2, ClipboardList } from 'lucide-react';
+import { ArrowLeft, Loader2, ClipboardList, FileText } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -75,6 +75,8 @@ const ResponseViewer = ({ data, level = 0 }: { data: any; level?: number }) => {
     return <div className="text-gray-800 whitespace-pre-wrap">{str}</div>;
   }
 
+  const isUuid = (k: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(k);
+
   const entries = Array.isArray(data)
     ? data.map((v, i) => [String(i), v] as [string, any])
     : Object.entries(data);
@@ -83,14 +85,31 @@ const ResponseViewer = ({ data, level = 0 }: { data: any; level?: number }) => {
     return <span className="text-gray-400 italic">Empty</span>;
   }
 
+  // Pre-calculate sequential labels for any UUID keys at this level
+  let uuidCounter = 0;
+  const uuidLabelMap: Record<string, string> = {};
+  entries.forEach(([k]) => {
+    if (isUuid(k)) {
+      uuidCounter++;
+      uuidLabelMap[k] = `Q${uuidCounter}`;
+    }
+  });
+
   return (
     <div className={`space-y-4 ${level > 0 ? 'mt-2' : ''}`}>
       {entries.map(([key, value]) => {
         let label = key;
-        if (/^video\d+$/.test(key)) label = key.replace('video', 'Video ');
-        else if (/^question\d+$/.test(key)) label = key.replace('question', 'Q');
-        else if (/^part\d+$/.test(key)) label = key.replace('part', 'Part ');
-        else label = label.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        if (isUuid(key)) {
+          label = uuidLabelMap[key];
+        } else if (/^video\d+$/.test(key)) {
+          label = key.replace('video', 'Video ');
+        } else if (/^question\d+$/.test(key)) {
+          label = key.replace('question', 'Q');
+        } else if (/^part\d+$/.test(key)) {
+          label = key.replace('part', 'Part ');
+        } else {
+          label = label.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        }
 
         const isSection = /^video\d+$/.test(key) || /^part\d+$/.test(key);
 
@@ -362,7 +381,7 @@ export default function TeacherStudentResponsesPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-gradient-to-r from-teal-600 via-teal-700 to-cyan-700 text-white">
-        <div className="container mx-auto px-4 py-10">
+        <div className="container mx-auto px-4 py-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"
@@ -373,6 +392,11 @@ export default function TeacherStudentResponsesPage() {
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Badge className="bg-white/10 text-teal-200 border-teal-300/30 uppercase tracking-wider font-bold text-xs" variant="outline">
+                  Detailed Responses Log
+                </Badge>
+              </div>
               <h1 className="text-xl md:text-2xl font-bold flex items-center gap-2">
                 <ClipboardList className="h-5 w-5" /> Assessment Responses
               </h1>
@@ -382,6 +406,14 @@ export default function TeacherStudentResponsesPage() {
               </p>
             </div>
           </div>
+          <Button
+            variant="secondary"
+            className="bg-white text-teal-800 hover:bg-teal-50 shadow-sm border border-teal-100 font-semibold self-stretch sm:self-auto"
+            onClick={() => navigate(`/student/${studentId}/summary?lang=${lang}`)}
+          >
+            <FileText className="w-4 h-4 mr-2 text-teal-600" />
+            View Summary Report
+          </Button>
         </div>
       </div>
 

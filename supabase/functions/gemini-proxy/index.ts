@@ -1,3 +1,4 @@
+/// <reference path="../global.d.ts" />
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const ALLOWED_MODELS = new Set([

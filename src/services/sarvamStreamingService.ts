@@ -1,4 +1,4 @@
-﻿import { logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 export class SarvamStreamingService {
     private ws: WebSocket | null = null;
@@ -153,14 +153,14 @@ export class SarvamStreamingService {
                     this.disconnectTimer = null;
                     if (this.ws) {
                         logger.log('🔌 [SarvamService] Closing connection now (flush complete).');
-                        this.ws.close();
+                        this.ws.close(1000);
                         this.ws = null;
                     }
                     resolve();
                 }, 2500);
             } else {
                 if (this.ws) {
-                    this.ws.close();
+                    this.ws.close(1000);
                     this.ws = null;
                 }
                 resolve();

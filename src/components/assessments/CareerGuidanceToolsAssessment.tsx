@@ -54,6 +54,59 @@ export default function CareerGuidanceToolsAssessment() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
+
+  const getStudentId = async () => {
+    if (!userProfile) return null;
+    let studentId = userProfile.studentProfile?.id as string | undefined;
+    if (!studentId) {
+      const { data: studentRow } = await supabase
+        .from('students')
+        .select('id')
+        .eq('user_id', userProfile.id)
+        .maybeSingle();
+      studentId = studentRow?.id;
+    }
+    return studentId || null;
+  };
+
+  useEffect(() => {
+    const fetchRejectionFeedback = async () => {
+      if (!userProfile?.id) return;
+      try {
+        // 1. Check profile_card_cache
+        const { data: cacheData } = await supabase
+          .from('profile_card_cache')
+          .select('approval_status, rejection_reason')
+          .eq('student_id', userProfile.id)
+          .eq('assessment_type', 'career_guidance_tools')
+          .maybeSingle();
+        if (cacheData && cacheData.approval_status === 'rejected') {
+          setRejectionReason(cacheData.rejection_reason || 'Revision requested by teacher.');
+          return;
+        }
+
+        // 2. Check assessment_responses
+        const studentId = await getStudentId();
+        if (studentId) {
+          const { data: respData } = await supabase
+            .from('assessment_responses')
+            .select('review_status, review_notes')
+            .eq('student_id', studentId)
+            .eq('assessment_type', 'career_guidance_tools')
+            .maybeSingle();
+          if (respData && respData.review_status === 'needs_revision') {
+            setRejectionReason(respData.review_notes || 'Revision requested by teacher.');
+          }
+        }
+      } catch (err) {
+        logger.error('Error fetching rejection reason:', err);
+      }
+    };
+    fetchRejectionFeedback();
+  }, [userProfile?.id]);
+
+  const isReadOnly = (isCompleted && !rejectionReason) || readOnlyView;
   const [isDirty, setIsDirty] = useState(false);
   const [helpOpen, setHelpOpen] = useState<Record<string, boolean>>({});
   const toggleHelp = (k: string) => setHelpOpen(prev => ({ ...prev, [k]: !prev[k] }));
@@ -207,6 +260,7 @@ export default function CareerGuidanceToolsAssessment() {
   };
 
   const canSubmit = () => {
+    if (isReadOnly) return false;
     if (questions.length === 0) return false;
     return questions.every((q, index) => {
       const questionKey = `question${index + 1}` as keyof CareerGuidanceResponse;
@@ -265,19 +319,25 @@ export default function CareerGuidanceToolsAssessment() {
           student_id: studentId,
           assessment_type: 'career_guidance_tools',
           assessment_title: 'Exploring Career Guidance Tools',
-          responses,
+          responses: {
+            ...responses,
+            is_resubmitted: !!rejectionReason
+          },
           completed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          review_status: 'unreviewed'
         }, { onConflict: 'student_id,assessment_type' });
 
       if (error) throw error;
 
       toast({
+        duration: 6000,
         title: lang === 'kn' ? 'ವೃತ್ತಿ ಮಾರ್ಗದರ್ಶನ ಪರಿಕರಗಳ ಮೌಲ್ಯಮಾಪನ ಪೂರ್ಣ! 🌐' : lang === 'ta' ? 'தொழில் வழிகாட்டி கருவிகள் மதிப்பீடு முடிந்தது! 🌐' : lang === 'hi' ? 'करियर मार्गदर्शन उपकरण मूल्यांकन पूर्ण! 🌐' : 'Career Guidance Tools Assessment Completed! 🌐',
         description: lang === 'kn' ? 'ನಿಮ್ಮ ಉತ್ತರಗಳನ್ನು ಯಶಸ್ವಿಯಾಗಿ ದಾಖಲಿಸಲಾಗಿದೆ!' : lang === 'ta' ? 'உங்கள் பதில்கள் வெற்றிகரமாக பதிவு செய்யப்பட்டுள்ளன!' : lang === 'hi' ? 'आपकी प्रतिक्रियाएँ सफलतापूर्वक दर्ज की गई हैं!' : 'Your responses have been captured successfully!',
       });
 
       setIsCompleted(true);
+      setRejectionReason(null);
     } catch (error) {
       logger.error('Error submitting assessment:', error);
       toast({
@@ -351,7 +411,7 @@ export default function CareerGuidanceToolsAssessment() {
     );
   }
 
-  if (isCompleted && !readOnlyView) {
+  if (isCompleted && !readOnlyView && !rejectionReason) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 py-8">
         <div className="container mx-auto px-4">
@@ -402,6 +462,15 @@ export default function CareerGuidanceToolsAssessment() {
             {t('backToDashboard')}
           </Button>
         </div>
+
+        {rejectionReason && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 flex items-start gap-3 max-w-4xl mx-auto">
+            <div className="mt-0.5">⚠️</div>
+            <div>
+              <strong>{t('teacher_feedback') || "Teacher's Feedback:"}</strong> {rejectionReason}
+            </div>
+          </div>
+        )}
 
         {/* Header */}
         <div className="text-center mb-8">
@@ -471,7 +540,7 @@ After your teacher guides you through the career chart, career guidance workbook
                         placeholder={question.help_text}
                         value={typeof response === 'string' ? response : ''}
                         onChange={(e) => handleResponseChange(questionKey, e.target.value)}
-                        disabled={isCompleted}
+                        disabled={isReadOnly}
                         rows={4}
                         className="text-base border-purple-200 focus:border-purple-400"
                       />
@@ -482,7 +551,7 @@ After your teacher guides you through the career chart, career guidance workbook
                         placeholder={question.help_text}
                         value={typeof response === 'string' ? response : ''}
                         onChange={(e) => handleResponseChange(questionKey, e.target.value)}
-                        disabled={isCompleted}
+                        disabled={isReadOnly}
                         className="text-base border-purple-200 focus:border-purple-400"
                       />
                     )}
@@ -495,7 +564,7 @@ After your teacher guides you through the career chart, career guidance workbook
                             id={`${questionKey}-yes`}
                             checked={response === true}
                             onChange={() => handleResponseChange(questionKey, true)}
-                            disabled={isCompleted}
+                            disabled={isReadOnly}
                             className="w-4 h-4 text-purple-600 border-purple-300 focus:ring-purple-500"
                           />
                           <span className="text-sm font-medium text-gray-700">Yes</span>
@@ -507,7 +576,7 @@ After your teacher guides you through the career chart, career guidance workbook
                             id={`${questionKey}-no`}
                             checked={response === false}
                             onChange={() => handleResponseChange(questionKey, false)}
-                            disabled={isCompleted}
+                            disabled={isReadOnly}
                             className="w-4 h-4 text-purple-600 border-purple-300 focus:ring-purple-500"
                           />
                           <span className="text-sm font-medium text-gray-700">No</span>
@@ -525,9 +594,9 @@ After your teacher guides you through the career chart, career guidance workbook
         <div className="flex justify-center mt-8 mb-8">
           <Button
             onClick={submitAssessment}
-            disabled={!canSubmit() || submitting}
+            disabled={!canSubmit() || submitting || isReadOnly}
             size="lg"
-            className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-8 py-3 text-lg"
+            className={isReadOnly ? "bg-gray-100 text-gray-400 border border-gray-200 px-8 py-3 text-lg cursor-not-allowed" : "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-8 py-3 text-lg"}
           >
             {submitting ? (
               <>
@@ -537,7 +606,7 @@ After your teacher guides you through the career chart, career guidance workbook
             ) : (
               <>
                 <CheckCircle className="w-5 h-5 mr-3" />
-                Submit Assessment
+                {isReadOnly ? (lang === 'kn' ? 'ಸಲ್ಲಿಸಲಾಗಿದೆ' : lang === 'ta' ? 'சமர்ப்பிக்கப்பட்டது' : lang === 'hi' ? 'जमा किया गया' : 'Submitted') : 'Submit Assessment'}
               </>
             )}
           </Button>

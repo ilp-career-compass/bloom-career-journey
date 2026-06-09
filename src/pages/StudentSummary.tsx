@@ -26,7 +26,8 @@ import {
   Sparkles,
   Heart,
   Smile,
-  Star
+  Star,
+  ClipboardList
 } from 'lucide-react';
 
 type AssessmentType =
@@ -87,6 +88,7 @@ const LOCAL_TRANSLATIONS: Record<string, Record<string, string>> = {
     // Details
     loadingText: "Preparing student summary...",
     noDataText: "This assessment has not been started yet.",
+    noSummaryGenerated: "No summary has been generated yet for this completed module.",
     approvedBadge: "Approved by Teacher",
     pendingBadge: "Pending Teacher Review",
     revisionBadge: "Revision Requested",
@@ -180,6 +182,7 @@ const LOCAL_TRANSLATIONS: Record<string, Record<string, string>> = {
     
     loadingText: "ವಿದ್ಯಾರ್ಥಿ ಸಾರಾಂಶವನ್ನು ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ...",
     noDataText: "ಈ ಮೌಲ್ಯಮಾಪನವನ್ನು ಇನ್ನೂ ಪ್ರಾರಂಭಿಸಿಲ್ಲ.",
+    noSummaryGenerated: "ಪೂರ್ಣಗೊಂಡ ಈ ಮಾಡ್ಯೂಲ್‌ಗೆ ಇನ್ನೂ ಸಾರಾಂಶವನ್ನು ಸಿದ್ಧಪಡಿಸಲಾಗಿಲ್ಲ.",
     approvedBadge: "ಶಿಕ್ಷಕರಿಂದ ಅನುಮೋದಿಸಲಾಗಿದೆ",
     pendingBadge: "ಶಿಕ್ಷಕರ ಪರಿಶೀಲನೆ ಬಾಕಿ ಇದೆ",
     revisionBadge: "ಪರಿಷ್ಕರಣೆ ವಿನಂತಿಸಲಾಗಿದೆ",
@@ -265,6 +268,7 @@ const LOCAL_TRANSLATIONS: Record<string, Record<string, string>> = {
     
     loadingText: "மாணவர் சுருக்கம் தயாரிக்கப்படுகிறது...",
     noDataText: "இந்த மதிப்பீடு இன்னும் தொடங்கப்படவில்லை.",
+    noSummaryGenerated: "முடிவடைந்த இந்தப் பிரிவிற்கு இன்னும் சுருக்கம் உருவாக்கப்படவில்லை.",
     approvedBadge: "ஆசிரியரால் அங்கீகரிக்கப்பட்டது",
     pendingBadge: "ஆசிரியரின் மதிப்பாய்வுக்காக காத்திருக்கிறது",
     revisionBadge: "திருத்தம் கோரப்பட்டுள்ளது",
@@ -350,6 +354,7 @@ const LOCAL_TRANSLATIONS: Record<string, Record<string, string>> = {
     
     loadingText: "छात्र सारांश तैयार किया जा रहा है...",
     noDataText: "यह मूल्यांकन अभी शुरू नहीं किया गया है।",
+    noSummaryGenerated: "इस पूरे किए गए मॉड्यूल के लिए अभी तक कोई सारांश तैयार नहीं किया गया है।",
     approvedBadge: "शिक्षक द्वारा स्वीकृत",
     pendingBadge: "शिक्षक समीक्षा लंबित",
     revisionBadge: "संशोधन का अनुरोध किया गया",
@@ -549,118 +554,6 @@ export default function StudentSummary() {
       const data = summaryObj.student_edited_summary || summaryObj.teacher_edited_summary || summaryObj.ai_summary;
       if (data && Object.keys(data).length > 0) return data;
     }
-
-    // Fallback: Construct summaryData from raw responses directly if summaryObj is missing!
-    const responses = rec.responses;
-    if (!responses) return null;
-
-    if (rec.assessment_type === 'inspiration') {
-      const videoKeys = Object.keys(responses).filter(key => key.startsWith('video')).sort();
-      if (videoKeys.length > 0) {
-        let question1 = '';
-        let question2 = '';
-        let question3 = '';
-        videoKeys.forEach(vKey => {
-          const vData = responses[vKey] || {};
-          if (vData.question1) question1 += (question1 ? '\n' : '') + vData.question1;
-          if (vData.question2) question1 += (question1 ? '\n' : '') + vData.question2;
-          if (vData.question3) question1 += (question1 ? '\n' : '') + vData.question3;
-          if (vData.question4) question2 += (question2 ? '\n' : '') + vData.question4;
-          if (vData.question5) question2 += (question2 ? '\n' : '') + vData.question5;
-          if (vData.question6) question3 += (question3 ? '\n' : '') + vData.question6;
-          if (vData.question7) question3 += (question3 ? '\n' : '') + vData.question7;
-          if (vData.question8) question3 += (question3 ? '\n' : '') + vData.question8;
-        });
-        return { question1, question2, question3 };
-      }
-    }
-
-    if (rec.assessment_type === 'about_me') {
-      return responses;
-    }
-
-    if (rec.assessment_type === 'dreams') {
-      const partKeys = Object.keys(responses).filter(key => key.startsWith('part')).sort();
-      const entries = partKeys.map(partKey => {
-        const pResponses = responses[partKey] || {};
-        return {
-          dream: pResponses.question1 || pResponses.question2 || '',
-          quality_value_strength: pResponses.question3 || '',
-          prevent_failure: pResponses.question4 || '',
-          study_path: pResponses.question5 || ''
-        };
-      }).filter(e => e.dream);
-      return {
-        question1: JSON.stringify(entries)
-      };
-    }
-
-    if (rec.assessment_type === 'school_learning') {
-      const p1 = responses.part1 || {};
-      const p2 = responses.part2 || {};
-      const p3 = responses.part3 || {};
-      const entry = {
-        liked_subjects: p1.question1 || '',
-        liked_careers: p1.question2 || '',
-        disliked_subjects: p2.question1 || '',
-        disliked_careers: p2.question2 || '',
-        other_activities: p3.question1 || '',
-        skills_improvement: p3.question2 || ''
-      };
-      return {
-        question1: JSON.stringify([entry])
-      };
-    }
-
-    if (rec.assessment_type === 'hobbies') {
-      const p1 = responses.part1 || {};
-      const p2 = responses.part2 || {};
-      
-      const hobbyEntries: any[] = [];
-      const talentEntries: any[] = [];
-      
-      Object.keys(p1).forEach(hKey => {
-        const h = p1[hKey] || {};
-        if (h.question1) {
-          hobbyEntries.push({
-            hobby: h.question1,
-            want_career: h.question2 || '',
-            compatible_careers: h.question3 || '',
-            people_examples: h.question4 || ''
-          });
-        }
-      });
-      
-      Object.keys(p2).forEach(tKey => {
-        const tVal = p2[tKey] || {};
-        if (tVal.question1) {
-          talentEntries.push({
-            talent: tVal.question1,
-            want_career: tVal.question2 || '',
-            matching_careers: tVal.question3 || '',
-            people_examples: tVal.question4 || ''
-          });
-        }
-      });
-      
-      return {
-        question1: JSON.stringify(hobbyEntries),
-        question6: JSON.stringify(talentEntries)
-      };
-    }
-
-    if (rec.assessment_type === 'role_models') {
-      const p1 = responses.part1 || {};
-      const questions: string[] = [];
-      Object.keys(p1).forEach(k => {
-        const item = p1[k] || {};
-        if (item.question3) questions.push(item.question3);
-      });
-      return {
-        question1: questions.join('\n')
-      };
-    }
-
     return null;
   };
 
@@ -918,12 +811,32 @@ export default function StudentSummary() {
           <span className="text-xs text-slate-400">{new Date(rec.completed_at).toLocaleDateString(lang)}</span>
         </div>
         
-        {type === 'inspiration' && renderInspiration(summaryData)}
-        {type === 'about_me' && renderAboutMe(summaryData)}
-        {type === 'dreams' && renderDreamsPortfolio(summaryData)}
-        {type === 'school_learning' && renderSchoolLearning(summaryData)}
-        {type === 'hobbies' && renderHobbiesPortfolio(summaryData)}
-        {type === 'role_models' && renderRoleModels(summaryData)}
+        {!summaryData ? (
+          <div className="mt-2 p-5 rounded-2xl bg-slate-50/50 border border-dashed border-slate-200 text-center print:border-solid">
+            <p className="text-sm text-slate-500 italic font-medium">
+              {t('noSummaryGenerated')}
+            </p>
+            {userProfile?.role === 'teacher' && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-3 border-dashed border-indigo-200 text-indigo-700 hover:bg-indigo-50/50 print:hidden"
+                onClick={() => navigate(`/teacher/student-responses/${id}?tab=${type}&lang=${lang}`)}
+              >
+                View Detailed Responses →
+              </Button>
+            )}
+          </div>
+        ) : (
+          <>
+            {type === 'inspiration' && renderInspiration(summaryData)}
+            {type === 'about_me' && renderAboutMe(summaryData)}
+            {type === 'dreams' && renderDreamsPortfolio(summaryData)}
+            {type === 'school_learning' && renderSchoolLearning(summaryData)}
+            {type === 'hobbies' && renderHobbiesPortfolio(summaryData)}
+            {type === 'role_models' && renderRoleModels(summaryData)}
+          </>
+        )}
       </div>
     );
   };
@@ -983,34 +896,47 @@ export default function StudentSummary() {
               <p className="text-xs text-slate-400">{t('printableReportDesc')}</p>
             </div>
           </div>
-          <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium shadow-sm transition-colors" size="sm" onClick={printPage}>
-            <Printer className="w-4 h-4 mr-1.5" /> {t('print')}
-          </Button>
+          <div className="flex items-center gap-2">
+            {userProfile?.role === 'teacher' && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-teal-200 text-teal-700 hover:bg-teal-50"
+                onClick={() => navigate(`/teacher/student-responses/${id}?lang=${lang}`)}
+              >
+                <ClipboardList className="w-4 h-4 mr-1.5 text-teal-600" />
+                View Detailed Responses
+              </Button>
+            )}
+            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium shadow-sm transition-colors" size="sm" onClick={printPage}>
+              <Printer className="w-4 h-4 mr-1.5" /> {t('print')}
+            </Button>
+          </div>
         </div>
       </div>
 
       <div className="container mx-auto px-4 py-8 max-w-5xl space-y-6 print:py-0 print:px-0">
         {/* Top Header Card */}
-        <Card className="border-0 shadow-md bg-white overflow-hidden relative print:shadow-none print:border print:border-slate-200">
-          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 print:hidden" />
+        <Card className="border-0 shadow-md bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 text-white overflow-hidden relative print:bg-white print:text-slate-900 print:shadow-none print:border print:border-slate-200">
+          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 print:hidden" />
           <CardContent className="p-6 sm:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <Badge className="bg-indigo-50 text-indigo-700 border-indigo-200 uppercase tracking-wider font-bold text-xs" variant="outline">
+                <Badge className="bg-white/10 text-pink-300 border-pink-400/30 uppercase tracking-wider font-bold text-xs print:bg-slate-100 print:text-indigo-700" variant="outline">
                   {t('studentSummaryReport')}
                 </Badge>
-                <span className="text-xs text-slate-400">• {t('confidentialNote')}</span>
+                <span className="text-xs text-slate-300 print:text-slate-400">• {t('confidentialNote')}</span>
               </div>
-              <h2 className="text-2xl sm:text-3xl font-black text-slate-900">{studentName}</h2>
-              <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-slate-500">
+              <h2 className="text-2xl sm:text-3xl font-black text-white print:text-slate-900">{studentName}</h2>
+              <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-slate-300 print:text-slate-500">
                 <span className="flex items-center gap-1.5"><BookOpen className="w-4 h-4" /> <strong>{t('classLabel')}:</strong> {className || '—'}</span>
                 {studentMobile && <span className="flex items-center gap-1.5"><User className="w-4 h-4" /> <strong>{t('mobileLabel')}:</strong> {studentMobile}</span>}
               </div>
             </div>
             {bio && (
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 max-w-sm w-full md:w-auto print:bg-white print:border-slate-200">
-                <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t('bioLabel')}</div>
-                <div className="text-sm italic text-slate-800 leading-relaxed">"{bio}"</div>
+              <div className="bg-white/10 backdrop-blur-sm p-4 rounded-xl border border-white/10 max-w-sm w-full md:w-auto print:bg-white print:border-slate-200 print:text-slate-800">
+                <div className="text-xs font-bold text-pink-300 uppercase tracking-wider mb-1 print:text-slate-500">{t('bioLabel')}</div>
+                <div className="text-sm italic text-slate-100 leading-relaxed print:text-slate-800">"{bio}"</div>
               </div>
             )}
           </CardContent>

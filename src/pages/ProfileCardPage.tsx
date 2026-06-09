@@ -28,6 +28,43 @@ type ModuleConfig = {
   icon: React.ComponentType<{ className?: string }>;
 };
 
+const extractFlatAnswers = (rawResp: any, questionCount: number = 3): Record<string, string> => {
+  const fallbackAns: Record<string, string> = {};
+  const values: string[] = [];
+  
+  const collectStrings = (obj: any) => {
+    if (obj === null || obj === undefined) return;
+    if (typeof obj === 'string') {
+      const trimmed = obj.trim();
+      if (trimmed && trimmed !== '—' && trimmed !== 'undefined' && trimmed !== 'null') {
+        values.push(trimmed);
+      }
+    } else if (typeof obj === 'object') {
+      const keys = Object.keys(obj).sort((a, b) => {
+        const aNum = parseInt(a.replace(/\D/g, ''));
+        const bNum = parseInt(b.replace(/\D/g, ''));
+        if (!isNaN(aNum) && !isNaN(bNum)) {
+          return aNum - bNum;
+        }
+        return a.localeCompare(b);
+      });
+      keys.forEach(key => {
+        if (key !== 'is_resubmitted' && key !== 'review_status') {
+          collectStrings(obj[key]);
+        }
+      });
+    }
+  };
+  
+  collectStrings(rawResp);
+  
+  for (let i = 0; i < questionCount; i++) {
+    fallbackAns[`question${i + 1}`] = values[i] || '—';
+  }
+  
+  return fallbackAns;
+};
+
 const MODULES: ModuleConfig[] = [
   { key: 'inspiration', assessmentType: 'inspiration', titleKey: 'assessment_inspiration', stripColor: 'bg-indigo-500', dotColor: 'bg-indigo-400', titleColor: 'text-indigo-700', icon: Play },
   { key: 'about_me', assessmentType: 'about_me', titleKey: 'assessment_about_me', stripColor: 'bg-blue-500', dotColor: 'bg-blue-400', titleColor: 'text-blue-700', icon: User },
@@ -86,12 +123,12 @@ const PCP_DICT: Record<string, Record<string, string>> = {
     careerPendingReview: 'Your career direction is being reviewed by your teacher.',
     approvedBadge: 'Approved',
     pendingBadge: 'Pending Review',
-    changesRequested: 'Changes Requested',
+    changesRequested: 'Revision Requested',
     regenerating: 'Regenerating...',
     toastModuleApproved: 'Module approved',
     toastApprovalFailed: 'Approval failed',
     toastMaxFeedback: 'Maximum feedback rounds reached — please approve or discuss with student directly',
-    toastFeedbackSubmitted: 'Feedback submitted — regenerating keywords with your input...',
+    toastFeedbackSubmitted: 'Feedback submitted',
     toastRejectionFailed: 'Rejection failed',
   },
   kn: {
@@ -107,12 +144,12 @@ const PCP_DICT: Record<string, Record<string, string>> = {
     careerPendingReview: 'ನಿಮ್ಮ ವೃತ್ತಿಜೀವನದ ದಿಕ್ಕನ್ನು ನಿಮ್ಮ ಶಿಕ್ಷಕರು ಪರಿಶೀಲಿಸುತ್ತಿದ್ದಾರೆ.',
     approvedBadge: 'ಅನುಮೋದಿಸಲಾಗಿದೆ',
     pendingBadge: 'ಪರಿಶೀಲನೆ ಬಾಕಿ ಇದೆ',
-    changesRequested: 'ಬದಲಾವಣೆಗಳನ್ನು ಕೋರಲಾಗಿದೆ',
+    changesRequested: 'ಪರಿಷ್ಕರಣೆ ಕೋರಲಾಗಿದೆ',
     regenerating: 'ಮರುಉತ್ಪಾದಿಸಲಾಗುತ್ತಿದೆ...',
     toastModuleApproved: 'ಮಾಡ್ಯೂಲ್ ಅನುಮೋದಿಸಲಾಗಿದೆ',
     toastApprovalFailed: 'ಅನುಮೋದನೆ ವಿಫಲವಾಗಿದೆ',
     toastMaxFeedback: 'ಗರಿಷ್ಠ ಪ್ರತಿಕ್ರಿಯೆ ಸುತ್ತುಗಳನ್ನು ತಲುಪಲಾಗಿದೆ — ದಯವಿಟ್ಟು ನೇರವಾಗಿ ವಿದ್ಯಾರ್ಥಿಯೊಂದಿಗೆ ಚರ್ಚಿಸಿ',
-    toastFeedbackSubmitted: 'ಪ್ರತಿಕ್ರಿಯೆ ಸಲ್ಲಿಸಲಾಗಿದೆ — ನಿಮ್ಮ ಇನ್‌ಪುಟ್‌ನೊಂದಿಗೆ ಕೀವರ್ಡ್‌ಗಳನ್ನು ಮರುಉತ್ಪಾದಿಸಲಾಗುತ್ತಿದೆ...',
+    toastFeedbackSubmitted: 'ಪ್ರತಿಕ್ರಿಯೆ ಸಲ್ಲಿಸಲಾಗಿದೆ',
     toastRejectionFailed: 'ಪ್ರತಿಕ್ರಿಯೆ ಸಲ್ಲಿಕೆ ವಿಫಲವಾಗಿದೆ',
   },
   ta: {
@@ -128,12 +165,12 @@ const PCP_DICT: Record<string, Record<string, string>> = {
     careerPendingReview: 'உங்கள் தொழில் திசை உங்கள் ஆசிரியரால் மதிப்பாய்வு செய்யப்படுகிறது.',
     approvedBadge: 'அங்கீகரிக்கப்பட்டது',
     pendingBadge: 'மதிப்பாய்வில் உள்ளது',
-    changesRequested: 'மாற்றங்கள் கோரப்பட்டுள்ளன',
+    changesRequested: 'திருத்தம் கோரப்பட்டுள்ளது',
     regenerating: 'மீண்டும் உருவாக்கப்படுகிறது...',
     toastModuleApproved: 'தொகுதி அங்கீகரிக்கப்பட்டது',
     toastApprovalFailed: 'அங்கீகரிப்பு தோல்வியடைந்தது',
     toastMaxFeedback: 'அதிகபட்ச கருத்துச் சுற்றுகள் எட்டப்பட்டுள்ளன — தயவுசெய்து நேரடியாக மாணவருடன் கலந்துரையாடவும்',
-    toastFeedbackSubmitted: 'கருத்து சமர்ப்பிக்கப்பட்டது — உங்கள் உள்ளீட்டுடன் முக்கிய வார்த்தைகள் மீண்டும் உருவாக்கப்படுகின்றன...',
+    toastFeedbackSubmitted: 'கருத்து சமர்ப்பிக்கப்பட்டது',
     toastRejectionFailed: 'கருத்து சமர்ப்பிப்பு தோல்வி அடைந்தது',
   },
   hi: {
@@ -149,12 +186,12 @@ const PCP_DICT: Record<string, Record<string, string>> = {
     careerPendingReview: 'आपकी career दिशा की समीक्षा आपके शिक्षक द्वारा की जा रही है।',
     approvedBadge: 'अनुमोदित',
     pendingBadge: 'समीक्षा के लिए लंबित',
-    changesRequested: 'बदलाव का अनुरोध किया गया',
+    changesRequested: 'संशोधन का अनुरोध किया गया',
     regenerating: 'पुनरुत्पादित हो रहा है...',
     toastModuleApproved: 'मॉड्यूल अनुमोदित',
     toastApprovalFailed: 'अनुमोदन विफल',
     toastMaxFeedback: 'अधिकतम फीडबैक सीमा समाप्त — कृपया सीधे छात्र से चर्चा करें',
-    toastFeedbackSubmitted: 'फीडबैक सबमिट किया गया — आपके इनपुट के साथ कीवर्ड फिर से तैयार हो रहे हैं...',
+    toastFeedbackSubmitted: 'फीडबैक सबमिट किया गया',
     toastRejectionFailed: 'अस्वीकृति विफल',
   },
 };
@@ -282,7 +319,7 @@ export default function ProfileCardPage({ readOnly, studentIdOverride }: Profile
             }
           } else {
             const kw = row.keywords as any;
-            if (kw && typeof kw === 'object' && !Array.isArray(kw) && kw.question1) {
+            if (kw && typeof kw === 'object' && !Array.isArray(kw) && Object.keys(kw).length > 0) {
               try {
                 const translatedKw = await geminiTranslationService.translateStructure(kw, lang);
                 answerMap[row.assessment_type] = translatedKw as ProfileCardAnswers;
@@ -300,12 +337,22 @@ export default function ProfileCardPage({ readOnly, studentIdOverride }: Profile
         const resp = responseMap[mod.key];
         if (resp) {
           const rStatus = resp.review_status;
+          const isResubmitted = resp.responses?.is_resubmitted === true;
+          
           if (rStatus === 'reviewed') {
             statusMap[mod.key] = 'approved';
           } else if (rStatus === 'needs_revision' || rStatus === 'flagged') {
             statusMap[mod.key] = 'rejected';
-          } else if (!statusMap[mod.key]) {
+          } else if (rStatus === 'unreviewed' || rStatus === 'in_review' || isResubmitted) {
             statusMap[mod.key] = 'pending';
+            reasonMap[mod.key] = ''; // Clear rejection reason in UI since it has been resubmitted
+          } else {
+            const hasExplicitStatus = statusMap[mod.key] === 'approved' || statusMap[mod.key] === 'rejected';
+            if (!hasExplicitStatus) {
+              if (!statusMap[mod.key]) {
+                statusMap[mod.key] = 'pending';
+              }
+            }
           }
         }
       }
@@ -314,63 +361,8 @@ export default function ProfileCardPage({ readOnly, studentIdOverride }: Profile
       for (const mod of MODULES) {
         if (!answerMap[mod.key] && responseMap[mod.key]?.responses) {
           const rawResp = responseMap[mod.key].responses;
-          const fallbackAns: Record<string, string> = {};
-          
-          if (mod.key === 'inspiration') {
-            const videoKeys = Object.keys(rawResp).filter(k => k.startsWith('video')).sort();
-            if (videoKeys.length > 0) {
-              const firstVid = rawResp[videoKeys[0]] || {};
-              fallbackAns.question1 = firstVid.question1 || firstVid.question2 || firstVid.question3 || '';
-              fallbackAns.question2 = firstVid.question4 || firstVid.question5 || '';
-              fallbackAns.question3 = firstVid.question6 || firstVid.question7 || firstVid.question8 || '';
-            }
-          } else if (mod.key === 'about_me') {
-            fallbackAns.question1 = rawResp.question1 || rawResp.question2 || rawResp.question3 || '';
-            fallbackAns.question2 = rawResp.question12 || rawResp.question13 || '';
-            fallbackAns.question3 = rawResp.question14 || rawResp.question11 || '';
-          } else if (mod.key === 'dreams') {
-            const partKeys = Object.keys(rawResp).filter(k => k.startsWith('part')).sort();
-            if (partKeys.length > 0) {
-              const firstPart = rawResp[partKeys[0]] || {};
-              fallbackAns.question1 = firstPart.question1 || '';
-              fallbackAns.question2 = firstPart.question3 || '';
-              fallbackAns.question3 = firstPart.question5 || '';
-            }
-          } else if (mod.key === 'school_learning') {
-            const p1 = rawResp.part1 || {};
-            const p2 = rawResp.part2 || {};
-            const p3 = rawResp.part3 || {};
-            fallbackAns.question1 = p1.question1 || '';
-            fallbackAns.question2 = p2.question1 || '';
-            fallbackAns.question3 = p3.question2 || '';
-          } else if (mod.key === 'hobbies') {
-            const p1 = rawResp.part1 || {};
-            const p2 = rawResp.part2 || {};
-            
-            const hobbies: string[] = [];
-            const talents: string[] = [];
-            
-            Object.keys(p1).forEach(k => {
-              const item = p1[k] || {};
-              if (item.question1) hobbies.push(item.question1);
-            });
-            Object.keys(p2).forEach(k => {
-              const item = p2[k] || {};
-              if (item.question1) talents.push(item.question1);
-            });
-            
-            fallbackAns.question1 = hobbies.join(', ') || '—';
-            fallbackAns.question2 = talents.join(', ') || '—';
-            fallbackAns.question3 = p1.hobby1?.question3 || p2.talent1?.question3 || '—';
-          } else if (mod.key === 'role_models') {
-            const p1 = rawResp.part1 || {};
-            const questions: string[] = [];
-            Object.keys(p1).forEach(k => {
-              const item = p1[k] || {};
-              if (item.question3) questions.push(item.question3);
-            });
-            fallbackAns.question1 = questions.slice(0, 2).join('\n') || '—';
-          }
+          const qCount = mod.key === 'school_learning' || mod.key === 'hobbies' ? 4 : 3;
+          const fallbackAns = extractFlatAnswers(rawResp, qCount);
           
           if (Object.keys(fallbackAns).length > 0) {
             answerMap[mod.key] = fallbackAns as any;
@@ -446,7 +438,7 @@ export default function ProfileCardPage({ readOnly, studentIdOverride }: Profile
         const now = new Date().toISOString();
         setAnswers(prev => ({ ...prev, [assessmentType]: result.keywords! }));
         setCacheTimestamps(prev => ({ ...prev, [assessmentType]: now }));
-        const { error } = await supabase.from('profile_card_cache').upsert({
+        const upsertPayload: any = {
           student_id: cacheUserId,
           assessment_type: assessmentType,
           keywords: result.keywords,
@@ -454,9 +446,12 @@ export default function ProfileCardPage({ readOnly, studentIdOverride }: Profile
           approval_status: 'pending',
           approved_by: null,
           approved_at: null,
-        } as any, { onConflict: 'student_id,assessment_type' });
-        if (error) logger.error('Profile card cache upsert error:', error);
+          rejection_reason: null,
+        };
         setApprovalStatus(prev => ({ ...prev, [assessmentType]: 'pending' }));
+        setRejectionReasons(prev => ({ ...prev, [assessmentType]: '' }));
+        const { error } = await supabase.from('profile_card_cache').upsert(upsertPayload, { onConflict: 'student_id,assessment_type' });
+        if (error) logger.error('Profile card cache upsert error:', error);
       }
     } catch (err) {
       logger.error('Profile card answer generation failed for', assessmentType, err);
@@ -535,12 +530,15 @@ export default function ProfileCardPage({ readOnly, studentIdOverride }: Profile
     if (!user?.id || !cacheUserId) return;
     setSavingApproval(true);
     try {
-      const { error } = await supabase.from('profile_card_cache').update({
+      const { error } = await supabase.from('profile_card_cache').upsert({
+        student_id: cacheUserId,
+        assessment_type: assessmentType,
         approval_status: 'approved',
         approved_by: user.id,
         approved_at: new Date().toISOString(),
         rejection_reason: null,
-      } as any).eq('student_id', cacheUserId).eq('assessment_type', assessmentType);
+        keywords: answers[assessmentType] || null,
+      } as any, { onConflict: 'student_id,assessment_type' });
       if (error) throw error;
 
       setApprovalStatus(prev => ({ ...prev, [assessmentType]: 'approved' }));
@@ -580,12 +578,16 @@ export default function ProfileCardPage({ readOnly, studentIdOverride }: Profile
         return;
       }
 
-      await supabase.from('profile_card_cache').update({
+      const { error: rejectError } = await supabase.from('profile_card_cache').upsert({
+        student_id: cacheUserId,
+        assessment_type: moduleBeingRejected,
         approval_status: 'rejected',
         approved_by: user.id,
         approved_at: new Date().toISOString(),
         rejection_reason: feedback,
-      } as any).eq('student_id', cacheUserId).eq('assessment_type', moduleBeingRejected);
+        keywords: answers[moduleBeingRejected] || null,
+      } as any, { onConflict: 'student_id,assessment_type' });
+      if (rejectError) throw rejectError;
 
       setApprovalStatus(prev => ({ ...prev, [moduleBeingRejected]: 'rejected' }));
       setRejectionReasons(prev => ({ ...prev, [moduleBeingRejected]: feedback }));
@@ -607,14 +609,6 @@ export default function ProfileCardPage({ readOnly, studentIdOverride }: Profile
 
       setRejectionCounts(prev => ({ ...prev, [moduleBeingRejected]: currentCount + 1 }));
       toast({ title: pcp.toastFeedbackSubmitted });
-
-      const responses = completedModules[moduleBeingRejected]?.responses;
-      if (responses) {
-        setRegeneratingModules(prev => new Set(prev).add(moduleBeingRejected));
-        regenerateAnswers(moduleBeingRejected, responses, feedback).finally(() => {
-          setRegeneratingModules(prev => { const s = new Set(prev); s.delete(moduleBeingRejected); return s; });
-        });
-      }
     } catch (err) {
       toast({ title: pcp.toastRejectionFailed, variant: 'destructive' });
     } finally {
@@ -731,21 +725,29 @@ export default function ProfileCardPage({ readOnly, studentIdOverride }: Profile
                         <Loader2 className="h-4 w-4 animate-spin" />
                         <span>{t('generating_keywords')}</span>
                       </div>
-                    ) : ans && labels.length > 0 ? (
+                    ) : ans ? (
                       showAnswers ? (
                         <dl className="space-y-2.5">
-                          {labels.map(({ key, label }) => (
-                            <div key={key}>
-                              <dt className="text-xs text-gray-400 leading-snug">{label}</dt>
-                              <dd className="text-sm font-medium text-gray-700 mt-0.5">
-                                {ans[key] || '—'}
-                              </dd>
-                            </div>
-                          ))}
+                          {labels.length > 0
+                            ? labels.map(({ key, label }) => (
+                              <div key={key}>
+                                <dt className="text-xs text-gray-400 leading-snug">{label}</dt>
+                                <dd className="text-sm font-medium text-gray-700 mt-0.5">
+                                  {ans[key] || '—'}
+                                </dd>
+                              </div>
+                            ))
+                            : Object.entries(ans).filter(([, v]) => v && String(v).trim()).map(([key, value]) => (
+                              <div key={key}>
+                                <dt className="text-xs text-gray-400 leading-snug capitalize">{key.replace(/_/g, ' ')}</dt>
+                                <dd className="text-sm font-medium text-gray-700 mt-0.5">{String(value)}</dd>
+                              </div>
+                            ))
+                          }
                         </dl>
                       ) : (
                         <dl className="space-y-2.5">
-                          {labels.map(({ key, label }) => (
+                          {(labels.length > 0 ? labels : Object.keys(ans).map(k => ({ key: k, label: k }))).map(({ key, label }) => (
                             <div key={key}>
                               <dt className="text-xs text-gray-400 leading-snug">{label}</dt>
                               <dd className="text-sm text-gray-300 mt-0.5">—</dd>

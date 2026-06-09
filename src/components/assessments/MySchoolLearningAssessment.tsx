@@ -1,4 +1,5 @@
-import { logger } from '@/lib/logger';
+import {
+  logger } from '@/lib/logger';
 import { useState, useEffect, useRef } from 'react';
 import { validateResponses } from '@/utils/englishValidation';
 import { useAuth } from '@/hooks/useAuth';
@@ -11,7 +12,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
-import { School, Save, CheckCircle, ArrowLeft, Lock, Sparkles } from 'lucide-react';
+import { School, Save, CheckCircle, ArrowLeft, Lock, Sparkles,
+  AlertTriangle
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLang } from '@/hooks/useLang';
@@ -75,6 +78,57 @@ interface SchoolLearningAssessmentResponse {
 
 export default function MySchoolLearningAssessment() {
   const { userProfile } = useAuth();
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
+
+  const getStudentId = async () => {
+    if (!userProfile) return null;
+    let studentId = userProfile.studentProfile?.id as string | undefined;
+    if (!studentId) {
+      const { data: studentRow } = await supabase
+        .from('students')
+        .select('id')
+        .eq('user_id', userProfile.id)
+        .maybeSingle();
+      studentId = studentRow?.id;
+    }
+    return studentId || null;
+  };
+
+  useEffect(() => {
+    const fetchRejectionFeedback = async () => {
+      if (!userProfile?.id) return;
+      try {
+        // 1. Check profile_card_cache
+        const { data: cacheData } = await supabase
+          .from('profile_card_cache')
+          .select('approval_status, rejection_reason')
+          .eq('student_id', userProfile.id)
+          .eq('assessment_type', 'school_learning')
+          .maybeSingle();
+        if (cacheData && cacheData.approval_status === 'rejected') {
+          setRejectionReason(cacheData.rejection_reason || 'Revision requested by teacher.');
+          return;
+        }
+
+        // 2. Check assessment_responses
+        const studentId = await getStudentId();
+        if (studentId) {
+          const { data: respData } = await supabase
+            .from('assessment_responses')
+            .select('review_status, review_notes')
+            .eq('student_id', studentId)
+            .eq('assessment_type', 'school_learning')
+            .maybeSingle();
+          if (respData && respData.review_status === 'needs_revision') {
+            setRejectionReason(respData.review_notes || 'Revision requested by teacher.');
+          }
+        }
+      } catch (err) {
+        logger.error('Error fetching rejection reason:', err);
+      }
+    };
+    fetchRejectionFeedback();
+  }, [userProfile?.id]);
   const { t, lang } = useLang();
   const { toast } = useToast();
   const [responses, setResponses] = useState<SchoolLearningAssessmentResponse>({
@@ -142,11 +196,20 @@ export default function MySchoolLearningAssessment() {
   const [isCompleted, setIsCompleted] = useState(false);
   const [currentSection, setCurrentSection] = useState<'section1' | 'section2' | 'section3' | 'section4' | 'section5' | 'section6'>('section1');
   const navigate = useNavigate();
+  const redirectTimeoutRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimeoutRef.current) {
+        clearTimeout(redirectTimeoutRef.current);
+      }
+    };
+  }, []);
   const [searchParams] = useSearchParams();
   const viewParam = (searchParams.get('readonly') || searchParams.get('view') || '').toLowerCase();
   const readOnlyView = viewParam === '1' || viewParam === 'true';
   const tabParam = searchParams.get('tab');
-  const isReadOnly = isCompleted || readOnlyView;
+  const isReadOnly = (isCompleted && !rejectionReason) || readOnlyView;
   const [helpTranslations, setHelpTranslations] = useState<Record<string, string>>({});
 
   const [dbTitle, setDbTitle] = useState<string>('');
@@ -439,7 +502,7 @@ export default function MySchoolLearningAssessment() {
 
   // Auto-save drafts on changes (debounced)
   useEffect(() => {
-    if (loading || isCompleted || readOnlyView || !isDirtyRef.current) return;
+    if (loading || (isCompleted && !rejectionReason) || readOnlyView || !isDirtyRef.current) return;
     const timer = setTimeout(async () => {
       try {
         if (!userProfile?.id) return;
@@ -558,6 +621,7 @@ export default function MySchoolLearningAssessment() {
       if (error) throw error;
 
       toast({
+        duration: 6000,
         title:
           lang === 'kn'
             ? 'ಭಾಗವು ಉಳಿಸಲಾಗಿದೆ! ✅'
@@ -806,9 +870,13 @@ export default function MySchoolLearningAssessment() {
           student_id: studentId,
           assessment_type: 'school_learning',
           assessment_title: 'My School, My Learning and I',
-          responses: responses,
+          responses: {
+            ...responses,
+            is_resubmitted: !!rejectionReason
+          },
           completed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          review_status: 'unreviewed'
         }, { onConflict: 'student_id,assessment_type' })
         .select()
         .single();
@@ -816,6 +884,7 @@ export default function MySchoolLearningAssessment() {
       if (error) throw error;
 
       toast({
+        duration: 6000,
         title:
           lang === 'kn'
             ? 'ಮೌಲ್ಯಮಾಪನ ಪೂರ್ಣಗೊಂಡಿದೆ! 📚'
@@ -854,8 +923,9 @@ export default function MySchoolLearningAssessment() {
         })();
       }
       aiSummaryService.generateAndCacheProfileCardKeywords('school_learning', responses, userProfile.id, lang);
+      setRejectionReason(null);
       setIsCompleted(true);
-      setTimeout(() => navigate('/student/things-interest-me?from=school_learning'), 2000);
+      redirectTimeoutRef.current = setTimeout(() => navigate('/student/things-interest-me?from=school_learning'), 6000);
     } catch (error) {
       logger.error('Error submitting assessment:', error);
       toast({
@@ -888,7 +958,7 @@ export default function MySchoolLearningAssessment() {
     );
   }
 
-  if (isCompleted && !readOnlyView) {
+  if (isCompleted && !readOnlyView && !rejectionReason) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 py-8">
         <div className="container mx-auto px-4">
@@ -964,6 +1034,19 @@ export default function MySchoolLearningAssessment() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 py-8" lang={lang} dir="auto">
       <div className="container mx-auto px-4 max-w-4xl">
+        {rejectionReason && (
+          <div className="max-w-3xl mx-auto mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
+            <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-semibold text-red-800 text-sm">
+                {t('revision_requested')}
+              </h3>
+              <p className="text-red-700 text-xs mt-1">
+                <strong>{t('teacher_feedback')}</strong> {rejectionReason}
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="text-center mb-8">
           <div className="text-left mb-2">
@@ -1832,13 +1915,7 @@ export default function MySchoolLearningAssessment() {
             disabled={sectionOrder.indexOf(currentSection) === 0}
             className="w-full sm:w-auto border-green-200 text-green-700 hover:bg-green-50"
           >
-            {lang === 'kn'
-              ? 'ಹಿಂದಿನ ಭಾಗ'
-              : lang === 'ta'
-                ? 'முந்தைய பகுதி'
-                : lang === 'hi'
-                  ? 'पिछला भाग'
-                  : 'Previous Section'}
+            {t('previousSection')}
           </Button>
 
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -1887,9 +1964,7 @@ export default function MySchoolLearningAssessment() {
               >
                 {(() => {
                   const nextSec = sectionOrder[sectionOrder.indexOf(currentSection) + 1];
-                  return nextSec === 'section6'
-                    ? (lang === 'kn' ? 'ಸಾರಾಂಶ →' : lang === 'ta' ? 'சுருக்கம் →' : lang === 'hi' ? 'सारांश →' : 'Summary →')
-                    : (lang === 'kn' ? 'ಮುಂದಿನ ಭಾಗ' : lang === 'ta' ? 'அடுத்த பகுதி' : lang === 'hi' ? 'अगला भाग' : 'Next Section');
+                  return nextSec === 'section6' ? t('viewSummary') : t('nextSection');
                 })()}
               </Button>
             ) : (
@@ -1912,13 +1987,13 @@ export default function MySchoolLearningAssessment() {
                 ) : (
                   <>
                     <School className="w-4 h-4 mr-2" />
-                    {lang === 'kn'
+                    {isReadOnly ? (lang === 'kn' ? 'ಸಲ್ಲಿಸಲಾಗಿದೆ' : lang === 'ta' ? 'சமர்ப்பிக்கப்பட்டது' : lang === 'hi' ? 'जमा किया गया' : 'Submitted') : (lang === 'kn'
                       ? 'ಮೌಲ್ಯಮಾಪನವನ್ನು ಸಲ್ಲಿಸಿ'
                       : lang === 'ta'
                         ? 'மதிப்பீட்டை சமர்ப்பிக்கவும்'
                         : lang === 'hi'
                           ? 'मूल्यांकन जमा करें'
-                          : 'Submit Assessment'}
+                          : 'Submit Assessment')}`
                   </>
                 )}
               </Button>

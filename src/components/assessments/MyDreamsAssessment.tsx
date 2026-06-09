@@ -91,13 +91,50 @@ export default function MyDreamsAssessment() {
   const [searchParams] = useSearchParams();
   const [dreamsQuestions, setDreamsQuestions] = useState<DreamQuestion[]>([]);
   const [responses, setResponses] = useState<DreamAssessmentResponse>({});
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchRejectionFeedback = async () => {
+      if (!userProfile?.id) return;
+      try {
+        // 1. Check profile_card_cache
+        const { data: cacheData } = await supabase
+          .from('profile_card_cache')
+          .select('approval_status, rejection_reason')
+          .eq('student_id', userProfile.id)
+          .eq('assessment_type', 'dreams')
+          .maybeSingle();
+        if (cacheData && cacheData.approval_status === 'rejected') {
+          setRejectionReason(cacheData.rejection_reason || 'Revision requested by teacher.');
+          return;
+        }
+
+        // 2. Check assessment_responses
+        const studentId = await getStudentId();
+        if (studentId) {
+          const { data: respData } = await supabase
+            .from('assessment_responses')
+            .select('review_status, review_notes')
+            .eq('student_id', studentId)
+            .eq('assessment_type', 'dreams')
+            .maybeSingle();
+          if (respData && respData.review_status === 'needs_revision') {
+            setRejectionReason(respData.review_notes || 'Revision requested by teacher.');
+          }
+        }
+      } catch (err) {
+        logger.error('Error fetching rejection reason:', err);
+      }
+    };
+    fetchRejectionFeedback();
+  }, [userProfile?.id]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const viewParam = (searchParams.get('readonly') || searchParams.get('view') || '').toLowerCase();
   const readOnlyView = viewParam === '1' || viewParam === 'true';
   const tabParam = searchParams.get('tab');
-  const isReadOnly = isCompleted || readOnlyView;
+  const isReadOnly = (isCompleted && !rejectionReason) || readOnlyView;
   const [currentSection, setCurrentSection] = useState<string>('section1');
   const [helpOpen, setHelpOpen] = useState<Record<string, boolean>>({});
   const toggleHelp = (k: string) => setHelpOpen(prev => ({ ...prev, [k]: !prev[k] }));
@@ -712,9 +749,13 @@ export default function MyDreamsAssessment() {
           student_id: studentId,
           assessment_type: 'dreams',
           assessment_title: 'My Dreams',
-          responses: responses,
+          responses: {
+            ...responses,
+            is_resubmitted: !!rejectionReason
+          },
           completed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          review_status: 'unreviewed'
         }, { onConflict: 'student_id,assessment_type' })
         .select()
         .single();
@@ -760,6 +801,7 @@ export default function MyDreamsAssessment() {
         })();
       }
       aiSummaryService.generateAndCacheProfileCardKeywords('dreams', responses, userProfile.id, lang);
+      setRejectionReason(null);
       setIsCompleted(true);
       setTimeout(() => navigate('/student/things-interest-me?from=dreams'), 2000);
     } catch (error) {
@@ -794,7 +836,7 @@ export default function MyDreamsAssessment() {
     );
   }
 
-  if (isCompleted && !readOnlyView) {
+  if (isCompleted && !readOnlyView && !rejectionReason) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-8">
         <div className="container mx-auto px-4">
@@ -874,6 +916,20 @@ export default function MyDreamsAssessment() {
             {t('backToDashboard')}
           </Button>
         </div>
+
+        {rejectionReason && (
+          <div className="max-w-3xl mx-auto mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 shadow-sm">
+            <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-semibold text-red-800 text-sm">
+                {lang === 'kn' ? 'ಪರಿಷ್ಕರಣೆ ಕೋರಲಾಗಿದೆ' : lang === 'ta' ? 'திருத்தம் கோரப்பட்டுள்ளது' : lang === 'hi' ? 'संशोधन का अनुरोध किया गया' : 'Revision Requested'}
+              </h3>
+              <p className="text-red-700 text-xs mt-1">
+                <strong>{lang === 'kn' ? 'ಶಿಕ್ಷಕರ ಪ್ರತಿಕ್ರಿಯೆ:' : lang === 'ta' ? 'ஆசிரியர் கருத்து:' : lang === 'hi' ? 'शिक्षक फीडबैक:' : 'Teacher Feedback:'}</strong> {rejectionReason}
+              </p>
+            </div>
+          </div>
+        )}
 
 
 

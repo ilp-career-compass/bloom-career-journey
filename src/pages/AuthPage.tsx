@@ -41,16 +41,46 @@ declare global {
   }
 }
 
+/**
+ * Normalise a phone string to ASCII digits only.
+ * Handles Unicode decimal digit blocks (Devanagari ०-९, Tamil ௦-௯,
+ * Kannada ೦-೯, Arabic-Indic ٠-٩, etc.) so users on regional-language
+ * mobile keyboards don't get spuriously rejected.
+ */
+function normalizeDigits(phone: string): string {
+  return Array.from(phone)
+    .map((ch) => {
+      const n = ch.codePointAt(0) ?? NaN;
+      // Fast-path: ASCII digit
+      if (n >= 0x30 && n <= 0x39) return ch;
+      // Unicode Nd (decimal digit) category — convert to ASCII equivalent
+      const numericValue = Number(ch);
+      if (!isNaN(numericValue) && numericValue >= 0 && numericValue <= 9) return String(numericValue);
+      return ch; // keep as-is so \D strips it below
+    })
+    .join('')
+    .replace(/\D/g, '');
+}
+
 function toE164Indian(phone: string): string {
-  const digits = phone.replace(/\D/g, '');
+  const digits = normalizeDigits(phone);
   if (digits.length === 10) return `+91${digits}`;
+  if (digits.length === 11 && digits.startsWith('0')) return `+91${digits.slice(1)}`;
   if (digits.length === 12 && digits.startsWith('91')) return `+${digits}`;
-  return phone;
+  return `+91${digits.slice(-10)}`; // best-effort fallback
 }
 
 function isValidE164(phone: string): boolean {
-  // Accept: +91XXXXXXXXXX (E.164), bare 10 digits, or 91XXXXXXXXXX (12-digit without +)
-  return /^\+91\d{10}$/.test(phone) || /^\d{10}$/.test(phone) || /^91\d{10}$/.test(phone);
+  // Normalise Unicode decimal digits to ASCII before checking, so users on
+  // regional-language keyboards (Devanagari, Tamil, Kannada, Arabic-Indic, …)
+  // are not incorrectly rejected.
+  const digits = normalizeDigits(phone);
+  // Accept: bare 10 digits | 0+10 digits (STD-style) | 91+10 digits (country code without +) | +91+10 digits
+  return (
+    digits.length === 10 ||
+    (digits.length === 11 && digits.startsWith('0')) ||
+    (digits.length === 12 && digits.startsWith('91'))
+  );
 }
 
 function sendOtpWithTimeout(
@@ -68,6 +98,34 @@ function sendOtpWithTimeout(
     mobile,
     (data) => { if (!settled) { settled = true; clearTimeout(timer); onSuccess(data); } },
     () => { if (!settled) { settled = true; clearTimeout(timer); onFailure(); } },
+  );
+}
+
+/**
+ * Wraps window.verifyOtp with a hard timeout so the UI never gets stuck in
+ * "Verifying..." if MSG91's SDK silently drops a callback (network issue, SDK bug).
+ */
+function verifyOtpWithTimeout(
+  otp: string,
+  onSuccess: (data: Record<string, unknown>) => void,
+  onFailure: (error: unknown) => void,
+  timeoutMs = 30000,
+) {
+  if (typeof window.verifyOtp !== 'function') {
+    onFailure(new Error('OTP service not available'));
+    return;
+  }
+  let settled = false;
+  const timer = setTimeout(() => {
+    if (!settled) {
+      settled = true;
+      onFailure(new Error('OTP verification timed out'));
+    }
+  }, timeoutMs);
+  window.verifyOtp(
+    otp,
+    (data) => { if (!settled) { settled = true; clearTimeout(timer); onSuccess(data); } },
+    (err) => { if (!settled) { settled = true; clearTimeout(timer); onFailure(err); } },
   );
 }
 
@@ -743,11 +801,52 @@ export default function AuthPage() {
       return;
     }
 
-    // Pre-OTP duplicate check removed: it depended on anon RLS access to users.mobile which
-    // is not guaranteed. The Edge Function (create-teacher / create-student-self-register) is
-    // the authoritative gate for duplicate mobile detection.
-
     const normalizedPhone = toE164Indian(signUpForm.phone);
+
+    try {
+      // Secure server-side check for duplicate mobile number using existing set-first-password API
+      const { error: checkError } = await supabase.functions.invoke('set-first-password', {
+        body: {
+          mobile: normalizedPhone,
+          newPassword: signUpForm.password || 'dummy_password_for_existence_check',
+          access_token: 'dummy_token_for_existence_check'
+        }
+      });
+
+      if (checkError) {
+        const status = (checkError as any).status || (checkError as any).context?.status;
+        if (status) {
+          if (status === 404) {
+            // User does not exist, safe to proceed
+            logger.log('Pre-signup duplicate mobile check: user does not exist (OK)');
+          } else {
+            // Any other HTTP status (400, 401, 403, etc.) means user exists!
+            toast({
+              title: 'Already Registered',
+              description: 'This mobile number is already registered. Please sign in instead.',
+              variant: 'destructive',
+            });
+            setLoading(false);
+            return;
+          }
+        } else {
+          // Network error or other non-HTTP error, log and fallback gracefully
+          logger.error('Network or system error during pre-signup duplicate mobile check:', checkError);
+        }
+      } else {
+        // If it succeeded (200), it also means the user exists!
+        toast({
+          title: 'Already Registered',
+          description: 'This mobile number is already registered. Please sign in instead.',
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
+    } catch (err) {
+      // Log the unexpected error but do not block signup (graceful fallback)
+      logger.error('Unexpected error during pre-signup duplicate mobile check:', err);
+    }
     // MSG91 expects 91XXXXXXXXXX (no '+')
     const msg91Mobile = normalizedPhone.replace('+', '');
     msg91MobileRef.current = msg91Mobile;
@@ -777,23 +876,19 @@ export default function AuthPage() {
   // Step 2 of Sign Up: verify the OTP the user typed, then create the account
   const handleSignUpVerifyOtp = (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (typeof window.verifyOtp !== 'function') {
-      toast({ title: 'OTP Unavailable', description: 'OTP service unavailable. Please refresh and try again.', variant: 'destructive' });
-      return;
-    }
-
     setLoading(true);
     const normalizedPhone = toE164Indian(signUpForm.phone);
 
-    window.verifyOtp(
+    // verifyOtpWithTimeout guards against MSG91 SDK silently dropping the callback,
+    // which would otherwise leave the UI locked in "Verifying..." forever.
+    verifyOtpWithTimeout(
       signUpOtp,
       async (data: Record<string, unknown>) => {
-        // G9: wrap the entire async callback in try/catch/finally so setLoading(false)
-        // is always called and unexpected throws surface as a toast rather than a frozen UI.
+        // Wrap entire async flow in try/catch/finally so setLoading(false) is
+        // always called and unexpected throws surface as a toast.
         try {
           logger.log('MSG91 sign up verifyOtp success raw data:', JSON.stringify(data));
-          // MSG91 may return the token under different key names depending on the plan/version
+          // MSG91 may return the token under different key names depending on plan/version
           signUpAccessTokenRef.current = (
             (data?.['access-token'] as string) ||
             (data?.['access_token'] as string) ||
@@ -860,7 +955,7 @@ export default function AuthPage() {
             }
             return;
           }
-  console.log("before create teacher")
+
           // Teacher self-registration via create-teacher Edge Function
           const { data: fnData, error } = await supabase.functions.invoke('create-teacher', {
             body: {
@@ -873,10 +968,7 @@ export default function AuthPage() {
             },
           });
 
-          console.log("create teacher")
-
           if (error || fnData?.error) {
-            console.log("error is ", error, fnData);
             let msg = fnData?.error || 'Could not create account. Please try again.';
             if (error) {
               if (error instanceof FunctionsHttpError) {
@@ -915,13 +1007,16 @@ export default function AuthPage() {
         }
       },
       (_error: unknown) => {
+        const isTimeout = _error instanceof Error && _error.message.includes('timed out');
         toast({
-          title: 'OTP Verification Failed',
-          description: 'The OTP entered is incorrect or has expired. Please try again or request a new one.',
+          title: isTimeout ? 'Verification Timed Out' : 'OTP Verification Failed',
+          description: isTimeout
+            ? 'The verification request took too long. Please check your connection and try again.'
+            : 'The OTP entered is incorrect or has expired. Please try again or request a new one.',
           variant: 'destructive',
         });
         setLoading(false);
-      }
+      },
     );
   };
 
@@ -965,49 +1060,53 @@ export default function AuthPage() {
   // Step 2 of First Login: verify OTP, then show password setup screen
   const handleFirstLoginVerifyOtp = (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (typeof window.verifyOtp !== 'function') {
-      toast({ title: 'OTP Unavailable', description: 'OTP service unavailable. Please refresh and try again.', variant: 'destructive' });
-      return;
-    }
-
     setLoading(true);
 
-    window.verifyOtp(
+    // verifyOtpWithTimeout guards against MSG91 SDK silently dropping the callback,
+    // which would otherwise leave the UI locked in "Verifying..." forever.
+    verifyOtpWithTimeout(
       firstLoginOtp,
-      (data: Record<string, unknown>) => {
-        logger.log('MSG91 first login verifyOtp success raw data:', JSON.stringify(data));
-        firstLoginAccessTokenRef.current = (
-          (data?.['access-token'] as string) ||
-          (data?.['access_token'] as string) ||
-          (data?.['accessToken'] as string) ||
-          (data?.['token'] as string) ||
-          (typeof data?.['message'] === 'string' && data['message'].startsWith('eyJ') ? data['message'] : '') ||
-          ''
-        );
+      async (data: Record<string, unknown>) => {
+        try {
+          logger.log('MSG91 first login verifyOtp success raw data:', JSON.stringify(data));
+          firstLoginAccessTokenRef.current = (
+            (data?.['access-token'] as string) ||
+            (data?.['access_token'] as string) ||
+            (data?.['accessToken'] as string) ||
+            (data?.['token'] as string) ||
+            (typeof data?.['message'] === 'string' && data['message'].startsWith('eyJ') ? data['message'] : '') ||
+            ''
+          );
 
-        if (!firstLoginAccessTokenRef.current) {
-          logger.error('No token in MSG91 first login verifyOtp data:', JSON.stringify(data));
-          toast({
-            title: 'Verification Error',
-            description: `OTP verified but no access token was returned (keys: ${Object.keys(data || {}).join(', ')}). Please try again.`,
-            variant: 'destructive',
-          });
+          if (!firstLoginAccessTokenRef.current) {
+            logger.error('No token in MSG91 first login verifyOtp data:', JSON.stringify(data));
+            toast({
+              title: 'Verification Error',
+              description: `OTP verified but no access token was returned (keys: ${Object.keys(data || {}).join(', ')}). Please try again.`,
+              variant: 'destructive',
+            });
+            return;
+          }
+
+          setFirstLoginStep('setpassword');
+        } catch (err) {
+          logger.error('Unexpected error after OTP verify (first login):', err);
+          toast({ title: 'Unexpected Error', description: 'Something went wrong. Please try again.', variant: 'destructive' });
+        } finally {
           setLoading(false);
-          return;
         }
-
-        setFirstLoginStep('setpassword');
-        setLoading(false);
       },
       (_error: unknown) => {
+        const isTimeout = _error instanceof Error && _error.message.includes('timed out');
         toast({
-          title: 'OTP Verification Failed',
-          description: 'The OTP entered is incorrect or has expired. Please try again or request a new one.',
+          title: isTimeout ? 'Verification Timed Out' : 'OTP Verification Failed',
+          description: isTimeout
+            ? 'The verification request took too long. Please check your connection and try again.'
+            : 'The OTP entered is incorrect or has expired. Please try again or request a new one.',
           variant: 'destructive',
         });
         setLoading(false);
-      }
+      },
     );
   };
 

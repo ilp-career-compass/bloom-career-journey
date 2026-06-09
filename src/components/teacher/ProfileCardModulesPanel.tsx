@@ -82,7 +82,7 @@ export default function ProfileCardModulesPanel({
         const key = row.assessment_type as ModuleKey;
         const kw = row.keywords as any;
         rowMap[key] = {
-          keywords: (kw && typeof kw === 'object' && !Array.isArray(kw) && kw.question1)
+          keywords: (kw && typeof kw === 'object' && !Array.isArray(kw) && Object.keys(kw).length > 0)
             ? kw as Record<string, string>
             : null,
           approval_status: (row as any).approval_status || 'pending',
@@ -120,7 +120,7 @@ export default function ProfileCardModulesPanel({
               approval_status: mappedStatus,
               rejection_reason: null
             };
-          } else {
+          } else if (rowMap[mod.key]!.approval_status === 'pending') {
             // Sync status with assessment review if cache is pending and review is already completed
             if (rStatus === 'reviewed') {
               rowMap[mod.key]!.approval_status = 'approved';
@@ -147,12 +147,18 @@ export default function ProfileCardModulesPanel({
               fallbackAns.question2 = rawResp.question12 || rawResp.question13 || '';
               fallbackAns.question3 = rawResp.question14 || rawResp.question11 || '';
             } else if (mod.key === 'dreams') {
-              const partKeys = Object.keys(rawResp).filter(k => k.startsWith('part')).sort();
-              if (partKeys.length > 0) {
-                const firstPart = rawResp[partKeys[0]] || {};
-                fallbackAns.question1 = firstPart.question1 || '';
-                fallbackAns.question2 = firstPart.question3 || '';
-                fallbackAns.question3 = firstPart.question5 || '';
+              fallbackAns.question1 = rawResp.summary_q1 || '';
+              fallbackAns.question2 = rawResp.summary_q2 || '';
+              fallbackAns.question3 = rawResp.summary_q3 || '';
+
+              if (!fallbackAns.question1 || !fallbackAns.question2 || !fallbackAns.question3) {
+                const partKeys = Object.keys(rawResp).filter(k => k.startsWith('part')).sort();
+                if (partKeys.length > 0) {
+                  const firstPart = rawResp[partKeys[0]] || {};
+                  fallbackAns.question1 = fallbackAns.question1 || firstPart.question1 || '';
+                  fallbackAns.question2 = fallbackAns.question2 || firstPart.question3 || '';
+                  fallbackAns.question3 = fallbackAns.question3 || firstPart.question5 || '';
+                }
               }
             } else if (mod.key === 'school_learning') {
               const p1 = rawResp.part1 || {};
@@ -244,14 +250,15 @@ export default function ProfileCardModulesPanel({
     try {
       const { error } = await supabase
         .from('profile_card_cache')
-        .update({
+        .upsert({
+          student_id: cacheUserId,
+          assessment_type: assessmentType,
           approval_status: 'approved',
           approved_by: teacherUserId,
           approved_at: new Date().toISOString(),
           rejection_reason: null,
-        } as any)
-        .eq('student_id', cacheUserId)
-        .eq('assessment_type', assessmentType);
+          keywords: cacheRows[assessmentType]?.keywords || null,
+        } as any, { onConflict: 'student_id,assessment_type' });
       if (error) throw error;
 
       setCacheRows(prev => ({
@@ -287,14 +294,15 @@ export default function ProfileCardModulesPanel({
 
       const { error } = await supabase
         .from('profile_card_cache')
-        .update({
+        .upsert({
+          student_id: cacheUserId,
+          assessment_type: moduleBeingRejected,
           approval_status: 'rejected',
           approved_by: teacherUserId,
           approved_at: new Date().toISOString(),
           rejection_reason: feedback,
-        } as any)
-        .eq('student_id', cacheUserId)
-        .eq('assessment_type', moduleBeingRejected);
+          keywords: cacheRows[moduleBeingRejected]?.keywords || null,
+        } as any, { onConflict: 'student_id,assessment_type' });
       if (error) throw error;
 
       setCacheRows(prev => ({
@@ -320,27 +328,6 @@ export default function ProfileCardModulesPanel({
       }).then(({ error: notifError }) => {
         if (notifError) logger.error('Profile card rejection notification error:', notifError);
       });
-
-      // Fire-and-forget: fetch responses and regenerate keywords
-      supabase
-        .from('assessment_responses')
-        .select('responses')
-        .eq('student_id', studentId)
-        .eq('assessment_type', moduleBeingRejected)
-        .not('completed_at', 'is', null)
-        .order('completed_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-        .then(({ data: respData }) => {
-          if (respData?.responses) {
-            aiSummaryService.generateAndCacheProfileCardKeywords(
-              moduleBeingRejected,
-              respData.responses,
-              cacheUserId,
-              studentLang
-            );
-          }
-        });
     } catch (err) {
       toast({ title: 'Failed to submit feedback', variant: 'destructive' });
     } finally {
@@ -392,7 +379,7 @@ export default function ProfileCardModulesPanel({
                       </Badge>
                     ) : status === 'rejected' ? (
                       <Badge className="bg-red-100 text-red-700 text-[10px]">
-                        <XCircle className="h-3 w-3 mr-1" />Changes Requested
+                        <XCircle className="h-3 w-3 mr-1" />Revision Requested
                       </Badge>
                     ) : (
                       <Badge className="bg-yellow-100 text-yellow-700 text-[10px]">
@@ -408,16 +395,24 @@ export default function ProfileCardModulesPanel({
 
                 {/* Keywords or placeholder */}
                 {row ? (
-                  keywords && labels.length > 0 ? (
+                  keywords && Object.keys(keywords).length > 0 ? (
                     <dl className="space-y-2 mb-3">
-                      {labels.map(({ key, label }) => (
-                        <div key={key}>
-                          <dt className="text-xs text-gray-400 leading-snug">{label}</dt>
-                          <dd className="text-sm font-medium text-gray-700 mt-0.5">
-                            {keywords[key] || '—'}
-                          </dd>
-                        </div>
-                      ))}
+                      {labels.length > 0
+                        ? labels.map(({ key, label }) => (
+                          <div key={key}>
+                            <dt className="text-xs text-gray-400 leading-snug">{label}</dt>
+                            <dd className="text-sm font-medium text-gray-700 mt-0.5">
+                              {keywords[key] || '—'}
+                            </dd>
+                          </div>
+                        ))
+                        : Object.entries(keywords).filter(([, v]) => v && String(v).trim()).map(([key, value]) => (
+                          <div key={key}>
+                            <dt className="text-xs text-gray-400 leading-snug capitalize">{key.replace(/_/g, ' ')}</dt>
+                            <dd className="text-sm font-medium text-gray-700 mt-0.5">{String(value)}</dd>
+                          </div>
+                        ))
+                      }
                     </dl>
                   ) : (
                     <p className="text-xs text-gray-400 italic mb-3">Keywords not yet generated.</p>

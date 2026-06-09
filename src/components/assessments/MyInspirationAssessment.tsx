@@ -1,4 +1,5 @@
-import { logger } from '@/lib/logger';
+import {
+  logger } from '@/lib/logger';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { validateResponses } from '@/utils/englishValidation';
 import { useAuth } from '@/hooks/useAuth';
@@ -24,7 +25,8 @@ import {
   Save,
   BookOpen,
   Sparkles,
-  Lock
+  Lock,
+  AlertTriangle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -66,12 +68,72 @@ interface VideoProgress {
 
 export default function MyInspirationAssessment() {
   const { userProfile } = useAuth();
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
+
+  const getStudentId = async () => {
+    if (!userProfile) return null;
+    let studentId = userProfile.studentProfile?.id as string | undefined;
+    if (!studentId) {
+      const { data: studentRow } = await supabase
+        .from('students')
+        .select('id')
+        .eq('user_id', userProfile.id)
+        .maybeSingle();
+      studentId = studentRow?.id;
+    }
+    return studentId || null;
+  };
+
+  useEffect(() => {
+    const fetchRejectionFeedback = async () => {
+      if (!userProfile?.id) return;
+      try {
+        // 1. Check profile_card_cache
+        const { data: cacheData } = await supabase
+          .from('profile_card_cache')
+          .select('approval_status, rejection_reason')
+          .eq('student_id', userProfile.id)
+          .eq('assessment_type', 'inspiration')
+          .maybeSingle();
+        if (cacheData && cacheData.approval_status === 'rejected') {
+          setRejectionReason(cacheData.rejection_reason || 'Revision requested by teacher.');
+          return;
+        }
+
+        // 2. Check assessment_responses
+        const studentId = await getStudentId();
+        if (studentId) {
+          const { data: respData } = await supabase
+            .from('assessment_responses')
+            .select('review_status, review_notes')
+            .eq('student_id', studentId)
+            .eq('assessment_type', 'inspiration')
+            .maybeSingle();
+          if (respData && respData.review_status === 'needs_revision') {
+            setRejectionReason(respData.review_notes || 'Revision requested by teacher.');
+          }
+        }
+      } catch (err) {
+        logger.error('Error fetching rejection reason:', err);
+      }
+    };
+    fetchRejectionFeedback();
+  }, [userProfile?.id]);
   const { t, lang } = useLang();
   const [searchParams] = useSearchParams();
   const viewParam = searchParams.get('readonly') || searchParams.get('view');
   const readOnlyView = viewParam === '1' || viewParam === 'true';
   const tabParam = searchParams.get('tab');
   const { toast } = useToast();
+  const redirectTimeoutRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimeoutRef.current) {
+        clearTimeout(redirectTimeoutRef.current);
+      }
+    };
+  }, []);
   const [helpTexts, setHelpTexts] = useState<{ [key: string]: string }>({});
   const [questionTexts, setQuestionTexts] = useState<{ [key: string]: string }>({});
   const [questionCount, setQuestionCount] = useState(0); // Track number of questions from database
@@ -210,6 +272,8 @@ export default function MyInspirationAssessment() {
                     merged[videoKey][qKey] = prev[videoKey][qKey] || '';
                   }
                 });
+              } else if (videoKey === 'summary') {
+                merged[videoKey] = prev[videoKey];
               }
             });
             return merged;
@@ -248,6 +312,7 @@ export default function MyInspirationAssessment() {
   const [dataLoading, setDataLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const isReadOnly = (isCompleted && !rejectionReason) || readOnlyView;
   const [saving, setSaving] = useState(false);
   const isTranslatingRef = useRef(false);
 
@@ -454,10 +519,10 @@ export default function MyInspirationAssessment() {
   // is known-completed). Without readonly the student must reach the summary through nextVideo(),
   // which enforces areAllVideosComplete() at line ~1309.
   useEffect(() => {
-    if (tabParam === 'summary' && inspirationVideos.length > 0 && readOnlyView) {
+    if (tabParam === 'summary' && inspirationVideos.length > 0 && isReadOnly) {
       setCurrentVideoIndex(inspirationVideos.length);
     }
-  }, [tabParam, inspirationVideos, readOnlyView]);
+  }, [tabParam, inspirationVideos, isReadOnly]);
 
   // Load summary questions and title from database
   useEffect(() => {
@@ -580,7 +645,7 @@ export default function MyInspirationAssessment() {
 
   // Auto-save draft on changes (debounced)
   useEffect(() => {
-    if (loading || isCompleted || dataLoading || isTranslatingRef.current) return;
+    if (loading || isReadOnly || dataLoading || isTranslatingRef.current) return;
     const t = setTimeout(async () => {
       try {
         if (!userProfile?.id) return;
@@ -605,7 +670,7 @@ export default function MyInspirationAssessment() {
       } catch { }
     }, 800);
     return () => clearTimeout(t);
-  }, [responses, loading, isCompleted, dataLoading, userProfile]);
+  }, [responses, loading, isReadOnly, dataLoading, userProfile]);
 
 
   const checkExistingResponse = useCallback(async () => {
@@ -870,7 +935,7 @@ export default function MyInspirationAssessment() {
   // to prevent conflicts. The responses state is now the single source of truth.
 
   const handleResponseChange = (videoKey: string, questionKey: string, value: string) => {
-    if (readOnlyView) return;
+    if (isReadOnly) return;
 
     setResponses(prev => {
       const currentVideoResponses = prev[videoKey] || {};
@@ -907,7 +972,7 @@ export default function MyInspirationAssessment() {
 
   // Handle audio responses
   const handleAudioResponse = (videoKey: string, questionKey: string, audioBlob: Blob, transcription?: string) => {
-    if (readOnlyView) return;
+    if (isReadOnly) return;
 
     logger.log('🎤 handleAudioResponse called:', {
       videoKey,
@@ -1075,7 +1140,7 @@ export default function MyInspirationAssessment() {
   };
 
   const saveVideoProgress = async (videoIndex: number) => {
-    if (readOnlyView) return;
+    if (isReadOnly) return;
     if (!userProfile) {
       toast({
         title: lang === 'kn' ? 'ದೋಷ' : lang === 'ta' ? 'பிழை' : lang === 'hi' ? 'त्रुटि' : "Error",
@@ -1231,6 +1296,7 @@ export default function MyInspirationAssessment() {
       const videoLabel = currentVideo?.title || `Video ${videoIndex + 1}`;
 
       toast({
+        duration: 6000,
         title: t('videoProgressSaved'),
         description: lang === 'kn' ? `${videoLabel} ಗಾಗಿ ನಿಮ್ಮ ಉತ್ತರಗಳನ್ನು ಉಳಿಸಲಾಗಿದೆ.` : lang === 'ta' ? `${videoLabel} க்கான உங்கள் பதில்கள் சேமிக்கப்பட்டன.` : lang === 'hi' ? `${videoLabel} के लिए आपके उत्तर सहेजे गए।` : `Your responses for ${videoLabel} have been saved.`,
       });
@@ -1283,6 +1349,7 @@ export default function MyInspirationAssessment() {
       }, { onConflict: 'student_id,assessment_type' });
       if (error) throw error;
       toast({
+        duration: 6000,
         title: lang === 'kn' ? 'ಸಾರಾಂಶ ಉಳಿಸಲಾಗಿದೆ! ✅' : lang === 'ta' ? 'சுருக்கம் சேமிக்கப்பட்டது! ✅' : lang === 'hi' ? 'सारांश सहेजा गया! ✅' : 'Summary Saved! ✅',
         description: lang === 'kn' ? 'ನಿಮ್ಮ ಸಾರಾಂಶ ಉತ್ತರಗಳನ್ನು ಉಳಿಸಲಾಗಿದೆ.' : lang === 'ta' ? 'உங்கள் சுருக்க பதில்கள் சேமிக்கப்பட்டன.' : lang === 'hi' ? 'आपके सारांश उत्तर सहेजे गए।' : 'Your summary responses have been saved.',
       });
@@ -1294,7 +1361,7 @@ export default function MyInspirationAssessment() {
   };
 
   const submitAssessment = async () => {
-    if (readOnlyView) return;
+    if (isReadOnly) return;
 
     if (!validateResponses(responses)) {
       toast({
@@ -1358,9 +1425,13 @@ export default function MyInspirationAssessment() {
           student_id: studentId,
           assessment_type: 'inspiration',
           assessment_title: 'My Inspiration',
-          responses: responses,
+          responses: {
+            ...responses,
+            is_resubmitted: !!rejectionReason
+          },
           completed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          review_status: 'unreviewed'
         }, { onConflict: 'student_id,assessment_type' })
         .select()
         .single();
@@ -1369,6 +1440,7 @@ export default function MyInspirationAssessment() {
 
       // Show success message for assessment submission
       toast({
+        duration: 6000,
         title: lang === 'kn' ? 'ಮೌಲ್ಯಮಾಪನ ಪೂರ್ಣ! ✨' : lang === 'ta' ? 'மதிப்பீடு முடிந்தது! ✨' : lang === 'hi' ? 'मूल्यांकन पूर्ण! ✨' : "Assessment Completed! ✨",
         description: lang === 'kn' ? 'ನಿಮ್ಮ ಉತ್ತರಗಳನ್ನು ಉಳಿಸಲಾಗಿದೆ.' : lang === 'ta' ? 'உங்கள் பதில்கள் சேமிக்கப்பட்டன.' : lang === 'hi' ? 'आपके उत्तर सहेजे गए।' : "Your responses have been saved.",
       });
@@ -1393,8 +1465,9 @@ export default function MyInspirationAssessment() {
         })();
       }
       aiSummaryService.generateAndCacheProfileCardKeywords('inspiration', responses, userProfile.id, lang);
+      setRejectionReason(null);
       setIsCompleted(true);
-      setTimeout(() => navigate('/student/things-interest-me?from=inspiration'), 2000);
+      redirectTimeoutRef.current = setTimeout(() => navigate('/student/things-interest-me?from=inspiration'), 6000);
     } catch (error) {
       logger.error('Error submitting assessment:', error);
       toast({
@@ -1473,7 +1546,7 @@ export default function MyInspirationAssessment() {
     );
   }
 
-  if (isCompleted && !readOnlyView) {
+  if (isCompleted && !readOnlyView && !rejectionReason) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-8">
         <div className="container mx-auto px-4">
@@ -1545,6 +1618,19 @@ export default function MyInspirationAssessment() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 py-8" lang={lang} dir="auto">
       <div className="container mx-auto px-4">
+        {rejectionReason && (
+          <div className="max-w-3xl mx-auto mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
+            <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-semibold text-red-800 text-sm">
+                {t('revision_requested')}
+              </h3>
+              <p className="text-red-700 text-xs mt-1">
+                <strong>{t('teacher_feedback')}</strong> {rejectionReason}
+              </p>
+            </div>
+          </div>
+        )}
         {/* Header with Back Button */}
         <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-4 md:gap-0">
           <div className="w-full md:w-auto flex justify-start">
@@ -1732,7 +1818,7 @@ export default function MyInspirationAssessment() {
                             placeholder={sq.help_text || sq.question_text || t('typeYourAnswerHere', 'Type your answer here...')}
                             value={questionValue}
                             onChange={(e) => handleResponseChange('summary', qKey, e.target.value)}
-                            readOnly={readOnlyView}
+                            readOnly={isReadOnly}
                             rows={4}
                             className={`text-base ${isAnswered
                               ? `${colors.inputBorder} ${colors.inputFocus}`
@@ -1764,7 +1850,7 @@ export default function MyInspirationAssessment() {
                             placeholder={t('typeYourAnswerHere', 'Type your answer here...')}
                             value={questionValue}
                             onChange={(e) => handleResponseChange('summary', questionKey, e.target.value)}
-                            readOnly={readOnlyView}
+                            readOnly={isReadOnly}
                             rows={4}
                             className={`text-base ${isAnswered
                               ? `${colors.inputBorder} ${colors.inputFocus}`
@@ -1848,7 +1934,7 @@ export default function MyInspirationAssessment() {
                                 initialAudioUrl={audioResponsesMap[`${getCurrentVideoKey()}_${questionKey}`]?.url ?? null}
                                 initialTranscription={audioResponsesMap[`${getCurrentVideoKey()}_${questionKey}`]?.transcript ?? null}
                                 initialConfidence={audioResponsesMap[`${getCurrentVideoKey()}_${questionKey}`]?.confidence ?? null}
-                                disabled={readOnlyView || isCompleted}
+                                disabled={isReadOnly}
                                 onStreamTranscript={(text) => handleStreamTranscript(getCurrentVideoKey(), questionKey, text)}
                                 compact={true}
                               />
@@ -1861,7 +1947,7 @@ export default function MyInspirationAssessment() {
                           placeholder={lang === 'kn' ? 'ನಿಮ್ಮ ಉತ್ತರ ಬರೆಯಿರಿ...' : lang === 'ta' ? 'உங்கள் பதிலை எழுதுங்கள்...' : lang === 'hi' ? 'अपना उत्तर लिखें...' : 'Type your answer here...'}
                           value={questionValue}
                           onChange={(e) => handleResponseChange(getCurrentVideoKey(), questionKey, e.target.value)}
-                          readOnly={readOnlyView}
+                          readOnly={isReadOnly}
                           rows={4}
                           className={`text-base ${isAnswered ? `${colors.inputBorder} ${colors.inputFocus}` : 'border-red-300 focus:border-red-400 bg-red-50'}`}
                           required
@@ -1883,14 +1969,14 @@ export default function MyInspirationAssessment() {
             disabled={currentVideoIndex === 0}
             className="w-full sm:w-auto border-blue-200 text-blue-700 hover:bg-blue-50"
           >
-            {lang === 'kn' ? 'ಹಿಂದಿನ ವೀಡಿಯೊ' : lang === 'ta' ? 'முந்தைய வீடியோ' : lang === 'hi' ? 'पिछला वीडियो' : t('previousVideo')}
+            {t('previousVideo')}
           </Button>
 
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Button
               variant="outline"
               onClick={() => currentVideoIndex < inspirationVideos.length ? saveVideoProgress(currentVideoIndex) : saveSummaryProgress()}
-              disabled={(currentVideoIndex < inspirationVideos.length ? !isVideoComplete(currentVideoIndex) : !isSummaryComplete()) || saving || readOnlyView}
+              disabled={(currentVideoIndex < inspirationVideos.length ? !isVideoComplete(currentVideoIndex) : !isSummaryComplete()) || saving || isReadOnly}
               className="w-full sm:w-auto border-green-200 text-green-700 hover:bg-green-50"
             >
               {saving ? (
@@ -1919,7 +2005,7 @@ export default function MyInspirationAssessment() {
             ) : (
               <Button
                 onClick={submitAssessment}
-                disabled={!canSubmit() || submitting || readOnlyView}
+                disabled={!canSubmit() || submitting || isReadOnly}
                 className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700"
               >
                 {submitting ? (
@@ -1930,7 +2016,7 @@ export default function MyInspirationAssessment() {
                 ) : (
                   <>
                     <Lightbulb className="w-4 h-4 mr-2" />
-                    {t('submitInspiration')}
+                    {isReadOnly ? (lang === 'kn' ? 'ಸಲ್ಲಿಸಲಾಗಿದೆ' : lang === 'ta' ? 'சமர்ப்பிக்கப்பட்டது' : lang === 'hi' ? 'जमा किया गया' : 'Submitted') : t('submitInspiration')}
                   </>
                 )}
               </Button>

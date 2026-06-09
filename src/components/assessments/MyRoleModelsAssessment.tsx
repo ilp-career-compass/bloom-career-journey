@@ -1,4 +1,6 @@
-import { logger } from '@/lib/logger';
+import {
+  logger
+} from '@/lib/logger';
 import { useState, useEffect } from 'react';
 import { validateResponses } from '@/utils/englishValidation';
 import { fetchTranslations } from '@/services/translationService';
@@ -27,7 +29,8 @@ import {
   Save,
   ArrowLeft,
   Lock,
-  Sparkles
+  Sparkles,
+  AlertTriangle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -63,13 +66,63 @@ interface RoleModelsAssessmentResponse {
 
 export default function MyRoleModelsAssessment() {
   const { userProfile } = useAuth();
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
+
+  const getStudentId = async () => {
+    if (!userProfile) return null;
+    let studentId = userProfile.studentProfile?.id as string | undefined;
+    if (!studentId) {
+      const { data: studentRow } = await supabase
+        .from('students')
+        .select('id')
+        .eq('user_id', userProfile.id)
+        .maybeSingle();
+      studentId = studentRow?.id;
+    }
+    return studentId || null;
+  };
+
+  useEffect(() => {
+    const fetchRejectionFeedback = async () => {
+      if (!userProfile?.id) return;
+      try {
+        // 1. Check profile_card_cache
+        const { data: cacheData } = await supabase
+          .from('profile_card_cache')
+          .select('approval_status, rejection_reason')
+          .eq('student_id', userProfile.id)
+          .eq('assessment_type', 'role_models')
+          .maybeSingle();
+        if (cacheData && cacheData.approval_status === 'rejected') {
+          setRejectionReason(cacheData.rejection_reason || 'Revision requested by teacher.');
+          return;
+        }
+
+        // 2. Check assessment_responses
+        const studentId = await getStudentId();
+        if (studentId) {
+          const { data: respData } = await supabase
+            .from('assessment_responses')
+            .select('review_status, review_notes')
+            .eq('student_id', studentId)
+            .eq('assessment_type', 'role_models')
+            .maybeSingle();
+          if (respData && respData.review_status === 'needs_revision') {
+            setRejectionReason(respData.review_notes || 'Revision requested by teacher.');
+          }
+        }
+      } catch (err) {
+        logger.error('Error fetching rejection reason:', err);
+      }
+    };
+    fetchRejectionFeedback();
+  }, [userProfile?.id]);
   const { t, lang } = useLang();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const readOnlyView = ['1', 'true'].includes((searchParams.get('readonly') || searchParams.get('view') || '').toLowerCase());
   const tabParam = searchParams.get('tab');
-  const isReadOnly = readOnlyView;
   const [responses, setResponses] = useState<RoleModelsAssessmentResponse>({
     roleModel1: {
       name: '',
@@ -114,6 +167,15 @@ export default function MyRoleModelsAssessment() {
     question13: ''
   });
   const isTranslatingRef = useRef(false);
+  const redirectTimeoutRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimeoutRef.current) {
+        clearTimeout(redirectTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Reactively translate responses when language changes
   useEffect(() => {
@@ -146,6 +208,7 @@ export default function MyRoleModelsAssessment() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const isReadOnly = (isCompleted && !rejectionReason) || readOnlyView;
   const [currentSection, setCurrentSection] = useState<'roleModel1' | 'roleModel2' | 'roleModel3' | 'reflection' | 'summary'>('roleModel1');
   const [summaryQuestions, setSummaryQuestions] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
@@ -191,8 +254,10 @@ export default function MyRoleModelsAssessment() {
   }, [userProfile, navigate, toast, lang]);
 
   useEffect(() => {
-    checkExistingResponse();
-  }, []);
+    if (userProfile) {
+      checkExistingResponse();
+    }
+  }, [userProfile]);
 
   const [dbTitle, setDbTitle] = useState<string>('');
   const [dbIntro, setDbIntro] = useState<string>('');
@@ -269,12 +334,11 @@ export default function MyRoleModelsAssessment() {
     loadSummaryQuestions();
   }, [lang]);
 
-  // Auto-select summary tab from URL param — only when arriving via readonly=1
   useEffect(() => {
-    if (tabParam === 'summary' && readOnlyView) {
+    if (tabParam === 'summary' && isReadOnly) {
       setCurrentSection('summary');
     }
-  }, [tabParam, readOnlyView]);
+  }, [tabParam, isReadOnly]);
 
   // Keep URL ?lang in sync without re-rendering
   useEffect(() => {
@@ -292,7 +356,7 @@ export default function MyRoleModelsAssessment() {
 
   // Auto-save drafts on changes (debounced)
   useEffect(() => {
-    if (loading || isCompleted || readOnlyView || isTranslatingRef.current) return;
+    if (loading || isReadOnly || isTranslatingRef.current) return;
     const t = setTimeout(async () => {
       try {
         if (!userProfile?.id) return;
@@ -313,7 +377,7 @@ export default function MyRoleModelsAssessment() {
       } catch { }
     }, 800);
     return () => clearTimeout(t);
-  }, [responses, loading, isCompleted, readOnlyView, userProfile]);
+  }, [responses, loading, isReadOnly, userProfile]);
 
   const checkExistingResponse = async () => {
     if (!userProfile) return;
@@ -418,6 +482,7 @@ export default function MyRoleModelsAssessment() {
       if (error) throw error;
 
       toast({
+        duration: 6000,
         title: lang === 'kn' ? 'ಪ್ರಗತಿಯನ್ನು ಉಳಿಸಲಾಗಿದೆ' : lang === 'ta' ? 'முன்னேற்றம் சேமிக்கப்பட்டது' : lang === 'hi' ? 'प्रगति सहेजी गई' : 'Progress Saved',
         description: lang === 'kn' ? 'ನಿಮ್ಮ ಉತ್ತರಗಳನ್ನು ಉಳಿಸಲಾಗಿದೆ.' : lang === 'ta' ? 'உங்கள் பதில்கள் சேமிக்கப்பட்டன.' : lang === 'hi' ? 'आपके उत्तर सहेजे गए हैं।' : 'Your answers have been saved.',
       });
@@ -563,9 +628,13 @@ export default function MyRoleModelsAssessment() {
           student_id: studentId,
           assessment_type: 'role_models',
           assessment_title: 'My Role Models',
-          responses: responses,
+          responses: {
+            ...responses,
+            is_resubmitted: !!rejectionReason
+          },
           completed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          review_status: 'unreviewed'
         }, { onConflict: 'student_id,assessment_type' })
         .select()
         .single();
@@ -573,6 +642,7 @@ export default function MyRoleModelsAssessment() {
       if (error) throw error;
 
       toast({
+        duration: 6000,
         title: lang === 'kn' ? 'ಆದರ್ಶ ವ್ಯಕ್ತಿಗಳ ಮೌಲ್ಯಮಾಪನ ಪೂರ್ಣಗೊಂಡಿದೆ! ❤️' : lang === 'ta' ? 'முன்மாதிரி மதிப்பீடு முடிந்தது! ❤️' : lang === 'hi' ? 'मूल्यांकन पूर्ण! ❤️' : 'Role Models Assessment Completed! ❤️',
         description: lang === 'kn' ? 'ನಿಮ್ಮ ಆದರ್ಶ ವ್ಯಕ್ತಿಗಳು ಮತ್ತು ಪ್ರೇರಣೆಗಳನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಸೆರೆಹಿಡಿಯಲಾಗಿದೆ!' : lang === 'ta' ? 'உங்கள் முன்மாதிரிகள் மற்றும் உத்வேகங்கள் வெற்றிகரமாக பதிவு செய்யப்பட்டன!' : lang === 'hi' ? 'आपके आदर्श और प्रेरणाएं सफलतापूर्वक दर्ज की गईं!' : 'Your role models and inspirations have been captured successfully!',
       });
@@ -597,8 +667,9 @@ export default function MyRoleModelsAssessment() {
         })();
       }
       aiSummaryService.generateAndCacheProfileCardKeywords('role_models', responses, userProfile.id, lang);
+      setRejectionReason(null);
       setIsCompleted(true);
-      setTimeout(() => navigate('/student/things-interest-me?from=role_models'), 2000);
+      redirectTimeoutRef.current = setTimeout(() => navigate('/student/things-interest-me?from=role_models'), 6000);
     } catch (error) {
       logger.error('Error submitting assessment:', error);
       toast({
@@ -631,7 +702,7 @@ export default function MyRoleModelsAssessment() {
     );
   }
 
-  if (isCompleted && !readOnlyView) {
+  if (isCompleted && !readOnlyView && !rejectionReason) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 py-8">
         <div className="container mx-auto px-4">
@@ -698,6 +769,19 @@ export default function MyRoleModelsAssessment() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 py-8" lang={lang} dir="auto">
       <div className="container mx-auto px-4">
+        {rejectionReason && (
+          <div className="max-w-3xl mx-auto mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
+            <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-semibold text-red-800 text-sm">
+                {t('revision_requested')}
+              </h3>
+              <p className="text-red-700 text-xs mt-1">
+                <strong>{t('teacher_feedback')}</strong> {rejectionReason}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Header */}
         <div className="text-center mb-8">
@@ -824,19 +908,19 @@ export default function MyRoleModelsAssessment() {
           <Button
             variant={currentSection === 'summary' ? 'default' : 'outline'}
             onClick={() => {
-              if (readOnlyView || areCoreSectionsComplete()) {
+              if (isReadOnly || areCoreSectionsComplete()) {
                 setCurrentSection('summary');
               }
             }}
-            disabled={!readOnlyView && !areCoreSectionsComplete() && currentSection !== 'summary'}
+            disabled={!isReadOnly && !areCoreSectionsComplete() && currentSection !== 'summary'}
             className={`border-purple-200 ${currentSection === 'summary'
               ? 'bg-purple-600 hover:bg-purple-700'
-              : !readOnlyView && !areCoreSectionsComplete()
+              : !isReadOnly && !areCoreSectionsComplete()
                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-75'
                 : 'text-purple-700 hover:bg-purple-50'
               }`}
           >
-            {!readOnlyView && !areCoreSectionsComplete() ? (
+            {!isReadOnly && !areCoreSectionsComplete() ? (
               <Lock className="w-4 h-4 mr-2" />
             ) : (
               <Sparkles className="w-4 h-4 mr-2 text-yellow-500" />
@@ -1170,7 +1254,11 @@ export default function MyRoleModelsAssessment() {
                 }}
                 className="w-full sm:w-auto border-purple-200 text-purple-700 hover:bg-purple-50"
               >
-                {lang === 'kn' ? 'ಮುಂದಿನ ಭಾಗ' : lang === 'ta' ? 'அடுத்த பகுதி' : lang === 'hi' ? 'अगला भाग' : 'Next Section'}
+                {(() => {
+                  const idx = sections.indexOf(currentSection);
+                  const nextSection = sections[idx + 1];
+                  return nextSection === 'summary' ? t('viewSummary') : t('nextSection');
+                })()}
               </Button>
             ) : (
               <Button
@@ -1186,7 +1274,7 @@ export default function MyRoleModelsAssessment() {
                 ) : (
                   <>
                     <Star className="w-4 h-4 mr-2" />
-                    {lang === 'kn' ? 'ಮೌಲ್ಯಮಾಪನವನ್ನು ಸಲ್ಲಿಸಿ' : lang === 'ta' ? 'மதிப்பீட்டை சமர்ப்பிக்கவும்' : lang === 'hi' ? 'मूल्यांकन जमा करें' : 'Submit Assessment'}
+                    {isReadOnly ? (lang === 'kn' ? 'ಸಲ್ಲಿಸಲಾಗಿದೆ' : lang === 'ta' ? 'சமர்ப்பிக்கப்பட்டது' : lang === 'hi' ? 'जमा किया गया' : 'Submitted') : (lang === 'kn' ? 'ಮೌಲ್ಯಮಾಪನವನ್ನು ಸಲ್ಲಿಸಿ' : lang === 'ta' ? 'மதிப்பீட்டை சமர்ப்பிக்கவும்' : lang === 'hi' ? 'मूल्यांकन जमा करें' : 'Submit Assessment')}
                   </>
                 )}
               </Button>

@@ -1,6 +1,5 @@
 // Internal-only Edge Function: called by create-teacher, create-student-self-register, set-first-password.
 // No CORS headers — browsers should never call this directly.
-declare const Deno: any;
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -109,7 +108,8 @@ Deno.serve(async (req: Request) => {
     // MSG91 returns { type: "success", widget_data: { mobile: "..." } } on success
     // and { type: "error", message: "..." } on failure
     if (data?.type === 'success') {
-      const mobile: string = data?.widget_data?.mobile ?? data?.mobile ?? ''
+      const widgetData = data?.widget_data as Record<string, unknown> | undefined
+      const mobile: string = (widgetData?.mobile as string) ?? (data?.mobile as string) ?? ''
       // G23: Require a non-empty mobile — token validity alone is not sufficient to confirm phone ownership.
       // If MSG91 returns success without a mobile (unexpected), treat as failure rather than silently
       // skipping the cross-check in callers.
