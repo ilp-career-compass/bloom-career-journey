@@ -28,6 +28,43 @@ type ModuleConfig = {
   icon: React.ComponentType<{ className?: string }>;
 };
 
+const extractFlatAnswers = (rawResp: any, questionCount: number = 3): Record<string, string> => {
+  const fallbackAns: Record<string, string> = {};
+  const values: string[] = [];
+  
+  const collectStrings = (obj: any) => {
+    if (obj === null || obj === undefined) return;
+    if (typeof obj === 'string') {
+      const trimmed = obj.trim();
+      if (trimmed && trimmed !== '—' && trimmed !== 'undefined' && trimmed !== 'null') {
+        values.push(trimmed);
+      }
+    } else if (typeof obj === 'object') {
+      const keys = Object.keys(obj).sort((a, b) => {
+        const aNum = parseInt(a.replace(/\D/g, ''));
+        const bNum = parseInt(b.replace(/\D/g, ''));
+        if (!isNaN(aNum) && !isNaN(bNum)) {
+          return aNum - bNum;
+        }
+        return a.localeCompare(b);
+      });
+      keys.forEach(key => {
+        if (key !== 'is_resubmitted' && key !== 'review_status') {
+          collectStrings(obj[key]);
+        }
+      });
+    }
+  };
+  
+  collectStrings(rawResp);
+  
+  for (let i = 0; i < questionCount; i++) {
+    fallbackAns[`question${i + 1}`] = values[i] || '—';
+  }
+  
+  return fallbackAns;
+};
+
 const MODULES: ModuleConfig[] = [
   { key: 'inspiration', assessmentType: 'inspiration', titleKey: 'assessment_inspiration', stripColor: 'bg-indigo-500', dotColor: 'bg-indigo-400', titleColor: 'text-indigo-700', icon: Play },
   { key: 'about_me', assessmentType: 'about_me', titleKey: 'assessment_about_me', stripColor: 'bg-blue-500', dotColor: 'bg-blue-400', titleColor: 'text-blue-700', icon: User },
@@ -300,14 +337,21 @@ export default function ProfileCardPage({ readOnly, studentIdOverride }: Profile
         const resp = responseMap[mod.key];
         if (resp) {
           const rStatus = resp.review_status;
-          const hasExplicitStatus = statusMap[mod.key] === 'approved' || statusMap[mod.key] === 'rejected';
-          if (!hasExplicitStatus) {
-            if (rStatus === 'reviewed') {
-              statusMap[mod.key] = 'approved';
-            } else if (rStatus === 'needs_revision' || rStatus === 'flagged') {
-              statusMap[mod.key] = 'rejected';
-            } else if (!statusMap[mod.key]) {
-              statusMap[mod.key] = 'pending';
+          const isResubmitted = resp.responses?.is_resubmitted === true;
+          
+          if (rStatus === 'reviewed') {
+            statusMap[mod.key] = 'approved';
+          } else if (rStatus === 'needs_revision' || rStatus === 'flagged') {
+            statusMap[mod.key] = 'rejected';
+          } else if (rStatus === 'unreviewed' || rStatus === 'in_review' || isResubmitted) {
+            statusMap[mod.key] = 'pending';
+            reasonMap[mod.key] = ''; // Clear rejection reason in UI since it has been resubmitted
+          } else {
+            const hasExplicitStatus = statusMap[mod.key] === 'approved' || statusMap[mod.key] === 'rejected';
+            if (!hasExplicitStatus) {
+              if (!statusMap[mod.key]) {
+                statusMap[mod.key] = 'pending';
+              }
             }
           }
         }
@@ -317,69 +361,8 @@ export default function ProfileCardPage({ readOnly, studentIdOverride }: Profile
       for (const mod of MODULES) {
         if (!answerMap[mod.key] && responseMap[mod.key]?.responses) {
           const rawResp = responseMap[mod.key].responses;
-          const fallbackAns: Record<string, string> = {};
-          
-          if (mod.key === 'inspiration') {
-            const videoKeys = Object.keys(rawResp).filter(k => k.startsWith('video')).sort();
-            if (videoKeys.length > 0) {
-              const firstVid = rawResp[videoKeys[0]] || {};
-              fallbackAns.question1 = firstVid.question1 || firstVid.question2 || firstVid.question3 || '';
-              fallbackAns.question2 = firstVid.question4 || firstVid.question5 || '';
-              fallbackAns.question3 = firstVid.question6 || firstVid.question7 || firstVid.question8 || '';
-            }
-          } else if (mod.key === 'about_me') {
-            fallbackAns.question1 = rawResp.question1 || rawResp.question2 || rawResp.question3 || '';
-            fallbackAns.question2 = rawResp.question12 || rawResp.question13 || '';
-            fallbackAns.question3 = rawResp.question14 || rawResp.question11 || '';
-          } else if (mod.key === 'dreams') {
-            fallbackAns.question1 = rawResp.summary_q1 || '';
-            fallbackAns.question2 = rawResp.summary_q2 || '';
-            fallbackAns.question3 = rawResp.summary_q3 || '';
-
-            if (!fallbackAns.question1 || !fallbackAns.question2 || !fallbackAns.question3) {
-              const partKeys = Object.keys(rawResp).filter(k => k.startsWith('part')).sort();
-              if (partKeys.length > 0) {
-                const firstPart = rawResp[partKeys[0]] || {};
-                fallbackAns.question1 = fallbackAns.question1 || firstPart.question1 || '';
-                fallbackAns.question2 = fallbackAns.question2 || firstPart.question3 || '';
-                fallbackAns.question3 = fallbackAns.question3 || firstPart.question5 || '';
-              }
-            }
-          } else if (mod.key === 'school_learning') {
-            const p1 = rawResp.part1 || {};
-            const p2 = rawResp.part2 || {};
-            const p3 = rawResp.part3 || {};
-            fallbackAns.question1 = p1.question1 || '';
-            fallbackAns.question2 = p2.question1 || '';
-            fallbackAns.question3 = p3.question2 || '';
-          } else if (mod.key === 'hobbies') {
-            const p1 = rawResp.part1 || {};
-            const p2 = rawResp.part2 || {};
-            
-            const hobbies: string[] = [];
-            const talents: string[] = [];
-            
-            Object.keys(p1).forEach(k => {
-              const item = p1[k] || {};
-              if (item.question1) hobbies.push(item.question1);
-            });
-            Object.keys(p2).forEach(k => {
-              const item = p2[k] || {};
-              if (item.question1) talents.push(item.question1);
-            });
-            
-            fallbackAns.question1 = hobbies.join(', ') || '—';
-            fallbackAns.question2 = talents.join(', ') || '—';
-            fallbackAns.question3 = p1.hobby1?.question3 || p2.talent1?.question3 || '—';
-          } else if (mod.key === 'role_models') {
-            const p1 = rawResp.part1 || {};
-            const questions: string[] = [];
-            Object.keys(p1).forEach(k => {
-              const item = p1[k] || {};
-              if (item.question3) questions.push(item.question3);
-            });
-            fallbackAns.question1 = questions.slice(0, 2).join('\n') || '—';
-          }
+          const qCount = mod.key === 'school_learning' || mod.key === 'hobbies' ? 4 : 3;
+          const fallbackAns = extractFlatAnswers(rawResp, qCount);
           
           if (Object.keys(fallbackAns).length > 0) {
             answerMap[mod.key] = fallbackAns as any;
@@ -455,22 +438,18 @@ export default function ProfileCardPage({ readOnly, studentIdOverride }: Profile
         const now = new Date().toISOString();
         setAnswers(prev => ({ ...prev, [assessmentType]: result.keywords! }));
         setCacheTimestamps(prev => ({ ...prev, [assessmentType]: now }));
-        // Preserve existing approval_status — don't reset teacher decisions
-        const currentStatus = approvalStatus[assessmentType];
-        const isExplicit = currentStatus === 'approved' || currentStatus === 'rejected';
         const upsertPayload: any = {
           student_id: cacheUserId,
           assessment_type: assessmentType,
           keywords: result.keywords,
           generated_at: now,
+          approval_status: 'pending',
+          approved_by: null,
+          approved_at: null,
+          rejection_reason: null,
         };
-        if (!isExplicit) {
-          upsertPayload.approval_status = 'pending';
-          upsertPayload.approved_by = null;
-          upsertPayload.approved_at = null;
-          upsertPayload.rejection_reason = null;
-          setApprovalStatus(prev => ({ ...prev, [assessmentType]: 'pending' }));
-        }
+        setApprovalStatus(prev => ({ ...prev, [assessmentType]: 'pending' }));
+        setRejectionReasons(prev => ({ ...prev, [assessmentType]: '' }));
         const { error } = await supabase.from('profile_card_cache').upsert(upsertPayload, { onConflict: 'student_id,assessment_type' });
         if (error) logger.error('Profile card cache upsert error:', error);
       }

@@ -97,14 +97,30 @@ export default function MyDreamsAssessment() {
     const fetchRejectionFeedback = async () => {
       if (!userProfile?.id) return;
       try {
-        const { data, error } = await supabase
+        // 1. Check profile_card_cache
+        const { data: cacheData } = await supabase
           .from('profile_card_cache')
           .select('approval_status, rejection_reason')
           .eq('student_id', userProfile.id)
           .eq('assessment_type', 'dreams')
           .maybeSingle();
-        if (data && data.approval_status === 'rejected') {
-          setRejectionReason(data.rejection_reason);
+        if (cacheData && cacheData.approval_status === 'rejected') {
+          setRejectionReason(cacheData.rejection_reason || 'Revision requested by teacher.');
+          return;
+        }
+
+        // 2. Check assessment_responses
+        const studentId = await getStudentId();
+        if (studentId) {
+          const { data: respData } = await supabase
+            .from('assessment_responses')
+            .select('review_status, review_notes')
+            .eq('student_id', studentId)
+            .eq('assessment_type', 'dreams')
+            .maybeSingle();
+          if (respData && respData.review_status === 'needs_revision') {
+            setRejectionReason(respData.review_notes || 'Revision requested by teacher.');
+          }
         }
       } catch (err) {
         logger.error('Error fetching rejection reason:', err);
@@ -733,9 +749,13 @@ export default function MyDreamsAssessment() {
           student_id: studentId,
           assessment_type: 'dreams',
           assessment_title: 'My Dreams',
-          responses: responses,
+          responses: {
+            ...responses,
+            is_resubmitted: !!rejectionReason
+          },
           completed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          review_status: 'unreviewed'
         }, { onConflict: 'student_id,assessment_type' })
         .select()
         .single();
@@ -781,6 +801,7 @@ export default function MyDreamsAssessment() {
         })();
       }
       aiSummaryService.generateAndCacheProfileCardKeywords('dreams', responses, userProfile.id, lang);
+      setRejectionReason(null);
       setIsCompleted(true);
       setTimeout(() => navigate('/student/things-interest-me?from=dreams'), 2000);
     } catch (error) {

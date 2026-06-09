@@ -78,12 +78,63 @@ export default function HollandCodeAssessment() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const readOnlyView = ['1', 'true'].includes((searchParams.get('readonly') || searchParams.get('view') || '').toLowerCase());
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
+
+  const getStudentId = async () => {
+    if (!userProfile) return null;
+    let studentId = userProfile.studentProfile?.id as string | undefined;
+    if (!studentId) {
+      const { data: studentRow } = await supabase
+        .from('students')
+        .select('id')
+        .eq('user_id', userProfile.id)
+        .maybeSingle();
+      studentId = studentRow?.id;
+    }
+    return studentId || null;
+  };
+
+  useEffect(() => {
+    const fetchRejectionFeedback = async () => {
+      if (!userProfile?.id) return;
+      try {
+        // 1. Check profile_card_cache
+        const { data: cacheData } = await supabase
+          .from('profile_card_cache')
+          .select('approval_status, rejection_reason')
+          .eq('student_id', userProfile.id)
+          .eq('assessment_type', 'personality')
+          .maybeSingle();
+        if (cacheData && cacheData.approval_status === 'rejected') {
+          setRejectionReason(cacheData.rejection_reason || 'Revision requested by teacher.');
+          return;
+        }
+
+        // 2. Check assessment_responses
+        const studentId = await getStudentId();
+        if (studentId) {
+          const { data: respData } = await supabase
+            .from('assessment_responses')
+            .select('review_status, review_notes')
+            .eq('student_id', studentId)
+            .eq('assessment_type', 'personality')
+            .maybeSingle();
+          if (respData && respData.review_status === 'needs_revision') {
+            setRejectionReason(respData.review_notes || 'Revision requested by teacher.');
+          }
+        }
+      } catch (err) {
+        logger.error('Error fetching rejection reason:', err);
+      }
+    };
+    fetchRejectionFeedback();
+  }, [userProfile?.id]);
   const [questions, setQuestions] = useState<HollandQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<number, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
-  const isReadOnly = isCompleted || readOnlyView;
+  const isReadOnly = (isCompleted && !rejectionReason) || readOnlyView;
   const [topTwoTypes, setTopTwoTypes] = useState<string>('');
   const [reflection, setReflection] = useState<string>('');
   const [description, setDescription] = useState<string>('');
@@ -331,9 +382,13 @@ export default function HollandCodeAssessment() {
           student_id: studentId,
           assessment_type: 'personality',
           assessment_title: 'Holland Code (RIASEC) Test',
-          responses: currentResponses,
+          responses: {
+            ...currentResponses,
+            is_resubmitted: !!rejectionReason
+          },
           completed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          review_status: 'unreviewed'
         }, { onConflict: 'student_id,assessment_type' });
 
       if (error) throw error;
@@ -343,6 +398,7 @@ export default function HollandCodeAssessment() {
         description: lang === 'kn' ? 'ನಿಮ್ಮ ವ್ಯಕ್ತಿತ್ವ ಪ್ರಕಾರ ಯಶಸ್ವಿಯಾಗಿ ಗುರುತಿಸಲಾಗಿದೆ!' : lang === 'ta' ? 'உங்கள் ஆளுமை வகை வெற்றிகரமாக அடையாளம் காணப்பட்டுள்ளது!' : lang === 'hi' ? 'आपका व्यक्तित्व प्रकार सफलतापूर्वक पहचाना गया!' : 'Your personality type has been identified successfully!',
       });
 
+      setRejectionReason(null);
       setIsCompleted(true);
 
       // After successful completion, navigate to the next assessment module
@@ -437,7 +493,7 @@ export default function HollandCodeAssessment() {
     );
   }
 
-  if (isCompleted && !readOnlyView) {
+  if (isCompleted && !readOnlyView && !rejectionReason) {
     const completedTitle =
       lang === 'kn' ? 'ಹಾಲೆಂಡ್ ಕೋಡ್ ಮೌಲ್ಯಮಾಪನ ಪೂರ್ಣಗೊಂಡಿದೆ! 🧭' :
       lang === 'ta' ? 'ஹாலண்ட் குறியீடு மதிப்பீடு முடிந்தது! 🧭' :
@@ -623,6 +679,15 @@ export default function HollandCodeAssessment() {
             {t('backToDashboard')}
           </Button>
         </div>
+
+        {rejectionReason && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 flex items-start gap-3 max-w-4xl mx-auto">
+            <div className="mt-0.5">⚠️</div>
+            <div>
+              <strong>{t('teacher_feedback') || "Teacher's Feedback:"}</strong> {rejectionReason}
+            </div>
+          </div>
+        )}
 
         {/* Header */}
         <div className="text-center mb-8">

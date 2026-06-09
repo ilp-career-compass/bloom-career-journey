@@ -54,7 +54,59 @@ export default function CareerGuidanceToolsAssessment() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
-  const isReadOnly = isCompleted || readOnlyView;
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
+
+  const getStudentId = async () => {
+    if (!userProfile) return null;
+    let studentId = userProfile.studentProfile?.id as string | undefined;
+    if (!studentId) {
+      const { data: studentRow } = await supabase
+        .from('students')
+        .select('id')
+        .eq('user_id', userProfile.id)
+        .maybeSingle();
+      studentId = studentRow?.id;
+    }
+    return studentId || null;
+  };
+
+  useEffect(() => {
+    const fetchRejectionFeedback = async () => {
+      if (!userProfile?.id) return;
+      try {
+        // 1. Check profile_card_cache
+        const { data: cacheData } = await supabase
+          .from('profile_card_cache')
+          .select('approval_status, rejection_reason')
+          .eq('student_id', userProfile.id)
+          .eq('assessment_type', 'career_guidance_tools')
+          .maybeSingle();
+        if (cacheData && cacheData.approval_status === 'rejected') {
+          setRejectionReason(cacheData.rejection_reason || 'Revision requested by teacher.');
+          return;
+        }
+
+        // 2. Check assessment_responses
+        const studentId = await getStudentId();
+        if (studentId) {
+          const { data: respData } = await supabase
+            .from('assessment_responses')
+            .select('review_status, review_notes')
+            .eq('student_id', studentId)
+            .eq('assessment_type', 'career_guidance_tools')
+            .maybeSingle();
+          if (respData && respData.review_status === 'needs_revision') {
+            setRejectionReason(respData.review_notes || 'Revision requested by teacher.');
+          }
+        }
+      } catch (err) {
+        logger.error('Error fetching rejection reason:', err);
+      }
+    };
+    fetchRejectionFeedback();
+  }, [userProfile?.id]);
+
+  const isReadOnly = (isCompleted && !rejectionReason) || readOnlyView;
   const [isDirty, setIsDirty] = useState(false);
   const [helpOpen, setHelpOpen] = useState<Record<string, boolean>>({});
   const toggleHelp = (k: string) => setHelpOpen(prev => ({ ...prev, [k]: !prev[k] }));
@@ -267,9 +319,13 @@ export default function CareerGuidanceToolsAssessment() {
           student_id: studentId,
           assessment_type: 'career_guidance_tools',
           assessment_title: 'Exploring Career Guidance Tools',
-          responses,
+          responses: {
+            ...responses,
+            is_resubmitted: !!rejectionReason
+          },
           completed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          review_status: 'unreviewed'
         }, { onConflict: 'student_id,assessment_type' });
 
       if (error) throw error;
@@ -281,6 +337,7 @@ export default function CareerGuidanceToolsAssessment() {
       });
 
       setIsCompleted(true);
+      setRejectionReason(null);
     } catch (error) {
       logger.error('Error submitting assessment:', error);
       toast({
@@ -354,7 +411,7 @@ export default function CareerGuidanceToolsAssessment() {
     );
   }
 
-  if (isCompleted && !readOnlyView) {
+  if (isCompleted && !readOnlyView && !rejectionReason) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 py-8">
         <div className="container mx-auto px-4">
@@ -405,6 +462,15 @@ export default function CareerGuidanceToolsAssessment() {
             {t('backToDashboard')}
           </Button>
         </div>
+
+        {rejectionReason && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 flex items-start gap-3 max-w-4xl mx-auto">
+            <div className="mt-0.5">⚠️</div>
+            <div>
+              <strong>{t('teacher_feedback') || "Teacher's Feedback:"}</strong> {rejectionReason}
+            </div>
+          </div>
+        )}
 
         {/* Header */}
         <div className="text-center mb-8">

@@ -70,18 +70,48 @@ export default function MyInspirationAssessment() {
   const { userProfile } = useAuth();
   const [rejectionReason, setRejectionReason] = useState<string | null>(null);
 
+  const getStudentId = async () => {
+    if (!userProfile) return null;
+    let studentId = userProfile.studentProfile?.id as string | undefined;
+    if (!studentId) {
+      const { data: studentRow } = await supabase
+        .from('students')
+        .select('id')
+        .eq('user_id', userProfile.id)
+        .maybeSingle();
+      studentId = studentRow?.id;
+    }
+    return studentId || null;
+  };
+
   useEffect(() => {
     const fetchRejectionFeedback = async () => {
       if (!userProfile?.id) return;
       try {
-        const { data, error } = await supabase
+        // 1. Check profile_card_cache
+        const { data: cacheData } = await supabase
           .from('profile_card_cache')
           .select('approval_status, rejection_reason')
           .eq('student_id', userProfile.id)
           .eq('assessment_type', 'inspiration')
           .maybeSingle();
-        if (data && data.approval_status === 'rejected') {
-          setRejectionReason(data.rejection_reason);
+        if (cacheData && cacheData.approval_status === 'rejected') {
+          setRejectionReason(cacheData.rejection_reason || 'Revision requested by teacher.');
+          return;
+        }
+
+        // 2. Check assessment_responses
+        const studentId = await getStudentId();
+        if (studentId) {
+          const { data: respData } = await supabase
+            .from('assessment_responses')
+            .select('review_status, review_notes')
+            .eq('student_id', studentId)
+            .eq('assessment_type', 'inspiration')
+            .maybeSingle();
+          if (respData && respData.review_status === 'needs_revision') {
+            setRejectionReason(respData.review_notes || 'Revision requested by teacher.');
+          }
         }
       } catch (err) {
         logger.error('Error fetching rejection reason:', err);
@@ -282,6 +312,7 @@ export default function MyInspirationAssessment() {
   const [dataLoading, setDataLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const isReadOnly = (isCompleted && !rejectionReason) || readOnlyView;
   const [saving, setSaving] = useState(false);
   const isTranslatingRef = useRef(false);
 
@@ -488,10 +519,10 @@ export default function MyInspirationAssessment() {
   // is known-completed). Without readonly the student must reach the summary through nextVideo(),
   // which enforces areAllVideosComplete() at line ~1309.
   useEffect(() => {
-    if (tabParam === 'summary' && inspirationVideos.length > 0 && readOnlyView) {
+    if (tabParam === 'summary' && inspirationVideos.length > 0 && isReadOnly) {
       setCurrentVideoIndex(inspirationVideos.length);
     }
-  }, [tabParam, inspirationVideos, readOnlyView]);
+  }, [tabParam, inspirationVideos, isReadOnly]);
 
   // Load summary questions and title from database
   useEffect(() => {
@@ -614,7 +645,7 @@ export default function MyInspirationAssessment() {
 
   // Auto-save draft on changes (debounced)
   useEffect(() => {
-    if (loading || (isCompleted && !rejectionReason) || dataLoading || isTranslatingRef.current) return;
+    if (loading || isReadOnly || dataLoading || isTranslatingRef.current) return;
     const t = setTimeout(async () => {
       try {
         if (!userProfile?.id) return;
@@ -639,7 +670,7 @@ export default function MyInspirationAssessment() {
       } catch { }
     }, 800);
     return () => clearTimeout(t);
-  }, [responses, loading, isCompleted, dataLoading, userProfile]);
+  }, [responses, loading, isReadOnly, dataLoading, userProfile]);
 
 
   const checkExistingResponse = useCallback(async () => {
@@ -904,7 +935,7 @@ export default function MyInspirationAssessment() {
   // to prevent conflicts. The responses state is now the single source of truth.
 
   const handleResponseChange = (videoKey: string, questionKey: string, value: string) => {
-    if (readOnlyView) return;
+    if (isReadOnly) return;
 
     setResponses(prev => {
       const currentVideoResponses = prev[videoKey] || {};
@@ -941,7 +972,7 @@ export default function MyInspirationAssessment() {
 
   // Handle audio responses
   const handleAudioResponse = (videoKey: string, questionKey: string, audioBlob: Blob, transcription?: string) => {
-    if (readOnlyView) return;
+    if (isReadOnly) return;
 
     logger.log('🎤 handleAudioResponse called:', {
       videoKey,
@@ -1109,7 +1140,7 @@ export default function MyInspirationAssessment() {
   };
 
   const saveVideoProgress = async (videoIndex: number) => {
-    if (readOnlyView) return;
+    if (isReadOnly) return;
     if (!userProfile) {
       toast({
         title: lang === 'kn' ? 'ದೋಷ' : lang === 'ta' ? 'பிழை' : lang === 'hi' ? 'त्रुटि' : "Error",
@@ -1330,7 +1361,7 @@ export default function MyInspirationAssessment() {
   };
 
   const submitAssessment = async () => {
-    if (readOnlyView) return;
+    if (isReadOnly) return;
 
     if (!validateResponses(responses)) {
       toast({
@@ -1394,9 +1425,13 @@ export default function MyInspirationAssessment() {
           student_id: studentId,
           assessment_type: 'inspiration',
           assessment_title: 'My Inspiration',
-          responses: responses,
+          responses: {
+            ...responses,
+            is_resubmitted: !!rejectionReason
+          },
           completed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          review_status: 'unreviewed'
         }, { onConflict: 'student_id,assessment_type' })
         .select()
         .single();
@@ -1430,6 +1465,7 @@ export default function MyInspirationAssessment() {
         })();
       }
       aiSummaryService.generateAndCacheProfileCardKeywords('inspiration', responses, userProfile.id, lang);
+      setRejectionReason(null);
       setIsCompleted(true);
       redirectTimeoutRef.current = setTimeout(() => navigate('/student/things-interest-me?from=inspiration'), 6000);
     } catch (error) {
@@ -1782,7 +1818,7 @@ export default function MyInspirationAssessment() {
                             placeholder={sq.help_text || sq.question_text || t('typeYourAnswerHere', 'Type your answer here...')}
                             value={questionValue}
                             onChange={(e) => handleResponseChange('summary', qKey, e.target.value)}
-                            readOnly={readOnlyView}
+                            readOnly={isReadOnly}
                             rows={4}
                             className={`text-base ${isAnswered
                               ? `${colors.inputBorder} ${colors.inputFocus}`
@@ -1814,7 +1850,7 @@ export default function MyInspirationAssessment() {
                             placeholder={t('typeYourAnswerHere', 'Type your answer here...')}
                             value={questionValue}
                             onChange={(e) => handleResponseChange('summary', questionKey, e.target.value)}
-                            readOnly={readOnlyView}
+                            readOnly={isReadOnly}
                             rows={4}
                             className={`text-base ${isAnswered
                               ? `${colors.inputBorder} ${colors.inputFocus}`
@@ -1898,7 +1934,7 @@ export default function MyInspirationAssessment() {
                                 initialAudioUrl={audioResponsesMap[`${getCurrentVideoKey()}_${questionKey}`]?.url ?? null}
                                 initialTranscription={audioResponsesMap[`${getCurrentVideoKey()}_${questionKey}`]?.transcript ?? null}
                                 initialConfidence={audioResponsesMap[`${getCurrentVideoKey()}_${questionKey}`]?.confidence ?? null}
-                                disabled={readOnlyView || (isCompleted && !rejectionReason)}
+                                disabled={isReadOnly}
                                 onStreamTranscript={(text) => handleStreamTranscript(getCurrentVideoKey(), questionKey, text)}
                                 compact={true}
                               />
@@ -1911,7 +1947,7 @@ export default function MyInspirationAssessment() {
                           placeholder={lang === 'kn' ? 'ನಿಮ್ಮ ಉತ್ತರ ಬರೆಯಿರಿ...' : lang === 'ta' ? 'உங்கள் பதிலை எழுதுங்கள்...' : lang === 'hi' ? 'अपना उत्तर लिखें...' : 'Type your answer here...'}
                           value={questionValue}
                           onChange={(e) => handleResponseChange(getCurrentVideoKey(), questionKey, e.target.value)}
-                          readOnly={readOnlyView}
+                          readOnly={isReadOnly}
                           rows={4}
                           className={`text-base ${isAnswered ? `${colors.inputBorder} ${colors.inputFocus}` : 'border-red-300 focus:border-red-400 bg-red-50'}`}
                           required
@@ -1940,7 +1976,7 @@ export default function MyInspirationAssessment() {
             <Button
               variant="outline"
               onClick={() => currentVideoIndex < inspirationVideos.length ? saveVideoProgress(currentVideoIndex) : saveSummaryProgress()}
-              disabled={(currentVideoIndex < inspirationVideos.length ? !isVideoComplete(currentVideoIndex) : !isSummaryComplete()) || saving || readOnlyView}
+              disabled={(currentVideoIndex < inspirationVideos.length ? !isVideoComplete(currentVideoIndex) : !isSummaryComplete()) || saving || isReadOnly}
               className="w-full sm:w-auto border-green-200 text-green-700 hover:bg-green-50"
             >
               {saving ? (
@@ -1969,7 +2005,7 @@ export default function MyInspirationAssessment() {
             ) : (
               <Button
                 onClick={submitAssessment}
-                disabled={!canSubmit() || submitting || readOnlyView}
+                disabled={!canSubmit() || submitting || isReadOnly}
                 className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700"
               >
                 {submitting ? (
@@ -1980,7 +2016,7 @@ export default function MyInspirationAssessment() {
                 ) : (
                   <>
                     <Lightbulb className="w-4 h-4 mr-2" />
-                    {readOnlyView ? (lang === 'kn' ? 'ಸಲ್ಲಿಸಲಾಗಿದೆ' : lang === 'ta' ? 'சமர்ப்பிக்கப்பட்டது' : lang === 'hi' ? 'जमा किया गया' : 'Submitted') : t('submitInspiration')}
+                    {isReadOnly ? (lang === 'kn' ? 'ಸಲ್ಲಿಸಲಾಗಿದೆ' : lang === 'ta' ? 'சமர்ப்பிக்கப்பட்டது' : lang === 'hi' ? 'जमा किया गया' : 'Submitted') : t('submitInspiration')}
                   </>
                 )}
               </Button>

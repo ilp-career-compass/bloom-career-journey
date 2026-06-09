@@ -63,14 +63,30 @@ export default function MyHobbiesAssessment() {
     const fetchRejectionFeedback = async () => {
       if (!userProfile?.id) return;
       try {
-        const { data, error } = await supabase
+        // 1. Check profile_card_cache
+        const { data: cacheData } = await supabase
           .from('profile_card_cache')
           .select('approval_status, rejection_reason')
           .eq('student_id', userProfile.id)
           .eq('assessment_type', 'hobbies')
           .maybeSingle();
-        if (data && data.approval_status === 'rejected') {
-          setRejectionReason(data.rejection_reason);
+        if (cacheData && cacheData.approval_status === 'rejected') {
+          setRejectionReason(cacheData.rejection_reason || 'Revision requested by teacher.');
+          return;
+        }
+
+        // 2. Check assessment_responses
+        const studentId = await getStudentId();
+        if (studentId) {
+          const { data: respData } = await supabase
+            .from('assessment_responses')
+            .select('review_status, review_notes')
+            .eq('student_id', studentId)
+            .eq('assessment_type', 'hobbies')
+            .maybeSingle();
+          if (respData && respData.review_status === 'needs_revision') {
+            setRejectionReason(respData.review_notes || 'Revision requested by teacher.');
+          }
         }
       } catch (err) {
         logger.error('Error fetching rejection reason:', err);
@@ -314,10 +330,10 @@ export default function MyHobbiesAssessment() {
 
   // Auto-select summary tab from URL param — only in read-only view to prevent bypassing lock for in-progress assessments
   useEffect(() => {
-    if (tabParam === 'summary' && readOnlyView && hobbiesQuestions.length > 0) {
+    if (tabParam === 'summary' && isReadOnly && hobbiesQuestions.length > 0) {
       setCurrentSection('summary');
     }
-  }, [tabParam, readOnlyView, hobbiesQuestions]);
+  }, [tabParam, isReadOnly, hobbiesQuestions]);
 
   useEffect(() => {
     if (userProfile && hobbiesQuestions.length > 0 && summaryQuestions.length > 0) {
@@ -343,7 +359,7 @@ export default function MyHobbiesAssessment() {
 
   // Auto-save drafts on changes (debounced)
   useEffect(() => {
-    if (loading || (isCompleted && !rejectionReason) || readOnlyView || !isDirtyRef.current || Object.keys(responses).length === 0) return;
+    if (loading || isReadOnly || !isDirtyRef.current || Object.keys(responses).length === 0) return;
     const timer = setTimeout(async () => {
       try {
         const studentId = await getStudentId();
@@ -371,7 +387,7 @@ export default function MyHobbiesAssessment() {
       }
     }, 800);
     return () => clearTimeout(timer);
-  }, [responses, loading, isCompleted, readOnlyView]);
+  }, [responses, loading, isReadOnly]);
 
   // Save section function
   const saveSection = async (section: string) => {
@@ -638,9 +654,13 @@ export default function MyHobbiesAssessment() {
           student_id: studentId,
           assessment_type: 'hobbies',
           assessment_title: 'My Talents and Hobbies',
-          responses: responses,
+          responses: {
+            ...responses,
+            is_resubmitted: !!rejectionReason
+          },
           completed_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
+          review_status: 'unreviewed',
         }, { onConflict: 'student_id,assessment_type' })
         .select()
         .single();
@@ -687,6 +707,7 @@ export default function MyHobbiesAssessment() {
         })();
       }
       aiSummaryService.generateAndCacheProfileCardKeywords('hobbies', responses, userProfile.id, lang);
+      setRejectionReason(null);
       setIsCompleted(true);
       redirectTimeoutRef.current = setTimeout(() => navigate('/student/things-interest-me?from=hobbies'), 6000);
     } catch (error) {
@@ -981,7 +1002,7 @@ export default function MyHobbiesAssessment() {
               }
 
               const isSummary = sectionKey === 'summary';
-              const isLocked = isSummary && !readOnlyView && !areCoreSectionsComplete();
+              const isLocked = isSummary && !isReadOnly && !areCoreSectionsComplete();
 
               return (
                 <button

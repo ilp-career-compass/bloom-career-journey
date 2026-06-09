@@ -80,18 +80,48 @@ export default function MySchoolLearningAssessment() {
   const { userProfile } = useAuth();
   const [rejectionReason, setRejectionReason] = useState<string | null>(null);
 
+  const getStudentId = async () => {
+    if (!userProfile) return null;
+    let studentId = userProfile.studentProfile?.id as string | undefined;
+    if (!studentId) {
+      const { data: studentRow } = await supabase
+        .from('students')
+        .select('id')
+        .eq('user_id', userProfile.id)
+        .maybeSingle();
+      studentId = studentRow?.id;
+    }
+    return studentId || null;
+  };
+
   useEffect(() => {
     const fetchRejectionFeedback = async () => {
       if (!userProfile?.id) return;
       try {
-        const { data, error } = await supabase
+        // 1. Check profile_card_cache
+        const { data: cacheData } = await supabase
           .from('profile_card_cache')
           .select('approval_status, rejection_reason')
           .eq('student_id', userProfile.id)
           .eq('assessment_type', 'school_learning')
           .maybeSingle();
-        if (data && data.approval_status === 'rejected') {
-          setRejectionReason(data.rejection_reason);
+        if (cacheData && cacheData.approval_status === 'rejected') {
+          setRejectionReason(cacheData.rejection_reason || 'Revision requested by teacher.');
+          return;
+        }
+
+        // 2. Check assessment_responses
+        const studentId = await getStudentId();
+        if (studentId) {
+          const { data: respData } = await supabase
+            .from('assessment_responses')
+            .select('review_status, review_notes')
+            .eq('student_id', studentId)
+            .eq('assessment_type', 'school_learning')
+            .maybeSingle();
+          if (respData && respData.review_status === 'needs_revision') {
+            setRejectionReason(respData.review_notes || 'Revision requested by teacher.');
+          }
         }
       } catch (err) {
         logger.error('Error fetching rejection reason:', err);
@@ -840,9 +870,13 @@ export default function MySchoolLearningAssessment() {
           student_id: studentId,
           assessment_type: 'school_learning',
           assessment_title: 'My School, My Learning and I',
-          responses: responses,
+          responses: {
+            ...responses,
+            is_resubmitted: !!rejectionReason
+          },
           completed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          review_status: 'unreviewed'
         }, { onConflict: 'student_id,assessment_type' })
         .select()
         .single();
@@ -889,6 +923,7 @@ export default function MySchoolLearningAssessment() {
         })();
       }
       aiSummaryService.generateAndCacheProfileCardKeywords('school_learning', responses, userProfile.id, lang);
+      setRejectionReason(null);
       setIsCompleted(true);
       redirectTimeoutRef.current = setTimeout(() => navigate('/student/things-interest-me?from=school_learning'), 6000);
     } catch (error) {

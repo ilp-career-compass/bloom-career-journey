@@ -12,6 +12,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ProfileCardModulesPanel from '@/components/teacher/ProfileCardModulesPanel';
 import { useSearchParams } from 'react-router-dom';
 import { useLang } from '@/hooks/useLang';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { notificationService } from '@/services/notificationService';
 
 interface Student {
   id: string;
@@ -59,12 +62,18 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
 
+  // State variables for assessment revision request dialog
+  const [isRevisionDialogOpen, setIsRevisionDialogOpen] = useState(false);
+  const [revisionAssessmentId, setRevisionAssessmentId] = useState<string | null>(null);
+  const [revisionNotesText, setRevisionNotesText] = useState('');
+  const [submittingRevision, setSubmittingRevision] = useState(false);
+
   const filteredStudentsList = students.filter(student => {
     if (reviewFilter === 'all') return true;
     if (!student.assessments) return false;
     
     if (reviewFilter === 'unreviewed') {
-      return student.assessments.some(a => a.review_status === 'unreviewed');
+      return student.assessments.some(a => a.review_status === 'unreviewed' || a.review_status === 'resubmitted');
     }
     if (reviewFilter === 'needs_attention') {
       return student.assessments.some(a => a.review_status === 'needs_revision' || a.review_status === 'flagged');
@@ -79,7 +88,7 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
     if (reviewFilter === 'all') return true;
     const status = assessment.review_status || 'unreviewed';
     if (reviewFilter === 'unreviewed') {
-      return status === 'unreviewed';
+      return status === 'unreviewed' || status === 'resubmitted';
     }
     if (reviewFilter === 'needs_attention') {
       return status === 'needs_revision' || status === 'flagged';
@@ -461,16 +470,38 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
     }
   };
 
-  const updateReviewStatus = async (assessmentId: string, status: 'reviewed' | 'needs_revision' | 'flagged') => {
+  // Assessment title map for notification messages
+  const ASSESSMENT_NOTIF_TITLES: Record<string, Record<string, string>> = {
+    en: { inspiration: 'My Inspiration', about_me: 'About Me', dreams: 'My Dreams', school_learning: 'My School, My Learning and I', hobbies: 'My Talents and Hobbies', role_models: 'My Role Models' },
+    kn: { inspiration: 'ನನ್ನ ಪ್ರೇರಣೆ', about_me: 'ನನ್ನ ಬಗ್ಗೆ', dreams: 'ನನ್ನ ಕನಸುಗಳು', school_learning: 'ನನ್ನ ಶಾಲೆ, ನನ್ನ ಕಲಿಕೆ ಮತ್ತು ನಾನು', hobbies: 'ನನ್ನ ಪ್ರತಿಭೆಗಳು ಮತ್ತು ಹವ್ಯಾಸಗಳು', role_models: 'ನನ್ನ ಆದರ್ಶ ವ್ಯಕ್ತಿಗಳು' },
+    ta: { inspiration: 'என் உத்வேகம்', about_me: 'என்னைப் பற்றி', dreams: 'என் கனவுகள்', school_learning: 'என் பள்ளி, என் கல்வி மற்றும் நான்', hobbies: 'என் திறமைகளும் பொழுதுபோக்குகளும்', role_models: 'என் முன்மாதிரிகள்' },
+    hi: { inspiration: 'मेरी प्रेरणा', about_me: 'मेरे बारे में', dreams: 'मेरे सपने', school_learning: 'मेरा स्कूल, मेरी पढ़ाई और मैं', hobbies: 'मेरी प्रतिभाएं और शौक', role_models: 'मेरे आदर्श' },
+  };
+
+  const ASSESSMENT_ROUTES: Record<string, string> = {
+    inspiration: 'inspiration', about_me: 'about-me', dreams: 'dreams',
+    school_learning: 'school-learning', hobbies: 'hobbies', role_models: 'role-models',
+  };
+
+  const updateReviewStatus = async (
+    assessmentId: string,
+    status: 'reviewed' | 'needs_revision' | 'flagged',
+    notes?: string
+  ) => {
     setUpdatingStatus(assessmentId);
 
     try {
+      const updatePayload: Record<string, any> = {
+        review_status: status,
+        updated_at: new Date().toISOString(),
+      };
+      if (status === 'needs_revision' && notes !== undefined) {
+        updatePayload.review_notes = notes;
+      }
+
       const { error } = await supabase
         .from('assessment_responses')
-        .update({
-          review_status: status,
-          updated_at: new Date().toISOString()
-        })
+        .update(updatePayload)
         .eq('id', assessmentId);
 
       if (error) throw error;
@@ -497,6 +528,65 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
         return s;
       }));
 
+      // --- Fire in-app notification when marking needs_revision ---
+      if (status === 'needs_revision' && selectedStudent?.user_id) {
+        try {
+          // Determine the student's preferred language
+          const { data: userRow } = await supabase
+            .from('users')
+            .select('preferred_language')
+            .eq('id', selectedStudent.user_id)
+            .maybeSingle();
+          const studentLang: string = (userRow as any)?.preferred_language || 'en';
+
+          // Find the assessment to get its type and title
+          const targetAssessment = assessments.find(a => a.id === assessmentId);
+          const assessmentType = targetAssessment?.assessment_type || '';
+          const localizedTitle =
+            ASSESSMENT_NOTIF_TITLES[studentLang]?.[assessmentType] ||
+            ASSESSMENT_NOTIF_TITLES['en']?.[assessmentType] ||
+            targetAssessment?.assessment_title ||
+            'Assessment';
+
+          // Build localized notification strings
+          const notifTitle =
+            studentLang === 'kn' ? 'ಮಾಡ್ಯೂಲ್ ಪರಿಷ್ಕರಣೆ ಅಗತ್ಯವಿದೆ ⚠️' :
+            studentLang === 'ta' ? 'தொகுதி திருத்தம் தேவை ⚠️' :
+            studentLang === 'hi' ? 'मॉड्यूल संशोधन आवश्यक ⚠️' :
+            'Module Revision Requested ⚠️';
+
+          const notifMessage =
+            studentLang === 'kn'
+              ? `ನಿಮ್ಮ "${localizedTitle}" ಮಾಡ್ಯೂಲ್ ಅನ್ನು ಪರಿಷ್ಕರಿಸಲು ಶಿಕ್ಷಕರು ಕೋರಿದ್ದಾರೆ. ದಯವಿಟ್ಟು ಈ ಮಾಡ್ಯೂಲ್ ಅನ್ನು ಮರುಸಲ್ಲಿಸಿ.`
+              : studentLang === 'ta'
+              ? `உங்கள் "${localizedTitle}" தொகுதியில் திருத்தம் செய்ய ஆசிரியர் கோரியுள்ளார். தயவுசெய்து இந்த தொகுதியை மீண்டும் சமர்ப்பிக்கவும்.`
+              : studentLang === 'hi'
+              ? `आपके शिक्षक ने आपके "${localizedTitle}" मॉड्यूल में संशोधन का अनुरोध किया है। कृपया इस मॉड्यूल को पुनः सबमिट करें।`
+              : `Your teacher has requested revisions to your "${localizedTitle}" module. Please resubmit this module.`;
+
+          const route = ASSESSMENT_ROUTES[assessmentType] || assessmentType;
+          const notifLink = `/student/assessment/${route}?lang=${studentLang}`;
+
+          // Fire-and-forget notification (non-blocking)
+          notificationService.create({
+            userId: selectedStudent.user_id,
+            type: 'revision_requested',
+            title: notifTitle,
+            message: notifMessage,
+            link: notifLink,
+          }).then(result => {
+            if (!result.success) {
+              logger.warn('⚠️ Revision notification could not be sent:', result.error);
+            } else {
+              logger.log('✅ Revision notification sent to student:', selectedStudent.user_id);
+            }
+          });
+        } catch (notifErr) {
+          // Non-fatal: log but don't block the status update
+          logger.warn('⚠️ Could not send revision notification:', notifErr);
+        }
+      }
+
       toast({
         title: "Status Updated",
         description: `Assessment marked as ${status.replace('_', ' ')}`,
@@ -516,6 +606,24 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
     } finally {
       setUpdatingStatus(null);
     }
+  };
+
+  /** Opens the revision notes dialog for a given assessment */
+  const openRevisionDialog = (assessmentId: string) => {
+    setRevisionAssessmentId(assessmentId);
+    setRevisionNotesText('');
+    setIsRevisionDialogOpen(true);
+  };
+
+  /** Submits the revision notes and triggers status update + notification */
+  const submitRevisionRequest = async () => {
+    if (!revisionAssessmentId) return;
+    setSubmittingRevision(true);
+    await updateReviewStatus(revisionAssessmentId, 'needs_revision', revisionNotesText);
+    setSubmittingRevision(false);
+    setIsRevisionDialogOpen(false);
+    setRevisionAssessmentId(null);
+    setRevisionNotesText('');
   };
 
   const fetchStudents = async () => {
@@ -557,7 +665,7 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
           // Get all assessments for this student
           const { data: assessments } = await supabase
             .from('assessment_responses')
-            .select('assessment_type, review_status')
+            .select('assessment_type, review_status, responses')
             .eq('student_id', student.id);
 
           // Count unique assessment types
@@ -569,16 +677,26 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
             full_name: student.users?.full_name || 'Unknown',
             class_name: student.classes?.name || 'No class',
             assessment_count: uniqueTypes.size,
-            assessments: (assessments || []).map(a => ({
-              assessment_type: a.assessment_type,
-              review_status: a.review_status || 'unreviewed'
-            }))
+            assessments: (assessments || []).map(a => {
+              const respObj = typeof a.responses === 'object' && a.responses !== null ? (a.responses as any) : {};
+              let status = a.review_status || 'unreviewed';
+              if (status === 'unreviewed' && respObj.is_resubmitted === true) {
+                status = 'resubmitted';
+              }
+              return {
+                assessment_type: a.assessment_type,
+                review_status: status
+              };
+            })
           };
         })
       );
 
       logger.log('✅ Fetched students:', studentsWithCounts);
       setStudents(studentsWithCounts);
+      if (onReviewUpdate) {
+        onReviewUpdate();
+      }
     } catch (error: any) {
       logger.error('❌ Error fetching students:', error);
       toast({
@@ -640,8 +758,18 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
         }
       });
 
-      // Convert to array
-      const sortedAssessments = Object.values(latestByKey);
+      // Convert to array and map review_status if is_resubmitted is true in responses
+      const sortedAssessments = Object.values(latestByKey).map((a: any) => {
+        const respObj = typeof a.responses === 'object' && a.responses !== null ? (a.responses as any) : {};
+        let status = a.review_status || 'unreviewed';
+        if (status === 'unreviewed' && respObj.is_resubmitted === true) {
+          status = 'resubmitted';
+        }
+        return {
+          ...a,
+          review_status: status
+        };
+      });
 
       logger.log('✅ Unique assessments (latest only):', sortedAssessments);
       logger.log('📅 Assessment dates:', sortedAssessments.map((a: any) => ({
@@ -681,6 +809,8 @@ export default function StudentAssessmentReview({ onReviewUpdate }: StudentAsses
         return 'bg-yellow-100 text-yellow-800';
       case 'flagged':
         return 'bg-red-100 text-red-800';
+      case 'resubmitted':
+        return 'bg-blue-100 text-blue-800 border border-blue-200';
       default:
         return 'bg-gray-100 text-gray-800';
     }

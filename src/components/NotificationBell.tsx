@@ -153,6 +153,22 @@ const getLocalizedNotification = (n: AppNotification, lang: string): { title: st
     }
 
     // t === 'revision_requested'
+    const isAssessmentRevision = !msg.includes('summary') && !msg.includes('ಸಾರಾಂಶ') && !msg.includes('சுருக்கம்') && !msg.includes('सारांश');
+
+    if (isAssessmentRevision) {
+      const title =
+        lang === 'kn' ? 'ಮಾಡ್ಯೂಲ್ ಪರಿಷ್ಕರಣೆ ಅಗತ್ಯವಿದೆ ⚠️' :
+        lang === 'ta' ? 'தொகுதி திருத்தம் தேவை ⚠️' :
+        lang === 'hi' ? 'मॉड्यूल संशोधन आवश्यक ⚠️' :
+        'Module Revision Requested ⚠️';
+      const message =
+        lang === 'kn' ? `ನಿಮ್ಮ "${localizedTitle}" ಮಾಡ್ಯೂಲ್ ಅನ್ನು ಪರಿಷ್ಕರಿಸಲು ಶಿಕ್ಷಕರು ಕೋರಿದ್ದಾರೆ. ದಯವಿಟ್ಟು ಈ ಮಾಡ್ಯೂಲ್ ಅನ್ನು ಮರುಸಲ್ಲಿಸಿ.` :
+        lang === 'ta' ? `உங்கள் "${localizedTitle}" தொகுதியில் திருத்தம் செய்ய ஆசிரியர் கோரியுள்ளார். தயவுசெய்து இந்த தொகுதியை மீண்டும் சமர்ப்பிக்கவும்.` :
+        lang === 'hi' ? `आपके शिक्षक ने आपके "${localizedTitle}" मॉड्यूल में संशोधन का अनुरोध किया है। कृपया इस मॉड्यूल को पुनः सबमिट करें।` :
+        `Your teacher has requested revisions to your "${localizedTitle}" module. Please resubmit this module.`;
+      return { title, message };
+    }
+
     const title =
       lang === 'kn' ? 'ಸಾರಾಂಶ ಪರಿಷ್ಕರಣೆ ಅಗತ್ಯವಿದೆ' :
       lang === 'ta' ? 'சுருக்கம் திருத்தம் தேவை' :

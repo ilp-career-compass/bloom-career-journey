@@ -375,10 +375,38 @@ export default function StudentDashboard() {
     }
   };
 
+  const getProgressForType = (assessmentType: string) => {
+    switch (assessmentType) {
+      case 'inspiration': return assessmentProgress;
+      case 'about_me': return aboutMeProgress;
+      case 'dreams': return dreamsProgress;
+      case 'school_learning': return stateLearningProgress;
+      case 'hobbies': return hobbiesProgress;
+      case 'role_models': return roleModelsProgress;
+      case 'holland_code': return hollandCodeProgress;
+      case 'career_guidance_tools': return careerGuidanceToolsProgress;
+      default: return null;
+    }
+  };
+
+  const checkIsRejected = (assessmentType: string) => {
+    const cacheKey = assessmentType === 'holland_code' ? 'personality' : assessmentType;
+    const isCacheRejected = profileCardApprovals[cacheKey]?.approval_status === 'rejected';
+    const isResponseRejected = getProgressForType(assessmentType)?.review_status === 'needs_revision';
+    return isCacheRejected || isResponseRejected;
+  };
+
+  const getRejectionReason = (assessmentType: string) => {
+    const cacheKey = assessmentType === 'holland_code' ? 'personality' : assessmentType;
+    const cacheReason = profileCardApprovals[cacheKey]?.rejection_reason;
+    const responseReason = getProgressForType(assessmentType)?.review_notes;
+    return cacheReason || responseReason || null;
+  };
+
   const getAssessmentStatus = (assessmentType: string) => {
     const isUnlocked = isAssessmentUnlocked(assessmentType);
     const isCompleted = getCompletionStatus(assessmentType);
-    const isRejected = profileCardApprovals[assessmentType]?.approval_status === 'rejected';
+    const isRejected = checkIsRejected(assessmentType);
 
     if (isRejected) {
       return {
@@ -441,7 +469,7 @@ export default function StudentDashboard() {
     const route = routes[assessmentType];
     if (route) {
       const completed = getCompletionStatus(assessmentType);
-      const isRejected = profileCardApprovals[assessmentType]?.approval_status === 'rejected';
+      const isRejected = checkIsRejected(assessmentType);
       navigate(completed && !isRejected ? `/student/assessment/${route}${qp}&readonly=1` : `/student/assessment/${route}${qp}`);
     }
   };
@@ -456,14 +484,14 @@ export default function StudentDashboard() {
   // ═══════════════════════════════════════════════════════════════════
 
   const assessmentCards: AssessmentCardData[] = [
-    { key: 'inspiration', number: 1, titleKey: 'assessment_inspiration', descriptionEn: 'Discover what inspires you', descriptionKn: 'ನಿಮ್ಮನ್ನು ಪ್ರೇರೇಪಿಸುವುವುದನ್ನು ಹುಡುಕಿ', descriptionTa: 'உங்களை ஊக்கப்படுத்தும் விஷயங்களை கண்டறியுங்கள்', descriptionHi: 'जानें कि आपको क्या प्रेरित करता है', assessmentStatus: getAssessmentStatus('inspiration'), isCompleted: getCompletionStatus('inspiration'), isUnlocked: isAssessmentUnlocked('inspiration'), hasProgress: !!assessmentProgress, hasSummary: true, summaryState: 'none' as SummaryState, isRejected: profileCardApprovals['inspiration']?.approval_status === 'rejected', rejectionReason: profileCardApprovals['inspiration']?.rejection_reason },
-    { key: 'about_me', number: 2, titleKey: 'assessment_about_me', descriptionEn: 'Reflect about yourself and your strengths', descriptionKn: 'ನಿಮ್ಮ ಬಗ್ಗೆ ಮತ್ತು ನಿಮ್ಮ ಬಲಗಳನ್ನು ಆಲೋಚಿಸಿ', descriptionTa: 'உங்களைப் பற்றியும் உங்கள் பலங்களைப் பற்றியும் சிந்தியுங்கள்', descriptionHi: 'अपने बारे में और अपनी ताकतों पर विचार करें', assessmentStatus: getAssessmentStatus('about_me'), isCompleted: getCompletionStatus('about_me'), isUnlocked: isAssessmentUnlocked('about_me'), hasProgress: hasProgress('about_me'), hasSummary: true, summaryState: 'none' as SummaryState, isRejected: profileCardApprovals['about_me']?.approval_status === 'rejected', rejectionReason: profileCardApprovals['about_me']?.rejection_reason },
-    { key: 'dreams', number: 3, titleKey: 'assessment_dreams', descriptionEn: 'Explore your future aspirations', descriptionKn: 'ನಿಮ್ಮ ಭವಿಷ್ಯದ ಆಸೆಗಳನ್ನು ಅನ್ವೇಷಿಸಿ', descriptionTa: 'உங்கள் எதிர்கால கனவுகள் மற்றும் இலக்குகளை ஆராயுங்கள்', descriptionHi: 'अपने भविष्य की आकांक्षाओं को जानें', assessmentStatus: getAssessmentStatus('dreams'), isCompleted: getCompletionStatus('dreams'), isUnlocked: isAssessmentUnlocked('dreams'), hasProgress: hasProgress('dreams'), hasSummary: true, summaryState: 'none' as SummaryState, isRejected: profileCardApprovals['dreams']?.approval_status === 'rejected', rejectionReason: profileCardApprovals['dreams']?.rejection_reason },
-    { key: 'school_learning', number: 4, titleKey: 'assessment_school_learning', descriptionEn: 'Reflect on your learning journey', descriptionKn: 'ನಿಮ್ಮ ಕಲಿಕೆಯ ಪ್ರಯಾಣದ ಬಗ್ಗೆ ಚಿಂತಿಸಿರಿ', descriptionTa: 'உங்கள் கற்றல் பயணத்தை பற்றிச் சிந்தியுங்கள்', descriptionHi: 'अपनी सीखने की यात्रा पर विचार करें', assessmentStatus: getAssessmentStatus('school_learning'), isCompleted: getCompletionStatus('school_learning'), isUnlocked: isAssessmentUnlocked('school_learning'), hasProgress: hasProgress('school_learning'), hasSummary: true, summaryState: 'none' as SummaryState, isRejected: profileCardApprovals['school_learning']?.approval_status === 'rejected', rejectionReason: profileCardApprovals['school_learning']?.rejection_reason },
-    { key: 'hobbies', number: 5, titleKey: 'assessment_hobbies', descriptionEn: 'Discover career paths from your interests', descriptionKn: 'ನಿಮ್ಮ ಆಸಕ್ತಿಗಳಿಂದ ವೃತ್ತಿ ಮಾರ್ಗಗಳನ್ನು ಅನ್ವೇಷಿಸಿ', descriptionTa: 'உங்கள் ஆர்வங்களிலிருந்து தொழில் பாதைகளை அறியுங்கள்', descriptionHi: 'अपनी रुचियों से करियर पथ खोजें', assessmentStatus: getAssessmentStatus('hobbies'), isCompleted: getCompletionStatus('hobbies'), isUnlocked: isAssessmentUnlocked('hobbies'), hasProgress: hasProgress('hobbies'), hasSummary: true, summaryState: 'none' as SummaryState, isRejected: profileCardApprovals['hobbies']?.approval_status === 'rejected', rejectionReason: profileCardApprovals['hobbies']?.rejection_reason },
-    { key: 'role_models', number: 6, titleKey: 'assessment_role_models', descriptionEn: 'Identify your inspiring role models', descriptionKn: 'ನಿಮ್ಮನ್ನು ಪ್ರೇರೇಪಿಸುವ ಮಾದರಿಗಳನ್ನು ಗುರುತಿಸಿ', descriptionTa: 'உங்களை ஊக்கப்படுத்தும் முன்னுதாரணங்களை கண்டறியுங்கள்', descriptionHi: 'अपने प्रेरणादायक आदर्शों को पहचानें', assessmentStatus: getAssessmentStatus('role_models'), isCompleted: getCompletionStatus('role_models'), isUnlocked: isAssessmentUnlocked('role_models'), hasProgress: hasProgress('role_models'), hasSummary: true, summaryState: 'none' as SummaryState, isRejected: profileCardApprovals['role_models']?.approval_status === 'rejected', rejectionReason: profileCardApprovals['role_models']?.rejection_reason },
-    { key: 'holland_code', number: 7, titleKey: 'assessment_holland_code', descriptionEn: 'Identify your personality type', descriptionKn: 'ನಿಮ್ಮ ವ್ಯಕ್ತಿತ್ವದ ಪ್ರಕಾರವನ್ನು ಗುರುತಿಸಿ', descriptionTa: 'உங்கள் நற்பண்பு வகையை அறியுங்கள்', descriptionHi: 'अपने व्यक्तित्व का प्रकार पहचानें', assessmentStatus: getAssessmentStatus('holland_code'), isCompleted: getCompletionStatus('holland_code'), isUnlocked: isAssessmentUnlocked('holland_code'), hasProgress: hasProgress('holland_code'), hasSummary: false, summaryState: 'none' as SummaryState, isRejected: profileCardApprovals['personality']?.approval_status === 'rejected', rejectionReason: profileCardApprovals['personality']?.rejection_reason },
-    { key: 'career_guidance_tools', number: 8, titleKey: 'assessment_career_guidance', descriptionEn: 'Explore career guidance tools and resources', descriptionKn: 'ವೃತ್ತಿ ಮಾರ್ಗದರ್ಶನ ಸಾಧನಗಳನ್ನು ಅನ್ವೇಷಿಸಿ', descriptionTa: 'தொழில் வழிகாட்டல் கருவிகள் மற்றும் ஆதாரங்களை ஆராயுங்கள்', descriptionHi: 'करियर मार्गदर्शन उपकरणों और संसाधनों की खोज करें', assessmentStatus: getAssessmentStatus('career_guidance_tools'), isCompleted: getCompletionStatus('career_guidance_tools'), isUnlocked: isAssessmentUnlocked('career_guidance_tools'), hasProgress: hasProgress('career_guidance_tools'), hasSummary: false, summaryState: 'none' as SummaryState, isRejected: profileCardApprovals['career_guidance_tools']?.approval_status === 'rejected', rejectionReason: profileCardApprovals['career_guidance_tools']?.rejection_reason },
+    { key: 'inspiration', number: 1, titleKey: 'assessment_inspiration', descriptionEn: 'Discover what inspires you', descriptionKn: 'ನಿಮ್ಮನ್ನು ಪ್ರೇರೇಪಿಸುವುವುದನ್ನು ಹುಡುಕಿ', descriptionTa: 'உங்களை ஊக்கப்படுத்தும் விஷயங்களை கண்டறியுங்கள்', descriptionHi: 'जानें कि आपको क्या प्रेरित करता है', assessmentStatus: getAssessmentStatus('inspiration'), isCompleted: getCompletionStatus('inspiration'), isUnlocked: isAssessmentUnlocked('inspiration'), hasProgress: !!assessmentProgress, hasSummary: true, summaryState: 'none' as SummaryState, isRejected: checkIsRejected('inspiration'), rejectionReason: getRejectionReason('inspiration') },
+    { key: 'about_me', number: 2, titleKey: 'assessment_about_me', descriptionEn: 'Reflect about yourself and your strengths', descriptionKn: 'ನಿಮ್ಮ ಬಗ್ಗೆ ಮತ್ತು ನಿಮ್ಮ ಬಲಗಳನ್ನು ಆಲೋಚಿಸಿ', descriptionTa: 'உங்களைப் பற்றியும் உங்கள் பலங்களைப் பற்றியும் சிந்தியுங்கள்', descriptionHi: 'अपने बारे में और अपनी ताकतों पर विचार करें', assessmentStatus: getAssessmentStatus('about_me'), isCompleted: getCompletionStatus('about_me'), isUnlocked: isAssessmentUnlocked('about_me'), hasProgress: hasProgress('about_me'), hasSummary: true, summaryState: 'none' as SummaryState, isRejected: checkIsRejected('about_me'), rejectionReason: getRejectionReason('about_me') },
+    { key: 'dreams', number: 3, titleKey: 'assessment_dreams', descriptionEn: 'Explore your future aspirations', descriptionKn: 'ನಿಮ್ಮ ಭವಿಷ್ಯದ ಆಸೆಗಳನ್ನು ಅನ್ವೇಷಿಸಿ', descriptionTa: 'உங்கள் எதிர்கால கனவுகள் மற்றும் இலக்குகளை ஆராயுங்கள்', descriptionHi: 'अपने भविष्य की आकांक्षाओं को जानें', assessmentStatus: getAssessmentStatus('dreams'), isCompleted: getCompletionStatus('dreams'), isUnlocked: isAssessmentUnlocked('dreams'), hasProgress: hasProgress('dreams'), hasSummary: true, summaryState: 'none' as SummaryState, isRejected: checkIsRejected('dreams'), rejectionReason: getRejectionReason('dreams') },
+    { key: 'school_learning', number: 4, titleKey: 'assessment_school_learning', descriptionEn: 'Reflect on your learning journey', descriptionKn: 'ನಿಮ್ಮ ಕಲಿಕೆಯ ಪ್ರಯಾಣದ ಬಗ್ಗೆ ಚಿಂತಿಸಿರಿ', descriptionTa: 'உங்கள் கற்றல் பயணத்தை பற்றிச் சிந்தியுங்கள்', descriptionHi: 'अपनी सीखने की यात्रा पर विचार करें', assessmentStatus: getAssessmentStatus('school_learning'), isCompleted: getCompletionStatus('school_learning'), isUnlocked: isAssessmentUnlocked('school_learning'), hasProgress: hasProgress('school_learning'), hasSummary: true, summaryState: 'none' as SummaryState, isRejected: checkIsRejected('school_learning'), rejectionReason: getRejectionReason('school_learning') },
+    { key: 'hobbies', number: 5, titleKey: 'assessment_hobbies', descriptionEn: 'Discover career paths from your interests', descriptionKn: 'ನಿಮ್ಮ ಆಸಕ್ತಿಗಳಿಂದ ವೃತ್ತಿ ಮಾರ್ಗಗಳನ್ನು ಅನ್ವೇಷಿಸಿ', descriptionTa: 'உங்கள் ஆர்வங்களிலிருந்து தொழில் பாதைகளை அறியுங்கள்', descriptionHi: 'अपनी रुचियों से करियर पथ खोजें', assessmentStatus: getAssessmentStatus('hobbies'), isCompleted: getCompletionStatus('hobbies'), isUnlocked: isAssessmentUnlocked('hobbies'), hasProgress: hasProgress('hobbies'), hasSummary: true, summaryState: 'none' as SummaryState, isRejected: checkIsRejected('hobbies'), rejectionReason: getRejectionReason('hobbies') },
+    { key: 'role_models', number: 6, titleKey: 'assessment_role_models', descriptionEn: 'Identify your inspiring role models', descriptionKn: 'ನಿಮ್ಮನ್ನು ಪ್ರೇರೇಪಿಸುವ ಮಾದರಿಗಳನ್ನು ಗುರುತಿಸಿ', descriptionTa: 'உங்களை ஊக்கப்படுத்தும் முன்னுதாரணங்களை கண்டறியுங்கள்', descriptionHi: 'अपने प्रेरणादायक आदर्शों को पहचानें', assessmentStatus: getAssessmentStatus('role_models'), isCompleted: getCompletionStatus('role_models'), isUnlocked: isAssessmentUnlocked('role_models'), hasProgress: hasProgress('role_models'), hasSummary: true, summaryState: 'none' as SummaryState, isRejected: checkIsRejected('role_models'), rejectionReason: getRejectionReason('role_models') },
+    { key: 'holland_code', number: 7, titleKey: 'assessment_holland_code', descriptionEn: 'Identify your personality type', descriptionKn: 'ನಿಮ್ಮ ವ್ಯಕ್ತಿತ್ವದ ಪ್ರಕಾರವನ್ನು ಗುರುತಿಸಿ', descriptionTa: 'உங்கள் நற்பண்பு வகையை அறியுங்கள்', descriptionHi: 'अपने व्यक्तित्व का प्रकार पहचानें', assessmentStatus: getAssessmentStatus('holland_code'), isCompleted: getCompletionStatus('holland_code'), isUnlocked: isAssessmentUnlocked('holland_code'), hasProgress: hasProgress('holland_code'), hasSummary: false, summaryState: 'none' as SummaryState, isRejected: checkIsRejected('holland_code'), rejectionReason: getRejectionReason('holland_code') },
+    { key: 'career_guidance_tools', number: 8, titleKey: 'assessment_career_guidance', descriptionEn: 'Explore career guidance tools and resources', descriptionKn: 'ವೃತ್ತಿ ಮಾರ್ಗದರ್ಶನ ಸಾಧನಗಳನ್ನು ಅನ್ವೇಷಿಸಿ', descriptionTa: 'தொழில் வழிகாட்டல் கருவிகள் மற்றும் ஆதாரங்களை ஆராயுங்கள்', descriptionHi: 'करियर मार्गदर्शन उपकरणों और संसाधनों की खोज करें', assessmentStatus: getAssessmentStatus('career_guidance_tools'), isCompleted: getCompletionStatus('career_guidance_tools'), isUnlocked: isAssessmentUnlocked('career_guidance_tools'), hasProgress: hasProgress('career_guidance_tools'), hasSummary: false, summaryState: 'none' as SummaryState, isRejected: checkIsRejected('career_guidance_tools'), rejectionReason: getRejectionReason('career_guidance_tools') },
   ];
 
   // ═══════════════════════════════════════════════════════════════════

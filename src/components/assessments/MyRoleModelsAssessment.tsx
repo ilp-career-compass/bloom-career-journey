@@ -1,5 +1,6 @@
 import {
-  logger } from '@/lib/logger';
+  logger
+} from '@/lib/logger';
 import { useState, useEffect } from 'react';
 import { validateResponses } from '@/utils/englishValidation';
 import { fetchTranslations } from '@/services/translationService';
@@ -67,18 +68,48 @@ export default function MyRoleModelsAssessment() {
   const { userProfile } = useAuth();
   const [rejectionReason, setRejectionReason] = useState<string | null>(null);
 
+  const getStudentId = async () => {
+    if (!userProfile) return null;
+    let studentId = userProfile.studentProfile?.id as string | undefined;
+    if (!studentId) {
+      const { data: studentRow } = await supabase
+        .from('students')
+        .select('id')
+        .eq('user_id', userProfile.id)
+        .maybeSingle();
+      studentId = studentRow?.id;
+    }
+    return studentId || null;
+  };
+
   useEffect(() => {
     const fetchRejectionFeedback = async () => {
       if (!userProfile?.id) return;
       try {
-        const { data, error } = await supabase
+        // 1. Check profile_card_cache
+        const { data: cacheData } = await supabase
           .from('profile_card_cache')
           .select('approval_status, rejection_reason')
           .eq('student_id', userProfile.id)
           .eq('assessment_type', 'role_models')
           .maybeSingle();
-        if (data && data.approval_status === 'rejected') {
-          setRejectionReason(data.rejection_reason);
+        if (cacheData && cacheData.approval_status === 'rejected') {
+          setRejectionReason(cacheData.rejection_reason || 'Revision requested by teacher.');
+          return;
+        }
+
+        // 2. Check assessment_responses
+        const studentId = await getStudentId();
+        if (studentId) {
+          const { data: respData } = await supabase
+            .from('assessment_responses')
+            .select('review_status, review_notes')
+            .eq('student_id', studentId)
+            .eq('assessment_type', 'role_models')
+            .maybeSingle();
+          if (respData && respData.review_status === 'needs_revision') {
+            setRejectionReason(respData.review_notes || 'Revision requested by teacher.');
+          }
         }
       } catch (err) {
         logger.error('Error fetching rejection reason:', err);
@@ -92,7 +123,6 @@ export default function MyRoleModelsAssessment() {
   const [searchParams] = useSearchParams();
   const readOnlyView = ['1', 'true'].includes((searchParams.get('readonly') || searchParams.get('view') || '').toLowerCase());
   const tabParam = searchParams.get('tab');
-  const isReadOnly = readOnlyView;
   const [responses, setResponses] = useState<RoleModelsAssessmentResponse>({
     roleModel1: {
       name: '',
@@ -178,6 +208,7 @@ export default function MyRoleModelsAssessment() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const isReadOnly = (isCompleted && !rejectionReason) || readOnlyView;
   const [currentSection, setCurrentSection] = useState<'roleModel1' | 'roleModel2' | 'roleModel3' | 'reflection' | 'summary'>('roleModel1');
   const [summaryQuestions, setSummaryQuestions] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
@@ -303,12 +334,11 @@ export default function MyRoleModelsAssessment() {
     loadSummaryQuestions();
   }, [lang]);
 
-  // Auto-select summary tab from URL param — only when arriving via readonly=1
   useEffect(() => {
-    if (tabParam === 'summary' && readOnlyView) {
+    if (tabParam === 'summary' && isReadOnly) {
       setCurrentSection('summary');
     }
-  }, [tabParam, readOnlyView]);
+  }, [tabParam, isReadOnly]);
 
   // Keep URL ?lang in sync without re-rendering
   useEffect(() => {
@@ -326,7 +356,7 @@ export default function MyRoleModelsAssessment() {
 
   // Auto-save drafts on changes (debounced)
   useEffect(() => {
-    if (loading || (isCompleted && !rejectionReason) || readOnlyView || isTranslatingRef.current) return;
+    if (loading || isReadOnly || isTranslatingRef.current) return;
     const t = setTimeout(async () => {
       try {
         if (!userProfile?.id) return;
@@ -347,7 +377,7 @@ export default function MyRoleModelsAssessment() {
       } catch { }
     }, 800);
     return () => clearTimeout(t);
-  }, [responses, loading, isCompleted, readOnlyView, userProfile]);
+  }, [responses, loading, isReadOnly, userProfile]);
 
   const checkExistingResponse = async () => {
     if (!userProfile) return;
@@ -598,9 +628,13 @@ export default function MyRoleModelsAssessment() {
           student_id: studentId,
           assessment_type: 'role_models',
           assessment_title: 'My Role Models',
-          responses: responses,
+          responses: {
+            ...responses,
+            is_resubmitted: !!rejectionReason
+          },
           completed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          review_status: 'unreviewed'
         }, { onConflict: 'student_id,assessment_type' })
         .select()
         .single();
@@ -633,6 +667,7 @@ export default function MyRoleModelsAssessment() {
         })();
       }
       aiSummaryService.generateAndCacheProfileCardKeywords('role_models', responses, userProfile.id, lang);
+      setRejectionReason(null);
       setIsCompleted(true);
       redirectTimeoutRef.current = setTimeout(() => navigate('/student/things-interest-me?from=role_models'), 6000);
     } catch (error) {
@@ -873,19 +908,19 @@ export default function MyRoleModelsAssessment() {
           <Button
             variant={currentSection === 'summary' ? 'default' : 'outline'}
             onClick={() => {
-              if (readOnlyView || areCoreSectionsComplete()) {
+              if (isReadOnly || areCoreSectionsComplete()) {
                 setCurrentSection('summary');
               }
             }}
-            disabled={!readOnlyView && !areCoreSectionsComplete() && currentSection !== 'summary'}
+            disabled={!isReadOnly && !areCoreSectionsComplete() && currentSection !== 'summary'}
             className={`border-purple-200 ${currentSection === 'summary'
               ? 'bg-purple-600 hover:bg-purple-700'
-              : !readOnlyView && !areCoreSectionsComplete()
+              : !isReadOnly && !areCoreSectionsComplete()
                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-75'
                 : 'text-purple-700 hover:bg-purple-50'
               }`}
           >
-            {!readOnlyView && !areCoreSectionsComplete() ? (
+            {!isReadOnly && !areCoreSectionsComplete() ? (
               <Lock className="w-4 h-4 mr-2" />
             ) : (
               <Sparkles className="w-4 h-4 mr-2 text-yellow-500" />
