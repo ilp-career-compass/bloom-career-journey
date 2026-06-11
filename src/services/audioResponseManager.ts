@@ -1,4 +1,4 @@
-﻿import { logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 // Audio Response Manager
 // Integrates audio recording, transcription, and storage
@@ -100,7 +100,7 @@ class AudioResponseManager {
       let languageDetected = audioData.languageDetected;
       let cleanedTranscription: string | undefined;
 
-      if (this.config.enableTranscription && this.isOnline) {
+      if (this.config.enableTranscription && this.isOnline && !transcription) {
         try {
           // Determine transcription language
           // Support Kannada (kn-IN), Hindi (hi-IN), English (en-IN), or auto-detect

@@ -541,32 +541,27 @@ export function AudioRecorder({
     };
   }, []);
 
-  // START RECORDING FLOW
-  const startRecording = useCallback(async () => {
-    if (!state.hasPermission) {
-      const granted = await requestMicrophonePermission();
-      if (!granted) return;
-    }
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && state.isRecording) {
+      // G8: Capture flush Promise BEFORE stopping the recorder so onstop can await it
+      flushPromiseRef.current = stopStreamingCapture();
+      mediaRecorderRef.current.stop();
 
-    // Start Countdown
-    setState(prev => ({ ...prev, countdownActive: true, countdownValue: 3 }));
-
-    let count = 3;
-    if (countdownRef.current) clearInterval(countdownRef.current);
-    countdownRef.current = setInterval(() => {
-      count--;
-      setState(prev => ({ ...prev, countdownValue: count }));
-      if (count <= 0) {
-        if (countdownRef.current) clearInterval(countdownRef.current);
-        countdownRef.current = null;
-        setState(prev => ({ ...prev, countdownActive: false, isRecording: true }));
-        startActualRecording();
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+        recordingIntervalRef.current = null;
       }
-    }, 1000);
 
-  }, [state.hasPermission, requestMicrophonePermission]);
+      setState(prev => ({
+        ...prev,
+        isRecording: false,
+        buttonState: 'processing',
+        hasRecorded: true
+      }));
+    }
+  }, [state.isRecording]);
 
-  const startActualRecording = async () => {
+  const startActualRecording = useCallback(async () => {
     try {
       const constraints = {
         audio: {
@@ -584,7 +579,6 @@ export function AudioRecorder({
       streamRef.current = stream;
 
       // 1. Start MediaRecorder (Blob Storage)
-      const mimeTypes = ['audio/webm', 'audio/mp4', 'audio/ogg'];
       let mediaRecorder;
       try {
         mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
@@ -601,14 +595,106 @@ export function AudioRecorder({
       mediaRecorder.onstop = async () => {
         logger.log('🛑 Recorder Stopped');
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        setState(prev => ({ ...prev, audioBlob, hasRecorded: true }));
-
+        
         // G8: Wait for Sarvam's 2500ms flush to complete so the final transcript is captured
         await flushPromiseRef.current;
 
         const finalTranscript = streamingTranscriptRef.current;
-        onRecordingComplete(audioBlob, finalTranscript);
-        setState(prev => ({ ...prev, buttonState: 'saved' }));
+        const durationMs = Date.now() - startTime;
+
+        // If configured, trigger the upload/database save flow
+        if (studentId && assessmentId) {
+          setState(prev => ({ 
+            ...prev, 
+            audioBlob, 
+            hasRecorded: true,
+            buttonState: 'processing',
+            isUploading: true,
+            uploadProgress: 0,
+            isSaving: true
+          }));
+
+          try {
+            const audioData = {
+              questionId,
+              audioBlob,
+              transcription: finalTranscript || undefined,
+              duration: durationMs,
+              fileSize: audioBlob.size,
+            };
+
+            logger.log('📂 Uploading audio response to Supabase...', {
+              questionId,
+              size: audioBlob.size,
+              duration: durationMs,
+              hasTranscript: !!finalTranscript
+            });
+
+            const result = await audioResponseManager.processAudioResponse(
+              audioData,
+              (progress) => {
+                setState(prev => ({ ...prev, uploadProgress: progress }));
+              }
+            );
+
+            setState(prev => ({ 
+              ...prev, 
+              isUploading: false, 
+              uploadProgress: 100,
+              buttonState: 'saved',
+              savedAt: new Date().toISOString(),
+              isSaving: false
+            }));
+
+            // Use the returned transcription from processAudioResponse (might be cleaned up)
+            // or fallback to the streaming transcript we got.
+            const transcriptionToUse = result.success ? (result.transcription || finalTranscript) : finalTranscript;
+
+            onRecordingComplete(audioBlob, transcriptionToUse);
+
+            if (result.success) {
+              toast({
+                title: "Audio Response Saved",
+                description: transcriptionToUse
+                  ? "Your audio has been recorded, transcribed, and saved."
+                  : "Your audio has been recorded and saved.",
+              });
+            } else {
+              // RLS policy issue or other non-fatal issues might still be treated as successful locally
+              if (result.error?.includes('row-level security policy')) {
+                toast({
+                  title: "Audio Response Saved",
+                  description: "Your audio has been recorded. File saved to storage.",
+                });
+              } else {
+                throw new Error(result.error || 'Processing failed');
+              }
+            }
+          } catch (uploadError) {
+            logger.error('Audio processing error:', uploadError);
+            setState(prev => ({ 
+              ...prev, 
+              isUploading: false,
+              buttonState: 'idle',
+              isSaving: false
+            }));
+
+            setErrorState('error', 'Failed to save audio response. Your recording is saved locally.');
+
+            toast({
+              title: "Saving Failed",
+              description: uploadError instanceof Error ? uploadError.message : "Failed to process audio response.",
+              variant: "destructive",
+            });
+
+            // Fallback: still notify parent component of completion with the local blob
+            onRecordingComplete(audioBlob, finalTranscript);
+          }
+        } else {
+          // Fallback if not configured for saving (e.g. basic testing page)
+          setState(prev => ({ ...prev, audioBlob, hasRecorded: true, buttonState: 'saved' }));
+          onRecordingComplete(audioBlob, finalTranscript);
+        }
       };
 
       mediaRecorder.start(100);
@@ -645,28 +731,118 @@ export function AudioRecorder({
         setErrorState('error', 'Could not start recording.');
       }
     }
-  };
+  }, [
+    studentId,
+    assessmentId,
+    assessmentType,
+    assessmentTitle,
+    questionId,
+    language,
+    maxDuration,
+    useStreaming,
+    enableTranscription,
+    enableOfflineMode,
+    onRecordingComplete,
+    toast,
+    setErrorState,
+    lang,
+    stopRecording
+  ]);
 
-  const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && state.isRecording) {
-      // G8: Capture flush Promise BEFORE stopping the recorder so onstop can await it
-      flushPromiseRef.current = stopStreamingCapture();
-      mediaRecorderRef.current.stop();
-
-      if (recordingIntervalRef.current) {
-        clearInterval(recordingIntervalRef.current);
-        recordingIntervalRef.current = null;
-      }
-
-      setState(prev => ({
-        ...prev,
-        isRecording: false,
-        buttonState: 'processing',
-        hasRecorded: true
-      }));
+  // START RECORDING FLOW
+  const startRecording = useCallback(async () => {
+    if (!state.hasPermission) {
+      const granted = await requestMicrophonePermission();
+      if (!granted) return;
     }
-  }, [state.isRecording]);
 
+    // Start Countdown
+    setState(prev => ({ ...prev, countdownActive: true, countdownValue: 3 }));
+
+    let count = 3;
+    if (countdownRef.current) clearInterval(countdownRef.current);
+    countdownRef.current = setInterval(() => {
+      count--;
+      setState(prev => ({ ...prev, countdownValue: count }));
+      if (count <= 0) {
+        if (countdownRef.current) clearInterval(countdownRef.current);
+        countdownRef.current = null;
+        setState(prev => ({ ...prev, countdownActive: false, isRecording: true }));
+        startActualRecording();
+      }
+    }, 1000);
+
+  }, [state.hasPermission, requestMicrophonePermission, startActualRecording]);
+
+
+  // RENDER
+  if (compact) {
+    return (
+      <div className={`inline-flex items-center gap-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl h-14 px-4 py-2 text-sm select-none shadow-md transition-all duration-300 ${state.isRecording ? 'border-red-200 ring-4 ring-red-50 bg-red-50/20' : ''} ${className}`}>
+        {/* Action Button */}
+        <button
+          type="button"
+          onClick={state.isRecording ? stopRecording : startRecording}
+          disabled={disabled || state.buttonState === 'processing'}
+          className={`h-10 w-10 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 shrink-0 shadow-md ${
+            state.isRecording
+              ? 'bg-red-500 hover:bg-red-600 text-white'
+              : state.buttonState === 'saved'
+                ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                : 'bg-primary hover:bg-primary-hover text-white'
+          }`}
+        >
+          {state.buttonState === 'processing' ? (
+            <Loader2 className="w-5 h-5 text-white animate-spin" />
+          ) : state.isRecording ? (
+            <Square className="w-4.5 h-4.5 text-white fill-current" />
+          ) : state.buttonState === 'saved' ? (
+            <RotateCcw className="w-5 h-5 text-white" />
+          ) : (
+            <Mic className="w-5 h-5 text-white" />
+          )}
+        </button>
+
+        {/* Info & Timer Section */}
+        <div className="flex flex-col justify-center min-w-[105px]">
+          {state.countdownActive ? (
+            <div className="flex items-center gap-1.5">
+              <span className="text-xl font-black text-orange-500 animate-pulse">{state.countdownValue}</span>
+              <span className="text-[10px] text-orange-500 font-semibold uppercase tracking-wider">Get Ready</span>
+            </div>
+          ) : state.isRecording ? (
+            <div className="flex flex-col">
+              <span className="text-[10px] text-red-500 font-bold uppercase tracking-wider flex items-center gap-1.5 animate-pulse">
+                <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
+                Speaking Live
+              </span>
+              <span className="font-mono text-sm font-bold text-red-600 dark:text-red-400 tabular-nums">
+                {new Date(state.duration).toISOString().slice(14, 19)}
+              </span>
+            </div>
+          ) : state.buttonState === 'processing' ? (
+            <div className="flex flex-col">
+              <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider animate-pulse">Saving response</span>
+              <span className="text-[10px] text-muted-foreground">Please wait...</span>
+            </div>
+          ) : state.buttonState === 'saved' ? (
+            <div className="flex flex-col">
+              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                <Check className="w-3.5 h-3.5" />
+                Saved
+              </span>
+              <span className="text-[9px] text-muted-foreground leading-tight">Tap to retry</span>
+            </div>
+          ) : (
+            <div className="flex flex-col">
+              <span className="text-xs text-slate-600 dark:text-slate-350 font-bold uppercase tracking-wider">Speak Answer</span>
+              <span className="text-[9px] text-muted-foreground leading-tight">Tap mic to start</span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   // RENDER
   return (

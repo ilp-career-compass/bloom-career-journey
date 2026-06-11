@@ -107,6 +107,7 @@ function App() {
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<AuthPage />} />
+              <Route path="/auth/teacher" element={<AuthPage isTeacherOnly={true} />} />
               
               {/* Test/debug routes — require authentication */}
               <Route path="/audio-test" element={<ProtectedRoute allowedRoles={['admin']}><AudioTestPage /></ProtectedRoute>} />

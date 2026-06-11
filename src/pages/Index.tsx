@@ -84,11 +84,16 @@ const Index = () => {
               </h1>
               <p className="text-sm md:text-base text-muted-foreground mb-4">an India Literacy Project initiative</p>
               <p className="text-lg md:text-xl text-muted-foreground mb-8 leading-relaxed px-4 md:px-0">{t('heroDesc')}</p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button asChild size="lg" className="text-lg px-8">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                <Button asChild size="lg" className="text-lg px-8 shadow-md">
                   <a href="/auth">
                     {t('cta')}
                     <ArrowRight className="ml-2 w-5 h-5" />
+                  </a>
+                </Button>
+                <Button asChild variant="outline" size="lg" className="text-lg px-8 border-primary/20 hover:border-primary/45 transition-colors">
+                  <a href="/auth/teacher">
+                    Teacher Portal
                   </a>
                 </Button>
               </div>

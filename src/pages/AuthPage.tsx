@@ -1,6 +1,6 @@
 import { logger } from '@/lib/logger';
 import { useState, useEffect, useRef } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -151,7 +151,7 @@ function passwordStrength(pw: string): { label: string; color: string } {
 
   // 2. Predictable / Common Patterns Detection
   const isAllSame = pw.split('').every(c => c === pw[0]);
-  
+
   // Sequential characters of length 4 or more (e.g. "1234", "abcd", "dcba")
   let hasLongSequence = false;
   const lowerPw = pw.toLowerCase();
@@ -161,7 +161,7 @@ function passwordStrength(pw: string): { label: string; color: string } {
     const c3 = lowerPw.charCodeAt(i + 2);
     const c4 = lowerPw.charCodeAt(i + 3);
     if ((c2 === c1 + 1 && c3 === c2 + 1 && c4 === c3 + 1) ||
-        (c2 === c1 - 1 && c3 === c2 - 1 && c4 === c3 - 1)) {
+      (c2 === c1 - 1 && c3 === c2 - 1 && c4 === c3 - 1)) {
       hasLongSequence = true;
       break;
     }
@@ -169,7 +169,7 @@ function passwordStrength(pw: string): { label: string; color: string } {
 
   // Common predictable passwords (case-insensitive)
   const commonPasswords = [
-    'password', 'admin', '123456', '12345678', '123456789', 'welcome', 'qwerty', 
+    'password', 'admin', '123456', '12345678', '123456789', 'welcome', 'qwerty',
     'pass123', 'p@ssword', 'letmein', 'password123', 'admin123'
   ];
   const isCommon = commonPasswords.some(common => lowerPw.includes(common));
@@ -232,18 +232,15 @@ function PasswordStrengthWidget({ value }: { value: string }) {
 
       {/* Visual meter */}
       <div className="flex gap-1.5">
-        <div className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
-          strength.label === 'Too short' || strength.label === 'Weak' ? 'bg-red-500' : 
-          strength.label === 'Medium' ? 'bg-amber-500' : 'bg-green-600'
-        }`} />
-        <div className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
-          strength.label === 'Too short' || strength.label === 'Weak' ? 'bg-gray-200' : 
-          strength.label === 'Medium' ? 'bg-amber-500' : 'bg-green-600'
-        }`} />
-        <div className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
-          strength.label === 'Too short' || strength.label === 'Weak' || strength.label === 'Medium' ? 'bg-gray-200' : 
-          'bg-green-600'
-        }`} />
+        <div className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${strength.label === 'Too short' || strength.label === 'Weak' ? 'bg-red-500' :
+            strength.label === 'Medium' ? 'bg-amber-500' : 'bg-green-600'
+          }`} />
+        <div className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${strength.label === 'Too short' || strength.label === 'Weak' ? 'bg-gray-200' :
+            strength.label === 'Medium' ? 'bg-amber-500' : 'bg-green-600'
+          }`} />
+        <div className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${strength.label === 'Too short' || strength.label === 'Weak' || strength.label === 'Medium' ? 'bg-gray-200' :
+            'bg-green-600'
+          }`} />
       </div>
 
       {/* Criteria Checklist */}
@@ -342,12 +339,12 @@ function OtpScreen({
   const expiryPercent = Math.round((timeLeft / initialTimeLeft) * 100);
   const expiryColor =
     expiryPercent > 50 ? 'bg-green-500' :
-    expiryPercent > 20 ? 'bg-amber-500' :
-    'bg-red-500';
+      expiryPercent > 20 ? 'bg-amber-500' :
+        'bg-red-500';
   const expiryTextColor =
     expiryPercent > 50 ? 'text-green-700' :
-    expiryPercent > 20 ? 'text-amber-700' :
-    'text-red-600';
+      expiryPercent > 20 ? 'text-amber-700' :
+        'text-red-600';
 
   return (
     <form onSubmit={onVerify} className="space-y-5">
@@ -387,7 +384,7 @@ function OtpScreen({
             <span className="flex items-center gap-1.5">
               {/* clock icon */}
               <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
               </svg>
               OTP expires in
             </span>
@@ -450,11 +447,24 @@ function OtpScreen({
 }
 
 
-export default function AuthPage() {
-  logger.log('AuthPage: Component rendering');
+export default function AuthPage({ isTeacherOnly = false }: { isTeacherOnly?: boolean }) {
+  logger.log('AuthPage: Component rendering', { isTeacherOnly });
 
   const { user, userProfile, signIn } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.get('tab') === 'signup' || location.state?.defaultTab === 'signup') {
+      setActiveTab('signup');
+    } else {
+      setActiveTab('signin');
+    }
+  }, [location]);
 
   const strings: Record<string, string> = {
     welcome: 'Welcome',
@@ -473,7 +483,7 @@ export default function AuthPage() {
 
   const [signInForm, setSignInForm] = useState({ phone: '', password: '' });
   const [signUpForm, setSignUpForm] = useState({
-    role: 'teacher' as 'teacher' | 'student',
+    role: (isTeacherOnly ? 'teacher' : 'student') as 'teacher' | 'student',
     phone: '',
     password: '',
     confirmPassword: '',
@@ -482,6 +492,13 @@ export default function AuthPage() {
     grade: '',
     preferredLanguage: 'en' as 'en' | 'kn' | 'ta' | 'hi'
   });
+
+  useEffect(() => {
+    setSignUpForm(prev => ({
+      ...prev,
+      role: isTeacherOnly ? 'teacher' : 'student'
+    }));
+  }, [isTeacherOnly]);
   const [loading, setLoading] = useState(false);
   const [states, setStates] = useState<StateInfo[]>([]);
   const [loadingStates, setLoadingStates] = useState(false);
@@ -933,7 +950,7 @@ export default function AuthPage() {
                     try {
                       const text = await error.context.text();
                       msg = text || msg;
-                    } catch {}
+                    } catch { }
                   }
                 } else {
                   msg = error.message || msg;
@@ -979,7 +996,7 @@ export default function AuthPage() {
                   try {
                     const text = await error.context.text();
                     msg = text || msg;
-                  } catch {}
+                  } catch { }
                 }
               } else {
                 msg = error.message || msg;
@@ -1150,7 +1167,7 @@ export default function AuthPage() {
             try {
               const text = await error.context.text();
               msg = text || msg;
-            } catch {}
+            } catch { }
           }
         } else {
           msg = error.message || msg;
@@ -1177,435 +1194,512 @@ export default function AuthPage() {
     : '';
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-primary/5 via-background to-accent/5">
-      <div className="flex-1 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="mx-auto w-12 h-12 md:w-16 md:h-16 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center mb-4">
-            {/* <GraduationCap className="w-6 h-6 md:w-8 md:h-8 text-white" /> */}
-          <img src="/logo/ILP-new-logo.jpeg" alt="logo" className="w-20 h-20 md:w-20 md:h-20 rounded-full" />
+    <div className="min-h-screen flex flex-col bg-slate-50/70 dark:bg-slate-950 relative overflow-hidden">
+      {/* Ambient background glows to highlight the card */}
+      <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] rounded-full bg-primary/10 blur-[150px] pointer-events-none" />
+      <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] rounded-full bg-accent/10 blur-[150px] pointer-events-none" />
+
+      <div className="flex-1 flex items-center justify-center p-4 relative z-10">
+        <div className={`w-full transition-all duration-300 ${activeTab === 'signup' ? 'max-w-md md:max-w-2xl' : 'max-w-md'}`}>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-center gap-4 text-center md:text-left mb-6">
+            <div className="mx-auto md:mx-0 w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-md border border-border overflow-hidden shrink-0">
+              <img src="/logo/ILP-new-logo.jpeg" alt="logo" className="w-full h-full object-cover" />
+            </div>
+            <div className="flex flex-col justify-center">
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50 select-none">
+                Career Compass
+              </h1>
+              <p className="text-sm text-muted-foreground mt-0.5">an <span className="font-semibold text-primary">India Literacy Project</span> initiative</p>
+              {/* <p className="text-xs text-muted-foreground/80 mt-1 uppercase tracking-wide">Navigate your career journey</p> */}
+            </div>
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Career Compass</h1>
-          <p className="text-sm sm:text-base text-muted-foreground mt-1">an <span className="font-semibold">India Literacy Project</span> initiative</p>
-          <p className="text-muted-foreground mt-2">Navigate your career journey</p>
-        </div>
 
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle>{t('welcome')}</CardTitle>
-            <CardDescription>Sign in to your account or create a new one</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="signin" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="signin">{t('signInTab')}</TabsTrigger>
-                <TabsTrigger value="signup">{t('signUpTab')}</TabsTrigger>
-              </TabsList>
+          <Card className="shadow-2xl border border-border/80 bg-background/90 backdrop-blur-md rounded-2xl overflow-hidden">
+            <CardContent className="pt-6">
+              {/* Dynamic Card Heading */}
+              <div className="text-center mb-6 pb-4 border-b border-border/50">
+                <h2 className="text-lg font-bold tracking-tight text-foreground">
+                  {activeTab === 'signin'
+                    ? 'Sign In'
+                    : (isTeacherOnly ? 'Teacher Registration' : 'Student Registration')}
+                </h2>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {activeTab === 'signin'
+                    ? 'Sign in to access your dashboard'
+                    : (isTeacherOnly
+                      ? 'Fill in the details below to create your teacher account'
+                      : 'Fill in the details below to create your student learning account')}
+                </p>
+              </div>
 
-              <TabsContent value="signin">
-                {signInMode === 'signin' ? (
-                  <form onSubmit={handleSignIn} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="signin-phone">{t('mobileNumber')}</Label>
-                      <Input
-                        id="signin-phone"
-                        type="tel"
-                        placeholder="10-digit mobile number"
-                        value={signInForm.phone}
-                        onChange={(e) => setSignInForm({ ...signInForm, phone: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="signin-password">{t('password')}</Label>
-                      <div className="relative">
-                        <Input
-                          id="signin-password"
-                          type={showSignInPassword ? "text" : "password"}
-                          autoComplete="current-password"
-                          placeholder="Enter your password"
-                          value={signInForm.password}
-                          onChange={(e) => setSignInForm({ ...signInForm, password: e.target.value })}
-                          className="pr-10"
-                          required
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowSignInPassword(!showSignInPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
-                        >
-                          {showSignInPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                    <Button type="submit" className="w-full" disabled={loading || signInLockCountdown > 0}>
-                      {loading ? 'Signing In...' : signInLockCountdown > 0 ? `Too many attempts — wait ${signInLockCountdown}s` : t('signInBtn')}
-                    </Button>
-                    <p className="text-center text-sm text-muted-foreground">
-                      Account set up by your teacher?{' '}
-                      <button
-                        type="button"
-                        className="underline text-foreground hover:text-primary transition-colors"
-                        onClick={() => { setSignInMode('firstlogin'); setFirstLoginStep('phone'); firstLoginAccessTokenRef.current = null; msg91MobileRef.current = ''; }}
-                      >
-                        Set up your password
-                      </button>
-                    </p>
-                  </form>
-                ) : firstLoginStep === 'phone' ? (
-                  <form onSubmit={handleFirstLoginOtp} className="space-y-4">
-                    <p className="text-sm text-muted-foreground">
-                      Verify your mobile number to set or reset your password.
-                    </p>
-                    <div className="space-y-2">
-                      <Label htmlFor="firstlogin-phone">{t('mobileNumber')}</Label>
-                      <Input
-                        id="firstlogin-phone"
-                        type="tel"
-                        placeholder="10-digit mobile number"
-                        value={firstLoginForm.phone}
-                        onChange={(e) => setFirstLoginForm({ ...firstLoginForm, phone: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <Button type="submit" className="w-full" disabled={loading}>
-                      {loading ? 'Sending OTP...' : 'Verify Mobile'}
-                    </Button>
-                    <p className="text-center text-sm text-muted-foreground">
-                      Already have a password?{' '}
-                      <button
-                        type="button"
-                        className="underline text-foreground hover:text-primary transition-colors"
-                        onClick={() => { setSignInMode('signin'); setFirstLoginStep('phone'); firstLoginAccessTokenRef.current = null; msg91MobileRef.current = ''; }}
-                      >
-                        Sign in
-                      </button>
-                    </p>
-                  </form>
-                ) : firstLoginStep === 'otp' ? (
-                  <OtpScreen
-                    key={otpSentCount}
-                    phone={firstLoginForm.phone}
-                    otpValue={firstLoginOtp}
-                    onOtpChange={setFirstLoginOtp}
-                    onVerify={handleFirstLoginVerifyOtp}
-                    resendCooldown={firstLoginResendCooldown}
-                    initialTimeLeft={otpSentAtRef.current ? Math.max(0, OTP_EXPIRY_SECONDS - Math.floor((Date.now() - otpSentAtRef.current) / 1000)) : OTP_EXPIRY_SECONDS}
-                    onBack={() => { setFirstLoginStep('phone'); firstLoginAccessTokenRef.current = null; msg91MobileRef.current = ''; }}
-                    onResend={() => {
-                      // G6: retryOtp re-sends on the same MSG91 session (correct API for resend)
-                      if (!msg91MobileRef.current) return;
-                      if (typeof window.retryOtp !== 'function') {
-                        toast({ title: 'OTP Unavailable', description: 'OTP service unavailable. Please refresh and try again.', variant: 'destructive' });
-                        return;
-                      }
-                      otpSentAtRef.current = Date.now();
-                      setFirstLoginOtp('');
-                      setOtpSentCount(c => c + 1);
-                      startFirstLoginCooldown();
-                      window.retryOtp(() => {
-                        logger.log('MSG91 retryOtp callback (first login)');
-                        toast({ title: 'OTP Resent', description: 'A new OTP has been sent to your mobile number.' });
-                      });
-                    }}
-                    verifyLoading={loading}
-                  />
-                ) : (
-                  <form onSubmit={handleSetPassword} className="space-y-4">
-                    <p className="text-sm text-muted-foreground">
-                      Mobile verified: <span className="font-medium">{toE164Indian(firstLoginForm.phone)}</span>
-                    </p>
-                    {/* G17: warn that the OTP session has a limited lifetime so the user sets the password promptly */}
-                    <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
-                      Your OTP session expires in 15 minutes — please set your password now.
-                    </p>
-                    <div className="space-y-2">
-                      <Label htmlFor="firstlogin-newpassword">New Password</Label>
-                      <div className="relative">
-                        <Input
-                          id="firstlogin-newpassword"
-                          type={showFirstLoginNewPassword ? "text" : "password"}
-                          autoComplete="new-password"
-                          minLength={6}
-                          placeholder="Create a password"
-                          value={firstLoginForm.newPassword}
-                          onChange={(e) => setFirstLoginForm({ ...firstLoginForm, newPassword: e.target.value })}
-                          className="pr-10"
-                          required
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowFirstLoginNewPassword(!showFirstLoginNewPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
-                        >
-                          {showFirstLoginNewPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </button>
-                      </div>
-                      <PasswordStrengthWidget value={firstLoginForm.newPassword} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="firstlogin-confirmpassword">Confirm Password</Label>
-                      <div className="relative">
-                        <Input
-                          id="firstlogin-confirmpassword"
-                          type={showFirstLoginConfirmPassword ? "text" : "password"}
-                          autoComplete="new-password"
-                          placeholder="Confirm your password"
-                          value={firstLoginForm.confirmPassword}
-                          onChange={(e) => setFirstLoginForm({ ...firstLoginForm, confirmPassword: e.target.value })}
-                          className="pr-10"
-                          required
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowFirstLoginConfirmPassword(!showFirstLoginConfirmPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
-                        >
-                          {showFirstLoginConfirmPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                    <Button type="submit" className="w-full" disabled={loading}>
-                      {loading ? 'Setting Password...' : 'Set Password & Login'}
-                    </Button>
-                  </form>
-                )}
-              </TabsContent>
+              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'signin' | 'signup')} className="w-full">
+                <div className="flex justify-center mb-6">
+                  <TabsList className="grid grid-cols-2 bg-muted p-1 border border-border/40 rounded-xl w-full max-w-xs h-10">
+                    <TabsTrigger
+                      value="signin"
+                      className="rounded-lg py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm"
+                    >
+                      {t('signInTab')}
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="signup"
+                      className="rounded-lg py-1.5 text-xs font-semibold transition-all data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm"
+                    >
+                      {isTeacherOnly ? 'Teacher Signup' : 'Student Signup'}
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
 
-              <TabsContent value="signup">
-                {signUpStep === 'otp' ? (
-                  <OtpScreen
-                    key={otpSentCount}
-                    phone={signUpForm.phone}
-                    otpValue={signUpOtp}
-                    onOtpChange={setSignUpOtp}
-                    onVerify={handleSignUpVerifyOtp}
-                    resendCooldown={signUpResendCooldown}
-                    initialTimeLeft={otpSentAtRef.current ? Math.max(0, OTP_EXPIRY_SECONDS - Math.floor((Date.now() - otpSentAtRef.current) / 1000)) : OTP_EXPIRY_SECONDS}
-                    onBack={() => { setSignUpStep('form'); signUpAccessTokenRef.current = null; msg91MobileRef.current = ''; }}
-                    onResend={() => {
-                      // G6: retryOtp re-sends on the same MSG91 session (correct API for resend)
-                      if (!msg91MobileRef.current) return;
-                      if (typeof window.retryOtp !== 'function') {
-                        toast({ title: 'OTP Unavailable', description: 'OTP service unavailable. Please refresh and try again.', variant: 'destructive' });
-                        return;
-                      }
-                      otpSentAtRef.current = Date.now();
-                      setSignUpOtp('');
-                      setOtpSentCount(c => c + 1);
-                      startSignUpCooldown();
-                      window.retryOtp(() => {
-                        logger.log('MSG91 retryOtp callback (sign up)');
-                        toast({ title: 'OTP Resent', description: 'A new OTP has been sent to your mobile number.' });
-                      });
-                    }}
-                    verifyLoading={loading}
-                  />
-                ) : (
-                  <form onSubmit={handleSignUp} className="space-y-4">
-                    {/* Role toggle */}
-                    <div className="flex rounded-lg border overflow-hidden">
-                      <button
-                        type="button"
-                        onClick={() => setSignUpForm({ ...signUpForm, role: 'teacher', grade: '', confirmPassword: '' })}
-                        className={`flex-1 py-2 text-sm font-medium transition-colors ${signUpForm.role === 'teacher' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted'}`}
-                      >
-                        I am a Teacher
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setSignUpForm({ ...signUpForm, role: 'student' })}
-                        className={`flex-1 py-2 text-sm font-medium transition-colors ${signUpForm.role === 'student' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted'}`}
-                      >
-                        I am a Student
-                      </button>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-name">{t('fullName')}</Label>
-                      <Input
-                        id="signup-name"
-                        type="text"
-                        placeholder="Enter your full name"
-                        value={signUpForm.fullName}
-                        onChange={(e) => setSignUpForm({ ...signUpForm, fullName: e.target.value.trimStart() })}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-phone">{t('mobileNumber')}</Label>
-                      <Input
-                        id="signup-phone"
-                        type="tel"
-                        placeholder="10-digit mobile number"
-                        value={signUpForm.phone}
-                        onChange={(e) => setSignUpForm({ ...signUpForm, phone: e.target.value })}
-                        className={phoneError ? 'border-red-400' : ''}
-                        required
-                      />
-                      {phoneError && <p className="text-xs text-red-500">{phoneError}</p>}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-password">{t('password')}</Label>
-                      <div className="relative">
+                <TabsContent value="signin">
+                  {signInMode === 'signin' ? (
+                    <form onSubmit={handleSignIn} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="signin-phone">{t('mobileNumber')}</Label>
                         <Input
-                          id="signup-password"
-                          type={showSignUpPassword ? "text" : "password"}
-                          autoComplete="new-password"
-                          minLength={6}
-                          placeholder={t('createPassword')}
-                          value={signUpForm.password}
-                          onChange={(e) => setSignUpForm({ ...signUpForm, password: e.target.value })}
-                          className="pr-10"
+                          id="signin-phone"
+                          type="tel"
+                          placeholder="10-digit mobile number"
+                          value={signInForm.phone}
+                          onChange={(e) => setSignInForm({ ...signInForm, phone: e.target.value })}
                           required
                         />
-                        <button
-                          type="button"
-                          onClick={() => setShowSignUpPassword(!showSignUpPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
-                        >
-                          {showSignUpPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </button>
                       </div>
-                      <PasswordStrengthWidget value={signUpForm.password} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-confirm-password">Confirm Password</Label>
-                      <div className="relative">
-                        <Input
-                          id="signup-confirm-password"
-                          type={showSignUpConfirmPassword ? "text" : "password"}
-                          autoComplete="new-password"
-                          placeholder="Re-enter your password"
-                          value={signUpForm.confirmPassword}
-                          onChange={(e) => setSignUpForm({ ...signUpForm, confirmPassword: e.target.value })}
-                          className="pr-10"
-                          required
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowSignUpConfirmPassword(!showSignUpConfirmPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
-                        >
-                          {showSignUpConfirmPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </button>
-                      </div>
-                      {signUpForm.confirmPassword.length > 0 && signUpForm.password !== signUpForm.confirmPassword && (
-                        <p className="text-xs text-red-500">Passwords do not match</p>
-                      )}
-                    </div>
-                    {/* State Selection */}
-                    <div className="space-y-2">
-                      <Label htmlFor="state">{t('state')}</Label>
-                      {statesLoadError ? (
-                        <div className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive flex items-center justify-between">
-                          <span>Could not load states.</span>
+                      <div className="space-y-2">
+                        <Label htmlFor="signin-password">{t('password')}</Label>
+                        <div className="relative">
+                          <Input
+                            id="signin-password"
+                            type={showSignInPassword ? "text" : "password"}
+                            autoComplete="current-password"
+                            placeholder="Enter your password"
+                            value={signInForm.password}
+                            onChange={(e) => setSignInForm({ ...signInForm, password: e.target.value })}
+                            className="pr-10"
+                            required
+                          />
                           <button
                             type="button"
-                            className="underline text-sm font-medium ml-2"
-                            onClick={loadStates}
+                            onClick={() => setShowSignInPassword(!showSignInPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
                           >
-                            Retry
+                            {showSignInPassword ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
                           </button>
                         </div>
-                      ) : (
-                        <Select
-                          value={signUpForm.stateId}
-                          onValueChange={(value) => setSignUpForm({ ...signUpForm, stateId: value })}
-                          disabled={loadingStates}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder={loadingStates ? "Loading states..." : "Select your state"} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {states.length === 0 ? (
-                              loadingStates ? null : (
-                                <div className="px-3 py-2 text-sm text-muted-foreground">No states available</div>
-                              )
-                            ) : (
-                              states.map((state) => (
-                                <SelectItem key={state.state_id} value={state.state_id}>
-                                  <div className="flex flex-col">
-                                    <span className="font-medium">{state.state_name}</span>
-                                    <span className="text-xs text-muted-foreground">{state.state_code}</span>
-                                  </div>
-                                </SelectItem>
-                              ))
-                            )}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    </div>
-
-                    {/* Grade picker — students only */}
-                    {signUpForm.role === 'student' && (
-                      <div className="space-y-2">
-                        <Label htmlFor="grade">Grade *</Label>
-                        <Select
-                          value={signUpForm.grade}
-                          onValueChange={(value) => setSignUpForm({ ...signUpForm, grade: value })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select your grade" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {['8', '9', '10', '11', '12'].map((g) => (
-                              <SelectItem key={g} value={g}>Class {g}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
                       </div>
-                    )}
+                      <Button type="submit" className="w-full" disabled={loading || signInLockCountdown > 0}>
+                        {loading ? 'Signing In...' : signInLockCountdown > 0 ? `Too many attempts — wait ${signInLockCountdown}s` : t('signInBtn')}
+                      </Button>
+                      <p className="text-center text-sm text-muted-foreground">
+                        Account set up by your teacher?{' '}
+                        <button
+                          type="button"
+                          className="underline text-foreground hover:text-primary transition-colors"
+                          onClick={() => { setSignInMode('firstlogin'); setFirstLoginStep('phone'); firstLoginAccessTokenRef.current = null; msg91MobileRef.current = ''; }}
+                        >
+                          Set up your password
+                        </button>
+                      </p>
+                    </form>
+                  ) : firstLoginStep === 'phone' ? (
+                    <form onSubmit={handleFirstLoginOtp} className="space-y-4">
+                      <p className="text-sm text-muted-foreground">
+                        Verify your mobile number to set or reset your password.
+                      </p>
+                      <div className="space-y-2">
+                        <Label htmlFor="firstlogin-phone">{t('mobileNumber')}</Label>
+                        <Input
+                          id="firstlogin-phone"
+                          type="tel"
+                          placeholder="10-digit mobile number"
+                          value={firstLoginForm.phone}
+                          onChange={(e) => setFirstLoginForm({ ...firstLoginForm, phone: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <Button type="submit" className="w-full" disabled={loading}>
+                        {loading ? 'Sending OTP...' : 'Verify Mobile'}
+                      </Button>
+                      <p className="text-center text-sm text-muted-foreground">
+                        Already have a password?{' '}
+                        <button
+                          type="button"
+                          className="underline text-foreground hover:text-primary transition-colors"
+                          onClick={() => { setSignInMode('signin'); setFirstLoginStep('phone'); firstLoginAccessTokenRef.current = null; msg91MobileRef.current = ''; }}
+                        >
+                          Sign in
+                        </button>
+                      </p>
+                    </form>
+                  ) : firstLoginStep === 'otp' ? (
+                    <OtpScreen
+                      key={otpSentCount}
+                      phone={firstLoginForm.phone}
+                      otpValue={firstLoginOtp}
+                      onOtpChange={setFirstLoginOtp}
+                      onVerify={handleFirstLoginVerifyOtp}
+                      resendCooldown={firstLoginResendCooldown}
+                      initialTimeLeft={otpSentAtRef.current ? Math.max(0, OTP_EXPIRY_SECONDS - Math.floor((Date.now() - otpSentAtRef.current) / 1000)) : OTP_EXPIRY_SECONDS}
+                      onBack={() => { setFirstLoginStep('phone'); firstLoginAccessTokenRef.current = null; msg91MobileRef.current = ''; }}
+                      onResend={() => {
+                        // G6: retryOtp re-sends on the same MSG91 session (correct API for resend)
+                        if (!msg91MobileRef.current) return;
+                        if (typeof window.retryOtp !== 'function') {
+                          toast({ title: 'OTP Unavailable', description: 'OTP service unavailable. Please refresh and try again.', variant: 'destructive' });
+                          return;
+                        }
+                        otpSentAtRef.current = Date.now();
+                        setFirstLoginOtp('');
+                        setOtpSentCount(c => c + 1);
+                        startFirstLoginCooldown();
+                        window.retryOtp(() => {
+                          logger.log('MSG91 retryOtp callback (first login)');
+                          toast({ title: 'OTP Resent', description: 'A new OTP has been sent to your mobile number.' });
+                        });
+                      }}
+                      verifyLoading={loading}
+                    />
+                  ) : (
+                    <form onSubmit={handleSetPassword} className="space-y-4">
+                      <p className="text-sm text-muted-foreground">
+                        Mobile verified: <span className="font-medium">{toE164Indian(firstLoginForm.phone)}</span>
+                      </p>
+                      {/* G17: warn that the OTP session has a limited lifetime so the user sets the password promptly */}
+                      <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+                        Your OTP session expires in 15 minutes — please set your password now.
+                      </p>
+                      <div className="space-y-2">
+                        <Label htmlFor="firstlogin-newpassword">New Password</Label>
+                        <div className="relative">
+                          <Input
+                            id="firstlogin-newpassword"
+                            type={showFirstLoginNewPassword ? "text" : "password"}
+                            autoComplete="new-password"
+                            minLength={6}
+                            placeholder="Create a password"
+                            value={firstLoginForm.newPassword}
+                            onChange={(e) => setFirstLoginForm({ ...firstLoginForm, newPassword: e.target.value })}
+                            className="pr-10"
+                            required
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowFirstLoginNewPassword(!showFirstLoginNewPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
+                          >
+                            {showFirstLoginNewPassword ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
+                        <PasswordStrengthWidget value={firstLoginForm.newPassword} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="firstlogin-confirmpassword">Confirm Password</Label>
+                        <div className="relative">
+                          <Input
+                            id="firstlogin-confirmpassword"
+                            type={showFirstLoginConfirmPassword ? "text" : "password"}
+                            autoComplete="new-password"
+                            placeholder="Confirm your password"
+                            value={firstLoginForm.confirmPassword}
+                            onChange={(e) => setFirstLoginForm({ ...firstLoginForm, confirmPassword: e.target.value })}
+                            className="pr-10"
+                            required
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowFirstLoginConfirmPassword(!showFirstLoginConfirmPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
+                          >
+                            {showFirstLoginConfirmPassword ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                      <Button type="submit" className="w-full" disabled={loading}>
+                        {loading ? 'Setting Password...' : 'Set Password & Login'}
+                      </Button>
+                    </form>
+                  )}
+                </TabsContent>
 
-                    {/* Preferred Language */}
-                    <div className="space-y-2">
-                      <Label htmlFor="preferred-language">{t('preferredLanguage')}</Label>
-                      <Select
-                        value={signUpForm.preferredLanguage}
-                        onValueChange={(value: 'en' | 'kn' | 'ta' | 'hi') => setSignUpForm({ ...signUpForm, preferredLanguage: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="en">English</SelectItem>
-                          <SelectItem value="kn">Kannada</SelectItem>
-                          <SelectItem value="ta">Tamil</SelectItem>
-                          <SelectItem value="hi">Hindi</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                <TabsContent value="signup">
+                  {signUpStep === 'otp' ? (
+                    <OtpScreen
+                      key={otpSentCount}
+                      phone={signUpForm.phone}
+                      otpValue={signUpOtp}
+                      onOtpChange={setSignUpOtp}
+                      onVerify={handleSignUpVerifyOtp}
+                      resendCooldown={signUpResendCooldown}
+                      initialTimeLeft={otpSentAtRef.current ? Math.max(0, OTP_EXPIRY_SECONDS - Math.floor((Date.now() - otpSentAtRef.current) / 1000)) : OTP_EXPIRY_SECONDS}
+                      onBack={() => { setSignUpStep('form'); signUpAccessTokenRef.current = null; msg91MobileRef.current = ''; }}
+                      onResend={() => {
+                        // G6: retryOtp re-sends on the same MSG91 session (correct API for resend)
+                        if (!msg91MobileRef.current) return;
+                        if (typeof window.retryOtp !== 'function') {
+                          toast({ title: 'OTP Unavailable', description: 'OTP service unavailable. Please refresh and try again.', variant: 'destructive' });
+                          return;
+                        }
+                        otpSentAtRef.current = Date.now();
+                        setSignUpOtp('');
+                        setOtpSentCount(c => c + 1);
+                        startSignUpCooldown();
+                        window.retryOtp(() => {
+                          logger.log('MSG91 retryOtp callback (sign up)');
+                          toast({ title: 'OTP Resent', description: 'A new OTP has been sent to your mobile number.' });
+                        });
+                      }}
+                      verifyLoading={loading}
+                    />
+                  ) : (
+                    <form onSubmit={handleSignUp} className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3 md:space-y-0">
+                        {/* Full Name */}
+                        <div className="space-y-2">
+                          <Label htmlFor="signup-name">{t('fullName')}</Label>
+                          <Input
+                            id="signup-name"
+                            type="text"
+                            placeholder="Enter your full name"
+                            value={signUpForm.fullName}
+                            onChange={(e) => setSignUpForm({ ...signUpForm, fullName: e.target.value.trimStart() })}
+                            required
+                          />
+                        </div>
 
-                    <Button type="submit" className="w-full" disabled={loading}>
-                      {loading ? 'Sending OTP...' : t('createAccount')}
-                    </Button>
-                  </form>
-                )}
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-      </div>
+                        {/* Mobile Number */}
+                        <div className="space-y-2">
+                          <Label htmlFor="signup-phone">{t('mobileNumber')}</Label>
+                          <Input
+                            id="signup-phone"
+                            type="tel"
+                            placeholder="10-digit mobile number"
+                            value={signUpForm.phone}
+                            onChange={(e) => setSignUpForm({ ...signUpForm, phone: e.target.value })}
+                            className={phoneError ? 'border-red-400' : ''}
+                            required
+                          />
+                          {phoneError && <p className="text-xs text-red-500 mt-1">{phoneError}</p>}
+                        </div>
+
+                        {/* Password */}
+                        <div className="space-y-2">
+                          <Label htmlFor="signup-password">{t('password')}</Label>
+                          <div className="relative">
+                            <Input
+                              id="signup-password"
+                              type={showSignUpPassword ? "text" : "password"}
+                              autoComplete="new-password"
+                              minLength={6}
+                              placeholder={t('createPassword')}
+                              value={signUpForm.password}
+                              onChange={(e) => setSignUpForm({ ...signUpForm, password: e.target.value })}
+                              className="pr-10"
+                              required
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowSignUpPassword(!showSignUpPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
+                            >
+                              {showSignUpPassword ? (
+                                <EyeOff className="h-4 w-4" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Confirm Password */}
+                        <div className="space-y-2">
+                          <Label htmlFor="signup-confirm-password">Confirm Password</Label>
+                          <div className="relative">
+                            <Input
+                              id="signup-confirm-password"
+                              type={showSignUpConfirmPassword ? "text" : "password"}
+                              autoComplete="new-password"
+                              placeholder="Re-enter your password"
+                              value={signUpForm.confirmPassword}
+                              onChange={(e) => setSignUpForm({ ...signUpForm, confirmPassword: e.target.value })}
+                              className="pr-10"
+                              required
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowSignUpConfirmPassword(!showSignUpConfirmPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
+                            >
+                              {showSignUpConfirmPassword ? (
+                                <EyeOff className="h-4 w-4" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
+                            </button>
+                          </div>
+                          {signUpForm.confirmPassword.length > 0 && signUpForm.password !== signUpForm.confirmPassword && (
+                            <p className="text-xs text-red-500 mt-1">Passwords do not match</p>
+                          )}
+                        </div>
+
+                        {/* Password Strength Widget - spans full width on desktop */}
+                        <div className="col-span-1 md:col-span-2">
+                          <PasswordStrengthWidget value={signUpForm.password} />
+                        </div>
+
+                        {/* State Selection */}
+                        <div className="space-y-2">
+                          <Label htmlFor="state">{t('state')}</Label>
+                          {statesLoadError ? (
+                            <div className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive flex items-center justify-between">
+                              <span>Could not load states.</span>
+                              <button
+                                type="button"
+                                className="underline text-sm font-medium ml-2"
+                                onClick={loadStates}
+                              >
+                                Retry
+                              </button>
+                            </div>
+                          ) : (
+                            <Select
+                              value={signUpForm.stateId}
+                              onValueChange={(value) => setSignUpForm({ ...signUpForm, stateId: value })}
+                              disabled={loadingStates}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder={loadingStates ? "Loading states..." : "Select your state"} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {states.length === 0 ? (
+                                  loadingStates ? null : (
+                                    <div className="px-3 py-2 text-sm text-muted-foreground">No states available</div>
+                                  )
+                                ) : (
+                                  states.map((state) => (
+                                    <SelectItem key={state.state_id} value={state.state_id}>
+                                      <div className="flex flex-col">
+                                        <span className="font-medium">{state.state_name}</span>
+                                        <span className="text-xs text-muted-foreground">{state.state_code}</span>
+                                      </div>
+                                    </SelectItem>
+                                  ))
+                                )}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </div>
+
+                        {/* Grade picker (if student) OR Preferred Language (if teacher) */}
+                        {signUpForm.role === 'student' ? (
+                          <div className="space-y-2">
+                            <Label htmlFor="grade">Grade *</Label>
+                            <Select
+                              value={signUpForm.grade}
+                              onValueChange={(value) => setSignUpForm({ ...signUpForm, grade: value })}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select your grade" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {['8', '9', '10', '11', '12'].map((g) => (
+                                  <SelectItem key={g} value={g}>Class {g}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <Label htmlFor="preferred-language">{t('preferredLanguage')}</Label>
+                            <Select
+                              value={signUpForm.preferredLanguage}
+                              onValueChange={(value: 'en' | 'kn' | 'ta' | 'hi') => setSignUpForm({ ...signUpForm, preferredLanguage: value })}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="en">English</SelectItem>
+                                <SelectItem value="kn">Kannada</SelectItem>
+                                <SelectItem value="ta">Tamil</SelectItem>
+                                <SelectItem value="hi">Hindi</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+
+                        {/* Preferred Language for student - spans 2 columns */}
+                        {signUpForm.role === 'student' && (
+                          <div className="space-y-2 col-span-1 md:col-span-2">
+                            <Label htmlFor="preferred-language">{t('preferredLanguage')}</Label>
+                            <Select
+                              value={signUpForm.preferredLanguage}
+                              onValueChange={(value: 'en' | 'kn' | 'ta' | 'hi') => setSignUpForm({ ...signUpForm, preferredLanguage: value })}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="en">English</SelectItem>
+                                <SelectItem value="kn">Kannada</SelectItem>
+                                <SelectItem value="ta">Tamil</SelectItem>
+                                <SelectItem value="hi">Hindi</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                      </div>
+
+
+
+                      <div className="max-w-md mx-auto space-y-4 pt-4">
+                        <Button type="submit" className="w-full shadow-md" disabled={loading}>
+                          {loading ? 'Sending OTP...' : (isTeacherOnly ? 'Teacher Signup' : 'Student Signup')}
+                        </Button>
+
+                        <p className="text-center text-sm text-muted-foreground">
+                          {isTeacherOnly ? (
+                            <>
+                              Are you a student?{' '}
+                              <button
+                                type="button"
+                                className="underline text-foreground hover:text-primary transition-colors font-medium"
+                                onClick={() => navigate('/auth', { state: { defaultTab: 'signup' } })}
+                              >
+                                Student Signup
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              Are you a teacher?{' '}
+                              <button
+                                type="button"
+                                className="underline text-foreground hover:text-primary transition-colors font-medium"
+                                onClick={() => navigate('/auth/teacher', { state: { defaultTab: 'signup' } })}
+                              >
+                                Teacher Signup
+                              </button>
+                            </>
+                          )}
+                        </p>
+                      </div>
+                    </form>
+                  )}
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        </div>
       </div>
       <IlpFooter />
     </div>
