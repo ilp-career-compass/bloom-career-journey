@@ -2,7 +2,7 @@ export type TeacherLang = 'en' | 'kn' | 'ta' | 'hi';
 
 const strings: Record<TeacherLang, Record<string, any>> = {
     en: {
-        brand: 'Vidya Saathi',
+        brand: 'Career Compass',
         welcome: (name: string) => `Welcome, ${name}!`,
         manageStudents: 'Manage your students and guide them through their career journey',
         totalStudents: 'Total Students',
