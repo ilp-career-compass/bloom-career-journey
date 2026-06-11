@@ -220,7 +220,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       fetchingProfileRef.current = null;
     } catch (error) {
-      logger.error('Error fetching user profile:', error);
+      logger.error('Error fetching userprofile:', error);
       // Do not set a partial profile — keep userProfile null so ProtectedRoute redirects to /auth
     } finally {
       fetchingProfileRef.current = null;
