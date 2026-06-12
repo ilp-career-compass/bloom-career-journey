@@ -2375,7 +2375,8 @@ Role Models: ${formatAnswers(roleModelsAnswers)}`;
         body: { model, contents: requestBody.contents, ...(requestBody.generationConfig ? { generationConfig: requestBody.generationConfig } : {}) },
       });
 
-    const models = ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash', 'gemini-1.5-flash-latest'];
+    const models = [  'gemini-2.5-flash',
+  'gemini-2.5-flash-lite'];
     let lastError: any = null;
 
     for (const model of models) {

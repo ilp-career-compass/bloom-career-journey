@@ -76,7 +76,7 @@ Keep responses short — 3-5 sentences maximum. Be encouraging and positive alwa
       };
 
       // Try models in order: 2.0-flash → 2.0-flash-lite → 1.5-flash → 1.5-flash-latest
-      const models = ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash', 'gemini-1.5-flash-latest'];
+      const models = ['gemini-2.5-flash', 'gemini-2.0-flash-lite'];
       for (const [i, model] of models.entries()) {
         try {
           return await this.callApi(model, requestBody);

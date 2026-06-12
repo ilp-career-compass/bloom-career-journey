@@ -53,7 +53,7 @@ class TranscriptCleanupService {
       } as any;
 
       const { data, error } = await supabase.functions.invoke('gemini-proxy', {
-        body: { model: 'gemini-1.5-flash-latest', contents: body.contents, generationConfig: body.generationConfig },
+        body: { model: 'gemini-2.5-flash', contents: body.contents, generationConfig: body.generationConfig },
       });
 
       if (error || !data) {
@@ -61,7 +61,7 @@ class TranscriptCleanupService {
       }
 
       const cleaned = data?.candidates?.[0]?.content?.parts?.[0]?.text || rawText;
-      return { cleanedText: cleaned, rawText, model: 'gemini-1.5-flash-latest' };
+      return { cleanedText: cleaned, rawText, model: 'gemini-2.5-flash' };
     } catch {
       return { cleanedText: rawText, rawText, model: 'gemini:error' };
     }

@@ -139,7 +139,7 @@ wss.on('connection', (clientWs, request) => {
     console.log(`Sarvam WebSocket closed: ${code} - ${reason}`);
     try {
       clientWs.close(1011, 'Sarvam connection closed');
-    } catch (e) {}
+    } catch (e) { }
   });
 
   clientWs.on('message', (message) => {
@@ -200,7 +200,7 @@ wss.on('connection', (clientWs, request) => {
       if (sarvamWs.readyState === WebSocket.OPEN || sarvamWs.readyState === WebSocket.CONNECTING) {
         sarvamWs.close();
       }
-    } catch (e) {}
+    } catch (e) { }
   });
 
   clientWs.on('error', (err) => {

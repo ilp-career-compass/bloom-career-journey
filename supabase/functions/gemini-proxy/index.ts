@@ -2,10 +2,8 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const ALLOWED_MODELS = new Set([
-  'gemini-2.0-flash',
-  'gemini-2.0-flash-lite',
-  'gemini-1.5-flash',
-  'gemini-1.5-flash-latest',
+   'gemini-2.5-flash',
+  'gemini-2.5-flash-lite',
 ])
 
 function getCorsHeaders(req: Request): Record<string, string> {
