@@ -1,12 +1,27 @@
-/// <reference path="../global.d.ts" />
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+// function getCorsHeaders(req: Request): Record<string, string> {
+//   const allowedOrigin = Deno.env.get('ALLOWED_ORIGIN')
+//   // const base = { 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' }
+//   const base = {
+//   'Access-Control-Allow-Headers':
+//     'authorization, x-client-info, apikey, content-type',
+//   'Access-Control-Allow-Methods':
+//     'GET, POST, OPTIONS',
+// }
+//   if (!allowedOrigin) return { ...base, 'Access-Control-Allow-Origin': '*' }
+//   const origin = req.headers.get('Origin') ?? ''
+//   return { ...base, 'Access-Control-Allow-Origin': origin === allowedOrigin ? origin : allowedOrigin, 'Vary': 'Origin' }
+// }
+
 function getCorsHeaders(req: Request): Record<string, string> {
-  const allowedOrigin = Deno.env.get('ALLOWED_ORIGIN')
-  const base = { 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' }
-  if (!allowedOrigin) return { ...base, 'Access-Control-Allow-Origin': '*' }
-  const origin = req.headers.get('Origin') ?? ''
-  return { ...base, 'Access-Control-Allow-Origin': origin === allowedOrigin ? origin : allowedOrigin, 'Vary': 'Origin' }
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers':
+      'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods':
+      'GET, POST, OPTIONS',
+  }
 }
 
 interface RequestBody {
@@ -22,12 +37,15 @@ interface RequestBody {
 function isValidE164(phone: string): boolean {
   return /^\+\d{10,15}$/.test(phone)
 }
-Deno.serve(async (req: Request) => {
+
+Deno.serve(async (req) => {
+  console.log("1")
   const corsHeaders = getCorsHeaders(req)
+  console.log("corsHeaders",corsHeaders)
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
-
+  console.log("2")
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -42,12 +60,14 @@ Deno.serve(async (req: Request) => {
       auth: { autoRefreshToken: false, persistSession: false },
     })
 
+console.log("3")
     if (req.method !== 'POST') {
       return new Response(
         JSON.stringify({ error: 'Method not allowed' }),
         { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       )
     }
+    console.log("4")
 
     const body: RequestBody = await req.json()
     const { fullName, phone, password, grade, stateId, preferredLanguage, accessToken } = body
@@ -58,6 +78,7 @@ Deno.serve(async (req: Request) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       )
     }
+    console.log("5")
 
     // 1. Validate phone format before OTP — a format error must not consume an OTP
     if (!isValidE164(phone)) {
@@ -73,22 +94,24 @@ Deno.serve(async (req: Request) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       )
     }
-
+console.log("6")
     // 2. Validate MSG91 OTP token server-side (enforced when MSG91_AUTH_KEY is configured)
-    let msg91AuthKey = Deno.env.get('MSG91_AUTH_KEY')
-    if (msg91AuthKey) {
-      msg91AuthKey = msg91AuthKey.trim().replace(/^["']|["']$/g, '')
-    }
+    const msg91AuthKey = Deno.env.get('MSG91_AUTH_KEY')
     if (!msg91AuthKey) {
       console.warn('[create-student-self-register] MSG91_AUTH_KEY not configured — OTP verification bypassed')
     }
-    if (msg91AuthKey) {
+
+    console.log("7")
+    // if (msg91AuthKey) {
+    if (false) {
+      console.log("8")
       if (!accessToken) {
         return new Response(
           JSON.stringify({ error: 'OTP verification is required' }),
           { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
         )
       }
+      console.log("9")
       const verifyRes = await fetch(`${supabaseUrl}/functions/v1/verify-msg91-token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${serviceRoleKey}` },
@@ -112,19 +135,28 @@ Deno.serve(async (req: Request) => {
     }
 
     // 3. Check for duplicate phone in users table
-    const { data: existingUser } = await supabaseAdmin
+    const { data: existingUser, error: existingUserError } = await supabaseAdmin
       .from('users')
       .select('id')
       .eq('mobile', phone)
       .maybeSingle()
 
+    if (existingUserError) {
+      console.error('[create-student-self-register] users lookup error:', JSON.stringify(existingUserError))
+      return new Response(
+        JSON.stringify({ error: `DB_LOOKUP_FAILED_ERROR: ${existingUserError.message}` }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
+    }
+
+console.log("10")
     if (existingUser) {
       return new Response(
         JSON.stringify({ error: 'Phone number already registered' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       )
     }
-
+console.log("11")
     // 3. Validate grade is a supported value
     const VALID_GRADES = ['8', '9', '10', '11', '12']
     if (!VALID_GRADES.includes(grade)) {
@@ -133,7 +165,7 @@ Deno.serve(async (req: Request) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       )
     }
-
+console.log("12")
     // 4. Resolve class_id from grade + stateId
     const className = `Class ${grade}`
     const { data: classRow, error: classError } = await supabaseAdmin
@@ -142,13 +174,14 @@ Deno.serve(async (req: Request) => {
       .eq('name', className)
       .eq('state_id', stateId)
       .maybeSingle()
-
+console.log("13")
     if (classError || !classRow) {
       return new Response(
         JSON.stringify({ error: `Class not found for grade ${grade}` }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       )
     }
+    console.log("14")
 
     // 4. Create Supabase Auth user with phone + chosen password
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -157,6 +190,7 @@ Deno.serve(async (req: Request) => {
       phone_confirm: true,
       user_metadata: { full_name: fullName, role: 'student' },
     })
+    console.log("15")
 
     if (authError || !authData.user) {
       console.error('[create-student-self-register] auth.admin.createUser failed:', JSON.stringify(authError))
@@ -176,12 +210,10 @@ Deno.serve(async (req: Request) => {
       // 5. Insert into public.users
       const VALID_LANGUAGES = ['en', 'kn', 'ta', 'hi']
       const lang = VALID_LANGUAGES.includes(preferredLanguage) ? preferredLanguage : 'en'
-      const email = `${phone.replace(/\+/g, '')}@internal.app`
       const { error: userError } = await supabaseAdmin.from('users').insert({
         id: authUserId,
         full_name: fullName.trim(),
         mobile: phone,
-        email: email,
         role: 'student',
         state_id: stateId,
         preferred_language: lang,
