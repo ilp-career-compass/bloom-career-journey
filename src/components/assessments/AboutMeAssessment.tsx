@@ -88,6 +88,7 @@ export default function AboutMeAssessment() {
   const [submitting, setSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const isReadOnly = (isCompleted && !rejectionReason) || readOnlyView;
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   const [helpOpen, setHelpOpen] = useState<Record<string, boolean>>({});
   const [aboutMeFields, setAboutMeFields] = useState<AboutMeField[]>([]);
   const [currentSection, setCurrentSection] = useState<string>('');
@@ -252,6 +253,64 @@ export default function AboutMeAssessment() {
 
     // 2. Check summary section
     return isSummaryComplete();
+  };
+
+  const validateAndScroll = (checkOnlyCore = false) => {
+    setAttemptedSubmit(true);
+    let incompleteSection = '';
+    let incompleteFieldKey = '';
+    
+    const sectionsToCheck = checkOnlyCore ? sections.filter(s => s !== 'Summary') : sections;
+    
+    for (const section of sectionsToCheck) {
+      if (section === 'Summary') {
+        if (!isSummaryComplete()) {
+          incompleteSection = 'Summary';
+          const summary = responses['summary'] as any || {};
+          const sCount = summaryQuestions.length > 0 ? summaryQuestions.length : 3;
+          for(let i=1; i<=sCount; i++) {
+            if ((summary[`question${i}`] || '').trim() === '') {
+              incompleteFieldKey = `summary_question${i}`;
+              break;
+            }
+          }
+          break;
+        }
+      } else {
+        const fields = fieldsBySection[section] || [];
+        for (const field of fields) {
+          const value = responses[field.field_key];
+          let isComplete = false;
+          if (field.field_type === 'triple') {
+            isComplete = Array.isArray(value) && value.length === 3 && value.every(v => strFor(v) !== '');
+          } else if (field.field_type === 'double') {
+            isComplete = Array.isArray(value) && value.length === 2 && value.every(v => strFor(v) !== '');
+          } else {
+            isComplete = strFor(value) !== '';
+          }
+          if (!isComplete) {
+            incompleteSection = section;
+            incompleteFieldKey = field.field_key;
+            break;
+          }
+        }
+        if (incompleteSection) break;
+      }
+    }
+
+    if (incompleteSection) {
+      setCurrentSection(incompleteSection);
+      setTimeout(() => {
+        const el = document.getElementById(`field_${incompleteFieldKey}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+    }
+    
+    toast({
+      title: lang === 'kn' ? "ಇನ್ನೂ ಸಲ್ಲಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ" : lang === 'ta' ? 'இன்னும் சமர்ப்பிக்க முடியாது' : lang === 'hi' ? 'अभी जमा नहीं किया जा सकता' : "Cannot Submit Yet",
+      description: "Please complete all mandatory fields.",
+      variant: "destructive",
+    });
   };
 
   const studentIdPromise = useMemo(async () => {
@@ -707,7 +766,26 @@ export default function AboutMeAssessment() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 py-8" lang={lang} dir="auto">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 pb-24" lang={lang} dir="auto">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 py-3 shadow-sm mb-6">
+        <div className="container mx-auto flex items-center justify-between">
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/student')}
+            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 -ml-2"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            <span className="hidden sm:inline">{t('backToDashboard')}</span>
+          </Button>
+          <div className="text-center flex-1">
+            <h1 className="text-lg md:text-xl font-bold text-blue-800 line-clamp-1">🧑 {dbTitle || t('aboutMeTitle')}</h1>
+            <div className="text-xs md:text-sm text-blue-600 font-medium">Step 2 of 8</div>
+          </div>
+          <div className="w-10 sm:w-24"></div> {/* Spacer */}
+        </div>
+      </div>
+
       <div className="container mx-auto px-4">
         {rejectionReason && (
           <div className="max-w-3xl mx-auto mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
@@ -722,14 +800,8 @@ export default function AboutMeAssessment() {
             </div>
           </div>
         )}
-        {/* Header - match My Dreams */}
-        <div className="text-center mb-8">
-          <div className="text-left mb-2">
-            <Button variant="ghost" onClick={() => navigate('/student')} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
-              <ArrowLeft className="w-4 h-4 mr-2" />{t('backToDashboard')}
-            </Button>
-          </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-blue-800 mb-2">🧑 {dbTitle || t('aboutMeTitle')}</h1>
+        
+        <div className="text-center max-w-3xl mx-auto mb-8">
           <p className="text-blue-600 text-sm md:text-lg whitespace-pre-wrap">
             {dbIntro || t('aboutMeIntro')}
           </p>
@@ -756,7 +828,7 @@ export default function AboutMeAssessment() {
             {/* Section Tabs */}
             {sections.length > 0 && (
               <div className="w-full">
-                <div className="flex flex-wrap gap-2 mb-6">
+                <div className="flex overflow-x-auto pb-2 gap-2 mb-6 hide-scrollbar">
                   {sections.map((sectionTitle) => {
                     const isSummary = sectionTitle === 'Summary';
                     const sectionLetter = sectionTitle.match(/^([A-D])\./)?.[1] || (isSummary ? '' : sectionTitle.charAt(0));
@@ -811,8 +883,10 @@ export default function AboutMeAssessment() {
                           {summaryQuestions.length > 0 ? (
                             summaryQuestions.map((sq, index) => {
                               const qKey = `question${index + 1}`;
+                              const isAnswered = (summaryData[qKey] || '').trim() !== '';
+                              const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
                               return (
-                                <div key={sq.id || qKey} className="space-y-2">
+                                <div key={sq.id || qKey} id={`field_summary_${qKey}`} className={`space-y-2 border-l-4 pl-3 md:pl-4 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                                   {sq.section_header && (
                                     <div className="mb-4 pb-2 border-b border-gray-100">
                                       <h4 className="text-md font-semibold text-blue-700">{sq.section_header}</h4>
@@ -831,18 +905,23 @@ export default function AboutMeAssessment() {
                                     }}
                                     readOnly={isReadOnly}
                                     rows={4}
-                                    className={`text-base ${(summaryData[qKey] || '').trim() !== ''
-                                      ? 'border-blue-200 focus:border-blue-400'
-                                      : 'border-red-200 focus:border-red-400 bg-red-50'
-                                      }`}
+                                    className={`text-base ${isInvalid 
+                                      ? 'border-red-500 ring-red-500 focus:border-red-500 bg-red-50' 
+                                      : isAnswered 
+                                        ? 'border-blue-200 focus:border-blue-400' 
+                                        : 'border-red-200 focus:border-red-400 bg-red-50'}`}
                                   />
+                                  {isInvalid && <p className="text-red-500 text-sm mt-1">{lang === 'kn' ? 'ಈ ಕ್ಷೇತ್ರ ಕಡ್ಡಾಯವಾಗಿದೆ' : lang === 'ta' ? 'இந்த புலம் கட்டாயமாகும்' : lang === 'hi' ? 'यह फ़ील्ड आवश्यक है' : 'This field is required'}</p>}
                                 </div>
                               );
                             })
                           ) : (
                             // Fallback to t() keys if DB fetch fails or is pending
-                            ['question1', 'question2', 'question3'].map((qKey, index) => (
-                              <div key={qKey} className="space-y-2">
+                            ['question1', 'question2', 'question3'].map((qKey, index) => {
+                              const isAnswered = (summaryData[qKey] || '').trim() !== '';
+                              const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
+                              return (
+                              <div key={qKey} id={`field_summary_${qKey}`} className={`space-y-2 border-l-4 pl-3 md:pl-4 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                                 {index === 0 && (
                                   <div className="mb-4 pb-2 border-b border-gray-100">
                                     <h4 className="text-md font-semibold text-blue-700">
@@ -866,13 +945,15 @@ export default function AboutMeAssessment() {
                                   }}
                                   readOnly={isReadOnly}
                                   rows={4}
-                                  className={`text-base ${(summaryData[qKey] || '').trim() !== ''
-                                    ? 'border-blue-200 focus:border-blue-400'
-                                    : 'border-red-200 focus:border-red-400 bg-red-50'
-                                    }`}
+                                  className={`text-base ${isInvalid 
+                                    ? 'border-red-500 ring-red-500 focus:border-red-500 bg-red-50' 
+                                    : isAnswered 
+                                      ? 'border-blue-200 focus:border-blue-400' 
+                                      : 'border-red-200 focus:border-red-400 bg-red-50'}`}
                                 />
+                                {isInvalid && <p className="text-red-500 text-sm mt-1">{lang === 'kn' ? 'ಈ ಕ್ಷೇತ್ರ ಕಡ್ಡಾಯವಾಗಿದೆ' : lang === 'ta' ? 'இந்த புலம் கட்டாயமாகும்' : lang === 'hi' ? 'यह फ़ील्ड आवश्यक है' : 'This field is required'}</p>}
                               </div>
-                            ))
+                            )})
                           )}
                         </div>
                       </div>
@@ -915,53 +996,65 @@ export default function AboutMeAssessment() {
                           const tripleValue = (Array.isArray(fieldValue) && fieldValue.length === 3)
                             ? fieldValue as Triple
                             : ['', '', ''] as Triple;
+                          const isAnswered = tripleValue.every(v => strFor(v) !== '');
+                          const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
                           return (
-                            <TripleInput
-                              key={field.field_key}
-                              label={label}
-                              help={helpText}
-                              helpKey={helpKey}
-                              open={isOpen}
-                              onToggle={() => toggleHelp(helpKey)}
-                              values={tripleValue}
-                              onChange={(vals) => setField(field.field_key, vals)}
-                              readOnly={isReadOnly}
-                            />
+                            <div key={field.field_key} id={`field_${field.field_key}`} className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
+                              <TripleInput
+                                label={label}
+                                help={helpText}
+                                helpKey={helpKey}
+                                open={isOpen}
+                                onToggle={() => toggleHelp(helpKey)}
+                                values={tripleValue}
+                                onChange={(vals) => setField(field.field_key, vals)}
+                                readOnly={isReadOnly}
+                                isInvalid={isInvalid}
+                              />
+                            </div>
                           );
                         } else if (field.field_type === 'double') {
                           const doubleValue = (Array.isArray(fieldValue) && fieldValue.length === 2)
                             ? fieldValue as Double
                             : ['', ''] as Double;
+                          const isAnswered = doubleValue.every(v => strFor(v) !== '');
+                          const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
                           return (
-                            <DoubleInput
-                              key={field.field_key}
-                              label={label}
-                              help={helpText}
-                              helpKey={helpKey}
-                              open={isOpen}
-                              onToggle={() => toggleHelp(helpKey)}
-                              values={doubleValue}
-                              onChange={(vals) => setField(field.field_key, vals)}
-                              readOnly={isReadOnly}
-                            />
+                            <div key={field.field_key} id={`field_${field.field_key}`} className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
+                              <DoubleInput
+                                label={label}
+                                help={helpText}
+                                helpKey={helpKey}
+                                open={isOpen}
+                                onToggle={() => toggleHelp(helpKey)}
+                                values={doubleValue}
+                                onChange={(vals) => setField(field.field_key, vals)}
+                                readOnly={isReadOnly}
+                                isInvalid={isInvalid}
+                              />
+                            </div>
                           );
                         } else {
                           // text or textarea
                           const stringValue = typeof fieldValue === 'string' ? fieldValue : '';
+                          const isAnswered = strFor(stringValue) !== '';
+                          const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
                           const isTextarea = field.field_type === 'textarea';
                           return (
-                            <Question
-                              key={field.field_key}
-                              label={label}
-                              help={helpText}
-                              helpKey={helpKey}
-                              open={isOpen}
-                              onToggle={() => toggleHelp(helpKey)}
-                              value={stringValue}
-                              onChange={(v) => setField(field.field_key, v)}
-                              area={isTextarea}
-                              readOnly={isReadOnly}
-                            />
+                            <div key={field.field_key} id={`field_${field.field_key}`} className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
+                              <Question
+                                label={label}
+                                help={helpText}
+                                helpKey={helpKey}
+                                open={isOpen}
+                                onToggle={() => toggleHelp(helpKey)}
+                                value={stringValue}
+                                onChange={(v) => setField(field.field_key, v)}
+                                area={isTextarea}
+                                readOnly={isReadOnly}
+                                isInvalid={isInvalid}
+                              />
+                            </div>
                           );
                         }
                       })}
@@ -973,113 +1066,102 @@ export default function AboutMeAssessment() {
             }
 
 
-            <div className="flex flex-col-reverse sm:flex-row justify-between items-center mt-8 pt-4 border-t border-gray-200 gap-4 sm:gap-0" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 1rem))' }}>
+        {/* Sticky Footer Navigation */}
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 p-2 sm:p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+          <div className="container mx-auto flex flex-row justify-between items-center gap-2 sm:gap-4">
+            <Button
+              variant="outline"
+              onClick={() => {
+                const idx = sections.indexOf(currentSection);
+                if (idx > 0) setCurrentSection(sections[idx - 1]);
+              }}
+              disabled={sections.indexOf(currentSection) === 0}
+              className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 h-auto sm:h-10 border-blue-200 text-blue-700 hover:bg-blue-50"
+            >
+              {t('previousSection')}
+            </Button>
+
+            <div className="flex flex-row gap-1 sm:gap-2 w-auto">
               <Button
                 variant="outline"
-                onClick={() => {
-                  const idx = sections.indexOf(currentSection);
-                  if (idx > 0) setCurrentSection(sections[idx - 1]);
-                }}
-                disabled={sections.indexOf(currentSection) === 0}
-                className="w-full sm:w-auto border-blue-200 text-blue-700 hover:bg-blue-50"
+                onClick={() => save(false)}
+                disabled={submitting}
+                className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 h-auto sm:h-10 border-blue-200 text-blue-700 hover:bg-blue-50"
               >
-                {t('previousSection')}
+                <CheckCircle className="w-4 h-4 mr-2" />
+                {t('saveProgress')}
               </Button>
 
-              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                <Button
-                  variant="outline"
-                  onClick={() => save(false)}
-                  disabled={submitting}
-                  className="w-full sm:w-auto border-blue-200 text-blue-700 hover:bg-blue-50"
-                >
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  {t('saveProgress')}
-                </Button>
+              {(() => {
+                const idx = sections.indexOf(currentSection);
+                const isLastContentSection = idx === sections.length - 2 && sections[sections.length - 1] === 'Summary';
 
-                {(() => {
-                  const idx = sections.indexOf(currentSection);
-                  const isLastContentSection = idx === sections.length - 2 && sections[sections.length - 1] === 'Summary';
-
-                  if (isLastContentSection) {
-                    return (
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          const nextSection = sections[idx + 1];
-                          if (nextSection === 'Summary' && !areCoreSectionsComplete()) {
-                            toast({
-                              title: lang === 'kn' ? 'ಸಾರಾಂಶ ಲಾಕ್ ಆಗಿದೆ' : lang === 'ta' ? 'சுருக்கம் பூட்டப்பட்டுள்ளது' : lang === 'hi' ? 'सारांश लॉक है' : 'Summary Locked',
-                              description: lang === 'kn'
-                                ? 'ಸಾರಾಂಶವನ್ನು ವೀಕ್ಷಿಸಲು ದಯವಿಟ್ಟು ಎಲ್ಲಾ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ.'
-                                : lang === 'ta'
-                                  ? 'சுருக்கத்தைப் பார்க்க அனைத்துக் கேள்விகளுக்கும் பதில் அளிக்கவும்.'
-                                  : lang === 'hi'
-                                    ? 'सारांश अनलॉक करने के लिए कृपया सभी मुख्य प्रश्नों का उत्तर दें।'
-                                    : 'Please answer all core questions to unlock the summary.',
-                              variant: 'destructive',
-                            });
-                            return;
-                          }
-                          setCurrentSection(nextSection);
-                        }}
-                        className="w-full sm:w-auto border-blue-200 text-blue-700 hover:bg-blue-50"
-                      >
-                        {t('viewSummary')}
-                      </Button>
-                    );
-                  }
-
-                  return idx < sections.length - 1 ? (
+                if (isLastContentSection) {
+                  return (
                     <Button
                       variant="outline"
                       onClick={() => {
-                        if (idx < sections.length - 1) {
-                          const nextSection = sections[idx + 1];
-                          if (nextSection === 'Summary' && !areCoreSectionsComplete()) {
-                            toast({
-                              title: lang === 'kn' ? 'ಸಾರಾಂಶ ಲಾಕ್ ಆಗಿದೆ' : lang === 'ta' ? 'சுருக்கம் பூட்டப்பட்டுள்ளது' : lang === 'hi' ? 'सारांश लॉक है' : 'Summary Locked',
-                              description: lang === 'kn'
-                                ? 'ಸಾರಾಂಶವನ್ನು ವೀಕ್ಷಿಸಲು ದಯವಿಟ್ಟು ಎಲ್ಲಾ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ.'
-                                : lang === 'ta'
-                                  ? 'சுருக்கத்தைப் பார்க்க அனைத்துக் கேள்விகளுக்கும் பதில் அளிக்கவும்.'
-                                  : lang === 'hi'
-                                    ? 'सारांश अनलॉक करने के लिए कृपया सभी मुख्य प्रश्नों का उत्तर दें।'
-                                    : 'Please answer all core questions to unlock the summary.',
-                              variant: 'destructive',
-                            });
-                            return;
-                          }
-                          setCurrentSection(nextSection);
+                        const nextSection = sections[idx + 1];
+                        if (nextSection === 'Summary' && !areCoreSectionsComplete()) {
+                          validateAndScroll(true);
+                          return;
                         }
+                        setCurrentSection(nextSection);
                       }}
-
-                      className="w-full sm:w-auto border-blue-200 text-blue-700 hover:bg-blue-50"
+                      className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 h-auto sm:h-10 border-blue-200 text-blue-700 hover:bg-blue-50"
                     >
-                      {t('nextSection')}
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={() => save(true)}
-                      disabled={submitting || !canSubmit()}
-                      className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700"
-                    >
-                      {submitting ? (
-                        <div className="flex items-center gap-2">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                          <span>{lang === 'kn' ? 'ಸಲ್ಲಿಸುತ್ತಿದೆ...' : lang === 'ta' ? 'சமர்ப்பிக்கிறது...' : lang === 'hi' ? 'जमा किया जा रहा है...' : 'Submitting...'}</span>
-                        </div>
-                      ) : (
-                        <>
-                          <Badge className="w-4 h-4 mr-2 bg-transparent border-0 p-0"><CheckCircle className="w-4 h-4" /></Badge>
-                          {isReadOnly ? (lang === 'kn' ? 'ಸಲ್ಲಿಸಲಾಗಿದೆ' : lang === 'ta' ? 'சமர்ப்பிக்கப்பட்டது' : lang === 'hi' ? 'जमा किया गया' : 'Submitted') : t('submitAssessment')}
-                        </>
-                      )}
+                      {t('viewSummary')}
                     </Button>
                   );
-                })()}
-              </div>
+                }
+
+                return idx < sections.length - 1 ? (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      if (idx < sections.length - 1) {
+                        const nextSection = sections[idx + 1];
+                        if (nextSection === 'Summary' && !areCoreSectionsComplete()) {
+                          validateAndScroll(true);
+                          return;
+                        }
+                        setCurrentSection(nextSection);
+                      }
+                    }}
+
+                    className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 h-auto sm:h-10 border-blue-200 text-blue-700 hover:bg-blue-50"
+                  >
+                    {t('nextSection')}
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => {
+                      if (!canSubmit()) {
+                        validateAndScroll(false);
+                      } else {
+                        save(true);
+                      }
+                    }}
+                    disabled={submitting || isReadOnly}
+                    className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 h-auto sm:h-10 bg-blue-600 hover:bg-blue-700"
+                  >
+                    {submitting ? (
+                      <div className="flex items-center gap-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <span>{lang === 'kn' ? 'ಸಲ್ಲಿಸುತ್ತಿದೆ...' : lang === 'ta' ? 'சமர்ப்பிக்கிறது...' : lang === 'hi' ? 'जमा किया जा रहा है...' : 'Submitting...'}</span>
+                      </div>
+                    ) : (
+                      <>
+                        <Badge className="w-4 h-4 mr-2 bg-transparent border-0 p-0"><CheckCircle className="w-4 h-4" /></Badge>
+                        {isReadOnly ? (lang === 'kn' ? 'ಸಲ್ಲಿಸಲಾಗಿದೆ' : lang === 'ta' ? 'சமர்ப்பிக்கப்பட்டது' : lang === 'hi' ? 'जमा किया गया' : 'Submitted') : t('submitAssessment')}
+                      </>
+                    )}
+                  </Button>
+                );
+              })()}
             </div>
+          </div>
+        </div>
           </CardContent>
         </Card>
       </div>
@@ -1096,9 +1178,12 @@ function SectionTitle({ title, subtitle }: { title: string; subtitle?: string })
   );
 }
 
-function Question({ label, help, value, onChange, area, helpKey, open, onToggle, readOnly }: { label: string; help: string; value: string; onChange: (v: string) => void; area?: boolean; helpKey: string; open: boolean; onToggle: () => void; readOnly?: boolean }) {
+function Question({ label, help, value, onChange, area, helpKey, open, onToggle, readOnly, isInvalid }: { label: string; help: string; value: string; onChange: (v: string) => void; area?: boolean; helpKey: string; open: boolean; onToggle: () => void; readOnly?: boolean; isInvalid?: boolean }) {
   const { lang } = useLang();
   const placeholder = lang === 'kn' ? 'ನಿಮ್ಮ ಉತ್ತರ ಬರೆಯಿರಿ...' : lang === 'ta' ? 'உங்கள் பதிலை எழுதுங்கள்...' : lang === 'hi' ? 'अपना उत्तर लिखें...' : 'Type your answer here...';
+  
+  const baseClasses = isInvalid ? 'border-red-500 ring-red-500 focus:border-red-500 bg-red-50' : value.trim() !== '' ? 'border-blue-200 focus:border-blue-400' : 'border-red-200 focus:border-red-400 bg-red-50';
+
   return (
     <div>
       <label className="block text-base font-medium text-gray-800 mb-2 flex items-center gap-2">
@@ -1120,6 +1205,7 @@ function Question({ label, help, value, onChange, area, helpKey, open, onToggle,
           }}
           rows={4}
           placeholder={placeholder}
+          className={baseClasses}
         />
       ) : (
         <Input
@@ -1131,13 +1217,15 @@ function Question({ label, help, value, onChange, area, helpKey, open, onToggle,
             if (open && v.trim().length > 0) onToggle();
           }}
           placeholder={placeholder}
+          className={baseClasses}
         />
       )}
+      {isInvalid && <p className="text-red-500 text-sm mt-1">{lang === 'kn' ? 'ಈ ಕ್ಷೇತ್ರ ಕಡ್ಡಾಯವಾಗಿದೆ' : lang === 'ta' ? 'இந்த புலம் கட்டாயமாகும்' : lang === 'hi' ? 'यह फ़ील्ड आवश्यक है' : 'This field is required'}</p>}
     </div>
   );
 }
 
-function TripleInput({ label, help, values, onChange, helpKey, open, onToggle, readOnly }: { label: string; help: string; values: Triple; onChange: (v: Triple) => void; helpKey: string; open: boolean; onToggle: () => void; readOnly?: boolean }) {
+function TripleInput({ label, help, values, onChange, helpKey, open, onToggle, readOnly, isInvalid }: { label: string; help: string; values: Triple; onChange: (v: Triple) => void; helpKey: string; open: boolean; onToggle: () => void; readOnly?: boolean; isInvalid?: boolean }) {
   const [a, b, c] = values;
   const { lang } = useLang();
   const p1 = lang === 'kn' ? 'ಉತ್ತರ 1' : lang === 'ta' ? 'பதில் 1' : lang === 'hi' ? 'उत्तर 1' : 'Answer 1';
@@ -1154,15 +1242,16 @@ function TripleInput({ label, help, values, onChange, helpKey, open, onToggle, r
         <div className="mb-2 p-3 rounded border bg-blue-50 border-blue-200 text-sm text-blue-800">{help}</div>
       )}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <Input readOnly={readOnly} value={a} onChange={(e) => { const v = e.target.value; onChange([v, b, c]); if (open && v.trim().length > 0) onToggle(); }} placeholder={p1} />
-        <Input readOnly={readOnly} value={b} onChange={(e) => { const v = e.target.value; onChange([a, v, c]); if (open && v.trim().length > 0) onToggle(); }} placeholder={p2} />
-        <Input readOnly={readOnly} value={c} onChange={(e) => { const v = e.target.value; onChange([a, b, v]); if (open && v.trim().length > 0) onToggle(); }} placeholder={p3} />
+        <Input readOnly={readOnly} value={a} onChange={(e) => { const v = e.target.value; onChange([v, b, c]); if (open && v.trim().length > 0) onToggle(); }} placeholder={p1} className={isInvalid && !a.trim() ? 'border-red-500 ring-red-500 bg-red-50' : a.trim() ? 'border-blue-200 focus:border-blue-400' : 'border-red-200 focus:border-red-400 bg-red-50'} />
+        <Input readOnly={readOnly} value={b} onChange={(e) => { const v = e.target.value; onChange([a, v, c]); if (open && v.trim().length > 0) onToggle(); }} placeholder={p2} className={isInvalid && !b.trim() ? 'border-red-500 ring-red-500 bg-red-50' : b.trim() ? 'border-blue-200 focus:border-blue-400' : 'border-red-200 focus:border-red-400 bg-red-50'} />
+        <Input readOnly={readOnly} value={c} onChange={(e) => { const v = e.target.value; onChange([a, b, v]); if (open && v.trim().length > 0) onToggle(); }} placeholder={p3} className={isInvalid && !c.trim() ? 'border-red-500 ring-red-500 bg-red-50' : c.trim() ? 'border-blue-200 focus:border-blue-400' : 'border-red-200 focus:border-red-400 bg-red-50'} />
       </div>
+      {isInvalid && <p className="text-red-500 text-sm mt-1">{lang === 'kn' ? 'ಎಲ್ಲಾ 3 ಉತ್ತರಗಳು ಕಡ್ಡಾಯವಾಗಿವೆ' : lang === 'ta' ? '3 பதில்களும் கட்டாயமாகும்' : lang === 'hi' ? 'सभी 3 उत्तर आवश्यक हैं' : 'All 3 answers are required'}</p>}
     </div>
   );
 }
 
-function DoubleInput({ label, help, values, onChange, helpKey, open, onToggle, readOnly }: { label: string; help: string; values: Double; onChange: (v: Double) => void; helpKey: string; open: boolean; onToggle: () => void; readOnly?: boolean }) {
+function DoubleInput({ label, help, values, onChange, helpKey, open, onToggle, readOnly, isInvalid }: { label: string; help: string; values: Double; onChange: (v: Double) => void; helpKey: string; open: boolean; onToggle: () => void; readOnly?: boolean; isInvalid?: boolean }) {
   const [a, b] = values;
   const { lang } = useLang();
   const p1 = lang === 'kn' ? 'ಉತ್ತರ 1' : lang === 'ta' ? 'பதில் 1' : lang === 'hi' ? 'उत्तर 1' : 'Answer 1';
@@ -1178,9 +1267,10 @@ function DoubleInput({ label, help, values, onChange, helpKey, open, onToggle, r
         <div className="mb-2 p-3 rounded border bg-blue-50 border-blue-200 text-sm text-blue-800">{help}</div>
       )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <Input readOnly={readOnly} value={a} onChange={(e) => { const v = e.target.value; onChange([v, b]); if (open && v.trim().length > 0) onToggle(); }} placeholder={p1} />
-        <Input readOnly={readOnly} value={b} onChange={(e) => { const v = e.target.value; onChange([a, v]); if (open && v.trim().length > 0) onToggle(); }} placeholder={p2} />
+        <Input readOnly={readOnly} value={a} onChange={(e) => { const v = e.target.value; onChange([v, b]); if (open && v.trim().length > 0) onToggle(); }} placeholder={p1} className={isInvalid && !a.trim() ? 'border-red-500 ring-red-500 bg-red-50' : a.trim() ? 'border-blue-200 focus:border-blue-400' : 'border-red-200 focus:border-red-400 bg-red-50'} />
+        <Input readOnly={readOnly} value={b} onChange={(e) => { const v = e.target.value; onChange([a, v]); if (open && v.trim().length > 0) onToggle(); }} placeholder={p2} className={isInvalid && !b.trim() ? 'border-red-500 ring-red-500 bg-red-50' : b.trim() ? 'border-blue-200 focus:border-blue-400' : 'border-red-200 focus:border-red-400 bg-red-50'} />
       </div>
+      {isInvalid && <p className="text-red-500 text-sm mt-1">{lang === 'kn' ? 'ಎರಡೂ ಉತ್ತರಗಳು ಕಡ್ಡಾಯವಾಗಿವೆ' : lang === 'ta' ? 'இரண்டு பதில்களும் கட்டாயமாகும்' : lang === 'hi' ? 'दोनों उत्तर आवश्यक हैं' : 'Both answers are required'}</p>}
     </div>
   );
 }

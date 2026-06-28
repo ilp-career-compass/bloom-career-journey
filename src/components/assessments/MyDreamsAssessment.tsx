@@ -139,6 +139,7 @@ export default function MyDreamsAssessment() {
   const [helpOpen, setHelpOpen] = useState<Record<string, boolean>>({});
   const toggleHelp = (k: string) => setHelpOpen(prev => ({ ...prev, [k]: !prev[k] }));
   const [saving, setSaving] = useState(false);
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   const isTranslatingRef = useRef(false);
 
   // Reactively translate responses when language changes
@@ -687,6 +688,55 @@ export default function MyDreamsAssessment() {
     return areCoreSectionsComplete() && isSummaryComplete();
   };
 
+  const validateAndScroll = (checkOnlyCore = false) => {
+    setAttemptedSubmit(true);
+    let incompleteSection = '';
+    let incompleteFieldKey = '';
+    
+    const sectionsToCheck = checkOnlyCore ? sections.filter(s => s !== 'Summary') : sections;
+    
+    for (const section of sectionsToCheck) {
+      if (section === 'Summary') {
+        if (!isSummaryComplete()) {
+          incompleteSection = 'Summary';
+          for (const q of visibleSummaryQuestions) {
+            const val = responses[q.id] || '';
+            if (val.trim() === '') {
+              incompleteFieldKey = q.id;
+              break;
+            }
+          }
+          break;
+        }
+      } else {
+        const sectionQuestions = questionsBySection[section] || [];
+        for (const q of sectionQuestions) {
+          const val = responses[q.id] || '';
+          if (val.trim() === '') {
+            incompleteSection = section;
+            incompleteFieldKey = q.id;
+            break;
+          }
+        }
+        if (incompleteSection) break;
+      }
+    }
+
+    if (incompleteSection) {
+      setCurrentSection(incompleteSection);
+      setTimeout(() => {
+        const el = document.getElementById(`field_${incompleteFieldKey}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+    }
+    
+    toast({
+      title: lang === 'kn' ? "ಇನ್ನೂ ಸಲ್ಲಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ" : lang === 'ta' ? 'இன்னும் சமர்ப்பிக்க முடியாது' : lang === 'hi' ? 'अभी जमा नहीं किया जा सकता' : "Cannot Submit Yet",
+      description: "Please complete all mandatory fields.",
+      variant: "destructive",
+    });
+  };
+
   const submitAssessment = async () => {
     if (isReadOnly) return;
     if (!validateResponses(responses)) {
@@ -904,18 +954,30 @@ export default function MyDreamsAssessment() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 py-8" lang={lang} dir="auto">
-      <div className="container mx-auto px-4">
-        <div className="mb-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 pb-24" lang={lang} dir="auto">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 py-3 shadow-sm mb-6">
+        <div className="container mx-auto flex items-center justify-between">
           <Button
             variant="ghost"
             onClick={() => navigate('/student')}
-            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 -ml-2"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            {t('backToDashboard')}
+            <span className="hidden sm:inline">{t('backToDashboard')}</span>
           </Button>
+          <div className="text-center flex-1">
+            <h1 className="text-lg md:text-xl font-bold text-blue-800 line-clamp-1">
+              🌟 {dbTitle || (lang === 'kn' ? 'ನನ್ನ ಕನಸುಗಳು' : lang === 'ta' ? 'என் கனவுகள்' : lang === 'hi' ? 'मेरे सपने' : 'My Dreams')}
+            </h1>
+            <div className="text-xs md:text-sm text-blue-600 font-medium">Step 3 of 8</div>
+          </div>
+          <div className="w-10 sm:w-24"></div> {/* Spacer */}
         </div>
+      </div>
+
+      <div className="container mx-auto px-4">
+
 
         {rejectionReason && (
           <div className="max-w-3xl mx-auto mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 shadow-sm">
@@ -940,16 +1002,6 @@ export default function MyDreamsAssessment() {
 
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold text-blue-800 mb-4">
-            {dbTitle || (lang === 'kn'
-              ? '🌟 ನನ್ನ ಕನಸುಗಳ ಮೌಲ್ಯಮಾಪನ'
-              : lang === 'ta'
-                ? '🌟 என் கனவுகள் மதிப்பீடு'
-                : lang === 'hi'
-                  ? '🌟 मेरे सपनों का मूल्यांकन'
-                  : '🌟 My Dreams Assessment')}
-          </h1>
-
           {/* Quote Box */}
           <div className="max-w-3xl mx-auto mb-6 p-4 md:p-6 border-2 border-gray-800 rounded-lg bg-white">
             <p className="text-lg font-bold text-gray-900 mb-2">
@@ -1121,20 +1173,29 @@ export default function MyDreamsAssessment() {
                   </CardHeader>
                   <CardContent className="p-6">
                     <div className="space-y-6">
-                      {visibleSummaryQuestions.map((q) => (
-                        <div key={q.id}>
-                          <label className="block text-base font-medium text-gray-800 mb-2">
-                            {q.text}<span className="text-red-500 text-sm ml-1">*</span>
-                          </label>
-                          <Textarea
-                            value={responses[q.id] || ''}
-                            onChange={(e) => handleResponseChange(q.id, e.target.value)}
-                            readOnly={isReadOnly}
-                            rows={4}
-                            className={`text-base border-teal-200 focus:border-teal-400 ${isReadOnly ? 'bg-gray-100 cursor-not-allowed opacity-80' : 'bg-white'}`}
-                          />
-                        </div>
-                      ))}
+                      {visibleSummaryQuestions.map((q) => {
+                        const isAnswered = (responses[q.id] || '').trim() !== '';
+                        const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
+                        return (
+                          <div key={q.id} id={`field_${q.id}`} className={`space-y-2 border-l-4 pl-3 md:pl-4 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
+                            <label className="block text-base font-medium text-gray-800 mb-2">
+                              {q.text}<span className="text-red-500 text-sm ml-1">*</span>
+                            </label>
+                            <Textarea
+                              value={responses[q.id] || ''}
+                              onChange={(e) => handleResponseChange(q.id, e.target.value)}
+                              readOnly={isReadOnly}
+                              rows={4}
+                              className={`text-base ${isInvalid 
+                                ? 'border-red-500 ring-red-500 focus:border-red-500 bg-red-50' 
+                                : isAnswered 
+                                  ? 'border-teal-200 focus:border-teal-400' 
+                                  : 'border-red-200 focus:border-red-400 bg-red-50'} ${isReadOnly ? 'bg-gray-100 cursor-not-allowed opacity-80' : ''}`}
+                            />
+                            {isInvalid && <p className="text-red-500 text-sm mt-1">{lang === 'kn' ? 'ಈ ಕ್ಷೇತ್ರ ಕಡ್ಡಾಯವಾಗಿದೆ' : lang === 'ta' ? 'இந்த புலம் கட்டாயமாகும்' : lang === 'hi' ? 'यह फ़ील्ड आवश्यक है' : 'This field is required'}</p>}
+                          </div>
+                        );
+                      })}
                     </div>
                   </CardContent>
                 </Card>
@@ -1252,8 +1313,11 @@ export default function MyDreamsAssessment() {
                         ? question.question_text
                         : `${questionNumber}. ${question.question_text}`;
 
+                      const isAnswered = questionValue.trim() !== '';
+                      const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
+
                       return (
-                        <div key={question.id}>
+                        <div key={question.id} id={`field_${question.id}`} className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                           <label className="block text-base font-medium text-gray-800 mb-2 flex items-center gap-2">
                             {label}<span className="text-red-500 text-sm">*</span>
                             <button
@@ -1276,8 +1340,13 @@ export default function MyDreamsAssessment() {
                             onChange={(e) => handleResponseChange(question.id, e.target.value)}
                             readOnly={isReadOnly}
                             rows={4}
-                            className={`text-base border-blue-200 focus:border-blue-400 ${isReadOnly ? 'bg-gray-100 cursor-not-allowed opacity-80' : 'bg-white'}`}
+                            className={`text-base ${isInvalid 
+                              ? 'border-red-500 ring-red-500 focus:border-red-500 bg-red-50' 
+                              : isAnswered 
+                                ? 'border-blue-200 focus:border-blue-400' 
+                                : 'border-red-200 focus:border-red-400 bg-red-50'} ${isReadOnly ? 'bg-gray-100 cursor-not-allowed opacity-80' : ''}`}
                           />
+                          {isInvalid && <p className="text-red-500 text-sm mt-1">{lang === 'kn' ? 'ಈ ಕ್ಷೇತ್ರ ಕಡ್ಡಾಯವಾಗಿದೆ' : lang === 'ta' ? 'இந்த புலம் கட்டாயமாகும்' : lang === 'hi' ? 'यह फ़ील्ड आवश्यक है' : 'This field is required'}</p>}
                         </div>
                       );
                     })}
@@ -1288,92 +1357,90 @@ export default function MyDreamsAssessment() {
           );
         })}
 
-        {/* Navigation and Submit */}
-        <div className="flex flex-col-reverse sm:flex-row justify-between items-center mt-8 gap-4 sm:gap-0" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 1rem))' }}>
-          <Button
-            variant="outline"
-            onClick={() => {
-              const currentIndex = sections.indexOf(currentSection);
-              if (currentIndex > 0) {
-                setCurrentSection(sections[currentIndex - 1]);
-              }
-            }}
-            disabled={sections.indexOf(currentSection) === 0}
-            className="w-full sm:w-auto border-blue-200 text-blue-700 hover:bg-blue-50"
-          >
-            {lang === 'kn'
-              ? 'ಹಿಂದಿನ ಭಾಗ'
-              : lang === 'ta'
-                ? 'முந்தைய பகுதி'
-                : lang === 'hi'
-                  ? 'पिछला भाग'
-                  : 'Previous Section'}
-          </Button>
-
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+        {/* Sticky Footer Navigation */}
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 p-2 sm:p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+          <div className="container mx-auto flex flex-row justify-between items-center gap-2 sm:gap-4">
             <Button
               variant="outline"
-              onClick={saveProgress}
-              disabled={saving || isReadOnly}
-              className="w-full sm:w-auto border-blue-200 text-blue-700 hover:bg-blue-50"
+              onClick={() => {
+                const currentIndex = sections.indexOf(currentSection);
+                if (currentIndex > 0) {
+                  setCurrentSection(sections[currentIndex - 1]);
+                }
+              }}
+              disabled={sections.indexOf(currentSection) === 0}
+              className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 h-auto sm:h-10 border-blue-200 text-blue-700 hover:bg-blue-50"
             >
-              {saving ? (
-                <>{lang === 'kn' ? 'ಉಳಿಸಲಾಗುತ್ತಿದೆ...' : lang === 'ta' ? 'சேமிக்கிறது...' : lang === 'hi' ? 'सहेजा जा रहा है...' : 'Saving...'}</>
-              ) : (
-                <>
-                  <Save className="w-4 h-4 mr-2" />
-                  {t('saveProgress')}
-                </>
-              )}
+              {lang === 'kn'
+                ? 'ಹಿಂದಿನ ಭಾಗ'
+                : lang === 'ta'
+                  ? 'முந்தைய பகுதி'
+                  : lang === 'hi'
+                    ? 'पिछला भाग'
+                    : 'Previous Section'}
             </Button>
 
-            {sections.indexOf(currentSection) < sections.length - 1 ? (
+            <div className="flex flex-row gap-1 sm:gap-2 w-auto">
               <Button
                 variant="outline"
-                onClick={() => {
-                  const currentIndex = sections.indexOf(currentSection);
-                  const nextSection = sections[currentIndex + 1];
-                  if (nextSection === 'Summary' && !areCoreSectionsComplete()) {
-                    toast({
-                      title: lang === 'kn' ? 'ಸಾರಾಂಶ ಲಾಕ್ ಆಗಿದೆ' : lang === 'ta' ? 'சுருக்கம் பூட்டப்பட்டுள்ளது' : lang === 'hi' ? 'सारांश लॉक है' : 'Summary Locked',
-                      description: lang === 'kn'
-                        ? 'ಸಾರಾಂಶವನ್ನು ವೀಕ್ಷಿಸಲು ದಯವಿಟ್ಟು ಎಲ್ಲಾ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ.'
-                        : lang === 'ta'
-                          ? 'சுருக்கத்தைப் பார்க்க அனைத்துக் கேள்விகளுக்கும் பதில் அளிக்கவும்.'
-                          : lang === 'hi'
-                            ? 'सारांश अनलॉक करने के लिए कृपया सभी मुख्य प्रश्नों का उत्तर दें।'
-                            : 'Please answer all core questions to unlock the summary.',
-                      variant: 'destructive',
-                    });
-                    return;
-                  }
-                  setCurrentSection(nextSection);
-                }}
-                className="w-full sm:w-auto border-blue-200 text-blue-700 hover:bg-blue-50"
+                onClick={saveProgress}
+                disabled={saving || isReadOnly}
+                className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 h-auto sm:h-10 border-blue-200 text-blue-700 hover:bg-blue-50"
               >
-                {sections[sections.indexOf(currentSection) + 1] === 'Summary'
-                  ? (lang === 'kn' ? 'ಸಾರಾಂಶ →' : lang === 'ta' ? 'சுருக்கம் →' : lang === 'hi' ? 'सारांश →' : 'Summary →')
-                  : (lang === 'kn' ? 'ಮುಂದಿನ ಭಾಗ' : lang === 'ta' ? 'அடுத்த பகுதி' : lang === 'hi' ? 'अगला भाग' : 'Next Section')}
-              </Button>
-            ) : (
-              <Button
-                onClick={submitAssessment}
-                disabled={!canSubmit() || submitting || isReadOnly}
-                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700"
-              >
-                {submitting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    {t('submitting')}
-                  </>
+                {saving ? (
+                  <>{lang === 'kn' ? 'ಉಳಿಸಲಾಗುತ್ತಿದೆ...' : lang === 'ta' ? 'சேமிக்கிறது...' : lang === 'hi' ? 'सहेजा जा रहा है...' : 'Saving...'}</>
                 ) : (
                   <>
-                    <Star className="w-4 h-4 mr-2" />
-                    {t('submitDreams')}
+                    <Save className="w-4 h-4 mr-2" />
+                    {t('saveProgress')}
                   </>
                 )}
               </Button>
-            )}
+
+              {sections.indexOf(currentSection) < sections.length - 1 ? (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const currentIndex = sections.indexOf(currentSection);
+                    const nextSection = sections[currentIndex + 1];
+                    if (nextSection === 'Summary' && !areCoreSectionsComplete()) {
+                      validateAndScroll(true);
+                      return;
+                    }
+                    setCurrentSection(nextSection);
+                  }}
+                  className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 h-auto sm:h-10 border-blue-200 text-blue-700 hover:bg-blue-50"
+                >
+                  {sections[sections.indexOf(currentSection) + 1] === 'Summary'
+                    ? (lang === 'kn' ? 'ಸಾರಾಂಶ →' : lang === 'ta' ? 'சுருக்கம் →' : lang === 'hi' ? 'सारांश →' : 'Summary →')
+                    : (lang === 'kn' ? 'ಮುಂದಿನ ಭಾಗ' : lang === 'ta' ? 'அடுத்த பகுதி' : lang === 'hi' ? 'अगला भाग' : 'Next Section')}
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => {
+                    if (!canSubmit()) {
+                      validateAndScroll(false);
+                    } else {
+                      submitAssessment();
+                    }
+                  }}
+                  disabled={submitting || isReadOnly}
+                  className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 h-auto sm:h-10 bg-blue-600 hover:bg-blue-700"
+                >
+                  {submitting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      {t('submitting')}
+                    </>
+                  ) : (
+                    <>
+                      <Star className="w-4 h-4 mr-2" />
+                      {t('submitDreams')}
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 

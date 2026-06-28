@@ -876,7 +876,7 @@ export default function MyRoleModelsAssessment() {
         </Card>
 
         {/* Section Navigation */}
-        <div className="flex justify-center mb-6 gap-2 flex-wrap">
+        <div className="flex overflow-x-auto pb-2 mb-6 gap-2 hide-scrollbar w-full sm:justify-center">
           <Button
             variant={currentSection === 'roleModel1' ? 'default' : 'outline'}
             onClick={() => setCurrentSection('roleModel1')}

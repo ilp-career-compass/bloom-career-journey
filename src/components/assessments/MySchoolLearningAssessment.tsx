@@ -188,6 +188,7 @@ export default function MySchoolLearningAssessment() {
   const [dbSummaryTitle, setDbSummaryTitle] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [savingSection, setSavingSection] = useState<string | null>(null);
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   const [helpOpen, setHelpOpen] = useState<Record<string, boolean>>({});
 
   const toggleHelp = (key: string) => {
@@ -833,6 +834,77 @@ export default function MySchoolLearningAssessment() {
     return allSectionsComplete;
   };
 
+  const validateAndScroll = (checkOnlyCore = false) => {
+    setAttemptedSubmit(true);
+    let incompleteSection = '';
+    let incompleteFieldKey = '';
+    
+    // Helper to safely check if a question is answered
+    const isAnswered = (value: any): boolean => {
+      if (value === null || value === undefined) return false;
+      if (typeof value === 'string') return value.trim() !== '';
+      return false;
+    };
+    
+    const sectionsToCheck = checkOnlyCore 
+      ? sectionOrder.filter(s => s !== 'section6') 
+      : sectionOrder;
+    
+    for (const section of sectionsToCheck) {
+      if (section === 'section1') {
+        if (!isAnswered(responses.section1.question1)) { incompleteSection = section; incompleteFieldKey = 'question1'; break; }
+        if (!isAnswered(responses.section1.question2)) { incompleteSection = section; incompleteFieldKey = 'question2'; break; }
+        if (!isAnswered(responses.section1.question3)) { incompleteSection = section; incompleteFieldKey = 'question3'; break; }
+        if (!isAnswered(responses.section1.question4)) { incompleteSection = section; incompleteFieldKey = 'question4'; break; }
+      } else if (section === 'section2') {
+        if (!isAnswered(responses.section2.question5)) { incompleteSection = section; incompleteFieldKey = 'question5'; break; }
+        if (!isAnswered(responses.section2.question6)) { incompleteSection = section; incompleteFieldKey = 'question6'; break; }
+        if (!isAnswered(responses.section2.question7)) { incompleteSection = section; incompleteFieldKey = 'question7'; break; }
+        if (!isAnswered(responses.section2.question8)) { incompleteSection = section; incompleteFieldKey = 'question8'; break; }
+      } else if (section === 'section3') {
+        if (!isAnswered(responses.section3.question9)) { incompleteSection = section; incompleteFieldKey = 'question9'; break; }
+        if (!isAnswered(responses.section3.question10)) { incompleteSection = section; incompleteFieldKey = 'question10'; break; }
+        
+        const section3Q11Complete = Object.values(responses.section3.question11).some(val => val === true || (typeof val === 'string' && val.trim() !== ''));
+        if (!section3Q11Complete) { incompleteSection = section; incompleteFieldKey = 'question11'; break; }
+        
+        if (!isAnswered(responses.section3.question12)) { incompleteSection = section; incompleteFieldKey = 'question12'; break; }
+      } else if (section === 'section4') {
+        if (!isAnswered(responses.section4.question13)) { incompleteSection = section; incompleteFieldKey = 'question13'; break; }
+        if (!isAnswered(responses.section4.question14)) { incompleteSection = section; incompleteFieldKey = 'question14'; break; }
+        if (!isAnswered(responses.section4.question15)) { incompleteSection = section; incompleteFieldKey = 'question15'; break; }
+        if (!isAnswered(responses.section4.question16)) { incompleteSection = section; incompleteFieldKey = 'question16'; break; }
+      } else if (section === 'section5') {
+        if (!isAnswered(responses.section5.question17)) { incompleteSection = section; incompleteFieldKey = 'question17'; break; }
+        if (!isAnswered(responses.section5.question18)) { incompleteSection = section; incompleteFieldKey = 'question18'; break; }
+        if (!isAnswered(responses.section5.question19)) { incompleteSection = section; incompleteFieldKey = 'question19'; break; }
+        if (!isAnswered(responses.section5.question20)) { incompleteSection = section; incompleteFieldKey = 'question20'; break; }
+        if (!isAnswered(responses.section5.question21)) { incompleteSection = section; incompleteFieldKey = 'question21'; break; }
+      } else if (section === 'section6') {
+        if (!isAnswered(responses.section6.question1)) { incompleteSection = section; incompleteFieldKey = 'summary_question1'; break; }
+        if (!isAnswered(responses.section6.question2)) { incompleteSection = section; incompleteFieldKey = 'summary_question2'; break; }
+        if (!isAnswered(responses.section6.question3)) { incompleteSection = section; incompleteFieldKey = 'summary_question3'; break; }
+        if (!isAnswered(responses.section6.question4)) { incompleteSection = section; incompleteFieldKey = 'summary_question4'; break; }
+        if (!isAnswered(responses.section6.question5)) { incompleteSection = section; incompleteFieldKey = 'summary_question5'; break; }
+        if (!isAnswered(responses.section6.question6)) { incompleteSection = section; incompleteFieldKey = 'summary_question6'; break; }
+      }
+    }
+
+    if (incompleteSection) {
+      setCurrentSection(incompleteSection as 'section1' | 'section2' | 'section3' | 'section4' | 'section5' | 'section6');
+      setTimeout(() => {
+        const el = document.getElementById(`field_${incompleteFieldKey}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+    }
+    
+    toast({
+      title: lang === 'kn' ? "ಇನ್ನೂ ಸಲ್ಲಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ" : lang === 'ta' ? 'இன்னும் சமர்ப்பிக்க முடியாது' : lang === 'hi' ? 'अभी जमा नहीं किया जा सकता' : "Cannot Submit Yet",
+      description: "Please complete all mandatory fields.",
+      variant: "destructive",
+    });
+  };
+
   const submitAssessment = async () => {
     if (isReadOnly || !userProfile) return;
 
@@ -1032,7 +1104,28 @@ export default function MySchoolLearningAssessment() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 py-8" lang={lang} dir="auto">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 pb-24" lang={lang} dir="auto">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 py-3 shadow-sm mb-6">
+        <div className="container mx-auto flex items-center justify-between">
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/student')}
+            className="text-green-600 hover:text-green-700 hover:bg-green-50 -ml-2"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            <span className="hidden sm:inline">{t('backToDashboard')}</span>
+          </Button>
+          <div className="text-center flex-1">
+            <h1 className="text-lg md:text-xl font-bold text-green-800 line-clamp-1">
+              🏫 {dbTitle || (lang === 'kn' ? 'ನನ್ನ ಶಾಲೆ, ನನ್ನ ಕಲಿಕೆ' : lang === 'ta' ? 'என் பள்ளி, என் படிப்பு' : lang === 'hi' ? 'मेरा विद्यालय, मेरी शिक्षा' : 'My School Learning')}
+            </h1>
+            <div className="text-xs md:text-sm text-green-600 font-medium">Step 4 of 8</div>
+          </div>
+          <div className="w-10 sm:w-24"></div>
+        </div>
+      </div>
+
       <div className="container mx-auto px-4 max-w-4xl">
         {rejectionReason && (
           <div className="max-w-3xl mx-auto mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
@@ -1049,20 +1142,6 @@ export default function MySchoolLearningAssessment() {
         )}
 
         <div className="text-center mb-8">
-          <div className="text-left mb-2">
-            <Button variant="ghost" onClick={() => navigate('/student')} className="text-green-700 hover:text-green-800">
-              <ArrowLeft className="w-4 h-4 mr-2" />{t('backToDashboard')}
-            </Button>
-          </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-green-800 mb-2">
-            {dbTitle || (lang === 'kn'
-              ? '🏫 ನನ್ನ ಶಾಲೆ, ನನ್ನ ಕಲಿಕೆ ಮತ್ತು ನಾನು'
-              : lang === 'ta'
-                ? '🏫 என் பள்ளி, என் படிப்பு மற்றும் நான்'
-                : lang === 'hi'
-                  ? '🏫 मेरा विद्यालय, मेरी शिक्षा और मैं'
-                  : '🏫 My School, My Learning and I')}
-          </h1>
           <p className="text-gray-700 mt-4 whitespace-pre-wrap">
             {dbIntro || (lang === 'kn'
               ? 'ಶಾಲೆ, ಕಲಿಕೆ ಮತ್ತು ನಿಮ್ಮ ಅನುಭವಗಳ ಬಗ್ಗೆ ನಿಮ್ಮ ಆಲೋಚನೆಗಳನ್ನು ಹಂಚಿಕೊಳ್ಳಿ. ನಿಧಾನವಾಗಿ ಯೋಚಿಸಿ, ಸತ್ಯವಾಗಿ ಉತ್ತರಿಸಿ.'
@@ -1138,7 +1217,11 @@ export default function MySchoolLearningAssessment() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
-              <div>
+              {(() => {
+      const isAnswered = (responses.section1.question1 || '').trim() !== '';
+      const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
+      return (
+        <div id="field_question1" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(1, '1. Do you like coming to school? Why?')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1161,11 +1244,18 @@ export default function MySchoolLearningAssessment() {
                   onChange={(e) => handleResponseChange('section1', 'question1', e.target.value)}
                   rows={3}
                   readOnly={isReadOnly}
-                  className="border-green-200 focus:border-green-400"
+                  className={`border-green-200 focus:border-green-400 ${isInvalid ? 'border-red-500 ring-red-500 focus:border-red-500 bg-red-50' : ''} ${isReadOnly ? 'bg-gray-100 cursor-not-allowed opacity-80' : 'bg-white'}`}
                 />
-              </div>
+          {isInvalid && <p className="text-red-500 text-sm mt-1">{lang === 'kn' ? 'ಈ ಕ್ಷೇತ್ರ ಕಡ್ಡಾಯವಾಗಿದೆ' : lang === 'ta' ? 'இந்த புலம் கட்டாயமாகும்' : lang === 'hi' ? 'यह फ़ील्ड आवश्यक है' : 'This field is required'}</p>}
+        </div>
+      );
+    })()}
 
-              <div>
+              {(() => {
+      const isAnswered = (responses.section1.question2 || '').trim() !== '';
+      const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
+      return (
+        <div id="field_question2" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(2, '2. What do you like to learn at school?')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1188,11 +1278,18 @@ export default function MySchoolLearningAssessment() {
                   onChange={(e) => handleResponseChange('section1', 'question2', e.target.value)}
                   rows={3}
                   readOnly={isReadOnly}
-                  className="border-green-200 focus:border-green-400"
+                  className={`border-green-200 focus:border-green-400 ${isInvalid ? 'border-red-500 ring-red-500 focus:border-red-500 bg-red-50' : ''} ${isReadOnly ? 'bg-gray-100 cursor-not-allowed opacity-80' : 'bg-white'}`}
                 />
-              </div>
+          {isInvalid && <p className="text-red-500 text-sm mt-1">{lang === 'kn' ? 'ಈ ಕ್ಷೇತ್ರ ಕಡ್ಡಾಯವಾಗಿದೆ' : lang === 'ta' ? 'இந்த புலம் கட்டாயமாகும்' : lang === 'hi' ? 'यह फ़ील्ड आवश्यक है' : 'This field is required'}</p>}
+        </div>
+      );
+    })()}
 
-              <div>
+              {(() => {
+      const isAnswered = (responses.section1.question3 || '').trim() !== '';
+      const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
+      return (
+        <div id="field_question3" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(3, "3. What are the reasons you do not like learning in school? Explain.")}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1215,11 +1312,18 @@ export default function MySchoolLearningAssessment() {
                   onChange={(e) => handleResponseChange('section1', 'question3', e.target.value)}
                   rows={3}
                   readOnly={isReadOnly}
-                  className="border-green-200 focus:border-green-400"
+                  className={`border-green-200 focus:border-green-400 ${isInvalid ? 'border-red-500 ring-red-500 focus:border-red-500 bg-red-50' : ''} ${isReadOnly ? 'bg-gray-100 cursor-not-allowed opacity-80' : 'bg-white'}`}
                 />
-              </div>
+          {isInvalid && <p className="text-red-500 text-sm mt-1">{lang === 'kn' ? 'ಈ ಕ್ಷೇತ್ರ ಕಡ್ಡಾಯವಾಗಿದೆ' : lang === 'ta' ? 'இந்த புலம் கட்டாயமாகும்' : lang === 'hi' ? 'यह फ़ील्ड आवश्यक है' : 'This field is required'}</p>}
+        </div>
+      );
+    })()}
 
-              <div>
+              {(() => {
+      const isAnswered = (responses.section1.question4 || '').trim() !== '';
+      const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
+      return (
+        <div id="field_question4" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(4, '4. Who are your close friends in school? What qualities or traits in them have made them your close friends?')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1242,9 +1346,12 @@ export default function MySchoolLearningAssessment() {
                   onChange={(e) => handleResponseChange('section1', 'question4', e.target.value)}
                   rows={3}
                   readOnly={isReadOnly}
-                  className="border-green-200 focus:border-green-400"
+                  className={`border-green-200 focus:border-green-400 ${isInvalid ? 'border-red-500 ring-red-500 focus:border-red-500 bg-red-50' : ''} ${isReadOnly ? 'bg-gray-100 cursor-not-allowed opacity-80' : 'bg-white'}`}
                 />
-              </div>
+          {isInvalid && <p className="text-red-500 text-sm mt-1">{lang === 'kn' ? 'ಈ ಕ್ಷೇತ್ರ ಕಡ್ಡಾಯವಾಗಿದೆ' : lang === 'ta' ? 'இந்த புலம் கட்டாயமாகும்' : lang === 'hi' ? 'यह फ़ील्ड आवश्यक है' : 'This field is required'}</p>}
+        </div>
+      );
+    })()}
 
             </CardContent>
           </Card>
@@ -1264,7 +1371,11 @@ export default function MySchoolLearningAssessment() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
-              <div>
+              {(() => {
+      const isAnswered = (responses.section2.question5 || '').trim() !== '';
+      const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
+      return (
+        <div id="field_question5" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(5, '5. Which subjects do you like the most? Write them.')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1287,11 +1398,18 @@ export default function MySchoolLearningAssessment() {
                   onChange={(e) => handleResponseChange('section2', 'question5', e.target.value)}
                   rows={3}
                   readOnly={isReadOnly}
-                  className="border-blue-200 focus:border-blue-400"
+                  className={`border-blue-200 focus:border-blue-400 ${isInvalid ? 'border-red-500 ring-red-500 focus:border-red-500 bg-red-50' : ''} ${isReadOnly ? 'bg-gray-100 cursor-not-allowed opacity-80' : 'bg-white'}`}
                 />
-              </div>
+          {isInvalid && <p className="text-red-500 text-sm mt-1">{lang === 'kn' ? 'ಈ ಕ್ಷೇತ್ರ ಕಡ್ಡಾಯವಾಗಿದೆ' : lang === 'ta' ? 'இந்த புலம் கட்டாயமாகும்' : lang === 'hi' ? 'यह फ़ील्ड आवश्यक है' : 'This field is required'}</p>}
+        </div>
+      );
+    })()}
 
-              <div>
+              {(() => {
+      const isAnswered = (responses.section2.question6 || '').trim() !== '';
+      const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
+      return (
+        <div id="field_question6" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(6, '6. Why do you like this subject? Write the reason.')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1314,11 +1432,18 @@ export default function MySchoolLearningAssessment() {
                   onChange={(e) => handleResponseChange('section2', 'question6', e.target.value)}
                   rows={3}
                   readOnly={isReadOnly}
-                  className="border-blue-200 focus:border-blue-400"
+                  className={`border-blue-200 focus:border-blue-400 ${isInvalid ? 'border-red-500 ring-red-500 focus:border-red-500 bg-red-50' : ''} ${isReadOnly ? 'bg-gray-100 cursor-not-allowed opacity-80' : 'bg-white'}`}
                 />
-              </div>
+          {isInvalid && <p className="text-red-500 text-sm mt-1">{lang === 'kn' ? 'ಈ ಕ್ಷೇತ್ರ ಕಡ್ಡಾಯವಾಗಿದೆ' : lang === 'ta' ? 'இந்த புலம் கட்டாயமாகும்' : lang === 'hi' ? 'यह फ़ील्ड आवश्यक है' : 'This field is required'}</p>}
+        </div>
+      );
+    })()}
 
-              <div>
+              {(() => {
+      const isAnswered = (responses.section2.question7 || '').trim() !== '';
+      const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
+      return (
+        <div id="field_question7" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(7, '7. Which subjects do you not like to study?')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1341,11 +1466,18 @@ export default function MySchoolLearningAssessment() {
                   onChange={(e) => handleResponseChange('section2', 'question7', e.target.value)}
                   rows={3}
                   readOnly={isReadOnly}
-                  className="border-blue-200 focus:border-blue-400"
+                  className={`border-blue-200 focus:border-blue-400 ${isInvalid ? 'border-red-500 ring-red-500 focus:border-red-500 bg-red-50' : ''} ${isReadOnly ? 'bg-gray-100 cursor-not-allowed opacity-80' : 'bg-white'}`}
                 />
-              </div>
+          {isInvalid && <p className="text-red-500 text-sm mt-1">{lang === 'kn' ? 'ಈ ಕ್ಷೇತ್ರ ಕಡ್ಡಾಯವಾಗಿದೆ' : lang === 'ta' ? 'இந்த புலம் கட்டாயமாகும்' : lang === 'hi' ? 'यह फ़ील्ड आवश्यक है' : 'This field is required'}</p>}
+        </div>
+      );
+    })()}
 
-              <div>
+              {(() => {
+      const isAnswered = (responses.section2.question8 || '').trim() !== '';
+      const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
+      return (
+        <div id="field_question8" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(8, '8. Why do you have less interest in the above subjects? What help did you receive to learn these subjects?')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1368,9 +1500,12 @@ export default function MySchoolLearningAssessment() {
                   onChange={(e) => handleResponseChange('section2', 'question8', e.target.value)}
                   rows={3}
                   readOnly={isReadOnly}
-                  className="border-blue-200 focus:border-blue-400"
+                  className={`border-blue-200 focus:border-blue-400 ${isInvalid ? 'border-red-500 ring-red-500 focus:border-red-500 bg-red-50' : ''} ${isReadOnly ? 'bg-gray-100 cursor-not-allowed opacity-80' : 'bg-white'}`}
                 />
-              </div>
+          {isInvalid && <p className="text-red-500 text-sm mt-1">{lang === 'kn' ? 'ಈ ಕ್ಷೇತ್ರ ಕಡ್ಡಾಯವಾಗಿದೆ' : lang === 'ta' ? 'இந்த புலம் கட்டாயமாகும்' : lang === 'hi' ? 'यह फ़ील्ड आवश्यक है' : 'This field is required'}</p>}
+        </div>
+      );
+    })()}
 
             </CardContent>
           </Card>
@@ -1390,7 +1525,11 @@ export default function MySchoolLearningAssessment() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
-              <div>
+              {(() => {
+      const isAnswered = (responses.section3.question9 || '').trim() !== '';
+      const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
+      return (
+        <div id="field_question9" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(9, '9. Which subjects do you score the highest marks in?')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1413,11 +1552,18 @@ export default function MySchoolLearningAssessment() {
                   onChange={(e) => handleResponseChange('section3', 'question9', e.target.value)}
                   rows={3}
                   readOnly={isReadOnly}
-                  className="border-purple-200 focus:border-purple-400"
+                  className={`border-purple-200 focus:border-purple-400 ${isInvalid ? 'border-red-500 ring-red-500 focus:border-red-500 bg-red-50' : ''} ${isReadOnly ? 'bg-gray-100 cursor-not-allowed opacity-80' : 'bg-white'}`}
                 />
-              </div>
+          {isInvalid && <p className="text-red-500 text-sm mt-1">{lang === 'kn' ? 'ಈ ಕ್ಷೇತ್ರ ಕಡ್ಡಾಯವಾಗಿದೆ' : lang === 'ta' ? 'இந்த புலம் கட்டாயமாகும்' : lang === 'hi' ? 'यह फ़ील्ड आवश्यक है' : 'This field is required'}</p>}
+        </div>
+      );
+    })()}
 
-              <div>
+              {(() => {
+      const isAnswered = (responses.section3.question10 || '').trim() !== '';
+      const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
+      return (
+        <div id="field_question10" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(10, '10. Which subjects do you score low marks in?')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1440,11 +1586,18 @@ export default function MySchoolLearningAssessment() {
                   onChange={(e) => handleResponseChange('section3', 'question10', e.target.value)}
                   rows={3}
                   readOnly={isReadOnly}
-                  className="border-purple-200 focus:border-purple-400"
+                  className={`border-purple-200 focus:border-purple-400 ${isInvalid ? 'border-red-500 ring-red-500 focus:border-red-500 bg-red-50' : ''} ${isReadOnly ? 'bg-gray-100 cursor-not-allowed opacity-80' : 'bg-white'}`}
                 />
-              </div>
+          {isInvalid && <p className="text-red-500 text-sm mt-1">{lang === 'kn' ? 'ಈ ಕ್ಷೇತ್ರ ಕಡ್ಡಾಯವಾಗಿದೆ' : lang === 'ta' ? 'இந்த புலம் கட்டாயமாகும்' : lang === 'hi' ? 'यह फ़ील्ड आवश्यक है' : 'This field is required'}</p>}
+        </div>
+      );
+    })()}
 
-              <div>
+              {(() => {
+      const isAnswered = (responses.section3.question12 || '').trim() !== '';
+      const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
+      return ( <>
+        <div id="field_question12" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(11, '11. Which learning methodologies from the following options resonate with you the most? (Mark with ✔ that applies to you)')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1554,9 +1707,13 @@ export default function MySchoolLearningAssessment() {
                   onChange={(e) => handleResponseChange('section3', 'question12', e.target.value)}
                   rows={3}
                   readOnly={isReadOnly}
-                  className="border-purple-200 focus:border-purple-400"
+                  className={`border-purple-200 focus:border-purple-400 ${isInvalid ? 'border-red-500 ring-red-500 focus:border-red-500 bg-red-50' : ''} ${isReadOnly ? 'bg-gray-100 cursor-not-allowed opacity-80' : 'bg-white'}`}
                 />
-              </div>
+          {isInvalid && <p className="text-red-500 text-sm mt-1">{lang === 'kn' ? 'ಈ ಕ್ಷೇತ್ರ ಕಡ್ಡಾಯವಾಗಿದೆ' : lang === 'ta' ? 'இந்த புலம் கட்டாயமாகும்' : lang === 'hi' ? 'यह फ़ील्ड आवश्यक है' : 'This field is required'}</p>}
+        </div>
+      </>
+      );
+    })()}
 
             </CardContent>
           </Card>
@@ -1576,7 +1733,11 @@ export default function MySchoolLearningAssessment() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
-              <div>
+              {(() => {
+      const isAnswered = (responses.section4.question13 || '').trim() !== '';
+      const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
+      return (
+        <div id="field_question13" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(13, '13. Do you learn from your friends in school? List some of the things you have recently learned from friends at school.')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1600,11 +1761,18 @@ export default function MySchoolLearningAssessment() {
                   onChange={(e) => handleResponseChange('section4', 'question13', e.target.value)}
                   rows={3}
                   readOnly={isReadOnly}
-                  className="border-orange-200 focus:border-orange-400"
+                  className={`border-orange-200 focus:border-orange-400 ${isInvalid ? 'border-red-500 ring-red-500 focus:border-red-500 bg-red-50' : ''} ${isReadOnly ? 'bg-gray-100 cursor-not-allowed opacity-80' : 'bg-white'}`}
                 />
-              </div>
+          {isInvalid && <p className="text-red-500 text-sm mt-1">{lang === 'kn' ? 'ಈ ಕ್ಷೇತ್ರ ಕಡ್ಡಾಯವಾಗಿದೆ' : lang === 'ta' ? 'இந்த புலம் கட்டாயமாகும்' : lang === 'hi' ? 'यह फ़ील्ड आवश्यक है' : 'This field is required'}</p>}
+        </div>
+      );
+    })()}
 
-              <div>
+              {(() => {
+      const isAnswered = (responses.section4.question14 || '').trim() !== '';
+      const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
+      return (
+        <div id="field_question14" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(14, '14. Apart from textbook subjects, what aspects attract you to school?')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1627,11 +1795,18 @@ export default function MySchoolLearningAssessment() {
                   onChange={(e) => handleResponseChange('section4', 'question14', e.target.value)}
                   rows={3}
                   readOnly={isReadOnly}
-                  className="border-orange-200 focus:border-orange-400"
+                  className={`border-orange-200 focus:border-orange-400 ${isInvalid ? 'border-red-500 ring-red-500 focus:border-red-500 bg-red-50' : ''} ${isReadOnly ? 'bg-gray-100 cursor-not-allowed opacity-80' : 'bg-white'}`}
                 />
-              </div>
+          {isInvalid && <p className="text-red-500 text-sm mt-1">{lang === 'kn' ? 'ಈ ಕ್ಷೇತ್ರ ಕಡ್ಡಾಯವಾಗಿದೆ' : lang === 'ta' ? 'இந்த புலம் கட்டாயமாகும்' : lang === 'hi' ? 'यह फ़ील्ड आवश्यक है' : 'This field is required'}</p>}
+        </div>
+      );
+    })()}
 
-              <div>
+              {(() => {
+      const isAnswered = (responses.section4.question15 || '').trim() !== '';
+      const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
+      return (
+        <div id="field_question15" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(15, '15. Who are your two favourite teachers and why? How have these two teachers influenced you?')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1654,11 +1829,18 @@ export default function MySchoolLearningAssessment() {
                   onChange={(e) => handleResponseChange('section4', 'question15', e.target.value)}
                   rows={3}
                   readOnly={isReadOnly}
-                  className="border-orange-200 focus:border-orange-400"
+                  className={`border-orange-200 focus:border-orange-400 ${isInvalid ? 'border-red-500 ring-red-500 focus:border-red-500 bg-red-50' : ''} ${isReadOnly ? 'bg-gray-100 cursor-not-allowed opacity-80' : 'bg-white'}`}
                 />
-              </div>
+          {isInvalid && <p className="text-red-500 text-sm mt-1">{lang === 'kn' ? 'ಈ ಕ್ಷೇತ್ರ ಕಡ್ಡಾಯವಾಗಿದೆ' : lang === 'ta' ? 'இந்த புலம் கட்டாயமாகும்' : lang === 'hi' ? 'यह फ़ील्ड आवश्यक है' : 'This field is required'}</p>}
+        </div>
+      );
+    })()}
 
-              <div>
+              {(() => {
+      const isAnswered = (responses.section4.question16 || '').trim() !== '';
+      const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
+      return (
+        <div id="field_question16" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(16, '16. Is there any specific incident or experience in school that gave you a great sense of success or satisfaction? What is it?')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1681,9 +1863,12 @@ export default function MySchoolLearningAssessment() {
                   onChange={(e) => handleResponseChange('section4', 'question16', e.target.value)}
                   rows={3}
                   readOnly={isReadOnly}
-                  className="border-orange-200 focus:border-orange-400"
+                  className={`border-orange-200 focus:border-orange-400 ${isInvalid ? 'border-red-500 ring-red-500 focus:border-red-500 bg-red-50' : ''} ${isReadOnly ? 'bg-gray-100 cursor-not-allowed opacity-80' : 'bg-white'}`}
                 />
-              </div>
+          {isInvalid && <p className="text-red-500 text-sm mt-1">{lang === 'kn' ? 'ಈ ಕ್ಷೇತ್ರ ಕಡ್ಡಾಯವಾಗಿದೆ' : lang === 'ta' ? 'இந்த புலம் கட்டாயமாகும்' : lang === 'hi' ? 'यह फ़ील्ड आवश्यक है' : 'This field is required'}</p>}
+        </div>
+      );
+    })()}
 
             </CardContent>
           </Card>
@@ -1703,7 +1888,11 @@ export default function MySchoolLearningAssessment() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
-              <div>
+              {(() => {
+      const isAnswered = (responses.section5.question17 || '').trim() !== '';
+      const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
+      return (
+        <div id="field_question17" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(17, '17. How do the things you learned in school help you achieve your dreams and expectations?')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1726,11 +1915,18 @@ export default function MySchoolLearningAssessment() {
                   onChange={(e) => handleResponseChange('section5', 'question17', e.target.value)}
                   rows={3}
                   readOnly={isReadOnly}
-                  className="border-teal-200 focus:border-teal-400"
+                  className={`border-teal-200 focus:border-teal-400 ${isInvalid ? 'border-red-500 ring-red-500 focus:border-red-500 bg-red-50' : ''} ${isReadOnly ? 'bg-gray-100 cursor-not-allowed opacity-80' : 'bg-white'}`}
                 />
-              </div>
+          {isInvalid && <p className="text-red-500 text-sm mt-1">{lang === 'kn' ? 'ಈ ಕ್ಷೇತ್ರ ಕಡ್ಡಾಯವಾಗಿದೆ' : lang === 'ta' ? 'இந்த புலம் கட்டாயமாகும்' : lang === 'hi' ? 'यह फ़ील्ड आवश्यक है' : 'This field is required'}</p>}
+        </div>
+      );
+    })()}
 
-              <div>
+              {(() => {
+      const isAnswered = (responses.section5.question18 || '').trim() !== '';
+      const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
+      return (
+        <div id="field_question18" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(18, '18. What are the things you want to be changed in your school? What is the reason for that?')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1753,11 +1949,18 @@ export default function MySchoolLearningAssessment() {
                   onChange={(e) => handleResponseChange('section5', 'question18', e.target.value)}
                   rows={3}
                   readOnly={isReadOnly}
-                  className="border-teal-200 focus:border-teal-400"
+                  className={`border-teal-200 focus:border-teal-400 ${isInvalid ? 'border-red-500 ring-red-500 focus:border-red-500 bg-red-50' : ''} ${isReadOnly ? 'bg-gray-100 cursor-not-allowed opacity-80' : 'bg-white'}`}
                 />
-              </div>
+          {isInvalid && <p className="text-red-500 text-sm mt-1">{lang === 'kn' ? 'ಈ ಕ್ಷೇತ್ರ ಕಡ್ಡಾಯವಾಗಿದೆ' : lang === 'ta' ? 'இந்த புலம் கட்டாயமாகும்' : lang === 'hi' ? 'यह फ़ील्ड आवश्यक है' : 'This field is required'}</p>}
+        </div>
+      );
+    })()}
 
-              <div>
+              {(() => {
+      const isAnswered = (responses.section5.question19 || '').trim() !== '';
+      const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
+      return (
+        <div id="field_question19" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(19, '19. Do you have any special place to express yourself? Why is it necessary?')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1780,11 +1983,18 @@ export default function MySchoolLearningAssessment() {
                   onChange={(e) => handleResponseChange('section5', 'question19', e.target.value)}
                   rows={3}
                   readOnly={isReadOnly}
-                  className="border-teal-200 focus:border-teal-400"
+                  className={`border-teal-200 focus:border-teal-400 ${isInvalid ? 'border-red-500 ring-red-500 focus:border-red-500 bg-red-50' : ''} ${isReadOnly ? 'bg-gray-100 cursor-not-allowed opacity-80' : 'bg-white'}`}
                 />
-              </div>
+          {isInvalid && <p className="text-red-500 text-sm mt-1">{lang === 'kn' ? 'ಈ ಕ್ಷೇತ್ರ ಕಡ್ಡಾಯವಾಗಿದೆ' : lang === 'ta' ? 'இந்த புலம் கட்டாயமாகும்' : lang === 'hi' ? 'यह फ़ील्ड आवश्यक है' : 'This field is required'}</p>}
+        </div>
+      );
+    })()}
 
-              <div>
+              {(() => {
+      const isAnswered = (responses.section5.question20 || '').trim() !== '';
+      const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
+      return (
+        <div id="field_question20" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(20, '20. Does the school play an important role in your life related to learning? Write your opinion.')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1807,11 +2017,18 @@ export default function MySchoolLearningAssessment() {
                   onChange={(e) => handleResponseChange('section5', 'question20', e.target.value)}
                   rows={3}
                   readOnly={isReadOnly}
-                  className="border-teal-200 focus:border-teal-400"
+                  className={`border-teal-200 focus:border-teal-400 ${isInvalid ? 'border-red-500 ring-red-500 focus:border-red-500 bg-red-50' : ''} ${isReadOnly ? 'bg-gray-100 cursor-not-allowed opacity-80' : 'bg-white'}`}
                 />
-              </div>
+          {isInvalid && <p className="text-red-500 text-sm mt-1">{lang === 'kn' ? 'ಈ ಕ್ಷೇತ್ರ ಕಡ್ಡಾಯವಾಗಿದೆ' : lang === 'ta' ? 'இந்த புலம் கட்டாயமாகும்' : lang === 'hi' ? 'यह फ़ील्ड आवश्यक है' : 'This field is required'}</p>}
+        </div>
+      );
+    })()}
 
-              <div>
+              {(() => {
+      const isAnswered = (responses.section5.question21 || '').trim() !== '';
+      const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
+      return (
+        <div id="field_question21" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(21, '21. Do you like to discuss school activities and learning with your parents? What topics do you discuss with them?')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1834,9 +2051,12 @@ export default function MySchoolLearningAssessment() {
                   onChange={(e) => handleResponseChange('section5', 'question21', e.target.value)}
                   rows={3}
                   readOnly={isReadOnly}
-                  className="border-teal-200 focus:border-teal-400"
+                  className={`border-teal-200 focus:border-teal-400 ${isInvalid ? 'border-red-500 ring-red-500 focus:border-red-500 bg-red-50' : ''} ${isReadOnly ? 'bg-gray-100 cursor-not-allowed opacity-80' : 'bg-white'}`}
                 />
-              </div>
+          {isInvalid && <p className="text-red-500 text-sm mt-1">{lang === 'kn' ? 'ಈ ಕ್ಷೇತ್ರ ಕಡ್ಡಾಯವಾಗಿದೆ' : lang === 'ta' ? 'இந்த புலம் கட்டாயமாகும்' : lang === 'hi' ? 'यह फ़ील्ड आवश्यक है' : 'This field is required'}</p>}
+        </div>
+      );
+    })()}
 
             </CardContent>
           </Card>
@@ -1901,9 +2121,10 @@ export default function MySchoolLearningAssessment() {
           </Card>
         )}
 
-        {/* Unified Navigation Footer */}
-        <div className="flex flex-col-reverse sm:flex-row justify-between items-center mt-8 gap-4 sm:gap-0" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 1rem))' }}>
-          <Button
+        {/* Sticky Footer Navigation */}
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 p-2 sm:p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+          <div className="container mx-auto flex flex-row justify-between items-center gap-2 sm:gap-4">
+            <Button
             variant="outline"
             onClick={() => {
               const currentIndex = sectionOrder.indexOf(currentSection);
@@ -1913,17 +2134,17 @@ export default function MySchoolLearningAssessment() {
               }
             }}
             disabled={sectionOrder.indexOf(currentSection) === 0}
-            className="w-full sm:w-auto border-green-200 text-green-700 hover:bg-green-50"
+            className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 h-auto sm:h-10 border-green-200 text-green-700 hover:bg-green-50"
           >
             {t('previousSection')}
           </Button>
 
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <div className="flex flex-row gap-1 sm:gap-2 w-auto">
             <Button
               variant="outline"
               onClick={() => saveSection(currentSection)}
               disabled={!!savingSection || isReadOnly}
-              className="w-full sm:w-auto border-green-200 text-green-700 hover:bg-green-50"
+              className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 h-auto sm:h-10 border-green-200 text-green-700 hover:bg-green-50"
             >
               {savingSection === currentSection ? (
                 <>{lang === 'kn' ? 'ಉಳಿಸಲಾಗುತ್ತಿದೆ...' : lang === 'ta' ? 'சேமிக்கிறது...' : lang === 'hi' ? 'सहेजा जा रहा है...' : 'Saving...'}</>
@@ -1943,24 +2164,14 @@ export default function MySchoolLearningAssessment() {
                   if (currentIndex < sectionOrder.length - 1) {
                     const nextSection = sectionOrder[currentIndex + 1];
                     if (nextSection === 'section6' && !areCoreSectionsComplete()) {
-                      toast({
-                        title: lang === 'kn' ? 'ಸಾರಾಂಶ ಲಾಕ್ ಆಗಿದೆ' : lang === 'ta' ? 'சுருக்கம் பூட்டப்பட்டுள்ளது' : lang === 'hi' ? 'सारांश लॉक है' : 'Summary Locked',
-                        description: lang === 'kn'
-                          ? 'ಸಾರಾಂಶವನ್ನು ವೀಕ್ಷಿಸಲು ದಯವಿಟ್ಟು ಎಲ್ಲಾ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ.'
-                          : lang === 'ta'
-                            ? 'சுருக்கத்தைப் பார்க்க அனைத்துக் கேள்விகளுக்கும் பதில் அளிக்கவும்.'
-                            : lang === 'hi'
-                              ? 'सारांश अनलॉक करने के लिए कृपया सभी मुख्य प्रश्नों का उत्तर दें।'
-                              : 'Please answer all core questions to unlock the summary.',
-                        variant: 'destructive',
-                      });
+                      validateAndScroll(true);
                       return;
                     }
                     setCurrentSection(nextSection);
                     window.scrollTo(0, 0);
                   }
                 }}
-                className="w-full sm:w-auto border-green-200 text-green-700 hover:bg-green-50"
+                className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 h-auto sm:h-10 border-green-200 text-green-700 hover:bg-green-50"
               >
                 {(() => {
                   const nextSec = sectionOrder[sectionOrder.indexOf(currentSection) + 1];
@@ -1969,9 +2180,15 @@ export default function MySchoolLearningAssessment() {
               </Button>
             ) : (
               <Button
-                onClick={submitAssessment}
-                disabled={!canSubmit() || submitting || isReadOnly}
-                className="w-full sm:w-auto bg-green-600 hover:bg-green-700"
+                onClick={() => {
+                  if (!canSubmit()) {
+                    validateAndScroll(false);
+                  } else {
+                    submitAssessment();
+                  }
+                }}
+                disabled={submitting || isReadOnly}
+                className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 h-auto sm:h-10 bg-green-600 hover:bg-green-700"
               >
                 {submitting ? (
                   <>
@@ -2002,7 +2219,7 @@ export default function MySchoolLearningAssessment() {
         </div>
 
       </div >
+      </div >
     </div >
   );
 }
-

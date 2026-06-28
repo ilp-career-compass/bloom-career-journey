@@ -107,6 +107,7 @@ export default function MyHobbiesAssessment() {
   const [currentSection, setCurrentSection] = useState<string>('section1');
   const [helpOpen, setHelpOpen] = useState<Record<string, boolean>>({});
   const [savingSection, setSavingSection] = useState<string | null>(null);
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   const autoSaveErrorRef = useRef(false);
   const redirectTimeoutRef = useRef(null);
 
@@ -606,6 +607,55 @@ export default function MyHobbiesAssessment() {
     });
   };
 
+  const validateAndScroll = (checkOnlyCore = false) => {
+    setAttemptedSubmit(true);
+    let incompleteSection = '';
+    let incompleteFieldKey = '';
+
+    const isAnswered = (value: any): boolean => {
+      if (value === null || value === undefined) return false;
+      if (typeof value === 'string') return value.trim() !== '';
+      return false;
+    };
+
+    const sectionsToCheck = checkOnlyCore 
+      ? sections.filter(s => s !== 'summary') 
+      : sections;
+
+    for (const section of sectionsToCheck) {
+      if (section === 'summary') {
+        const incompleteSummary = summaryQuestions.find(sq => !isAnswered(responses[`summary_${sq.sequence_number}`]));
+        if (incompleteSummary) {
+          incompleteSection = section;
+          incompleteFieldKey = `summary_${incompleteSummary.sequence_number}`;
+          break;
+        }
+      } else {
+        const sectionQuestions = questionsBySection[section] || [];
+        const incompleteQ = sectionQuestions.find(q => !isAnswered(responses[q.id]));
+        if (incompleteQ) {
+          incompleteSection = section;
+          incompleteFieldKey = incompleteQ.id;
+          break;
+        }
+      }
+    }
+
+    if (incompleteSection) {
+      setCurrentSection(incompleteSection);
+      setTimeout(() => {
+        const el = document.getElementById(`field_${incompleteFieldKey}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+    }
+
+    toast({
+      title: lang === 'kn' ? "ಇನ್ನೂ ಸಲ್ಲಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ" : lang === 'ta' ? 'இன்னும் சமர்ப்பிக்க முடியாது' : lang === 'hi' ? 'अभी जमा नहीं किया जा सकता' : "Cannot Submit Yet",
+      description: "Please complete all mandatory fields.",
+      variant: "destructive",
+    });
+  };
+
 
   const submitAssessment = async () => {
     if (isReadOnly) return;
@@ -810,8 +860,29 @@ export default function MyHobbiesAssessment() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-pink-50 py-8" lang={lang} dir="auto">
-      <div className="container mx-auto px-4">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-pink-50 pb-24" lang={lang} dir="auto">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 py-3 shadow-sm mb-6">
+        <div className="container mx-auto flex items-center justify-between">
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/student')}
+            className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 -ml-2"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            <span className="hidden sm:inline">{t('backToDashboard')}</span>
+          </Button>
+          <div className="text-center flex-1">
+            <h1 className="text-lg md:text-xl font-bold text-orange-800 line-clamp-1">
+              🎨 {dbTitle || (lang === 'kn' ? 'ನನ್ನ ಪ್ರತಿಭೆಗಳು ಮತ್ತು ಹವ್ಯಾಸಗಳು' : lang === 'ta' ? 'என் திறமைகள் மற்றும் பொழுதுபோக்குகள்' : lang === 'hi' ? 'मेरी प्रतिभाएँ और शौक' : 'My Talents and Hobbies')}
+            </h1>
+            <div className="text-xs md:text-sm text-orange-600 font-medium">Step 5 of 8</div>
+          </div>
+          <div className="w-10 sm:w-24"></div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 max-w-4xl">
         {rejectionReason && (
           <div className="max-w-3xl mx-auto mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
             <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
@@ -825,25 +896,8 @@ export default function MyHobbiesAssessment() {
             </div>
           </div>
         )}
-
-        <div className="text-left mb-2">
-          <Button variant="ghost" onClick={() => navigate('/student')} className="text-orange-700 hover:text-orange-800 hover:bg-orange-50">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 mr-2"><path fillRule="evenodd" d="M12.53 3.47a.75.75 0 010 1.06L6.31 10.75H21a.75.75 0 010 1.5H6.31l6.22 6.22a.75.75 0 11-1.06 1.06l-7.5-7.5a.75.75 0 010-1.06l7.5-7.5a.75.75 0 011.06 0z" clipRule="evenodd" /></svg>
-            {t('backToDashboard')}
-          </Button>
-        </div>
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold text-orange-800 mb-2">
-            {dbTitle || (lang === 'kn'
-              ? '🎨 ನನ್ನ ಪ್ರತಿಭೆಗಳು ಮತ್ತು ಹವ್ಯಾಸಗಳು'
-              : lang === 'ta'
-                ? '🎨 என் திறமைகள் மற்றும் பொழுதுபோக்குகள்'
-                : lang === 'hi'
-                  ? '🎨 मेरी प्रतिभाएँ और शौक'
-                  : '🎨 My Talents and Hobbies')}
-          </h1>
-
           {/* Description Text */}
           <div className="max-w-3xl mx-auto px-4 sm:px-6 text-left text-gray-700 mt-4">
             <p
@@ -1140,8 +1194,12 @@ export default function MyHobbiesAssessment() {
                       const qText = sectionKey === 'summary' ? q.text : q.question_text;
                       const hasNumber = /^\d+\.\s/.test(qText || '');
                       const label = hasNumber ? qText : `${qIdx + 1}. ${qText}`;
+                      const fieldKey = sectionKey === 'summary' ? `summary_${q.sequence_number}` : q.id;
+                      const isAnswered = (responses[fieldKey] || '').trim() !== '';
+                      const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
+
                       return (
-                      <div key={q.id} className="space-y-3">
+                      <div key={q.id} id={`field_${fieldKey}`} className={`space-y-3 border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                         <div className="flex items-start justify-between gap-4">
                           <label className="text-base font-medium text-gray-800 leading-relaxed">
                             {label}<span className="text-red-500 text-sm ml-1">*</span>
@@ -1168,19 +1226,21 @@ export default function MyHobbiesAssessment() {
 
                         <Textarea
                           placeholder={q.help_text || (lang === 'kn' ? 'ನಿಮ್ಮ ಉತ್ತರವನ್ನು ಇಲ್ಲಿ ಬರೆಯಿರಿ...' : lang === 'ta' ? 'உங்கள் பதிலை இங்கே எழுதுங்கள்...' : lang === 'hi' ? 'अपना उत्तर यहां लिखें...' : 'Type your answer here...')}
-                          className="min-h-[120px] text-base border-orange-100 focus:border-orange-300 focus:ring-orange-200"
-                          value={responses[sectionKey === 'summary' ? `summary_${q.sequence_number}` : q.id] || ''}
-                          onChange={(e) => handleResponseChange(sectionKey === 'summary' ? `summary_${q.sequence_number}` : q.id, e.target.value)}
+                          className={`min-h-[120px] text-base border-orange-100 focus:border-orange-300 focus:ring-orange-200 ${isInvalid ? 'border-red-500 ring-red-500 focus:border-red-500 bg-red-50' : ''} ${isReadOnly ? 'bg-gray-100 cursor-not-allowed opacity-80' : 'bg-white'}`}
+                          value={responses[fieldKey] || ''}
+                          onChange={(e) => handleResponseChange(fieldKey, e.target.value)}
                           readOnly={isReadOnly}
                         />
+                        {isInvalid && <p className="text-red-500 text-sm mt-1">{lang === 'kn' ? 'ಈ ಕ್ಷೇತ್ರ ಕಡ್ಡಾಯವಾಗಿದೆ' : lang === 'ta' ? 'இந்த புலம் கட்டாயமாகும்' : lang === 'hi' ? 'यह फ़ील्ड आवश्यक है' : 'This field is required'}</p>}
                       </div>
                       );
                     })}
                   </div>
 
-                  {/* Navigation Buttons */}
-                  <div className="mt-10 flex flex-col-reverse sm:flex-row justify-between items-center gap-4 border-t border-orange-100 pt-6" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 1rem))' }}>
-                    <Button
+                  {/* Sticky Footer Navigation */}
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 p-2 sm:p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+                    <div className="container mx-auto flex flex-row justify-between items-center gap-2 sm:gap-4">
+                      <Button
                       variant="outline"
                       onClick={() => {
                         const idx = sections.indexOf(currentSection);
@@ -1190,17 +1250,17 @@ export default function MyHobbiesAssessment() {
                         }
                       }}
                       disabled={sections.indexOf(currentSection) === 0}
-                      className="w-full sm:w-auto border-orange-200 text-orange-700 hover:bg-orange-50"
+                      className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 h-auto sm:h-10 border-orange-200 text-orange-700 hover:bg-orange-50"
                     >
                       {lang === 'kn' ? 'ಹಿಂದಿನ ಭಾಗ' : lang === 'ta' ? 'முந்தைய பகுதி' : lang === 'hi' ? 'पिछला भाग' : 'Previous Section'}
                     </Button>
 
-                    <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                    <div className="flex flex-row gap-1 sm:gap-2 w-auto">
                       <Button
                         variant="outline"
                         onClick={() => saveSection(currentSection)}
                         disabled={savingSection !== null || isReadOnly}
-                        className="w-full sm:w-auto border-orange-200 text-orange-700 hover:bg-orange-50"
+                        className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 h-auto sm:h-10 border-orange-200 text-orange-700 hover:bg-orange-50"
                       >
                         {savingSection ? (
                           <>
@@ -1223,24 +1283,14 @@ export default function MyHobbiesAssessment() {
                             if (idx < sections.length - 1) {
                               const nextSection = sections[idx + 1];
                               if (nextSection === 'summary' && !areCoreSectionsComplete()) {
-                                toast({
-                                  title: lang === 'kn' ? 'ಸಾರಾಂಶ ಲಾಕ್ ಆಗಿದೆ' : lang === 'ta' ? 'சுருக்கம் பூட்டப்பட்டுள்ளது' : lang === 'hi' ? 'सारांश लॉक है' : 'Summary Locked',
-                                  description: lang === 'kn'
-                                    ? 'ಸಾರಾಂಶವನ್ನು ವೀಕ್ಷಿಸಲು ದಯವಿಟ್ಟು ಎಲ್ಲಾ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿ.'
-                                    : lang === 'ta'
-                                      ? 'சுருக்கத்தைப் பார்க்க அனைத்துக் கேள்விகளுக்கும் பதில் அளிக்கவும்.'
-                                      : lang === 'hi'
-                                        ? 'सारांश अनलॉक करने के लिए कृपया सभी मुख्य प्रश्नों का उत्तर दें।'
-                                        : 'Please answer all core questions to unlock the summary.',
-                                  variant: 'destructive',
-                                });
+                                validateAndScroll(true);
                                 return;
                               }
                               setCurrentSection(nextSection);
                               window.scrollTo(0, 0);
                             }
                           }}
-                          className="w-full sm:w-auto border-orange-200 text-orange-700 hover:bg-orange-50"
+                          className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 h-auto sm:h-10 border-orange-200 text-orange-700 hover:bg-orange-50"
                         >
                           {(() => {
                             const idx = sections.indexOf(currentSection);
@@ -1250,9 +1300,15 @@ export default function MyHobbiesAssessment() {
                         </Button>
                       ) : (
                         <Button
-                          onClick={submitAssessment}
-                          disabled={!canSubmit() || submitting || isReadOnly}
-                          className="w-full sm:w-auto bg-orange-600 hover:bg-orange-700 text-white"
+                          onClick={() => {
+                            if (!canSubmit()) {
+                              validateAndScroll(false);
+                            } else {
+                              submitAssessment();
+                            }
+                          }}
+                          disabled={submitting || isReadOnly}
+                          className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 h-auto sm:h-10 bg-orange-600 hover:bg-orange-700 text-white"
                         >
                           {submitting ? (
                             <>
@@ -1268,6 +1324,7 @@ export default function MyHobbiesAssessment() {
                         </Button>
                       )}
                     </div>
+                  </div>
                   </div>
                 </CardContent>
               </Card>

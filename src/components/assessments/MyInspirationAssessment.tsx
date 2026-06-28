@@ -314,6 +314,7 @@ export default function MyInspirationAssessment() {
   const [isCompleted, setIsCompleted] = useState(false);
   const isReadOnly = (isCompleted && !rejectionReason) || readOnlyView;
   const [saving, setSaving] = useState(false);
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   const isTranslatingRef = useRef(false);
 
   // Reactively translate responses when language changes
@@ -1380,7 +1381,59 @@ export default function MyInspirationAssessment() {
       return;
     }
 
+    if (!studentId) {
+      toast({
+        title: t('errorSavingVideoProgress'),
+        description: lang === 'kn' ? "ವಿದ್ಯಾರ್ಥಿ ಪ್ರೊಫೈಲ್ ಕಂಡುಬಂದಿಲ್ಲ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಶಿಕ್ಷಕ ಅಥವಾ ಬೆಂಬಲವನ್ನು ಸಂಪರ್ಕಿಸಿ." : lang === 'ta' ? 'மாணவர் சுயவிவரம் கிடைக்கவில்லை. உங்கள் ஆசிரியரை தொடர்பு கொள்ளுங்கள்.' : lang === 'hi' ? 'विद्यार्थी प्रोफ़ाइल नहीं मिली। कृपया अपने शिक्षक या सहायता से संपर्क करें।' : "Student profile not found. Please contact your teacher or support.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!canSubmit()) {
+      setAttemptedSubmit(true);
+      
+      let firstIncompleteIdx = -1;
+      let firstIncompleteField = '';
+      
+      for (let i = 0; i < inspirationVideos.length; i++) {
+        if (!isVideoComplete(i)) {
+          firstIncompleteIdx = i;
+          const videoKey = `video${i + 1}`;
+          for (let q = 1; q <= questionCount; q++) {
+            const qKey = `question${q}`;
+            const answer = (responses[videoKey] as any)?.[qKey] || '';
+            const audioId = `${videoKey}_${qKey}`;
+            if (answer.trim() === '' && !audioAnswered[audioId]) {
+              firstIncompleteField = audioId;
+              break;
+            }
+          }
+          break;
+        }
+      }
+      
+      if (firstIncompleteIdx === -1 && !isSummaryComplete()) {
+        firstIncompleteIdx = inspirationVideos.length;
+        const summary = (responses['summary'] as any) || {};
+        const sCount = summaryQuestions.length > 0 ? summaryQuestions.length : 3;
+        for (let q = 1; q <= sCount; q++) {
+          const qKey = `question${q}`;
+          if ((summary[qKey] || '').trim() === '') {
+            firstIncompleteField = `summary_${qKey}`;
+            break;
+          }
+        }
+      }
+      
+      if (firstIncompleteIdx !== -1) {
+        setCurrentVideoIndex(firstIncompleteIdx);
+        setTimeout(() => {
+          const el = document.getElementById(`field_${firstIncompleteField}`);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 300);
+      }
+
       const requiredVideos = inspirationVideos.length || defaultVideos.length || 3;
       toast({
         title: lang === 'kn' ? "ಇನ್ನೂ ಸಲ್ಲಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ" : lang === 'ta' ? 'இன்னும் சமர்ப்பிக்க முடியாது' : lang === 'hi' ? 'अभी जमा नहीं किया जा सकता' : "Cannot Submit Yet",
@@ -1391,26 +1444,6 @@ export default function MyInspirationAssessment() {
             : lang === 'hi'
               ? `कृपया मूल्यांकन जमा करने से पहले सभी ${requiredVideos} वीडियो पूरे करें।`
               : `Please complete all ${requiredVideos} videos before submitting the assessment.`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Resolve student_id from students table; do not fallback to users.id
-    let studentId = userProfile.studentProfile?.id as string | undefined;
-    if (!studentId) {
-      const { data: studentRow } = await supabase
-        .from('students')
-        .select('id')
-        .eq('user_id', userProfile.id)
-        .maybeSingle();
-      studentId = studentRow?.id;
-    }
-
-    if (!studentId) {
-      toast({
-        title: t('errorSavingVideoProgress'),
-        description: lang === 'kn' ? "ವಿದ್ಯಾರ್ಥಿ ಪ್ರೊಫೈಲ್ ಕಂಡುಬಂದಿಲ್ಲ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಶಿಕ್ಷಕ ಅಥವಾ ಬೆಂಬಲವನ್ನು ಸಂಪರ್ಕಿಸಿ." : lang === 'ta' ? 'மாணவர் சுயவிவரம் கிடைக்கவில்லை. உங்கள் ஆசிரியரை தொடர்பு கொள்ளுங்கள்.' : lang === 'hi' ? 'विद्यार्थी प्रोफ़ाइल नहीं मिली। कृपया अपने शिक्षक या सहायता से संपर्क करें।' : "Student profile not found. Please contact your teacher or support.",
         variant: "destructive",
       });
       return;
@@ -1616,7 +1649,26 @@ export default function MyInspirationAssessment() {
   const currentVideo = inspirationVideos[currentVideoIndex];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 py-8" lang={lang} dir="auto">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 pb-24" lang={lang} dir="auto">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 py-3 shadow-sm mb-6">
+        <div className="container mx-auto flex items-center justify-between">
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/student')}
+            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 -ml-2"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            <span className="hidden sm:inline">{t('backToDashboard')}</span>
+          </Button>
+          <div className="text-center flex-1">
+            <h1 className="text-lg md:text-xl font-bold text-blue-800 line-clamp-1">{dbTitle || t('inspirationTitle')}</h1>
+            <div className="text-xs md:text-sm text-blue-600 font-medium">Step 1 of 8</div>
+          </div>
+          <div className="w-10 sm:w-24"></div> {/* Spacer */}
+        </div>
+      </div>
+
       <div className="container mx-auto px-4">
         {rejectionReason && (
           <div className="max-w-3xl mx-auto mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
@@ -1631,23 +1683,9 @@ export default function MyInspirationAssessment() {
             </div>
           </div>
         )}
-        {/* Header with Back Button */}
-        <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-4 md:gap-0">
-          <div className="w-full md:w-auto flex justify-start">
-            <Button
-              variant="ghost"
-              onClick={() => navigate('/student')}
-              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              {t('backToDashboard')}
-            </Button>
-          </div>
-          <div className="text-center flex-1 w-full md:w-auto">
-            <h1 className="text-2xl md:text-3xl font-bold text-blue-800 mb-2">{dbTitle || t('inspirationTitle')}</h1>
-            <p className="text-blue-600 text-sm md:text-lg">{dbIntro || t('inspirationIntro')}</p>
-          </div>
-          <div className="hidden md:block w-20"></div> {/* Spacer for centering */}
+        
+        <div className="text-center max-w-3xl mx-auto mb-8">
+          <p className="text-blue-600 text-sm md:text-lg">{dbIntro || t('inspirationIntro')}</p>
         </div>
 
         {/* Progress Bar */}
@@ -1690,7 +1728,7 @@ export default function MyInspirationAssessment() {
             </CardDescription>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="flex flex-wrap gap-2 mb-4">
+            <div className="flex overflow-x-auto pb-2 gap-2 mb-4 hide-scrollbar">
               {inspirationVideos.map((video, index) => (
                 <Button
                   key={video.id}
@@ -1799,11 +1837,12 @@ export default function MyInspirationAssessment() {
                       const qKey = `question${index + 1}`;
                       const questionValue = (responses['summary'] as any)?.[qKey] || '';
                       const isAnswered = questionValue.trim() !== '';
+                      const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
                       const colors = getQuestionColor(index);
                       const IconComponent = colors.icon;
 
                       return (
-                        <div key={sq.id || qKey} className={`border-l-4 pl-3 md:pl-6 ${isAnswered ? colors.border : 'border-red-400'} mb-6`}>
+                        <div key={sq.id || qKey} id={`field_summary_${qKey}`} className={`border-l-4 pl-3 md:pl-6 ${isAnswered ? colors.border : 'border-red-400'} mb-6`}>
                           {sq.section_header && (
                             <div className="mb-4 pb-2 border-b border-gray-100">
                               <h4 className="text-md font-semibold text-blue-700">{sq.section_header}</h4>
@@ -1820,12 +1859,14 @@ export default function MyInspirationAssessment() {
                             onChange={(e) => handleResponseChange('summary', qKey, e.target.value)}
                             readOnly={isReadOnly}
                             rows={4}
-                            className={`text-base ${isAnswered
-                              ? `${colors.inputBorder} ${colors.inputFocus}`
-                              : 'border-red-300 focus:border-red-400 bg-red-50'
-                              }`}
+                            className={`text-base ${isInvalid 
+                              ? 'border-red-500 ring-red-500 focus:border-red-500 bg-red-50' 
+                              : isAnswered 
+                                ? `${colors.inputBorder} ${colors.inputFocus}` 
+                                : 'border-red-300 focus:border-red-400 bg-red-50'}`}
                             required
                           />
+                          {isInvalid && <p className="text-red-500 text-sm mt-1">{lang === 'kn' ? 'ಈ ಕ್ಷೇತ್ರ ಕಡ್ಡಾಯವಾಗಿದೆ' : lang === 'ta' ? 'இந்த புலம் கட்டாயமாகும்' : lang === 'hi' ? 'यह फ़ील्ड आवश्यक है' : 'This field is required'}</p>}
                         </div>
                       );
                     })
@@ -1836,11 +1877,12 @@ export default function MyInspirationAssessment() {
                       const questionText = t(questionLabelKey);
                       const questionValue = (responses['summary'] as any)?.[questionKey] || '';
                       const isAnswered = questionValue.trim() !== '';
+                      const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
                       const colors = getQuestionColor(index);
                       const IconComponent = colors.icon;
 
                       return (
-                        <div key={questionKey} className={`border-l-4 pl-3 md:pl-6 ${isAnswered ? colors.border : 'border-red-400'} mb-6`}>
+                        <div key={questionKey} id={`field_summary_${questionKey}`} className={`border-l-4 pl-3 md:pl-6 ${isAnswered ? colors.border : 'border-red-400'} mb-6`}>
                           <label className="block text-lg font-semibold text-gray-800 flex items-center gap-2 mb-3">
                             <IconComponent className={`w-5 h-5 ${colors.iconColor}`} />
                             {questionText}
@@ -1852,12 +1894,14 @@ export default function MyInspirationAssessment() {
                             onChange={(e) => handleResponseChange('summary', questionKey, e.target.value)}
                             readOnly={isReadOnly}
                             rows={4}
-                            className={`text-base ${isAnswered
-                              ? `${colors.inputBorder} ${colors.inputFocus}`
-                              : 'border-red-300 focus:border-red-400 bg-red-50'
-                              }`}
+                            className={`text-base ${isInvalid 
+                              ? 'border-red-500 ring-red-500 focus:border-red-500 bg-red-50' 
+                              : isAnswered 
+                                ? `${colors.inputBorder} ${colors.inputFocus}` 
+                                : 'border-red-300 focus:border-red-400 bg-red-50'}`}
                             required
                           />
+                          {isInvalid && <p className="text-red-500 text-sm mt-1">{lang === 'kn' ? 'ಈ ಕ್ಷೇತ್ರ ಕಡ್ಡಾಯವಾಗಿದೆ' : lang === 'ta' ? 'இந்த புலம் கட்டாயமாகும்' : lang === 'hi' ? 'यह फ़ील्ड आवश्यक है' : 'This field is required'}</p>}
                         </div>
                       );
                     })
@@ -1893,11 +1937,12 @@ export default function MyInspirationAssessment() {
                     const helpText = helpTexts[questionKey] || '';
                     const questionValue = getCurrentVideoResponses()[questionKey] || '';
                     const isAnswered = questionValue.trim() !== '' || !!audioAnswered[`${getCurrentVideoKey()}_${questionKey}`];
+                    const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
                     const colors = getQuestionColor(index);
                     const IconComponent = colors.icon;
 
                     return (
-                      <div key={questionKey} className={`border-l-4 pl-3 md:pl-6 ${isAnswered ? colors.border : 'border-red-400'} mb-6`}>
+                      <div key={questionKey} id={`field_${getCurrentVideoKey()}_${questionKey}`} className={`border-l-4 pl-3 md:pl-6 ${isAnswered ? colors.border : 'border-red-400'} mb-6`}>
                         <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-3 gap-3">
                           <label className="block text-lg font-semibold text-gray-800 flex items-center gap-2">
                             <IconComponent className={`w-5 h-5 ${colors.iconColor}`} />
@@ -1949,9 +1994,14 @@ export default function MyInspirationAssessment() {
                           onChange={(e) => handleResponseChange(getCurrentVideoKey(), questionKey, e.target.value)}
                           readOnly={isReadOnly}
                           rows={4}
-                          className={`text-base ${isAnswered ? `${colors.inputBorder} ${colors.inputFocus}` : 'border-red-300 focus:border-red-400 bg-red-50'}`}
+                          className={`text-base ${isInvalid 
+                            ? 'border-red-500 ring-red-500 focus:border-red-500 bg-red-50' 
+                            : isAnswered 
+                              ? `${colors.inputBorder} ${colors.inputFocus}` 
+                              : 'border-red-300 focus:border-red-400 bg-red-50'}`}
                           required
                         />
+                        {isInvalid && <p className="text-red-500 text-sm mt-1">{lang === 'kn' ? 'ಈ ಕ್ಷೇತ್ರ ಕಡ್ಡಾಯವಾಗಿದೆ' : lang === 'ta' ? 'இந்த புலம் கட்டாயமாகும்' : lang === 'hi' ? 'यह फ़ील्ड आवश्यक है' : 'This field is required'}</p>}
                       </div>
                     );
                   })}
@@ -1961,69 +2011,70 @@ export default function MyInspirationAssessment() {
           </CardContent>
         </Card>
 
-        {/* Footer Navigation */}
-        <div className="flex flex-col-reverse sm:flex-row justify-between items-center mt-8 gap-4 sm:gap-0 pb-6" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom, 1.5rem))' }}>
-          <Button
-            variant="outline"
-            onClick={previousVideo}
-            disabled={currentVideoIndex === 0}
-            className="w-full sm:w-auto border-blue-200 text-blue-700 hover:bg-blue-50"
-          >
-            {t('previousVideo')}
-          </Button>
-
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+        {/* Sticky Footer Navigation */}
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 p-2 sm:p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+          <div className="container mx-auto flex flex-row justify-between items-center gap-2 sm:gap-4">
             <Button
               variant="outline"
-              onClick={() => currentVideoIndex < inspirationVideos.length ? saveVideoProgress(currentVideoIndex) : saveSummaryProgress()}
-              disabled={(currentVideoIndex < inspirationVideos.length ? !isVideoComplete(currentVideoIndex) : !isSummaryComplete()) || saving || isReadOnly}
-              className="w-full sm:w-auto border-green-200 text-green-700 hover:bg-green-50"
+              onClick={previousVideo}
+              disabled={currentVideoIndex === 0}
+              className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 h-auto sm:h-10 border-blue-200 text-blue-700 hover:bg-blue-50"
             >
-              {saving ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
-                  {t('saving')}
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4 mr-2" />
-                  {t('saveProgress')}
-                </>
-              )}
+              {t('previousVideo')}
             </Button>
 
-            {currentVideoIndex < inspirationVideos.length ? (
+            <div className="flex flex-row gap-1 sm:gap-2 w-auto">
               <Button
                 variant="outline"
-                onClick={nextVideo}
-                className="w-full sm:w-auto border-blue-200 text-blue-700 hover:bg-blue-50"
+                onClick={() => currentVideoIndex < inspirationVideos.length ? saveVideoProgress(currentVideoIndex) : saveSummaryProgress()}
+                disabled={(currentVideoIndex < inspirationVideos.length ? !isVideoComplete(currentVideoIndex) : !isSummaryComplete()) || saving || isReadOnly}
+                className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 h-auto sm:h-10 border-green-200 text-green-700 hover:bg-green-50"
               >
-                {currentVideoIndex === inspirationVideos.length - 1
-                  ? (lang === 'kn' ? 'ಸಾರಾಂಶ →' : lang === 'ta' ? 'சுருக்கம் →' : lang === 'hi' ? 'सारांश →' : 'Summary →')
-                  : (lang === 'kn' ? 'ಮುಂದಿನ ವೀಡಿಯೊ →' : lang === 'ta' ? 'அடுத்த வீடியோ →' : lang === 'hi' ? 'अगला वीडியो →' : t('nextVideo'))}
-              </Button>
-            ) : (
-              <Button
-                onClick={submitAssessment}
-                disabled={!canSubmit() || submitting || isReadOnly}
-                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700"
-              >
-                {submitting ? (
+                {saving ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    {t('submitting')}
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
+                    {t('saving')}
                   </>
                 ) : (
                   <>
-                    <Lightbulb className="w-4 h-4 mr-2" />
-                    {isReadOnly ? (lang === 'kn' ? 'ಸಲ್ಲಿಸಲಾಗಿದೆ' : lang === 'ta' ? 'சமர்ப்பிக்கப்பட்டது' : lang === 'hi' ? 'जमा किया गया' : 'Submitted') : t('submitInspiration')}
+                    <Save className="w-4 h-4 mr-2" />
+                    {t('saveProgress')}
                   </>
                 )}
               </Button>
-            )}
+
+              {currentVideoIndex < inspirationVideos.length ? (
+                <Button
+                  variant="outline"
+                  onClick={nextVideo}
+                  className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 h-auto sm:h-10 border-blue-200 text-blue-700 hover:bg-blue-50"
+                >
+                  {currentVideoIndex === inspirationVideos.length - 1
+                    ? (lang === 'kn' ? 'ಸಾರಾಂಶ →' : lang === 'ta' ? 'சுருக்கம் →' : lang === 'hi' ? 'सारांश →' : 'Summary →')
+                    : (lang === 'kn' ? 'ಮುಂದಿನ ವೀಡಿಯೊ →' : lang === 'ta' ? 'அடுத்த வீடியோ →' : lang === 'hi' ? 'अगला वीडியो →' : t('nextVideo'))}
+                </Button>
+              ) : (
+                <Button
+                  onClick={submitAssessment}
+                  disabled={!canSubmit() || submitting || isReadOnly}
+                  className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 h-auto sm:h-10 bg-blue-600 hover:bg-blue-700"
+                >
+                  {submitting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      {t('submitting')}
+                    </>
+                  ) : (
+                    <>
+                      <Lightbulb className="w-4 h-4 mr-2" />
+                      {isReadOnly ? (lang === 'kn' ? 'ಸಲ್ಲಿಸಲಾಗಿದೆ' : lang === 'ta' ? 'சமர்ப்பிக்கப்பட்டது' : lang === 'hi' ? 'जमा किया गया' : 'Submitted') : t('submitInspiration')}
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
           </div>
         </div>
-
 
       </div>
     </div >
