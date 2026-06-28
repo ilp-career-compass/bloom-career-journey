@@ -1,6 +1,4 @@
-import {
-  logger
-} from '@/lib/logger';
+import { logger } from '@/lib/logger';
 import { useState, useEffect } from 'react';
 import { validateResponses } from '@/utils/englishValidation';
 import { fetchTranslations } from '@/services/translationService';
@@ -30,8 +28,9 @@ import {
   ArrowLeft,
   Lock,
   Sparkles,
-  AlertTriangle
-} from 'lucide-react';
+  AlertTriangle,
+  HelpCircle,
+ } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLang } from '@/hooks/useLang';

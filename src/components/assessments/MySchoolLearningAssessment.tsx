@@ -1,5 +1,4 @@
-import {
-  logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 import { useState, useEffect, useRef } from 'react';
 import { validateResponses } from '@/utils/englishValidation';
 import { useAuth } from '@/hooks/useAuth';
@@ -13,8 +12,9 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
 import { School, Save, CheckCircle, ArrowLeft, Lock, Sparkles,
-  AlertTriangle
-} from 'lucide-react';
+  AlertTriangle,
+  HelpCircle,
+ } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLang } from '@/hooks/useLang';
@@ -1106,7 +1106,7 @@ export default function MySchoolLearningAssessment() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 pb-24" lang={lang} dir="auto">
       {/* Sticky Header */}
-      <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 py-3 shadow-sm mb-6">
+      <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 py-3 shadow-sm mb-6 pt-safe">
         <div className="container mx-auto flex items-center justify-between">
           <Button
             variant="ghost"
@@ -1116,7 +1116,7 @@ export default function MySchoolLearningAssessment() {
             <ArrowLeft className="w-4 h-4 mr-2" />
             <span className="hidden sm:inline">{t('backToDashboard')}</span>
           </Button>
-          <div className="text-center flex-1">
+          <div className="text-center flex-1 flex flex-col items-center">
             <h1 className="text-lg md:text-xl font-bold text-green-800 line-clamp-1">
               🏫 {dbTitle || (lang === 'kn' ? 'ನನ್ನ ಶಾಲೆ, ನನ್ನ ಕಲಿಕೆ' : lang === 'ta' ? 'என் பள்ளி, என் படிப்பு' : lang === 'hi' ? 'मेरा विद्यालय, मेरी शिक्षा' : 'My School Learning')}
             </h1>
@@ -1221,7 +1221,7 @@ export default function MySchoolLearningAssessment() {
       const isAnswered = (responses.section1.question1 || '').trim() !== '';
       const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
       return (
-        <div id="field_question1" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
+        <div id="field_question1" className={`border-l-4 pl-4 md:pl-5 py-3 md:py-4 bg-white rounded-r-xl shadow-sm ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(1, '1. Do you like coming to school? Why?')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1238,8 +1238,7 @@ export default function MySchoolLearningAssessment() {
                     {getHelpText(1, 'Write whether you like coming to school and give the reason.')}
                   </div>
                 )}
-                <Textarea
-                  placeholder={getHelpText(1, 'Write whether you like coming to school and give the reason.')}
+                <Textarea className="min-h-[44px] rounded-xl"                   placeholder={getHelpText(1, 'Write whether you like coming to school and give the reason.')}
                   value={responses.section1.question1}
                   onChange={(e) => handleResponseChange('section1', 'question1', e.target.value)}
                   rows={3}
@@ -1255,7 +1254,7 @@ export default function MySchoolLearningAssessment() {
       const isAnswered = (responses.section1.question2 || '').trim() !== '';
       const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
       return (
-        <div id="field_question2" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
+        <div id="field_question2" className={`border-l-4 pl-4 md:pl-5 py-3 md:py-4 bg-white rounded-r-xl shadow-sm ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(2, '2. What do you like to learn at school?')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1272,8 +1271,7 @@ export default function MySchoolLearningAssessment() {
                     {getHelpText(2, 'Write what you like to learn in school.')}
                   </div>
                 )}
-                <Textarea
-                  placeholder={getHelpText(2, 'Write what you like to learn in school.')}
+                <Textarea className="min-h-[44px] rounded-xl"                   placeholder={getHelpText(2, 'Write what you like to learn in school.')}
                   value={responses.section1.question2}
                   onChange={(e) => handleResponseChange('section1', 'question2', e.target.value)}
                   rows={3}
@@ -1289,7 +1287,7 @@ export default function MySchoolLearningAssessment() {
       const isAnswered = (responses.section1.question3 || '').trim() !== '';
       const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
       return (
-        <div id="field_question3" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
+        <div id="field_question3" className={`border-l-4 pl-4 md:pl-5 py-3 md:py-4 bg-white rounded-r-xl shadow-sm ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(3, "3. What are the reasons you do not like learning in school? Explain.")}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1306,8 +1304,7 @@ export default function MySchoolLearningAssessment() {
                     {getHelpText(3, 'Clearly write the reasons why you do not like learning in school.')}
                   </div>
                 )}
-                <Textarea
-                  placeholder={getHelpText(3, 'Clearly write the reasons why you do not like learning in school.')}
+                <Textarea className="min-h-[44px] rounded-xl"                   placeholder={getHelpText(3, 'Clearly write the reasons why you do not like learning in school.')}
                   value={responses.section1.question3}
                   onChange={(e) => handleResponseChange('section1', 'question3', e.target.value)}
                   rows={3}
@@ -1323,7 +1320,7 @@ export default function MySchoolLearningAssessment() {
       const isAnswered = (responses.section1.question4 || '').trim() !== '';
       const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
       return (
-        <div id="field_question4" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
+        <div id="field_question4" className={`border-l-4 pl-4 md:pl-5 py-3 md:py-4 bg-white rounded-r-xl shadow-sm ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(4, '4. Who are your close friends in school? What qualities or traits in them have made them your close friends?')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1340,8 +1337,7 @@ export default function MySchoolLearningAssessment() {
                     {getHelpText(4, 'Write about your close friends and the qualities that make them special.')}
                   </div>
                 )}
-                <Textarea
-                  placeholder={getHelpText(4, 'Write about your close friends and the qualities that make them special.')}
+                <Textarea className="min-h-[44px] rounded-xl"                   placeholder={getHelpText(4, 'Write about your close friends and the qualities that make them special.')}
                   value={responses.section1.question4}
                   onChange={(e) => handleResponseChange('section1', 'question4', e.target.value)}
                   rows={3}
@@ -1375,7 +1371,7 @@ export default function MySchoolLearningAssessment() {
       const isAnswered = (responses.section2.question5 || '').trim() !== '';
       const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
       return (
-        <div id="field_question5" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
+        <div id="field_question5" className={`border-l-4 pl-4 md:pl-5 py-3 md:py-4 bg-white rounded-r-xl shadow-sm ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(5, '5. Which subjects do you like the most? Write them.')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1392,8 +1388,7 @@ export default function MySchoolLearningAssessment() {
                     {getHelpText(5, 'List the subjects you like the most.')}
                   </div>
                 )}
-                <Textarea
-                  placeholder={getHelpText(5, 'List the subjects you like the most.')}
+                <Textarea className="min-h-[44px] rounded-xl"                   placeholder={getHelpText(5, 'List the subjects you like the most.')}
                   value={responses.section2.question5}
                   onChange={(e) => handleResponseChange('section2', 'question5', e.target.value)}
                   rows={3}
@@ -1409,7 +1404,7 @@ export default function MySchoolLearningAssessment() {
       const isAnswered = (responses.section2.question6 || '').trim() !== '';
       const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
       return (
-        <div id="field_question6" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
+        <div id="field_question6" className={`border-l-4 pl-4 md:pl-5 py-3 md:py-4 bg-white rounded-r-xl shadow-sm ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(6, '6. Why do you like this subject? Write the reason.')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1426,8 +1421,7 @@ export default function MySchoolLearningAssessment() {
                     {getHelpText(6, 'You may like the subject because it is easy, interesting, or taught well by the teacher.')}
                   </div>
                 )}
-                <Textarea
-                  placeholder={getHelpText(6, 'You may like the subject because it is easy, interesting, or taught well by the teacher.')}
+                <Textarea className="min-h-[44px] rounded-xl"                   placeholder={getHelpText(6, 'You may like the subject because it is easy, interesting, or taught well by the teacher.')}
                   value={responses.section2.question6}
                   onChange={(e) => handleResponseChange('section2', 'question6', e.target.value)}
                   rows={3}
@@ -1443,7 +1437,7 @@ export default function MySchoolLearningAssessment() {
       const isAnswered = (responses.section2.question7 || '').trim() !== '';
       const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
       return (
-        <div id="field_question7" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
+        <div id="field_question7" className={`border-l-4 pl-4 md:pl-5 py-3 md:py-4 bg-white rounded-r-xl shadow-sm ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(7, '7. Which subjects do you not like to study?')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1460,8 +1454,7 @@ export default function MySchoolLearningAssessment() {
                     {getHelpText(7, 'Some subjects may be disliked because they are difficult or hard to understand.')}
                   </div>
                 )}
-                <Textarea
-                  placeholder={getHelpText(7, 'Some subjects may be disliked because they are difficult or hard to understand.')}
+                <Textarea className="min-h-[44px] rounded-xl"                   placeholder={getHelpText(7, 'Some subjects may be disliked because they are difficult or hard to understand.')}
                   value={responses.section2.question7}
                   onChange={(e) => handleResponseChange('section2', 'question7', e.target.value)}
                   rows={3}
@@ -1477,7 +1470,7 @@ export default function MySchoolLearningAssessment() {
       const isAnswered = (responses.section2.question8 || '').trim() !== '';
       const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
       return (
-        <div id="field_question8" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
+        <div id="field_question8" className={`border-l-4 pl-4 md:pl-5 py-3 md:py-4 bg-white rounded-r-xl shadow-sm ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(8, '8. Why do you have less interest in the above subjects? What help did you receive to learn these subjects?')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1494,8 +1487,7 @@ export default function MySchoolLearningAssessment() {
                     {getHelpText(8, 'Interest may be less because the subject is difficult, and help from teachers or friends supports learning.')}
                   </div>
                 )}
-                <Textarea
-                  placeholder={getHelpText(8, 'Interest may be less because the subject is difficult, and help from teachers or friends supports learning.')}
+                <Textarea className="min-h-[44px] rounded-xl"                   placeholder={getHelpText(8, 'Interest may be less because the subject is difficult, and help from teachers or friends supports learning.')}
                   value={responses.section2.question8}
                   onChange={(e) => handleResponseChange('section2', 'question8', e.target.value)}
                   rows={3}
@@ -1529,7 +1521,7 @@ export default function MySchoolLearningAssessment() {
       const isAnswered = (responses.section3.question9 || '').trim() !== '';
       const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
       return (
-        <div id="field_question9" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
+        <div id="field_question9" className={`border-l-4 pl-4 md:pl-5 py-3 md:py-4 bg-white rounded-r-xl shadow-sm ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(9, '9. Which subjects do you score the highest marks in?')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1546,8 +1538,7 @@ export default function MySchoolLearningAssessment() {
                     {getHelpText(9, 'Students usually score higher marks in subjects they understand well and like.')}
                   </div>
                 )}
-                <Textarea
-                  placeholder={getHelpText(9, 'Students usually score higher marks in subjects they understand well and like.')}
+                <Textarea className="min-h-[44px] rounded-xl"                   placeholder={getHelpText(9, 'Students usually score higher marks in subjects they understand well and like.')}
                   value={responses.section3.question9}
                   onChange={(e) => handleResponseChange('section3', 'question9', e.target.value)}
                   rows={3}
@@ -1563,7 +1554,7 @@ export default function MySchoolLearningAssessment() {
       const isAnswered = (responses.section3.question10 || '').trim() !== '';
       const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
       return (
-        <div id="field_question10" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
+        <div id="field_question10" className={`border-l-4 pl-4 md:pl-5 py-3 md:py-4 bg-white rounded-r-xl shadow-sm ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(10, '10. Which subjects do you score low marks in?')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1580,8 +1571,7 @@ export default function MySchoolLearningAssessment() {
                     {getHelpText(10, 'Low marks may be due to lack of understanding or insufficient practice.')}
                   </div>
                 )}
-                <Textarea
-                  placeholder={getHelpText(10, 'Low marks may be due to lack of understanding or insufficient practice.')}
+                <Textarea className="min-h-[44px] rounded-xl"                   placeholder={getHelpText(10, 'Low marks may be due to lack of understanding or insufficient practice.')}
                   value={responses.section3.question10}
                   onChange={(e) => handleResponseChange('section3', 'question10', e.target.value)}
                   rows={3}
@@ -1597,7 +1587,7 @@ export default function MySchoolLearningAssessment() {
       const isAnswered = (responses.section3.question12 || '').trim() !== '';
       const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
       return ( <>
-        <div id="field_question12" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
+        <div id="field_question12" className={`border-l-4 pl-4 md:pl-5 py-3 md:py-4 bg-white rounded-r-xl shadow-sm ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(11, '11. Which learning methodologies from the following options resonate with you the most? (Mark with ✔ that applies to you)')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1670,8 +1660,7 @@ export default function MySchoolLearningAssessment() {
                       </p>
 
                       {responses.section3.question11.other !== '' && (
-                        <Textarea
-                          placeholder={getHelpText(11, 'Mention any other learning method that suits you...')}
+                        <Textarea className="min-h-[44px] rounded-xl"                           placeholder={getHelpText(11, 'Mention any other learning method that suits you...')}
                           value={responses.section3.question11.other}
                           onChange={(e) => handleLearningMethodChange('other', e.target.value)}
                           rows={2}
@@ -1701,8 +1690,7 @@ export default function MySchoolLearningAssessment() {
                     {getHelpText(12, 'Select your preferred learning method and write the reason.')}
                   </div>
                 )}
-                <Textarea
-                  placeholder={getHelpText(12, 'Select your preferred learning method and write the reason.')}
+                <Textarea className="min-h-[44px] rounded-xl"                   placeholder={getHelpText(12, 'Select your preferred learning method and write the reason.')}
                   value={responses.section3.question12}
                   onChange={(e) => handleResponseChange('section3', 'question12', e.target.value)}
                   rows={3}
@@ -1737,7 +1725,7 @@ export default function MySchoolLearningAssessment() {
       const isAnswered = (responses.section4.question13 || '').trim() !== '';
       const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
       return (
-        <div id="field_question13" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
+        <div id="field_question13" className={`border-l-4 pl-4 md:pl-5 py-3 md:py-4 bg-white rounded-r-xl shadow-sm ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(13, '13. Do you learn from your friends in school? List some of the things you have recently learned from friends at school.')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1755,8 +1743,7 @@ export default function MySchoolLearningAssessment() {
                   </div>
                 )}
 
-                <Textarea
-                  placeholder={getHelpText(13, 'Recall and list what you learned from your friends.')}
+                <Textarea className="min-h-[44px] rounded-xl"                   placeholder={getHelpText(13, 'Recall and list what you learned from your friends.')}
                   value={responses.section4.question13}
                   onChange={(e) => handleResponseChange('section4', 'question13', e.target.value)}
                   rows={3}
@@ -1772,7 +1759,7 @@ export default function MySchoolLearningAssessment() {
       const isAnswered = (responses.section4.question14 || '').trim() !== '';
       const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
       return (
-        <div id="field_question14" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
+        <div id="field_question14" className={`border-l-4 pl-4 md:pl-5 py-3 md:py-4 bg-white rounded-r-xl shadow-sm ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(14, '14. Apart from textbook subjects, what aspects attract you to school?')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1789,8 +1776,7 @@ export default function MySchoolLearningAssessment() {
                     {getHelpText(14, 'Write the other activities or aspects that make school appealing.')}
                   </div>
                 )}
-                <Textarea
-                  placeholder={getHelpText(14, 'Write the other activities or aspects that make school appealing.')}
+                <Textarea className="min-h-[44px] rounded-xl"                   placeholder={getHelpText(14, 'Write the other activities or aspects that make school appealing.')}
                   value={responses.section4.question14}
                   onChange={(e) => handleResponseChange('section4', 'question14', e.target.value)}
                   rows={3}
@@ -1806,7 +1792,7 @@ export default function MySchoolLearningAssessment() {
       const isAnswered = (responses.section4.question15 || '').trim() !== '';
       const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
       return (
-        <div id="field_question15" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
+        <div id="field_question15" className={`border-l-4 pl-4 md:pl-5 py-3 md:py-4 bg-white rounded-r-xl shadow-sm ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(15, '15. Who are your two favourite teachers and why? How have these two teachers influenced you?')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1823,8 +1809,7 @@ export default function MySchoolLearningAssessment() {
                     {getHelpText(15, 'Write about your favourite teachers and how they influenced you.')}
                   </div>
                 )}
-                <Textarea
-                  placeholder={getHelpText(15, 'Write about your favourite teachers and how they influenced you.')}
+                <Textarea className="min-h-[44px] rounded-xl"                   placeholder={getHelpText(15, 'Write about your favourite teachers and how they influenced you.')}
                   value={responses.section4.question15}
                   onChange={(e) => handleResponseChange('section4', 'question15', e.target.value)}
                   rows={3}
@@ -1840,7 +1825,7 @@ export default function MySchoolLearningAssessment() {
       const isAnswered = (responses.section4.question16 || '').trim() !== '';
       const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
       return (
-        <div id="field_question16" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
+        <div id="field_question16" className={`border-l-4 pl-4 md:pl-5 py-3 md:py-4 bg-white rounded-r-xl shadow-sm ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(16, '16. Is there any specific incident or experience in school that gave you a great sense of success or satisfaction? What is it?')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1857,8 +1842,7 @@ export default function MySchoolLearningAssessment() {
                     {getHelpText(16, 'Write about a school incident that made you feel successful or satisfied.')}
                   </div>
                 )}
-                <Textarea
-                  placeholder={getHelpText(16, 'Write about a school incident that made you feel successful or satisfied.')}
+                <Textarea className="min-h-[44px] rounded-xl"                   placeholder={getHelpText(16, 'Write about a school incident that made you feel successful or satisfied.')}
                   value={responses.section4.question16}
                   onChange={(e) => handleResponseChange('section4', 'question16', e.target.value)}
                   rows={3}
@@ -1892,7 +1876,7 @@ export default function MySchoolLearningAssessment() {
       const isAnswered = (responses.section5.question17 || '').trim() !== '';
       const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
       return (
-        <div id="field_question17" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
+        <div id="field_question17" className={`border-l-4 pl-4 md:pl-5 py-3 md:py-4 bg-white rounded-r-xl shadow-sm ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(17, '17. How do the things you learned in school help you achieve your dreams and expectations?')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1909,8 +1893,7 @@ export default function MySchoolLearningAssessment() {
                     {getHelpText(17, 'Relate what you learned in school to your dreams and goals.')}
                   </div>
                 )}
-                <Textarea
-                  placeholder={getHelpText(17, 'Relate what you learned in school to your dreams and goals.')}
+                <Textarea className="min-h-[44px] rounded-xl"                   placeholder={getHelpText(17, 'Relate what you learned in school to your dreams and goals.')}
                   value={responses.section5.question17}
                   onChange={(e) => handleResponseChange('section5', 'question17', e.target.value)}
                   rows={3}
@@ -1926,7 +1909,7 @@ export default function MySchoolLearningAssessment() {
       const isAnswered = (responses.section5.question18 || '').trim() !== '';
       const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
       return (
-        <div id="field_question18" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
+        <div id="field_question18" className={`border-l-4 pl-4 md:pl-5 py-3 md:py-4 bg-white rounded-r-xl shadow-sm ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(18, '18. What are the things you want to be changed in your school? What is the reason for that?')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1943,8 +1926,7 @@ export default function MySchoolLearningAssessment() {
                     {getHelpText(18, 'Write the changes you want and the reasons for them.')}
                   </div>
                 )}
-                <Textarea
-                  placeholder={getHelpText(18, 'Write the changes you want and the reasons for them.')}
+                <Textarea className="min-h-[44px] rounded-xl"                   placeholder={getHelpText(18, 'Write the changes you want and the reasons for them.')}
                   value={responses.section5.question18}
                   onChange={(e) => handleResponseChange('section5', 'question18', e.target.value)}
                   rows={3}
@@ -1960,7 +1942,7 @@ export default function MySchoolLearningAssessment() {
       const isAnswered = (responses.section5.question19 || '').trim() !== '';
       const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
       return (
-        <div id="field_question19" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
+        <div id="field_question19" className={`border-l-4 pl-4 md:pl-5 py-3 md:py-4 bg-white rounded-r-xl shadow-sm ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(19, '19. Do you have any special place to express yourself? Why is it necessary?')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -1977,8 +1959,7 @@ export default function MySchoolLearningAssessment() {
                     {getHelpText(19, 'Write about a place where you express yourself and why it is necessary.')}
                   </div>
                 )}
-                <Textarea
-                  placeholder={getHelpText(19, 'Write about a place where you express yourself and why it is necessary.')}
+                <Textarea className="min-h-[44px] rounded-xl"                   placeholder={getHelpText(19, 'Write about a place where you express yourself and why it is necessary.')}
                   value={responses.section5.question19}
                   onChange={(e) => handleResponseChange('section5', 'question19', e.target.value)}
                   rows={3}
@@ -1994,7 +1975,7 @@ export default function MySchoolLearningAssessment() {
       const isAnswered = (responses.section5.question20 || '').trim() !== '';
       const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
       return (
-        <div id="field_question20" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
+        <div id="field_question20" className={`border-l-4 pl-4 md:pl-5 py-3 md:py-4 bg-white rounded-r-xl shadow-sm ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(20, '20. Does the school play an important role in your life related to learning? Write your opinion.')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -2011,8 +1992,7 @@ export default function MySchoolLearningAssessment() {
                     {getHelpText(20, 'Write your opinion about the role of school in your learning.')}
                   </div>
                 )}
-                <Textarea
-                  placeholder={getHelpText(20, 'Write your opinion about the role of school in your learning.')}
+                <Textarea className="min-h-[44px] rounded-xl"                   placeholder={getHelpText(20, 'Write your opinion about the role of school in your learning.')}
                   value={responses.section5.question20}
                   onChange={(e) => handleResponseChange('section5', 'question20', e.target.value)}
                   rows={3}
@@ -2028,7 +2008,7 @@ export default function MySchoolLearningAssessment() {
       const isAnswered = (responses.section5.question21 || '').trim() !== '';
       const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
       return (
-        <div id="field_question21" className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
+        <div id="field_question21" className={`border-l-4 pl-4 md:pl-5 py-3 md:py-4 bg-white rounded-r-xl shadow-sm ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   {qLabel(21, '21. Do you like to discuss school activities and learning with your parents? What topics do you discuss with them?')}<span className="text-red-500 text-sm">*</span>
                   <button
@@ -2045,8 +2025,7 @@ export default function MySchoolLearningAssessment() {
                     {getHelpText(21, 'Write the school-related topics you discuss with your parents.')}
                   </div>
                 )}
-                <Textarea
-                  placeholder={getHelpText(21, 'Write the school-related topics you discuss with your parents.')}
+                <Textarea className="min-h-[44px] rounded-xl"                   placeholder={getHelpText(21, 'Write the school-related topics you discuss with your parents.')}
                   value={responses.section5.question21}
                   onChange={(e) => handleResponseChange('section5', 'question21', e.target.value)}
                   rows={3}
@@ -2107,8 +2086,7 @@ export default function MySchoolLearningAssessment() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       {questionText}<span className="text-red-500 text-sm ml-1">*</span>
                     </label>
-                    <Textarea
-                      value={responses.section6[qKey]}
+                    <Textarea className="min-h-[44px] rounded-xl"                       value={responses.section6[qKey]}
                       onChange={(e) => handleResponseChange('section6', qKey, e.target.value)}
                       rows={3}
                       readOnly={isReadOnly}
@@ -2122,8 +2100,8 @@ export default function MySchoolLearningAssessment() {
         )}
 
         {/* Sticky Footer Navigation */}
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 p-2 sm:p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
-          <div className="container mx-auto flex flex-row justify-between items-center gap-2 sm:gap-4">
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-200 p-3 sm:p-4 pb-safe shadow-[0_-4px_15px_-3px_rgba(0,0,0,0.1)]">
+          <div className="container mx-auto flex flex-row w-full gap-2 px-1 sm:px-0">
             <Button
             variant="outline"
             onClick={() => {
@@ -2134,17 +2112,17 @@ export default function MySchoolLearningAssessment() {
               }
             }}
             disabled={sectionOrder.indexOf(currentSection) === 0}
-            className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 h-auto sm:h-10 border-green-200 text-green-700 hover:bg-green-50"
+            className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 min-h-[44px] h-auto sm:h-10 border-green-200 text-green-700 hover:bg-green-50"
           >
             {t('previousSection')}
           </Button>
 
-          <div className="flex flex-row gap-1 sm:gap-2 w-auto">
+          <div className="flex-[2] flex flex-row gap-2">
             <Button
               variant="outline"
               onClick={() => saveSection(currentSection)}
               disabled={!!savingSection || isReadOnly}
-              className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 h-auto sm:h-10 border-green-200 text-green-700 hover:bg-green-50"
+              className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 min-h-[44px] h-auto sm:h-10 border-green-200 text-green-700 hover:bg-green-50"
             >
               {savingSection === currentSection ? (
                 <>{lang === 'kn' ? 'ಉಳಿಸಲಾಗುತ್ತಿದೆ...' : lang === 'ta' ? 'சேமிக்கிறது...' : lang === 'hi' ? 'सहेजा जा रहा है...' : 'Saving...'}</>
@@ -2171,7 +2149,7 @@ export default function MySchoolLearningAssessment() {
                     window.scrollTo(0, 0);
                   }
                 }}
-                className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 h-auto sm:h-10 border-green-200 text-green-700 hover:bg-green-50"
+                className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 min-h-[44px] h-auto sm:h-10 border-green-200 text-green-700 hover:bg-green-50"
               >
                 {(() => {
                   const nextSec = sectionOrder[sectionOrder.indexOf(currentSection) + 1];
@@ -2188,7 +2166,7 @@ export default function MySchoolLearningAssessment() {
                   }
                 }}
                 disabled={submitting || isReadOnly}
-                className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 h-auto sm:h-10 bg-green-600 hover:bg-green-700"
+                className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 min-h-[44px] h-auto sm:h-10 bg-green-600 hover:bg-green-700"
               >
                 {submitting ? (
                   <>

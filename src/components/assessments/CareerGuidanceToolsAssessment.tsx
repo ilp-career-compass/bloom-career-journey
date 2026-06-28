@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { CheckCircle, ArrowLeft, Globe, Search } from 'lucide-react';
+import { HelpCircle, CheckCircle, ArrowLeft, Globe, Search  } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLang } from '@/hooks/useLang';
@@ -536,8 +536,7 @@ After your teacher guides you through the career chart, career guidance workbook
                       </div>
                     )}
                     {question.question_type === 'textarea' && (
-                      <Textarea
-                        placeholder={question.help_text}
+                      <Textarea className="min-h-[44px] rounded-xl"                         placeholder={question.help_text}
                         value={typeof response === 'string' ? response : ''}
                         onChange={(e) => handleResponseChange(questionKey, e.target.value)}
                         disabled={isReadOnly}
@@ -546,8 +545,7 @@ After your teacher guides you through the career chart, career guidance workbook
                       />
                     )}
                     {question.question_type === 'input' && (
-                      <Input
-                        type="text"
+                      <Input className="min-h-[44px] rounded-xl"                         type="text"
                         placeholder={question.help_text}
                         value={typeof response === 'string' ? response : ''}
                         onChange={(e) => handleResponseChange(questionKey, e.target.value)}

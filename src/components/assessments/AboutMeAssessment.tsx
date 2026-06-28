@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { User, ArrowLeft, CheckCircle, Lock, Sparkles, AlertTriangle } from 'lucide-react';
+import { HelpCircle, User, ArrowLeft, CheckCircle, Lock, Sparkles, AlertTriangle } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { Badge } from '@/components/ui/badge';
@@ -768,21 +768,21 @@ export default function AboutMeAssessment() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 pb-24" lang={lang} dir="auto">
       {/* Sticky Header */}
-      <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 py-3 shadow-sm mb-6">
+      <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 py-3 shadow-sm mb-6 pt-safe">
         <div className="container mx-auto flex items-center justify-between">
           <Button
             variant="ghost"
             onClick={() => navigate('/student')}
-            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 -ml-2"
+            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 w-10 h-10 rounded-full"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             <span className="hidden sm:inline">{t('backToDashboard')}</span>
           </Button>
-          <div className="text-center flex-1">
-            <h1 className="text-lg md:text-xl font-bold text-blue-800 line-clamp-1">🧑 {dbTitle || t('aboutMeTitle')}</h1>
+          <div className="text-center flex-1 flex flex-col items-center">
+            <h1 className="text-lg md:text-xl font-bold text-blue-900 line-clamp-1 flex items-center gap-2">🧑 {dbTitle || t('aboutMeTitle')}</h1>
             <div className="text-xs md:text-sm text-blue-600 font-medium">Step 2 of 8</div>
           </div>
-          <div className="w-10 sm:w-24"></div> {/* Spacer */}
+          <Button variant="ghost" className="text-blue-600 hover:bg-blue-50 text-sm font-medium px-2 rounded-full"><HelpCircle className="w-4 h-4 mr-1" />Help</Button>
         </div>
       </div>
 
@@ -1067,8 +1067,8 @@ export default function AboutMeAssessment() {
 
 
         {/* Sticky Footer Navigation */}
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 p-2 sm:p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
-          <div className="container mx-auto flex flex-row justify-between items-center gap-2 sm:gap-4">
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-200 p-3 sm:p-4 pb-safe shadow-[0_-4px_15px_-3px_rgba(0,0,0,0.1)]">
+          <div className="container mx-auto flex flex-row w-full gap-2 px-1 sm:px-0">
             <Button
               variant="outline"
               onClick={() => {
@@ -1076,17 +1076,17 @@ export default function AboutMeAssessment() {
                 if (idx > 0) setCurrentSection(sections[idx - 1]);
               }}
               disabled={sections.indexOf(currentSection) === 0}
-              className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 h-auto sm:h-10 border-blue-200 text-blue-700 hover:bg-blue-50"
+              className="flex-1 text-xs sm:text-sm px-2 py-2 min-h-[44px] h-auto sm:h-10 border-blue-200 text-blue-700 hover:bg-blue-50"
             >
               {t('previousSection')}
             </Button>
 
-            <div className="flex flex-row gap-1 sm:gap-2 w-auto">
+            <div className="flex-[2] flex flex-row gap-2">
               <Button
                 variant="outline"
                 onClick={() => save(false)}
                 disabled={submitting}
-                className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 h-auto sm:h-10 border-blue-200 text-blue-700 hover:bg-blue-50"
+                className="flex-1 text-xs sm:text-sm px-2 py-2 min-h-[44px] h-auto sm:h-10 border-blue-200 text-blue-700 hover:bg-blue-50"
               >
                 <CheckCircle className="w-4 h-4 mr-2" />
                 {t('saveProgress')}
@@ -1108,7 +1108,7 @@ export default function AboutMeAssessment() {
                         }
                         setCurrentSection(nextSection);
                       }}
-                      className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 h-auto sm:h-10 border-blue-200 text-blue-700 hover:bg-blue-50"
+                      className="flex-1 text-xs sm:text-sm px-2 py-2 min-h-[44px] h-auto sm:h-10 border-blue-200 text-blue-700 hover:bg-blue-50"
                     >
                       {t('viewSummary')}
                     </Button>
@@ -1129,7 +1129,7 @@ export default function AboutMeAssessment() {
                       }
                     }}
 
-                    className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 h-auto sm:h-10 border-blue-200 text-blue-700 hover:bg-blue-50"
+                    className="flex-1 text-xs sm:text-sm px-2 py-2 min-h-[44px] h-auto sm:h-10 border-blue-200 text-blue-700 hover:bg-blue-50"
                   >
                     {t('nextSection')}
                   </Button>
@@ -1143,7 +1143,7 @@ export default function AboutMeAssessment() {
                       }
                     }}
                     disabled={submitting || isReadOnly}
-                    className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 h-auto sm:h-10 bg-blue-600 hover:bg-blue-700"
+                    className="flex-1 text-xs sm:text-sm px-2 py-2 min-h-[44px] h-auto sm:h-10 bg-blue-600 hover:bg-blue-700 text-white"
                   >
                     {submitting ? (
                       <div className="flex items-center gap-2">

@@ -1,5 +1,4 @@
-import {
-  logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { validateResponses } from '@/utils/englishValidation';
 import { useAuth } from '@/hooks/useAuth';
@@ -12,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import {
+  HelpCircle,
   CheckCircle,
   Palette,
   Heart,
@@ -32,7 +32,7 @@ import {
   Lock,
   Sparkles,
   AlertTriangle
-} from 'lucide-react';
+ } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLang } from '@/hooks/useLang';
@@ -862,7 +862,7 @@ export default function MyHobbiesAssessment() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-pink-50 pb-24" lang={lang} dir="auto">
       {/* Sticky Header */}
-      <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 py-3 shadow-sm mb-6">
+      <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 py-3 shadow-sm mb-6 pt-safe">
         <div className="container mx-auto flex items-center justify-between">
           <Button
             variant="ghost"
@@ -872,7 +872,7 @@ export default function MyHobbiesAssessment() {
             <ArrowLeft className="w-4 h-4 mr-2" />
             <span className="hidden sm:inline">{t('backToDashboard')}</span>
           </Button>
-          <div className="text-center flex-1">
+          <div className="text-center flex-1 flex flex-col items-center">
             <h1 className="text-lg md:text-xl font-bold text-orange-800 line-clamp-1">
               🎨 {dbTitle || (lang === 'kn' ? 'ನನ್ನ ಪ್ರತಿಭೆಗಳು ಮತ್ತು ಹವ್ಯಾಸಗಳು' : lang === 'ta' ? 'என் திறமைகள் மற்றும் பொழுதுபோக்குகள்' : lang === 'hi' ? 'मेरी प्रतिभाएँ और शौक' : 'My Talents and Hobbies')}
             </h1>
@@ -1238,8 +1238,8 @@ export default function MyHobbiesAssessment() {
                   </div>
 
                   {/* Sticky Footer Navigation */}
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 p-2 sm:p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
-                    <div className="container mx-auto flex flex-row justify-between items-center gap-2 sm:gap-4">
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-200 p-3 sm:p-4 pb-safe shadow-[0_-4px_15px_-3px_rgba(0,0,0,0.1)]">
+                    <div className="container mx-auto flex flex-row w-full gap-2 px-1 sm:px-0">
                       <Button
                       variant="outline"
                       onClick={() => {
@@ -1255,7 +1255,7 @@ export default function MyHobbiesAssessment() {
                       {lang === 'kn' ? 'ಹಿಂದಿನ ಭಾಗ' : lang === 'ta' ? 'முந்தைய பகுதி' : lang === 'hi' ? 'पिछला भाग' : 'Previous Section'}
                     </Button>
 
-                    <div className="flex flex-row gap-1 sm:gap-2 w-auto">
+                    <div className="flex-[2] flex flex-row gap-2">
                       <Button
                         variant="outline"
                         onClick={() => saveSection(currentSection)}

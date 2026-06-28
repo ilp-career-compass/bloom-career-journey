@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { CheckCircle, ArrowLeft, Lock } from 'lucide-react';
+import { HelpCircle, CheckCircle, ArrowLeft, Lock  } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLang } from '@/hooks/useLang';
@@ -843,8 +843,7 @@ export default function HollandCodeAssessment() {
               <label className="block text-sm font-semibold text-blue-800 mb-2">
                 {myTwoMainAreasLabel}
               </label>
-              <Input
-                type="text"
+              <Input className="min-h-[44px] rounded-xl"                 type="text"
                 value={topTwoTypes}
                 onChange={(e) => { isDirtyRef.current = true; setTopTwoTypes(e.target.value.toUpperCase()); }}
                 disabled={isReadOnly}
@@ -864,8 +863,7 @@ export default function HollandCodeAssessment() {
               <label className="block text-sm font-semibold text-gray-800 mb-2">
                 {reflectionLabel}
               </label>
-              <Textarea
-                value={reflection}
+              <Textarea className="min-h-[44px] rounded-xl"                 value={reflection}
                 onChange={(e) => { isDirtyRef.current = true; setReflection(e.target.value); }}
                 disabled={isReadOnly}
                 placeholder={reflectionPlaceholder}
