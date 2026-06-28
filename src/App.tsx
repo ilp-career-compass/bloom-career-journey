@@ -25,6 +25,7 @@ import MyRoleModelsAssessment from './components/assessments/MyRoleModelsAssessm
 import MyHobbiesAssessment from './components/assessments/MyHobbiesAssessment';
 import AboutMeAssessment from './components/assessments/AboutMeAssessment';
 import HollandCodeAssessment from './components/assessments/HollandCodeAssessment';
+import HollandCode2Assessment from './components/assessments/HollandCode2Assessment';
 import CareerGuidanceToolsAssessment from './components/assessments/CareerGuidanceToolsAssessment';
 import AudioTestPage from './pages/AudioTestPage';
 import HollandCodeTest from './components/HollandCodeTest';
@@ -173,6 +174,14 @@ function App() {
                 } 
               />
               <Route 
+                path="/assessment/holland-code-2" 
+                element={
+                  <ProtectedRoute allowedRoles={['student']}>
+                    <HollandCode2Assessment />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
                 path="/assessment/career-guidance-tools" 
                 element={
                   <ProtectedRoute allowedRoles={['student']}>
@@ -235,6 +244,14 @@ function App() {
                 element={
                   <ProtectedRoute allowedRoles={['student']}>
                     <HollandCodeAssessment />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/student/assessment/holland-code-2" 
+                element={
+                  <ProtectedRoute allowedRoles={['student']}>
+                    <HollandCode2Assessment />
                   </ProtectedRoute>
                 } 
               />

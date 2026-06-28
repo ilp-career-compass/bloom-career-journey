@@ -121,6 +121,7 @@ export default function StudentDashboard() {
   const [roleModelsCompleted, setRoleModelsCompleted] = useState(false);
   const [hollandCodeCompleted, setHollandCodeCompleted] = useState(false);
   const [careerGuidanceToolsCompleted, setCareerGuidanceToolsCompleted] = useState(false);
+  const [hollandCode2Completed, setHollandCode2Completed] = useState(false);
 
   const [profileCardApprovals, setProfileCardApprovals] = useState<Record<string, { approval_status: string; rejection_reason: string | null }>>({});
 
@@ -235,6 +236,20 @@ export default function StudentDashboard() {
     } catch { }
   };
 
+  const checkHollandCode2Progress = () => {
+    try {
+      const progress = localStorage.getItem('holland_code_2_progress');
+      if (progress) {
+        const parsed = JSON.parse(progress);
+        setHollandCode2Completed(!!parsed.completed_at);
+      } else {
+        setHollandCode2Completed(false);
+      }
+    } catch (e) {
+      logger.error('Error loading Holland Code 2 progress from localStorage:', e);
+    }
+  };
+
   const checkCareerGuidanceToolsProgress = async () => {
     const studentId = await getStudentId();
     if (!studentId) return;
@@ -286,6 +301,7 @@ export default function StudentDashboard() {
     if (!userProfile?.id) return;
     setProgressLoaded(false);
     fetchData();
+    checkHollandCode2Progress();
     Promise.all([
       checkAssessmentProgress(),
       checkAboutMeProgress(),
@@ -357,6 +373,7 @@ export default function StudentDashboard() {
       case 'role_models': return Heart;
       case 'holland_code': return Activity;
       case 'career_guidance_tools': return Globe;
+      case 'holland_code_2': return Sparkles;
       default: return Activity;
     }
   };
@@ -371,6 +388,7 @@ export default function StudentDashboard() {
       case 'role_models': return !!roleModelsProgress?.completed_at;
       case 'holland_code': return !!hollandCodeProgress?.completed_at;
       case 'career_guidance_tools': return !!careerGuidanceToolsProgress?.completed_at;
+      case 'holland_code_2': return hollandCode2Completed;
       default: return false;
     }
   };
@@ -450,6 +468,13 @@ export default function StudentDashboard() {
       return;
     }
 
+    if (assessmentType === 'holland_code_2') {
+      const qp = `?lang=${resolvedLang}`;
+      const completed = hollandCode2Completed;
+      navigate(completed ? `/student/assessment/holland-code-2${qp}&readonly=1` : `/student/assessment/holland-code-2${qp}`);
+      return;
+    }
+
     // First-time open: redirect to career roadmap to fill milestone first.
     // Guard on progressLoaded — hasProgress() is meaningless while queries are still running.
     const milestone = ROADMAP_TRIGGERS[assessmentType];
@@ -475,8 +500,18 @@ export default function StudentDashboard() {
   };
 
   const getOverallProgress = () => {
-    const completedAssessments = [inspirationCompleted, aboutMeCompleted, dreamsCompleted, stateLearningCompleted, hobbiesCompleted, roleModelsCompleted, hollandCodeCompleted, careerGuidanceToolsCompleted].filter(Boolean).length;
-    return (completedAssessments / 8) * 100;
+    const completedAssessments = [
+      inspirationCompleted,
+      aboutMeCompleted,
+      dreamsCompleted,
+      stateLearningCompleted,
+      hobbiesCompleted,
+      roleModelsCompleted,
+      hollandCodeCompleted,
+      careerGuidanceToolsCompleted,
+      hollandCode2Completed
+    ].filter(Boolean).length;
+    return (completedAssessments / 9) * 100;
   };
 
   // ═══════════════════════════════════════════════════════════════════
@@ -492,6 +527,23 @@ export default function StudentDashboard() {
     { key: 'role_models', number: 6, titleKey: 'assessment_role_models', descriptionEn: 'Identify your inspiring role models', descriptionKn: 'ನಿಮ್ಮನ್ನು ಪ್ರೇರೇಪಿಸುವ ಮಾದರಿಗಳನ್ನು ಗುರುತಿಸಿ', descriptionTa: 'உங்களை ஊக்கப்படுத்தும் முன்னுதாரணங்களை கண்டறியுங்கள்', descriptionHi: 'अपने प्रेरणादायक आदर्शों को पहचानें', assessmentStatus: getAssessmentStatus('role_models'), isCompleted: getCompletionStatus('role_models'), isUnlocked: isAssessmentUnlocked('role_models'), hasProgress: hasProgress('role_models'), hasSummary: true, summaryState: 'none' as SummaryState, isRejected: checkIsRejected('role_models'), rejectionReason: getRejectionReason('role_models') },
     { key: 'holland_code', number: 7, titleKey: 'assessment_holland_code', descriptionEn: 'Identify your personality type', descriptionKn: 'ನಿಮ್ಮ ವ್ಯಕ್ತಿತ್ವದ ಪ್ರಕಾರವನ್ನು ಗುರುತಿಸಿ', descriptionTa: 'உங்கள் நற்பண்பு வகையை அறியுங்கள்', descriptionHi: 'अपने व्यक्तित्व का प्रकार पहचानें', assessmentStatus: getAssessmentStatus('holland_code'), isCompleted: getCompletionStatus('holland_code'), isUnlocked: isAssessmentUnlocked('holland_code'), hasProgress: hasProgress('holland_code'), hasSummary: false, summaryState: 'none' as SummaryState, isRejected: checkIsRejected('holland_code'), rejectionReason: getRejectionReason('holland_code') },
     { key: 'career_guidance_tools', number: 8, titleKey: 'assessment_career_guidance', descriptionEn: 'Explore career guidance tools and resources', descriptionKn: 'ವೃತ್ತಿ ಮಾರ್ಗದರ್ಶನ ಸಾಧನಗಳನ್ನು ಅನ್ವೇಷಿಸಿ', descriptionTa: 'தொழில் வழிகாட்டல் கருவிகள் மற்றும் ஆதாரங்களை ஆராயுங்கள்', descriptionHi: 'करियर मार्गदर्शन उपकरणों और संसाधनों की खोज करें', assessmentStatus: getAssessmentStatus('career_guidance_tools'), isCompleted: getCompletionStatus('career_guidance_tools'), isUnlocked: isAssessmentUnlocked('career_guidance_tools'), hasProgress: hasProgress('career_guidance_tools'), hasSummary: false, summaryState: 'none' as SummaryState, isRejected: checkIsRejected('career_guidance_tools'), rejectionReason: getRejectionReason('career_guidance_tools') },
+    { 
+      key: 'holland_code_2', 
+      number: 9, 
+      titleKey: 'assessment_holland_code_2', 
+      descriptionEn: 'Identify your personality type with Holland Code 2', 
+      descriptionKn: 'ಹಾಲೆಂಡ್ ಕೋಡ್ 2 ಮೂಲಕ ನಿಮ್ಮ ವ್ಯಕ್ತಿತ್ವದ ಪ್ರಕಾರವನ್ನು ಗುರುತಿಸಿ', 
+      descriptionTa: 'ஹாலண்ட் குறியீடு 2 மூலம் உங்கள் ஆளுமை வகையை கண்டறியுங்கள்', 
+      descriptionHi: 'हॉलैंड कोड 2 के साथ अपने व्यक्तित्व के प्रकार की पहचान करें', 
+      assessmentStatus: getAssessmentStatus('holland_code_2'), 
+      isCompleted: hollandCode2Completed, 
+      isUnlocked: true, 
+      hasProgress: false, 
+      hasSummary: false, 
+      summaryState: 'none' as SummaryState, 
+      isRejected: false, 
+      rejectionReason: null 
+    },
   ];
 
   // ═══════════════════════════════════════════════════════════════════
@@ -530,7 +582,7 @@ export default function StudentDashboard() {
               : <Progress value={getOverallProgress()} className="h-3" />
             }
             <div className="flex justify-between text-sm text-gray-600 mt-2">
-              <span>8 {t('assessments_total')}</span>
+              <span>9 {t('assessments_total')}</span>
               {!progressLoaded
                 ? <Skeleton className="h-4 w-16 rounded" />
                 : <span>{Math.round(getOverallProgress())}% {t('complete_suffix')}</span>
@@ -542,7 +594,7 @@ export default function StudentDashboard() {
         {/* Assessment Cards */}
         {!progressLoaded ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {Array.from({ length: 8 }).map((_, i) => (
+            {Array.from({ length: 9 }).map((_, i) => (
               <div key={i} className="rounded-lg border bg-white p-6 space-y-3">
                 <Skeleton className="h-12 w-12 rounded-full mx-auto" />
                 <Skeleton className="h-4 w-3/4 mx-auto" />
