@@ -30,7 +30,7 @@ export default function StudentDashboardHeader({
     const navigate = useNavigate();
 
     return (
-        <div className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
             <div className="container mx-auto px-4">
                 <div className="flex items-center justify-between h-16">
                     {/* Logo/Brand */}
