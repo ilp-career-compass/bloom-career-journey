@@ -9,7 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { HelpCircle, CheckCircle, ArrowLeft, Globe, Search  } from 'lucide-react';
+import { HelpCircle, CheckCircle, ArrowLeft, Globe, Search, ArrowRight
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLang } from '@/hooks/useLang';
@@ -403,7 +404,9 @@ export default function CareerGuidanceToolsAssessment() {
 
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-indigo-100">
-        <div className="text-center">
+        
+
+      <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-purple-600 mx-auto"></div>
           <p className="mt-4 text-lg text-gray-600">{loadingText}</p>
         </div>
@@ -414,6 +417,7 @@ export default function CareerGuidanceToolsAssessment() {
   if (isCompleted && !readOnlyView && !rejectionReason) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 py-8">
+  
         <div className="container mx-auto px-4">
           <Card className="max-w-2xl mx-auto border-0 shadow-lg">
             <CardHeader className="text-center bg-gradient-to-r from-purple-50 to-indigo-50">
@@ -454,14 +458,57 @@ export default function CareerGuidanceToolsAssessment() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50 py-8" lang={lang} dir="auto">
+
+      {/* Mobile Sticky Header */}
+      <div className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm md:hidden">
+        <div className="flex items-center justify-between px-2 py-2 sm:px-4 sm:py-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/student')}
+            className="flex items-center gap-1 px-1 sm:px-2 text-gray-600 hover:bg-gray-100"
+          >
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+          </Button>
+          <h1 className="text-sm sm:text-base font-bold text-gray-800 flex-1 text-center break-words px-1 leading-tight">
+            {lang === 'kn' ? (
+              'ವೃತ್ತಿ ಮಾರ್ಗದರ್ಶನ ಪರಿಕರಗಳು'
+            ) : lang === 'ta' ? (
+              'தொழில் வழிகாட்டுதல் கருவிகள்'
+            ) : lang === 'hi' ? (
+              'कैरियर मार्गदर्शन उपकरण'
+            ) : (
+              'Career Guidance Tools'
+            )}
+          </h1>
+          <div className="w-8 sm:w-10"></div> {/* Spacer for centering */}
+        </div>
+      </div>
+
+      {/* Sticky Header */}
+      <div className="hidden md:block sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 py-3 shadow-sm mb-6 pt-safe">
+        <div className="container mx-auto flex items-center justify-between">
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/student')}
+            className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 w-10 h-10 rounded-full"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            <span className="hidden sm:inline">{t('backToDashboard')}</span>
+          </Button>
+          <div className="text-center flex-1 flex flex-col items-center">
+            <h1 className="text-base md:text-lg lg:text-xl font-bold text-indigo-800 leading-tight break-words px-1">
+              🧭 {t('assessment_career_guidance') || 'Career Guidance Tools'}
+            </h1>
+            <div className="text-xs md:text-sm text-indigo-600 font-medium">Step 8 of 8</div>
+          </div>
+          <div className="w-10 sm:w-24"></div>
+        </div>
+      </div>
+
       <div className="container mx-auto px-4">
 
-        <div className="mb-6">
-          <Button variant="ghost" onClick={() => navigate('/student')} className="text-purple-700 hover:text-purple-800 hover:bg-purple-50">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            {t('backToDashboard')}
-          </Button>
-        </div>
+        
 
         {rejectionReason && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 flex items-start gap-3 max-w-4xl mx-auto">
@@ -474,7 +521,7 @@ export default function CareerGuidanceToolsAssessment() {
 
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-purple-800 mb-4">🌐 {dbTitle || '8. Exploring Career Guidance Tools'}</h1>
+          <h1 className="hidden md:block text-3xl font-bold text-purple-800 mb-4">🌐 {dbTitle || '8. Exploring Career Guidance Tools'}</h1>
           <div className="text-left max-w-4xl mx-auto space-y-4 text-gray-700">
             <p className="text-base leading-relaxed whitespace-pre-wrap">
               {dbIntro || `(Career Guidance Chart, Career Planner, Website, Mobile App & WhatsApp Chatbot)

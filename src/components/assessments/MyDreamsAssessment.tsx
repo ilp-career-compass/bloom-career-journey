@@ -28,6 +28,7 @@ import {
   Sparkles,
   ArrowLeft,
   HelpCircle,
+  ArrowRight
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -307,7 +308,10 @@ export default function MyDreamsAssessment() {
   const sections = useMemo(() => {
     const sectionsList = Object.keys(questionsBySection).sort((a, b) => {
       const order: { [key: string]: number } = { 'section1': 1, 'section2': 2, 'section3': 3, 'part1': 1, 'part2': 2 };
-      return (order[a] || 99) - (order[b] || 99);
+      
+  
+
+  return (order[a] || 99) - (order[b] || 99);
     });
     // Add Summary section at the end
     sectionsList.push('Summary');
@@ -867,6 +871,44 @@ export default function MyDreamsAssessment() {
     }
   };
 
+  const isSectionComplete = (sectionTitle: string) => {
+    if (sectionTitle === 'Summary') return isSummaryComplete();
+    const fields = fieldsBySection[sectionTitle] || [];
+    if (fields.length === 0) return false;
+    return fields.every(field => {
+      const value = responses[field.field_key];
+      if (field.field_type === 'triple' || field.field_type === 'double') {
+        if (!Array.isArray(value)) return false;
+        return value.every(v => strFor(v) !== '');
+      }
+      return strFor(value) !== '';
+    });
+  };
+
+  const hasSectionStarted = (sectionTitle: string) => {
+    if (sectionTitle === 'Summary') {
+      const summary = (responses['summary'] as any) || {};
+      const sCount = summaryQuestions.length > 0 ? summaryQuestions.length : 3;
+      for(let i=1; i<=sCount; i++) {
+        if ((summary[`question${i}`] || '').trim() !== '') return true;
+      }
+      return false;
+    }
+    const fields = fieldsBySection[sectionTitle] || [];
+    return fields.some(field => {
+      const value = responses[field.field_key];
+      if (Array.isArray(value)) return value.some(v => strFor(v) !== '');
+      return strFor(value) !== '';
+    });
+  };
+
+  const getSectionStatus = (sectionTitle: string) => {
+    if (sectionTitle === currentSection) return 'current';
+    if (isSectionComplete(sectionTitle)) return 'completed';
+    if (attemptedSubmit || hasSectionStarted(sectionTitle)) return 'error';
+    return 'pending';
+  };
+
   if (loading) {
     const loadingText =
       lang === 'kn'
@@ -876,6 +918,9 @@ export default function MyDreamsAssessment() {
           : lang === 'hi'
             ? 'आपका सपनों का मूल्यांकन लोड हो रहा है...'
             : 'Loading your dreams assessment...';
+
+  
+
 
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -890,6 +935,7 @@ export default function MyDreamsAssessment() {
   if (isCompleted && !readOnlyView && !rejectionReason) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-8">
+  
         <div className="container mx-auto px-4">
           <Card className="max-w-2xl mx-auto border-0 shadow-lg">
             <CardHeader className="text-center bg-gradient-to-r from-blue-50 to-indigo-50">
@@ -956,8 +1002,36 @@ export default function MyDreamsAssessment() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 pb-24" lang={lang} dir="auto">
+      
+
+      {/* Mobile Sticky Header */}
+      <div className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm md:hidden">
+        <div className="flex items-center justify-between px-2 py-2 sm:px-4 sm:py-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/student')}
+            className="flex items-center gap-1 px-1 sm:px-2 text-gray-600 hover:bg-gray-100"
+          >
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+          </Button>
+          <h1 className="text-sm sm:text-base font-bold text-gray-800 flex-1 text-center break-words px-1 leading-tight">
+            {lang === 'kn' ? (
+              'ನನ್ನ ಕನಸುಗಳು'
+            ) : lang === 'ta' ? (
+              'எனது கனவுகள்'
+            ) : lang === 'hi' ? (
+              'मेरे सपने'
+            ) : (
+              'My Dreams'
+            )}
+          </h1>
+          <div className="w-8 sm:w-10"></div> {/* Spacer for centering */}
+        </div>
+      </div>
+
       {/* Sticky Header */}
-      <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 py-3 shadow-sm mb-6 pt-safe">
+      <div className="hidden md:block sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 py-3 shadow-sm mb-6 pt-safe">
         <div className="container mx-auto flex items-center justify-between">
           <Button
             variant="ghost"
@@ -968,7 +1042,7 @@ export default function MyDreamsAssessment() {
             <span className="hidden sm:inline">{t('backToDashboard')}</span>
           </Button>
           <div className="text-center flex-1 flex flex-col items-center">
-            <h1 className="text-lg md:text-xl font-bold text-blue-900 line-clamp-1 flex items-center gap-2">
+            <h1 className="text-base md:text-lg lg:text-xl font-bold text-blue-900  leading-tight flex items-center gap-2">
               🌟 {dbTitle || (lang === 'kn' ? 'ನನ್ನ ಕನಸುಗಳು' : lang === 'ta' ? 'என் கனவுகள்' : lang === 'hi' ? 'मेरे सपने' : 'My Dreams')}
             </h1>
             <div className="text-xs md:text-sm text-blue-600 font-medium">Step 3 of 8</div>
@@ -1076,82 +1150,45 @@ export default function MyDreamsAssessment() {
           </CardContent>
         </Card>
 
-        {/* Section Navigation */}
-        <div className="flex justify-center mb-6">
-          <div className="flex flex-col md:flex-row bg-white rounded-lg p-1 shadow-md w-full md:w-auto">
-            {sections.map((sectionKey, index) => {
-              const sectionQuestions = questionsBySection[sectionKey] || [];
-              const sectionNumber = index + 1;
-              let sectionTitle = '';
-              if (sectionKey === 'section1') {
-                sectionTitle =
-                  lang === 'kn'
-                    ? 'ಭಾಗ 1: ನಿಮ್ಮ ಕನಸುಗಳು ಮತ್ತು ಭವಿಷ್ಯದ ಗುರಿಗಳು'
-                    : lang === 'ta'
-                      ? 'பகுதி 1: உங்கள் கனவுகள் மற்றும் எதிர்கால இலக்குகள்'
-                      : lang === 'hi'
-                        ? 'भाग 1: आपके सपने और भविष्य के लक्ष्य'
-                        : 'Section 1: Your Dreams & Future Goals';
-              } else if (sectionKey === 'section2') {
-                sectionTitle =
-                  lang === 'kn'
-                    ? 'ಭಾಗ 2: ವೃತ್ತಿ ಮತ್ತು ಜೀವನದ ಆಶೆಗಳು'
-                    : lang === 'ta'
-                      ? 'பகுதி 2: தொழில் மற்றும் வாழ்க்கை ஆசைகள்'
-                      : lang === 'hi'
-                        ? 'भाग 2: करियर और जीवन की आकांक्षाएं'
-                        : 'Section 2: Career & Life Aspirations';
-              } else if (sectionKey === 'section3') {
-                sectionTitle =
-                  lang === 'kn'
-                    ? 'ಭಾಗ 3: ಕನಸುಗಳನ್ನು ನಿಜವಾಗಿಸುವುದು'
-                    : lang === 'ta'
-                      ? 'பகுதி 3: கனவுகளை நனவாக்குதல்'
-                      : lang === 'hi'
-                        ? 'भाग 3: सपनों को साकार करना'
-                        : 'Section 3: Making Dreams Reality';
-              } else if (sectionKey === 'Summary') {
-                sectionTitle =
-                  lang === 'kn'
-                    ? 'ಸಾರಾಂಶ'
-                    : lang === 'ta'
-                      ? 'சுருக்கம்'
-                      : lang === 'hi'
-                        ? 'सारांश'
-                        : 'Summary';
-              } else {
-                sectionTitle =
-                  lang === 'kn'
-                    ? `ಭಾಗ ${sectionNumber}`
-                    : lang === 'ta'
-                      ? `பகுதி ${sectionNumber}`
-                      : lang === 'hi'
-                        ? `भाग ${sectionNumber}`
-                        : `Section ${sectionNumber}`;
-              }
-
-              const isSummary = sectionKey === 'Summary';
-              const isLocked = isSummary && !readOnlyView && !areCoreSectionsComplete();
-
+        {/* Compact Breadcrumb Navigation */}
+        <div className="w-full flex flex-col items-center justify-center mb-8 space-y-4">
+          <h2 className="text-lg font-bold text-gray-800">
+            {(() => {
+               if (currentSection === 'section1') {
+                 return lang === 'kn' ? 'ಭಾಗ 1: ನಿಮ್ಮ ಕನಸುಗಳು ಮತ್ತು ಭವಿಷ್ಯದ ಗುರಿಗಳು' : lang === 'ta' ? 'பகுதி 1: உங்கள் கனவுகள் மற்றும் எதிர்கால இலக்குகள்' : lang === 'hi' ? 'भाग 1: आपके सपने और भविष्य के लक्ष्य' : 'Section 1: Your Dreams & Future Goals';
+               } else if (currentSection === 'section2') {
+                 return lang === 'kn' ? 'ಭಾಗ 2: ವೃತ್ತಿ ಮತ್ತು ಜೀವನದ ಆಶೆಗಳು' : lang === 'ta' ? 'பகுதி 2: தொழில் மற்றும் வாழ்க்கை ஆசைகள்' : lang === 'hi' ? 'भाग 2: करियर और जीवन की आकांक्षाएं' : 'Section 2: Career & Life Aspirations';
+               } else if (currentSection === 'section3') {
+                 return lang === 'kn' ? 'ಭಾಗ 3: ಕನಸುಗಳನ್ನು ನಿಜವಾಗಿಸುವುದು' : lang === 'ta' ? 'பகுதி 3: கனவுகளை நனவாக்குதல்' : lang === 'hi' ? 'भाग 3: सपनों को साकार करना' : 'Section 3: Making Dreams Reality';
+               } else if (currentSection === 'Summary') {
+                 return lang === 'kn' ? 'ಸಾರಾಂಶ' : lang === 'ta' ? 'சுருக்கம்' : lang === 'hi' ? 'सारांश' : 'Summary';
+               }
+               return currentSection;
+            })()}
+          </h2>
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            {sections.map((sectionKey) => {
+              const status = getSectionStatus(sectionKey);
+              const isLocked = sectionKey === 'Summary' && !readOnlyView && !areCoreSectionsComplete();
+              
               return (
                 <button
                   key={sectionKey}
                   onClick={() => !isLocked && setCurrentSection(sectionKey)}
                   disabled={isLocked && !isReadOnly}
-                  className={`px-6 py-2 rounded-md transition-all flex items-center gap-2 ${currentSection === sectionKey
-                    ? 'bg-blue-600 text-white shadow-md'
-                    : isLocked ? 'text-gray-400 cursor-not-allowed' : 'text-gray-600 hover:text-blue-600'
-                    }`}
+                  className={`relative flex items-center justify-center transition-transform hover:scale-110 ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  title={sectionKey}
                 >
-                  {isSummary && <Sparkles className={`w-3 h-3 ${isLocked ? 'text-gray-400' : 'text-yellow-500'}`} />}
-                  {sectionTitle}
-                  {isSummary && isLocked && <Lock className="w-3 h-3 opacity-70" />}
+                  {status === 'current' && <div className="w-4 h-4 rounded-full bg-blue-600 shadow-md ring-4 ring-blue-100" />}
+                  {status === 'completed' && <CheckCircle className="w-5 h-5 text-green-500 drop-shadow-sm" />}
+                  {status === 'error' && <AlertTriangle className="w-5 h-5 text-red-500 drop-shadow-sm" />}
+                  {status === 'pending' && <div className="w-3 h-3 rounded-full border-2 border-gray-300" />}
                 </button>
               );
             })}
           </div>
         </div>
-
+        
         {/* Dynamically render sections from database */}
         {sections.map((sectionKey) => {
           if (sectionKey === 'Summary') {

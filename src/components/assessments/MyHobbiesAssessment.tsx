@@ -31,8 +31,9 @@ import {
   Users,
   Lock,
   Sparkles,
-  AlertTriangle
- } from 'lucide-react';
+  AlertTriangle, ArrowLeft,
+  ArrowRight
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLang } from '@/hooks/useLang';
@@ -112,7 +113,10 @@ export default function MyHobbiesAssessment() {
   const redirectTimeoutRef = useRef(null);
 
   useEffect(() => {
-    return () => {
+    
+  
+
+  return () => {
       if (redirectTimeoutRef.current) {
         clearTimeout(redirectTimeoutRef.current);
       }
@@ -772,6 +776,44 @@ export default function MyHobbiesAssessment() {
     }
   };
 
+  const isSectionComplete = (sectionTitle: string) => {
+    if (sectionTitle === 'Summary') return isSummaryComplete();
+    const fields = fieldsBySection[sectionTitle] || [];
+    if (fields.length === 0) return false;
+    return fields.every(field => {
+      const value = responses[field.field_key];
+      if (field.field_type === 'triple' || field.field_type === 'double') {
+        if (!Array.isArray(value)) return false;
+        return value.every(v => strFor(v) !== '');
+      }
+      return strFor(value) !== '';
+    });
+  };
+
+  const hasSectionStarted = (sectionTitle: string) => {
+    if (sectionTitle === 'Summary') {
+      const summary = (responses['summary'] as any) || {};
+      const sCount = summaryQuestions.length > 0 ? summaryQuestions.length : 3;
+      for(let i=1; i<=sCount; i++) {
+        if ((summary[`question${i}`] || '').trim() !== '') return true;
+      }
+      return false;
+    }
+    const fields = fieldsBySection[sectionTitle] || [];
+    return fields.some(field => {
+      const value = responses[field.field_key];
+      if (Array.isArray(value)) return value.some(v => strFor(v) !== '');
+      return strFor(value) !== '';
+    });
+  };
+
+  const getSectionStatus = (sectionTitle: string) => {
+    if (sectionTitle === currentSection) return 'current';
+    if (isSectionComplete(sectionTitle)) return 'completed';
+    if (attemptedSubmit || hasSectionStarted(sectionTitle)) return 'error';
+    return 'pending';
+  };
+
   if (loading) {
     const loadingText =
       lang === 'kn'
@@ -781,6 +823,9 @@ export default function MyHobbiesAssessment() {
           : lang === 'hi'
             ? 'आपकी प्रतिभा और शौक का मूल्यांकन लोड हो रहा है...'
             : 'Loading your hobbies assessment...';
+
+  
+
 
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-pink-100">
@@ -795,6 +840,7 @@ export default function MyHobbiesAssessment() {
   if (isCompleted && !readOnlyView && !rejectionReason) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-pink-50 py-8">
+  
         <div className="container mx-auto px-4">
           <Card className="max-w-2xl mx-auto border-0 shadow-lg">
             <CardHeader className="text-center bg-gradient-to-r from-orange-50 to-pink-50">
@@ -861,8 +907,36 @@ export default function MyHobbiesAssessment() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-pink-50 pb-24" lang={lang} dir="auto">
+      
+
+      {/* Mobile Sticky Header */}
+      <div className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm md:hidden">
+        <div className="flex items-center justify-between px-2 py-2 sm:px-4 sm:py-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/student')}
+            className="flex items-center gap-1 px-1 sm:px-2 text-gray-600 hover:bg-gray-100"
+          >
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+          </Button>
+          <h1 className="text-sm sm:text-base font-bold text-gray-800 flex-1 text-center break-words px-1 leading-tight">
+            {lang === 'kn' ? (
+              'ನನ್ನ ಪ್ರತಿಭೆಗಳು ಮತ್ತು ಹವ್ಯಾಸಗಳು'
+            ) : lang === 'ta' ? (
+              'எனது திறமைகள் மற்றும் பொழுதுபோக்குகள்'
+            ) : lang === 'hi' ? (
+              'मेरी प्रतिभाएं और शौक'
+            ) : (
+              'My Talents & Hobbies'
+            )}
+          </h1>
+          <div className="w-8 sm:w-10"></div> {/* Spacer for centering */}
+        </div>
+      </div>
+
       {/* Sticky Header */}
-      <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 py-3 shadow-sm mb-6 pt-safe">
+      <div className="hidden md:block sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 py-3 shadow-sm mb-6 pt-safe">
         <div className="container mx-auto flex items-center justify-between">
           <Button
             variant="ghost"
@@ -873,7 +947,7 @@ export default function MyHobbiesAssessment() {
             <span className="hidden sm:inline">{t('backToDashboard')}</span>
           </Button>
           <div className="text-center flex-1 flex flex-col items-center">
-            <h1 className="text-lg md:text-xl font-bold text-orange-800 line-clamp-1">
+            <h1 className="text-base md:text-lg lg:text-xl font-bold text-orange-800  leading-tight">
               🎨 {dbTitle || (lang === 'kn' ? 'ನನ್ನ ಪ್ರತಿಭೆಗಳು ಮತ್ತು ಹವ್ಯಾಸಗಳು' : lang === 'ta' ? 'என் திறமைகள் மற்றும் பொழுதுபோக்குகள்' : lang === 'hi' ? 'मेरी प्रतिभाएँ और शौक' : 'My Talents and Hobbies')}
             </h1>
             <div className="text-xs md:text-sm text-orange-600 font-medium">Step 5 of 8</div>

@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { HelpCircle, User, ArrowLeft, CheckCircle, Lock, Sparkles, AlertTriangle } from 'lucide-react';
+import { HelpCircle, User, ArrowLeft, CheckCircle, Lock, Sparkles, AlertTriangle, ArrowRight
+} from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { Badge } from '@/components/ui/badge';
@@ -143,7 +144,10 @@ export default function AboutMeAssessment() {
     const sectionsList = Object.keys(fieldsBySection).sort((a, b) => {
       const firstFieldA = fieldsBySection[a]?.[0];
       const firstFieldB = fieldsBySection[b]?.[0];
-      return (firstFieldA?.sequence_number || 0) - (firstFieldB?.sequence_number || 0);
+      
+  
+
+  return (firstFieldA?.sequence_number || 0) - (firstFieldB?.sequence_number || 0);
     });
     // Append Summary section only when real sections exist (fields loaded)
     if (sectionsList.length > 0) {
@@ -693,8 +697,12 @@ export default function AboutMeAssessment() {
   };
 
   if (isCompleted && !readOnlyView && !rejectionReason) {
+
+  
+
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-8">
+  
         <div className="container mx-auto px-4">
           <Card className="max-w-2xl mx-auto border-0 shadow-lg">
             <CardHeader className="text-center bg-gradient-to-r from-blue-50 to-indigo-50">
@@ -745,6 +753,44 @@ export default function AboutMeAssessment() {
     );
   }
 
+  const isSectionComplete = (sectionTitle: string) => {
+    if (sectionTitle === 'Summary') return isSummaryComplete();
+    const fields = fieldsBySection[sectionTitle] || [];
+    if (fields.length === 0) return false;
+    return fields.every(field => {
+      const value = responses[field.field_key];
+      if (field.field_type === 'triple' || field.field_type === 'double') {
+        if (!Array.isArray(value)) return false;
+        return value.every(v => strFor(v) !== '');
+      }
+      return strFor(value) !== '';
+    });
+  };
+
+  const hasSectionStarted = (sectionTitle: string) => {
+    if (sectionTitle === 'Summary') {
+      const summary = (responses['summary'] as any) || {};
+      const sCount = summaryQuestions.length > 0 ? summaryQuestions.length : 3;
+      for(let i=1; i<=sCount; i++) {
+        if ((summary[`question${i}`] || '').trim() !== '') return true;
+      }
+      return false;
+    }
+    const fields = fieldsBySection[sectionTitle] || [];
+    return fields.some(field => {
+      const value = responses[field.field_key];
+      if (Array.isArray(value)) return value.some(v => strFor(v) !== '');
+      return strFor(value) !== '';
+    });
+  };
+
+  const getSectionStatus = (sectionTitle: string) => {
+    if (sectionTitle === currentSection) return 'current';
+    if (isSectionComplete(sectionTitle)) return 'completed';
+    if (attemptedSubmit || hasSectionStarted(sectionTitle)) return 'error';
+    return 'pending';
+  };
+
   if (loading) {
     const loadingText =
       lang === 'kn'
@@ -767,8 +813,36 @@ export default function AboutMeAssessment() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 pb-24" lang={lang} dir="auto">
+      
+
+      {/* Mobile Sticky Header */}
+      <div className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm md:hidden">
+        <div className="flex items-center justify-between px-2 py-2 sm:px-4 sm:py-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/student')}
+            className="flex items-center gap-1 px-1 sm:px-2 text-gray-600 hover:bg-gray-100"
+          >
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+          </Button>
+          <h1 className="text-sm sm:text-base font-bold text-gray-800 flex-1 text-center break-words px-1 leading-tight">
+            {lang === 'kn' ? (
+              'ನನ್ನ ಬಗ್ಗೆ'
+            ) : lang === 'ta' ? (
+              'என்னை பற்றி'
+            ) : lang === 'hi' ? (
+              'मेरे बारे में'
+            ) : (
+              'About Me'
+            )}
+          </h1>
+          <div className="w-8 sm:w-10"></div> {/* Spacer for centering */}
+        </div>
+      </div>
+
       {/* Sticky Header */}
-      <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 py-3 shadow-sm mb-6 pt-safe">
+      <div className="hidden md:block sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 py-3 shadow-sm mb-6 pt-safe">
         <div className="container mx-auto flex items-center justify-between">
           <Button
             variant="ghost"
@@ -779,7 +853,7 @@ export default function AboutMeAssessment() {
             <span className="hidden sm:inline">{t('backToDashboard')}</span>
           </Button>
           <div className="text-center flex-1 flex flex-col items-center">
-            <h1 className="text-lg md:text-xl font-bold text-blue-900 line-clamp-1 flex items-center gap-2">🧑 {dbTitle || t('aboutMeTitle')}</h1>
+            <h1 className="text-base md:text-lg lg:text-xl font-bold text-blue-900  leading-tight flex items-center gap-2">🧑 {dbTitle || t('aboutMeTitle')}</h1>
             <div className="text-xs md:text-sm text-blue-600 font-medium">Step 2 of 8</div>
           </div>
           <Button variant="ghost" className="text-blue-600 hover:bg-blue-50 text-sm font-medium px-2 rounded-full"><HelpCircle className="w-4 h-4 mr-1" />Help</Button>
@@ -828,41 +902,35 @@ export default function AboutMeAssessment() {
             {/* Section Tabs */}
             {sections.length > 0 && (
               <div className="w-full">
-                <div className="flex overflow-x-auto pb-2 gap-2 mb-6 hide-scrollbar">
-                  {sections.map((sectionTitle) => {
-                    const isSummary = sectionTitle === 'Summary';
-                    const sectionLetter = sectionTitle.match(/^([A-D])\./)?.[1] || (isSummary ? '' : sectionTitle.charAt(0));
-                    const isCurrent = currentSection === sectionTitle;
-
-                    // Check if core sections are complete for Summary tab
-                    const isLocked = isSummary && !isReadOnly && !loading && !areCoreSectionsComplete();
-
-                    return (
-                      <Button
-                        key={sectionTitle}
-                        variant={isCurrent ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => !isLocked && setCurrentSection(sectionTitle)}
-                        className={`${isCurrent ? "bg-blue-600" : "text-blue-600 border-blue-200 hover:bg-blue-50"}
-                          ${isLocked ? "opacity-60 cursor-not-allowed" : ""} border-blue-400`}
-                        disabled={isLocked && !isReadOnly}
-                      >
-                        {isSummary ? (
-                          <div className="flex items-center gap-1">
-                            <Sparkles className="w-3 h-3 text-yellow-500" />
-                            {t('summary')}
-                            {isSummaryComplete() && <CheckCircle className="w-3 h-3 text-green-500 ml-1" />}
-                            {isLocked && <Lock className="w-3 h-3 ml-1 opacity-70" />}
-                          </div>
-                        ) : (
-                          sectionLetter
-                        )}
-                      </Button>
-                    );
-                  })}
-                </div>
-
-                {/* Tab Contents */}
+                {/* Compact Breadcrumb Navigation */}
+                  <div className="flex flex-col items-center justify-center mb-8 space-y-4">
+                    <h2 className="text-lg font-bold text-gray-800">
+                      {currentSection === 'Summary' ? t('summary') : currentSection}
+                    </h2>
+                    <div className="flex flex-wrap items-center justify-center gap-4">
+                      {sections.map((sectionTitle) => {
+                        const status = getSectionStatus(sectionTitle);
+                        const isLocked = sectionTitle === 'Summary' && !isReadOnly && !loading && !areCoreSectionsComplete();
+                        
+                        return (
+                          <button
+                            key={sectionTitle}
+                            onClick={() => !isLocked && setCurrentSection(sectionTitle)}
+                            disabled={isLocked && !isReadOnly}
+                            className={`relative flex items-center justify-center transition-transform hover:scale-110 ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            title={sectionTitle}
+                          >
+                            {status === 'current' && <div className="w-4 h-4 rounded-full bg-blue-600 shadow-md ring-4 ring-blue-100" />}
+                            {status === 'completed' && <CheckCircle className="w-5 h-5 text-green-500 drop-shadow-sm" />}
+                            {status === 'error' && <AlertTriangle className="w-5 h-5 text-red-500 drop-shadow-sm" />}
+                            {status === 'pending' && <div className="w-3 h-3 rounded-full border-2 border-gray-300" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  
+                  {/* Tab Contents */}
                 {sections.map((sectionTitle) => {
                   if (sectionTitle !== currentSection) return null;
 

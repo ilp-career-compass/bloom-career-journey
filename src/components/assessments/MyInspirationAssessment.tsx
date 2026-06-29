@@ -27,6 +27,7 @@ import {
   Lock,
   AlertTriangle,
   HelpCircle,
+  ArrowRight
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -419,17 +420,17 @@ export default function MyInspirationAssessment() {
           'ta': [
             { id: 1, title: "Tamil Video 1", url: "https://youtu.be/U7-HlfpvQIA?si=_gakjQozpgbZC2aQ", youtubeId: "U7-HlfpvQIA" },
             { id: 2, title: "Tamil Video 2", url: "https://www.youtube.com/watch?v=xqb1hfgfcl8", youtubeId: "xqb1hfgfcl8" },
-            { id: 3, title: "Tamil Video 3", url: "https://youtu.be/G87ylRECJzY?si=HyhMM4-ggplVLO2i", youtubeId: "G87ylRECJzY" }
+            { id: 3, title: "Tamil Video 3", url: "https://drive.google.com/file/d/1O3VEpTKVoE_S9BfFDgc3kveMhizWtDQ-/view", youtubeId: "" }
           ],
           'kn': [
             { id: 1, title: "Kannada Video 1", url: "https://youtu.be/U7-HlfpvQIA?si=_gakjQozpgbZC2aQ", youtubeId: "U7-HlfpvQIA" },
             { id: 2, title: "Kannada Video 2", url: "https://www.youtube.com/watch?v=xqb1hfgfcl8", youtubeId: "xqb1hfgfcl8" },
-            { id: 3, title: "Kannada Video 3", url: "https://www.youtube.com/watch?v=z3PYJ9MfMH4", youtubeId: "z3PYJ9MfMH4" }
+            { id: 3, title: "Kannada Video 3", url: "https://drive.google.com/file/d/1O3VEpTKVoE_S9BfFDgc3kveMhizWtDQ-/view", youtubeId: "" }
           ],
           'hi': [
             { id: 1, title: "Hindi Video 1", url: "https://youtu.be/U7-HlfpvQIA?si=_gakjQozpgbZC2aQ", youtubeId: "U7-HlfpvQIA" },
             { id: 2, title: "Hindi Video 2", url: "https://www.youtube.com/watch?v=xqb1hfgfcl8", youtubeId: "xqb1hfgfcl8" },
-            { id: 3, title: "Hindi Video 3", url: "https://youtu.be/-9OGDxKtUMI", youtubeId: "-9OGDxKtUMI" }
+            { id: 3, title: "Hindi Video 3", url: "https://drive.google.com/file/d/1_riiStkpap1jpYfvQ8OoGgBv750CAiaD/view", youtubeId: "" }
           ],
           'en': [
             { id: 1, title: "English Video 1", url: "https://youtu.be/U7-HlfpvQIA?si=_gakjQozpgbZC2aQ", youtubeId: "U7-HlfpvQIA" },
@@ -1582,6 +1583,7 @@ export default function MyInspirationAssessment() {
   if (isCompleted && !readOnlyView && !rejectionReason) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-8">
+  
         <div className="container mx-auto px-4">
           <Card className="max-w-2xl mx-auto border-0 shadow-lg">
             <CardHeader className="text-center bg-gradient-to-r from-blue-50 to-indigo-50">
@@ -1650,8 +1652,36 @@ export default function MyInspirationAssessment() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 pb-24" lang={lang} dir="auto">
+      
+
+      {/* Mobile Sticky Header */}
+      <div className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm md:hidden">
+        <div className="flex items-center justify-between px-2 py-2 sm:px-4 sm:py-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/student')}
+            className="flex items-center gap-1 px-1 sm:px-2 text-gray-600 hover:bg-gray-100"
+          >
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+          </Button>
+          <h1 className="text-sm sm:text-base font-bold text-gray-800 flex-1 text-center break-words px-1 leading-tight">
+            {lang === 'kn' ? (
+              'ನನ್ನ ಸ್ಫೂರ್ತಿ'
+            ) : lang === 'ta' ? (
+              'எனது உத்வேகம்'
+            ) : lang === 'hi' ? (
+              'मेरी प्रेरणा'
+            ) : (
+              'My Inspiration'
+            )}
+          </h1>
+          <div className="w-8 sm:w-10"></div> {/* Spacer for centering */}
+        </div>
+      </div>
+
       {/* Sticky Header */}
-      <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 py-3 shadow-sm mb-6 pt-safe">
+      <div className="hidden md:block sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 py-3 shadow-sm mb-6 pt-safe">
         <div className="container mx-auto flex items-center justify-between">
           <Button
             variant="ghost"
@@ -1662,7 +1692,7 @@ export default function MyInspirationAssessment() {
             <span className="hidden sm:inline">{t('backToDashboard')}</span>
           </Button>
           <div className="text-center flex-1 flex flex-col items-center">
-            <h1 className="text-lg md:text-xl font-bold text-blue-900 line-clamp-1 flex items-center gap-2">{dbTitle || t('inspirationTitle')}</h1>
+            <h1 className="text-base md:text-lg lg:text-xl font-bold text-blue-900  leading-tight flex items-center gap-2">{dbTitle || t('inspirationTitle')}</h1>
             <div className="text-xs md:text-sm text-blue-600 font-medium">Step 1 of 8</div>
           </div>
           <Button variant="ghost" className="text-blue-600 hover:bg-blue-50 text-sm font-medium px-2 rounded-full"><HelpCircle className="w-4 h-4 mr-1" />Help</Button>

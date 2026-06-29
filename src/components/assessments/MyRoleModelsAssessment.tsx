@@ -30,7 +30,8 @@ import {
   Sparkles,
   AlertTriangle,
   HelpCircle,
- } from 'lucide-react';
+   ArrowRight
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLang } from '@/hooks/useLang';
@@ -693,7 +694,9 @@ export default function MyRoleModelsAssessment() {
 
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-100">
-        <div className="text-center">
+        
+
+      <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-purple-600 mx-auto"></div>
           <p className="mt-4 text-lg text-gray-600">{loadingText}</p>
         </div>
@@ -704,6 +707,7 @@ export default function MyRoleModelsAssessment() {
   if (isCompleted && !readOnlyView && !rejectionReason) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 py-8">
+  
         <div className="container mx-auto px-4">
           <Card className="max-w-2xl mx-auto border-0 shadow-lg">
             <CardHeader className="text-center bg-gradient-to-r from-purple-50 to-pink-50">
@@ -767,6 +771,54 @@ export default function MyRoleModelsAssessment() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 py-8" lang={lang} dir="auto">
+
+      {/* Mobile Sticky Header */}
+      <div className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm md:hidden">
+        <div className="flex items-center justify-between px-2 py-2 sm:px-4 sm:py-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/student')}
+            className="flex items-center gap-1 px-1 sm:px-2 text-gray-600 hover:bg-gray-100"
+          >
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+          </Button>
+          <h1 className="text-sm sm:text-base font-bold text-gray-800 flex-1 text-center break-words px-1 leading-tight">
+            {lang === 'kn' ? (
+              'ನನ್ನ ಆದರ್ಶ ವ್ಯಕ್ತಿಗಳು'
+            ) : lang === 'ta' ? (
+              'எனது முன்மாதிரிகள்'
+            ) : lang === 'hi' ? (
+              'मेरे आदर्श व्यक्ति'
+            ) : (
+              'My Role Models'
+            )}
+          </h1>
+          <div className="w-8 sm:w-10"></div> {/* Spacer for centering */}
+        </div>
+      </div>
+
+      {/* Sticky Header */}
+      <div className="hidden md:block sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 py-3 shadow-sm mb-6 pt-safe">
+        <div className="container mx-auto flex items-center justify-between">
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/student')}
+            className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 w-10 h-10 rounded-full"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            <span className="hidden sm:inline">{t('backToDashboard')}</span>
+          </Button>
+          <div className="text-center flex-1 flex flex-col items-center">
+            <h1 className="text-base md:text-lg lg:text-xl font-bold text-purple-800 leading-tight break-words px-1">
+              🌟 {dbTitle || (lang === 'kn' ? 'ನನ್ನ ಮಾದರಿ ವ್ಯಕ್ತಿಗಳು' : lang === 'ta' ? 'எனது முன்மாதிரிகள்' : lang === 'hi' ? 'मेरे आदर्श व्यक्ति' : 'My Role Models')}
+            </h1>
+            <div className="text-xs md:text-sm text-purple-600 font-medium">Step 5 of 8</div>
+          </div>
+          <div className="w-10 sm:w-24"></div>
+        </div>
+      </div>
+
       <div className="container mx-auto px-4">
         {rejectionReason && (
           <div className="max-w-3xl mx-auto mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
