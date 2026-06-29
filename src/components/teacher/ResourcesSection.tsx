@@ -152,7 +152,7 @@ export default function ResourcesSection() {
       <Tabs defaultValue="career" className="space-y-6">
         <TabsList className="bg-white shadow-sm">
           <TabsTrigger value="career">{s.tabCareer}</TabsTrigger>
-          <TabsTrigger value="details">{s.tabDetails}</TabsTrigger>
+          {/* <TabsTrigger value="details">{s.tabDetails}</TabsTrigger> */}
           <TabsTrigger value="course">{s.tabCourse}</TabsTrigger>
         </TabsList>
         <TabsContent value="career" className="space-y-4">
