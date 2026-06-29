@@ -420,17 +420,17 @@ export default function MyInspirationAssessment() {
           'ta': [
             { id: 1, title: "Tamil Video 1", url: "https://youtu.be/U7-HlfpvQIA?si=_gakjQozpgbZC2aQ", youtubeId: "U7-HlfpvQIA" },
             { id: 2, title: "Tamil Video 2", url: "https://www.youtube.com/watch?v=xqb1hfgfcl8", youtubeId: "xqb1hfgfcl8" },
-            { id: 3, title: "Tamil Video 3", url: "https://drive.google.com/file/d/1O3VEpTKVoE_S9BfFDgc3kveMhizWtDQ-/view", youtubeId: "" }
+            { id: 3, title: "Tamil Video 3", url: "https://youtu.be/3jQaBseeraY?si=n-s9lwqlpYfmS7t7", youtubeId: "3jQaBseeraY" }
           ],
           'kn': [
             { id: 1, title: "Kannada Video 1", url: "https://youtu.be/U7-HlfpvQIA?si=_gakjQozpgbZC2aQ", youtubeId: "U7-HlfpvQIA" },
             { id: 2, title: "Kannada Video 2", url: "https://www.youtube.com/watch?v=xqb1hfgfcl8", youtubeId: "xqb1hfgfcl8" },
-            { id: 3, title: "Kannada Video 3", url: "https://drive.google.com/file/d/1O3VEpTKVoE_S9BfFDgc3kveMhizWtDQ-/view", youtubeId: "" }
+            { id: 3, title: "Kannada Video 3", url: "https://youtu.be/qbP8uQBs0vY?si=3fi2qXLJ9X-cAsmJ", youtubeId: "qbP8uQBs0vY" }
           ],
           'hi': [
             { id: 1, title: "Hindi Video 1", url: "https://youtu.be/U7-HlfpvQIA?si=_gakjQozpgbZC2aQ", youtubeId: "U7-HlfpvQIA" },
             { id: 2, title: "Hindi Video 2", url: "https://www.youtube.com/watch?v=xqb1hfgfcl8", youtubeId: "xqb1hfgfcl8" },
-            { id: 3, title: "Hindi Video 3", url: "https://drive.google.com/file/d/1_riiStkpap1jpYfvQ8OoGgBv750CAiaD/view", youtubeId: "" }
+            { id: 3, title: "Hindi Video 3", url: "https://youtu.be/E0by2VFH9f4?si=nu7x5hNfxKsGdHfq", youtubeId: "E0by2VFH9f4" }
           ],
           'en': [
             { id: 1, title: "English Video 1", url: "https://youtu.be/U7-HlfpvQIA?si=_gakjQozpgbZC2aQ", youtubeId: "U7-HlfpvQIA" },

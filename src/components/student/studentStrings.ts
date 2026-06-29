@@ -15,7 +15,7 @@ const strings: Record<StudentLang, Record<string, string>> = {
         completed: 'Completed ✓',
         in_progress: 'In Progress',
         not_started: 'Not Started',
-        available: 'Available',
+        available: 'Available', 
         locked: 'Locked 🔒',
         start_here: 'Start Here',
         progress_summary_title: 'Assessment Progress Summary',
