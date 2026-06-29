@@ -71,6 +71,9 @@ export default function TeacherDashboard() {
   const teacherLang = userProfile?.preferred_language || 'en';
   const [newStudent, setNewStudent] = useState({ fullName: '', phone: '', grade: '', preferredLanguage: teacherLang });
   const [states, setStates] = useState<StateInfo[]>([]);
+  const [filterStateId, setFilterStateId] = useState<string>('');
+  const [filterLanguage, setFilterLanguage] = useState<string>('');
+  const [filterClassId, setFilterClassId] = useState<string>('');
   const [classes, setClasses] = useState<SchoolClass[]>([]);
   const [loadingStates, setLoadingStates] = useState(false);
   const [existingQuery, setExistingQuery] = useState('');
@@ -485,14 +488,21 @@ export default function TeacherDashboard() {
 
   const handleSearchExisting = async () => {
     const normalizedQuery = existingQuery.trim();
-    if (!normalizedQuery) {
-      toast({ title: 'Search', description: 'Please enter a name or mobile number to search.', variant: 'destructive' });
+    const stateParam = filterStateId === 'all' ? null : (filterStateId || null);
+    const langParam = filterLanguage === 'all' ? null : (filterLanguage || null);
+    const classParam = filterClassId === 'all' ? null : (filterClassId || null);
+
+    if (!normalizedQuery && !stateParam && !langParam && !classParam) {
+      toast({ title: 'Search', description: 'Please enter a name or mobile number, or select at least one filter.', variant: 'destructive' });
       return;
     }
     try {
       const { data, error } = await supabase.rpc('search_students', {
         teacher_user_id: user?.id,
-        query: normalizedQuery,
+        query: normalizedQuery || null,
+        p_state_id: stateParam,
+        p_language: langParam,
+        p_class_id: classParam
       });
       if (error) throw error;
       setExistingResults(data || []);
@@ -675,10 +685,13 @@ export default function TeacherDashboard() {
       <AddExistingStudentModal
         open={isAddExistingOpen} onOpenChange={setIsAddExistingOpen}
         existingQuery={existingQuery} setExistingQuery={setExistingQuery}
+        filterStateId={filterStateId} setFilterStateId={setFilterStateId}
+        filterLanguage={filterLanguage} setFilterLanguage={setFilterLanguage}
+        filterClassId={filterClassId} setFilterClassId={setFilterClassId}
         existingResults={existingResults} enrollTarget={enrollTarget} setEnrollTarget={setEnrollTarget}
         enrollClassId={enrollClassId} setEnrollClassId={setEnrollClassId}
         isClassLocked={isClassLocked} setIsClassLocked={setIsClassLocked}
-        enrolling={enrolling} classes={classes} userId={user?.id}
+        enrolling={enrolling} classes={classes} states={states} userId={user?.id}
         onSearch={handleSearchExisting} onEnroll={handleEnrollExisting}
       />
       <IlpFooter />

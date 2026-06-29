@@ -23,7 +23,7 @@ import { Plus, Search, Compass } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import type { Student } from './StudentsTab';
-import type { SchoolClass } from '@/integrations/supabase/types';
+import type { SchoolClass, StateInfo } from '@/integrations/supabase/types';
 import { LANG_LABELS } from '@/lib/langLabels';
 
 function getStatusColor(status: string) {
@@ -241,6 +241,13 @@ interface AddExistingStudentModalProps {
     onOpenChange: (v: boolean) => void;
     existingQuery: string;
     setExistingQuery: (v: string) => void;
+    filterStateId: string;
+    setFilterStateId: (v: string) => void;
+    filterLanguage: string;
+    setFilterLanguage: (v: string) => void;
+    filterClassId: string;
+    setFilterClassId: (v: string) => void;
+    states: StateInfo[];
     existingResults: any[];
     enrollTarget: { userId: string; name: string } | null;
     setEnrollTarget: (v: { userId: string; name: string } | null) => void;
@@ -257,6 +264,10 @@ interface AddExistingStudentModalProps {
 
 export function AddExistingStudentModal({
     open, onOpenChange, existingQuery, setExistingQuery,
+    filterStateId, setFilterStateId,
+    filterLanguage, setFilterLanguage,
+    filterClassId, setFilterClassId,
+    states,
     existingResults, enrollTarget, setEnrollTarget,
     enrollClassId, setEnrollClassId, isClassLocked, setIsClassLocked,
     enrolling, classes, onSearch, onEnroll,
@@ -268,19 +279,63 @@ export function AddExistingStudentModal({
                 setEnrollTarget(null);
             }
         }}>
-            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle className="text-2xl text-gray-800">Add Existing Student</DialogTitle>
+                    <DialogTitle className="text-2xl text-gray-700">Add Existing Student</DialogTitle>
                     <DialogDescription>
                         Search by mobile or name and enroll the student into your class.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-2">
-                    <div className="flex gap-2">
-                        <Input placeholder="Enter student mobile / name" value={existingQuery} onChange={(e) => setExistingQuery(e.target.value)} />
-                        <Button onClick={onSearch}>
-                            <Search className="w-4 h-4 mr-2" /> Search
-                        </Button>
+                    <div className="flex flex-col gap-3">
+                        <div className="flex gap-2">
+                            {/* <Input placeholder="Enter student mobile / name" value={existingQuery} onChange={(e) => setExistingQuery(e.target.value)} /> */}
+                            {/* <Button onClick={onSearch}>
+                                <Search className="w-4 h-4 mr-2" /> Search
+                            </Button> */}
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
+                                                        <Input placeholder=" student mobile / name" value={existingQuery} onChange={(e) => setExistingQuery(e.target.value)} />
+
+                            <Select value={filterStateId} onValueChange={setFilterStateId}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="All States" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All States</SelectItem>
+                                    {states.map(s => (
+                                        <SelectItem key={s.state_id} value={s.state_id}>{s.state_name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            
+                            <Select value={filterLanguage} onValueChange={setFilterLanguage}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="All Languages" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Languages</SelectItem>
+                                    {Object.entries(LANG_LABELS).map(([code, label]) => (
+                                        <SelectItem key={code} value={code}>{label}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+
+                            <Select value={filterClassId} onValueChange={setFilterClassId}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="All Classes" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Classes</SelectItem>
+                                    {classes.map(c => (
+                                        <SelectItem key={c.id || c.class_id} value={(c.id || c.class_id) as string}>{c.name || c.class_name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                              <Button onClick={onSearch}>
+                                <Search className="w-4 h-4" /> Search
+                            </Button>
+                        </div>
                     </div>
 
                     {existingResults.length === 0 ? (
