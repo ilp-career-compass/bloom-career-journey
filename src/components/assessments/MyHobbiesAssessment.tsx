@@ -776,9 +776,14 @@ export default function MyHobbiesAssessment() {
     }
   };
 
+  const strFor = (v: any) => {
+    if (v === null || v === undefined) return '';
+    return String(v).trim();
+  };
+
   const isSectionComplete = (sectionTitle: string) => {
     if (sectionTitle === 'Summary') return isSummaryComplete();
-    const fields = fieldsBySection[sectionTitle] || [];
+    const fields = questionsBySection[sectionTitle] || [];
     if (fields.length === 0) return false;
     return fields.every(field => {
       const value = responses[field.field_key];
@@ -799,7 +804,7 @@ export default function MyHobbiesAssessment() {
       }
       return false;
     }
-    const fields = fieldsBySection[sectionTitle] || [];
+    const fields = questionsBySection[sectionTitle] || [];
     return fields.some(field => {
       const value = responses[field.field_key];
       if (Array.isArray(value)) return value.some(v => strFor(v) !== '');

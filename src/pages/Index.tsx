@@ -51,7 +51,7 @@ const Index = () => {
 
   // Redirect authenticated users to their appropriate dashboard
   if (user && userProfile && !loading) {
-    const activeLang = (typeof window !== 'undefined' ? localStorage.getItem('lang') : null) || userProfile.preferred_language || 'en';
+    const activeLang = userProfile.preferred_language || (typeof window !== 'undefined' ? localStorage.getItem('lang') : null) || 'en';
     const redirectPath = userProfile.role === 'admin' ? `/admin?lang=${activeLang}`
       : userProfile.role === 'teacher' ? `/teacher?lang=${activeLang}`
         : `/student?lang=${activeLang}`;

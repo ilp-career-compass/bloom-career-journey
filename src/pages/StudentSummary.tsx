@@ -76,7 +76,7 @@ const LOCAL_TRANSLATIONS: Record<string, Record<string, string>> = {
     revisionRequested: "Revision Requested",
     rejected: "Revision Needed",
     bioLabel: "Aspiration Summary",
-    
+
     // Modules
     inspiration: "My Inspiration",
     about_me: "About Me",
@@ -84,7 +84,7 @@ const LOCAL_TRANSLATIONS: Record<string, Record<string, string>> = {
     school_learning: "My School & Learning",
     hobbies: "My Hobbies & Talents",
     role_models: "My Role Models",
-    
+
     // Details
     loadingText: "Preparing student summary...",
     noDataText: "This assessment has not been started yet.",
@@ -93,13 +93,13 @@ const LOCAL_TRANSLATIONS: Record<string, Record<string, string>> = {
     pendingBadge: "Pending Teacher Review",
     revisionBadge: "Revision Requested",
     rejectedBadge: "Revision Needed",
-    
+
     // Dreams portfolio fields
     dreamCareer: "Dream Career",
     qualitiesNeeded: "Qualities & Strengths",
     preventingFailure: "Overcoming Obstacles",
     studyPath: "Action Plan & Study Path",
-    
+
     // Hobbies & Talents fields
     hobbyLabel: "Hobby",
     talentLabel: "Talent",
@@ -110,7 +110,7 @@ const LOCAL_TRANSLATIONS: Record<string, Record<string, string>> = {
     yes: "Yes",
     no: "No",
     maybe: "Maybe",
-    
+
     // School Learning fields
     likedSubjects: "Subjects I Like",
     likedCareers: "Careers Related to Liked Subjects",
@@ -118,7 +118,7 @@ const LOCAL_TRANSLATIONS: Record<string, Record<string, string>> = {
     dislikedCareers: "Careers to Avoid",
     otherActivities: "Co-curricular / Extra Activities",
     skillsImprovement: "Skills I Want to Develop",
-    
+
     // About Me questions mapped nicely
     friends: "Support System & Friends",
     dailyActivities: "Daily Routine Activities",
@@ -134,15 +134,15 @@ const LOCAL_TRANSLATIONS: Record<string, Record<string, string>> = {
     lovedQualities: "What I Value Most in Myself",
     othersLiked: "What My Peers Value in Me",
     qualitiesToImprove: "Qualities I'm Actively Improving",
-    
+
     // Inspiration questions
     keyInspirations: "Key Inspirations & Role Models",
     avoidBehaviors: "Behaviors I Aim to Avoid",
     realLifeParallels: "Real-Life Parallels & Peer Influence",
-    
+
     // Role models questions
     questionsToAsk: "Questions to Ask My Role Models",
-    
+
     // Printing notes
     confidentialNote: "Confidential - For Educational Use Only"
   },
@@ -172,14 +172,14 @@ const LOCAL_TRANSLATIONS: Record<string, Record<string, string>> = {
     revisionRequested: "ಪರಿಷ್ಕರಣೆ ವಿನಂತಿಸಲಾಗಿದೆ",
     rejected: "ಬದಲಾವಣೆ ಅಗತ್ಯವಿದೆ",
     bioLabel: "ಆಕಾಂಕ್ಷೆಯ ಸಾರಾಂಶ",
-    
+
     inspiration: "ನನ್ನ ಪ್ರೇರಣೆ",
     about_me: "ನನ್ನ ಬಗ್ಗೆ",
     dreams: "ನನ್ನ ಕನಸುಗಳು",
     school_learning: "ನನ್ನ ಶಾಲೆ ಮತ್ತು ಕಲಿಕೆ",
     hobbies: "ನನ್ನ ಹವ್ಯಾಸಗಳು ಮತ್ತು ಪ್ರತಿಭೆಗಳು",
     role_models: "ನನ್ನ ಆದರ್ಶಗಳು",
-    
+
     loadingText: "ವಿದ್ಯಾರ್ಥಿ ಸಾರಾಂಶವನ್ನು ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ...",
     noDataText: "ಈ ಮೌಲ್ಯಮಾಪನವನ್ನು ಇನ್ನೂ ಪ್ರಾರಂಭಿಸಿಲ್ಲ.",
     noSummaryGenerated: "ಪೂರ್ಣಗೊಂಡ ಈ ಮಾಡ್ಯೂಲ್‌ಗೆ ಇನ್ನೂ ಸಾರಾಂಶವನ್ನು ಸಿದ್ಧಪಡಿಸಲಾಗಿಲ್ಲ.",
@@ -187,12 +187,12 @@ const LOCAL_TRANSLATIONS: Record<string, Record<string, string>> = {
     pendingBadge: "ಶಿಕ್ಷಕರ ಪರಿಶೀಲನೆ ಬಾಕಿ ಇದೆ",
     revisionBadge: "ಪರಿಷ್ಕರಣೆ ವಿನಂತಿಸಲಾಗಿದೆ",
     rejectedBadge: "ಬದಲಾವಣೆ ಅಗತ್ಯವಿದೆ",
-    
+
     dreamCareer: "ಕನಸಿನ ವೃತ್ತಿ",
     qualitiesNeeded: "ಗುಣಗಳು ಮತ್ತು ಸಾಮರ್ಥ್ಯಗಳು",
     preventingFailure: "ಅಡೆತಡೆಗಳನ್ನು ನಿವಾರಿಸುವುದು",
     studyPath: "ಕಾರ್ಯ ಯೋಜನೆ ಮತ್ತು ಅಧ್ಯಯನ ಮಾರ್ಗ",
-    
+
     hobbyLabel: "ಹವ್ಯಾಸ",
     talentLabel: "ಪ್ರತಿಭೆ",
     wantCareer: "ಇದರಲ್ಲಿ ವೃತ್ತಿ ಮಾಡಬೇಕೇ?",
@@ -202,14 +202,14 @@ const LOCAL_TRANSLATIONS: Record<string, Record<string, string>> = {
     yes: "ಹೌದು",
     no: "ಇಲ್ಲ",
     maybe: "ಬಹುಶಃ",
-    
+
     likedSubjects: "ನನಗೆ ಇಷ್ಟವಾದ ವಿಷಯಗಳು",
     likedCareers: "ಇಷ್ಟವಾದ ವಿಷಯಗಳಿಗೆ ಸಂಬಂಧಿಸಿದ ವೃತ್ತಿಗಳು",
     dislikedSubjects: "ನನಗೆ ಸವಾಲಾಗುವ ವಿಷಯಗಳು",
     dislikedCareers: "ತಪ್ಪಿಸಬೇಕಾದ ವೃತ್ತಿಗಳು",
     otherActivities: "ಪಠ್ಯೇತರ ಚಟುವಟಿಕೆಗಳು",
     skillsImprovement: "ನಾನು ಬೆಳೆಸಿಕೊಳ್ಳಲು ಬಯಸುವ ಕೌಶಲ್ಯಗಳು",
-    
+
     friends: "ಬೆಂಬಲ ವ್ಯವಸ್ಥೆ ಮತ್ತು ಸ್ನೇಹಿತರು",
     dailyActivities: "ದಿನಚರಿಯ ಚಟುವಟಿಕೆಗಳು",
     schoolEnjoyed: "ನೆಚ್ಚಿನ ಶಾಲಾ ಚಟುವಟಿಕೆಗಳು",
@@ -224,11 +224,11 @@ const LOCAL_TRANSLATIONS: Record<string, Record<string, string>> = {
     lovedQualities: "ನನ್ನಲ್ಲಿ ನಾನು ಹೆಚ್ಚು ಗೌರವಿಸುವ ಗುಣಗಳು",
     othersLiked: "ಇತರರು ನನ್ನಲ್ಲಿ ಇಷ್ಟಪಡುವ ಗುಣಗಳು",
     qualitiesToImprove: "ನಾನು ಸುಧಾರಿಸುತ್ತಿರುವ ಗುಣಗಳು",
-    
+
     keyInspirations: "ಪ್ರಮುಖ ಪ್ರೇರಣೆಗಳು ಮತ್ತು ಆದರ್ಶಗಳು",
     avoidBehaviors: "ನಾನು ದೂರವಿಡಲು ಬಯಸುವ ನಡವಳಿಕೆಗಳು",
     realLifeParallels: "ನಿಜ ಜೀವನದ ಹೋಲಿಕೆಗಳು ಮತ್ತು ಗೆಳೆಯರ ಪ್ರಭಾವ",
-    
+
     questionsToAsk: "ನನ್ನ ಆದರ್ಶಗಳಿಗೆ ಕೇಳಬೇಕಾದ ಪ್ರಶ್ನೆಗಳು",
     confidentialNote: "ಗೌಪ್ಯ - ಶೈಕ್ಷಣಿಕ ಬಳಕೆಗೆ ಮಾತ್ರ"
   },
@@ -258,14 +258,14 @@ const LOCAL_TRANSLATIONS: Record<string, Record<string, string>> = {
     revisionRequested: "திருத்தம் கோரப்பட்டுள்ளது",
     rejected: "மாற்றம் தேவை",
     bioLabel: "விருப்பச் சுருக்கம்",
-    
+
     inspiration: "என் உத்வேகம்",
     about_me: "என்னை பற்றி",
     dreams: "என் கனவுகள்",
     school_learning: "என் பள்ளி & கற்றல்",
     hobbies: "என் பொழுதுபோக்குகள் & திறமைகள்",
     role_models: "என் முன்மாதிரிகள்",
-    
+
     loadingText: "மாணவர் சுருக்கம் தயாரிக்கப்படுகிறது...",
     noDataText: "இந்த மதிப்பீடு இன்னும் தொடங்கப்படவில்லை.",
     noSummaryGenerated: "முடிவடைந்த இந்தப் பிரிவிற்கு இன்னும் சுருக்கம் உருவாக்கப்படவில்லை.",
@@ -273,12 +273,12 @@ const LOCAL_TRANSLATIONS: Record<string, Record<string, string>> = {
     pendingBadge: "ஆசிரியரின் மதிப்பாய்வுக்காக காத்திருக்கிறது",
     revisionBadge: "திருத்தம் கோரப்பட்டுள்ளது",
     rejectedBadge: "மாற்றம் தேவை",
-    
+
     dreamCareer: "கனவுத் தொழில்",
     qualitiesNeeded: "பண்புகள் மற்றும் பலங்கள்",
     preventingFailure: "தடைகளைத் தாண்டுதல்",
     studyPath: "செயல் திட்டம் & படிப்பு பாதை",
-    
+
     hobbyLabel: "பொழுதுபோக்கு",
     talentLabel: "திறமை",
     wantCareer: "இதில் தொழில் செய்ய வேண்டுமா?",
@@ -288,14 +288,14 @@ const LOCAL_TRANSLATIONS: Record<string, Record<string, string>> = {
     yes: "ஆம்",
     no: "இல்லை",
     maybe: "ஒருவேளை",
-    
+
     likedSubjects: "எனக்கு பிடித்த பாடங்கள்",
     likedCareers: "பிடித்த பாடங்கள் தொடர்பான தொழில்கள்",
     dislikedSubjects: "எனக்கு சவாலான பாடங்கள்",
     dislikedCareers: "தவிர்க்க வேண்டிய தொழில்கள்",
     otherActivities: "கூடுதல் செயல்பாடுகள்",
     skillsImprovement: "நான் வளர்க்க விரும்பும் திறன்கள்",
-    
+
     friends: "ஆதரவு அமைப்பு மற்றும் நண்பர்கள்",
     dailyActivities: "தினசரி செயல்பாடுகள்",
     schoolEnjoyed: "பிடித்த பள்ளி செயல்பாடுகள்",
@@ -310,11 +310,11 @@ const LOCAL_TRANSLATIONS: Record<string, Record<string, string>> = {
     lovedQualities: "என்னிடத்தில் நான் அதிகம் மதிக்கும் குணங்கள்",
     othersLiked: "மற்றவர்கள் என்னிடத்தில் விரும்பும் குணங்கள்",
     qualitiesToImprove: "நான் மேம்படுத்த விரும்பும் குணங்கள்",
-    
+
     keyInspirations: "முக்கிய உத்வேகங்கள் & முன்மாதிரிகள்",
     avoidBehaviors: "நான் தவிர்க்க விரும்பும் நடத்தைகள்",
     realLifeParallels: "நிஜ வாழ்க்கை ஒப்பீடுகள் & நண்பர்களின் செல்வாக்கு",
-    
+
     questionsToAsk: "என் முன்மாதிரிகளிடம் கேட்க வேண்டிய கேள்விகள்",
     confidentialNote: "ரகசியமானது - கல்விப் பயன்பாட்டிற்கு மட்டும்"
   },
@@ -344,14 +344,14 @@ const LOCAL_TRANSLATIONS: Record<string, Record<string, string>> = {
     revisionRequested: "संशोधन का अनुरोध किया",
     rejected: "संशोधन की आवश्यकता",
     bioLabel: "आकांक्षा सारांश",
-    
+
     inspiration: "मेरी प्रेरणा",
     about_me: "मेरे बारे में",
     dreams: "मेरे सपने",
     school_learning: "मेरा स्कूल और शिक्षा",
     hobbies: "मेरे शौक और प्रतिभा",
     role_models: "मेरे रोल मॉडल",
-    
+
     loadingText: "छात्र सारांश तैयार किया जा रहा है...",
     noDataText: "यह मूल्यांकन अभी शुरू नहीं किया गया है।",
     noSummaryGenerated: "इस पूरे किए गए मॉड्यूल के लिए अभी तक कोई सारांश तैयार नहीं किया गया है।",
@@ -359,12 +359,12 @@ const LOCAL_TRANSLATIONS: Record<string, Record<string, string>> = {
     pendingBadge: "शिक्षक समीक्षा लंबित",
     revisionBadge: "संशोधन का अनुरोध किया गया",
     rejectedBadge: "संशोधन आवश्यक",
-    
+
     dreamCareer: "सपनों का करियर",
     qualitiesNeeded: "गुण और ताकत",
     preventingFailure: "बाधाओं को पार करना",
     studyPath: "कार्य योजना और अध्ययन मार्ग",
-    
+
     hobbyLabel: "शौक",
     talentLabel: "प्रतिभा",
     wantCareer: "क्या इसमें करियर बनाना चाहते हैं?",
@@ -374,14 +374,14 @@ const LOCAL_TRANSLATIONS: Record<string, Record<string, string>> = {
     yes: "हाँ",
     no: "नहीं",
     maybe: "शायद",
-    
+
     likedSubjects: "पसंदीदा विषय",
     likedCareers: "पसंदीदा विषयों से संबंधित करियर",
     dislikedSubjects: "चुनौतीपूर्ण विषय",
     dislikedCareers: "बचने योग्य करियर",
     otherActivities: "पाठ्येतर गतिविधियाँ",
     skillsImprovement: "कौशल जिन्हें मैं विकसित करना चाहता हूँ",
-    
+
     friends: "सहायता प्रणाली और मित्र",
     dailyActivities: "दैनिक गतिविधियां",
     schoolEnjoyed: "पसंदीदा स्कूल गतिविधियाँ",
@@ -396,11 +396,11 @@ const LOCAL_TRANSLATIONS: Record<string, Record<string, string>> = {
     lovedQualities: "गुण जिन्हें मैं अपने बारे में सबसे अधिक महत्व देता हूँ",
     othersLiked: "गुण जो दूसरे मुझमें पसंद करते हैं",
     qualitiesToImprove: "गुण जिनमें मैं सक्रिय रूप से सुधार कर रहा हूँ",
-    
+
     keyInspirations: "प्रमुख प्रेरणाएँ और रोल मॉडल",
     avoidBehaviors: "व्यवहार जिनसे मैं बचना चाहता हूँ",
     realLifeParallels: "वास्तविक जीवन की समानताएं और सहकर्मी प्रभाव",
-    
+
     questionsToAsk: "मेरे रोल मॉडल से पूछे जाने वाले प्रश्न",
     confidentialNote: "गोपनीय - केवल शैक्षिक उपयोग के लिए"
   }
@@ -416,17 +416,17 @@ export default function StudentSummary() {
   const [studentName, setStudentName] = useState<string>('');
   const [studentMobile, setStudentMobile] = useState<string>('');
   const [className, setClassName] = useState<string>('');
-  
+
   // Student user details
   const [bio, setBio] = useState<string>('');
   const [interests, setInterests] = useState<string>('');
   const [careerGoals, setCareerGoals] = useState<string>('');
   const [strengths, setStrengths] = useState<string>('');
   const [areasForGrowth, setAreasForGrowth] = useState<string>('');
-  
+
   // Holland Code (from personality responses)
   const [hollandCode, setHollandCode] = useState<string>('');
-  
+
   // Profile card cache / career direction
   const [careerDirection, setCareerDirection] = useState<string>('');
 
@@ -467,7 +467,7 @@ export default function StudentSummary() {
           setStudentName((student as any).users?.full_name || 'Student');
           setStudentMobile((student as any).users?.mobile || '');
           setClassName((student as any).classes?.name || '');
-          
+
           setBio((student as any).users?.bio || '');
           setInterests((student as any).users?.interests || '');
           setCareerGoals((student as any).users?.career_goals || '');
@@ -551,7 +551,15 @@ export default function StudentSummary() {
   const getDisplaySummaryData = (rec: AssessmentRecord) => {
     const summaryObj = summaries[rec.id];
     if (summaryObj) {
-      const data = summaryObj.student_edited_summary || summaryObj.teacher_edited_summary || summaryObj.ai_summary;
+      // If user is a student, only show the summary if it has been approved by the teacher
+      if (userProfile?.role === 'student' && rec.review_status !== 'reviewed') {
+        return null;
+      }
+
+      let data = summaryObj.student_edited_summary;
+      if (!data || Object.keys(data).length === 0) data = summaryObj.teacher_edited_summary;
+      if (!data || Object.keys(data).length === 0) data = summaryObj.ai_summary;
+
       if (data && Object.keys(data).length > 0) return data;
     }
     return null;
@@ -566,7 +574,7 @@ export default function StudentSummary() {
     const q1 = summaryData?.question1 || '';
     const entries = parseDreamEntries(q1);
     if (entries.length === 0) return <p className="text-sm text-gray-500 italic mt-2">{t('noDataText')}</p>;
-    
+
     return (
       <div className="overflow-x-auto mt-3 border border-gray-150 rounded-lg shadow-sm">
         <table className="min-w-full divide-y divide-gray-200">
@@ -598,11 +606,11 @@ export default function StudentSummary() {
     const q6 = summaryData?.question6 || '';
     const hobbies = parseHobbiesEntries(q1);
     const talents = parseTalentsEntries(q6);
-    
+
     if (hobbies.length === 0 && talents.length === 0) {
       return <p className="text-sm text-gray-500 italic mt-2">{t('noDataText')}</p>;
     }
-    
+
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
         {hobbies.length > 0 && (
@@ -632,7 +640,7 @@ export default function StudentSummary() {
             </div>
           </div>
         )}
-        
+
         {talents.length > 0 && (
           <div className="border border-pink-100 rounded-xl p-4 bg-pink-50/15">
             <h4 className="text-sm font-bold text-pink-800 mb-3 capitalize flex items-center gap-1.5">
@@ -668,7 +676,7 @@ export default function StudentSummary() {
     const q1 = summaryData?.question1 || '';
     const entries = parseSchoolLearningEntries(q1);
     if (entries.length === 0) return <p className="text-sm text-gray-500 italic mt-2">{t('noDataText')}</p>;
-    
+
     return (
       <div className="space-y-4 mt-3">
         {entries.map((entry, idx) => (
@@ -680,7 +688,7 @@ export default function StudentSummary() {
                 <span className="font-semibold text-slate-700">{t('likedCareers')}:</span> {entry.liked_careers}
               </div>
             </div>
-            
+
             <div className="border border-rose-100 bg-rose-50/10 p-4 rounded-xl">
               <h4 className="font-bold text-xs text-rose-800 uppercase tracking-wider mb-2">{t('dislikedSubjects')}</h4>
               <div className="text-sm font-bold text-rose-950">{entry.disliked_subjects}</div>
@@ -688,7 +696,7 @@ export default function StudentSummary() {
                 <span className="font-semibold text-slate-700">{t('dislikedCareers')}:</span> {entry.disliked_careers}
               </div>
             </div>
-            
+
             <div className="border border-slate-150 bg-slate-50/50 p-4 rounded-xl md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <h4 className="font-bold text-xs text-slate-600 uppercase tracking-wider mb-1">{t('otherActivities')}</h4>
@@ -707,7 +715,7 @@ export default function StudentSummary() {
 
   const renderAboutMe = (summaryData: any) => {
     if (!summaryData) return <p className="text-sm text-gray-500 italic mt-2">{t('noDataText')}</p>;
-    
+
     const fields = [
       { key: 'question1', labelKey: 'friends' },
       { key: 'question2', labelKey: 'dailyActivities' },
@@ -724,10 +732,10 @@ export default function StudentSummary() {
       { key: 'question13', labelKey: 'othersLiked' },
       { key: 'question14', labelKey: 'qualitiesToImprove' }
     ];
-    
+
     const activeFields = fields.filter(f => summaryData[f.key] && summaryData[f.key].trim());
     if (activeFields.length === 0) return <p className="text-sm text-gray-500 italic mt-2">{t('noDataText')}</p>;
-    
+
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
         {activeFields.map(field => (
@@ -742,16 +750,16 @@ export default function StudentSummary() {
 
   const renderInspiration = (summaryData: any) => {
     if (!summaryData) return <p className="text-sm text-gray-500 italic mt-2">{t('noDataText')}</p>;
-    
+
     const fields = [
       { key: 'question1', labelKey: 'keyInspirations', color: 'border-blue-100 bg-blue-50/5 text-blue-950' },
       { key: 'question2', labelKey: 'avoidBehaviors', color: 'border-amber-100 bg-amber-50/5 text-amber-950' },
       { key: 'question3', labelKey: 'realLifeParallels', color: 'border-purple-100 bg-purple-50/5 text-purple-950' }
     ];
-    
+
     const activeFields = fields.filter(f => summaryData[f.key] && summaryData[f.key].trim());
     if (activeFields.length === 0) return <p className="text-sm text-gray-500 italic mt-2">{t('noDataText')}</p>;
-    
+
     return (
       <div className="space-y-3.5 mt-3">
         {activeFields.map(field => (
@@ -767,14 +775,14 @@ export default function StudentSummary() {
   const renderRoleModels = (summaryData: any) => {
     const q1 = summaryData?.question1 || '';
     if (!q1.trim()) return <p className="text-sm text-gray-500 italic mt-2">{t('noDataText')}</p>;
-    
+
     const questionsList = q1.split('\n')
       .map(q => q.trim())
       .filter(q => q.length > 0)
       .map(q => q.replace(/^\d+[\.\-\s]*/, ''));
-      
+
     if (questionsList.length === 0) return <p className="text-sm text-gray-500 italic mt-2">{t('noDataText')}</p>;
-    
+
     return (
       <div className="mt-3 border border-purple-100 bg-purple-50/5 p-4.5 rounded-xl">
         <h4 className="text-xs font-bold uppercase tracking-wider text-purple-900 mb-3">{t('questionsToAsk')}</h4>
@@ -810,7 +818,7 @@ export default function StudentSummary() {
           </div>
           <span className="text-xs text-slate-400">{new Date(rec.completed_at).toLocaleDateString(lang)}</span>
         </div>
-        
+
         {!summaryData ? (
           <div className="mt-2 p-5 rounded-2xl bg-slate-50/50 border border-dashed border-slate-200 text-center print:border-solid">
             <p className="text-sm text-slate-500 italic font-medium">

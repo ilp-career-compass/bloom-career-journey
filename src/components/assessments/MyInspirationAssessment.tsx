@@ -1382,6 +1382,16 @@ export default function MyInspirationAssessment() {
       return;
     }
 
+    let studentId = userProfile.studentProfile?.id as string | undefined;
+    if (!studentId) {
+      const { data: studentRow } = await supabase
+        .from('students')
+        .select('id')
+        .eq('user_id', userProfile.id)
+        .maybeSingle();
+      studentId = studentRow?.id;
+    }
+
     if (!studentId) {
       toast({
         title: t('errorSavingVideoProgress'),
@@ -2086,7 +2096,7 @@ export default function MyInspirationAssessment() {
               ) : (
                 <Button
                   onClick={submitAssessment}
-                  disabled={!canSubmit() || submitting || isReadOnly}
+                  disabled={submitting || isReadOnly}
                   className="flex-1 text-xs sm:text-sm px-2 py-2 min-h-[44px] h-auto sm:h-10 bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   {submitting ? (

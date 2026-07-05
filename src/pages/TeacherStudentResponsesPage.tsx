@@ -49,7 +49,7 @@ function isAudioUrl(value: string): boolean {
 // ─── Generic ResponseViewer ───────────────────────────────────────────────────
 // Recursively renders JSONB. Booleans → Yes/No. Audio URLs → <audio> player.
 
-const ResponseViewer = ({ data, level = 0 }: { data: any; level?: number }) => {
+const ResponseViewer = ({ data, level = 0, customLabels = {}, parentKey = '' }: { data: any; level?: number; customLabels?: Record<string, string>; parentKey?: string }) => {
   if (data === null || data === undefined) {
     return <span className="text-gray-400 italic">No answer</span>;
   }
@@ -98,17 +98,21 @@ const ResponseViewer = ({ data, level = 0 }: { data: any; level?: number }) => {
   return (
     <div className={`space-y-4 ${level > 0 ? 'mt-2' : ''}`}>
       {entries.map(([key, value]) => {
-        let label = key;
-        if (isUuid(key)) {
-          label = uuidLabelMap[key];
-        } else if (/^video\d+$/.test(key)) {
-          label = key.replace('video', 'Video ');
-        } else if (/^question\d+$/.test(key)) {
-          label = key.replace('question', 'Q');
-        } else if (/^part\d+$/.test(key)) {
-          label = key.replace('part', 'Part ');
-        } else {
-          label = label.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        const fullKey = parentKey ? `${parentKey}.${key}` : key;
+        let label = customLabels[fullKey] || customLabels[key];
+        
+        if (!label) {
+          if (isUuid(key)) {
+            label = uuidLabelMap[key];
+          } else if (/^video\d+$/.test(key)) {
+            label = key.replace('video', 'Video ');
+          } else if (/^question\d+$/.test(key)) {
+            label = key.replace('question', 'Q');
+          } else if (/^part\d+$/.test(key)) {
+            label = key.replace('part', 'Part ');
+          } else {
+            label = key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+          }
         }
 
         const isSection = /^video\d+$/.test(key) || /^part\d+$/.test(key);
@@ -119,7 +123,7 @@ const ResponseViewer = ({ data, level = 0 }: { data: any; level?: number }) => {
               {label}
             </div>
             <div className={isSection ? '' : 'pl-2 border-l-2 border-gray-200'}>
-              <ResponseViewer data={value} level={level + 1} />
+              <ResponseViewer data={value} level={level + 1} customLabels={customLabels} parentKey={fullKey} />
             </div>
           </div>
         );
@@ -128,18 +132,241 @@ const ResponseViewer = ({ data, level = 0 }: { data: any; level?: number }) => {
   );
 };
 
+// ─── Inspiration renderer ─────────────────────────────────────────────────────
+
+const InspirationRenderer = ({ responses, lang }: { responses: any, lang: string }) => {
+  const [labels, setLabels] = useState<Record<string, string>>({});
+  
+  useEffect(() => {
+    let mounted = true;
+    const fetchLabels = async () => {
+      const newLabels: Record<string, string> = {};
+      try {
+        const { data: qData } = await supabase
+          .from('content_translations')
+          .select('resource_key, text')
+          .eq('resource_type', 'inspiration_question')
+          .eq('lang', lang);
+          
+        if (qData) {
+          qData.forEach((item: any) => {
+            if (item.resource_key) newLabels[item.resource_key] = item.text;
+          });
+        }
+        
+        const { data: sData } = await supabase.rpc('get_inspiration_summary_questions_i18n', { p_lang: lang });
+        if (sData && Array.isArray(sData)) {
+          sData.forEach((qObj: any, i: number) => {
+            const text = typeof qObj === 'string' ? qObj : (qObj.question_text || '');
+            newLabels[`summary.question${i + 1}`] = text;
+          });
+        }
+        
+        if (mounted) setLabels(newLabels);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchLabels();
+    return () => { mounted = false; };
+  }, [lang]);
+
+  if (!responses) return <p className="text-gray-500 italic">No responses recorded.</p>;
+
+  return <ResponseViewer data={responses} customLabels={labels} />;
+};
+
 // ─── Hobbies renderer ─────────────────────────────────────────────────────────
-// Hobbies are stored as { [questionId: string]: string } — use the generic viewer.
-const HobbiesRenderer = ({ responses }: { responses: any }) => {
-  if (!responses || Object.keys(responses).length === 0) {
-    return <p className="text-gray-500 italic">No hobbies recorded.</p>;
-  }
-  return <ResponseViewer data={responses} />;
+const HobbiesRenderer = ({ responses, lang }: { responses: any, lang: string }) => {
+  const [labels, setLabels] = useState<Record<string, string>>({});
+  
+  useEffect(() => {
+    let mounted = true;
+    const fetchLabels = async () => {
+      const newLabels: Record<string, string> = {};
+      try {
+        const { data: baseData } = await supabase.rpc('get_hobbies_questions');
+        const { data: qData } = await supabase.rpc('get_hobbies_questions_i18n', { p_lang: lang } as any);
+        if (baseData && Array.isArray(baseData)) {
+          baseData.forEach((q: any) => {
+            const i18nMatch = qData?.find((item: any) => item.key === q.key);
+            const text = i18nMatch?.text || q.text || q.question_text || '';
+            if (q.id) newLabels[q.id] = text;
+          });
+        }
+        const { data: sData } = await supabase.rpc('get_hobbies_summary_questions_i18n', { p_lang: lang } as any);
+        if (sData && Array.isArray(sData)) {
+          sData.forEach((qObj: any, i: number) => {
+             const text = typeof qObj === 'string' ? qObj : (qObj.translated_text || qObj.question_text || '');
+             newLabels[`summary_${qObj.sequence_number || i + 1}`] = text;
+          });
+        }
+        if (mounted) setLabels(newLabels);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchLabels();
+    return () => { mounted = false; };
+  }, [lang]);
+
+  if (!responses || Object.keys(responses).length === 0) return <p className="text-gray-500 italic">No responses recorded.</p>;
+  return <ResponseViewer data={responses} customLabels={labels} />;
+};
+
+// ─── School Learning renderer ──────────────────────────────────────────────────
+const SchoolLearningRenderer = ({ responses, lang }: { responses: any, lang: string }) => {
+  const [labels, setLabels] = useState<Record<string, string>>({});
+  
+  useEffect(() => {
+    let mounted = true;
+    const fetchLabels = async () => {
+      const newLabels: Record<string, string> = {};
+      try {
+        const { data: qData } = await supabase.rpc('get_school_learning_questions_i18n', { p_lang: lang } as any);
+        if (qData && Array.isArray(qData)) {
+          qData.forEach((item: any) => {
+            if (item?.key) {
+               const labelKey = item.section ? `${item.section}.${item.key}` : item.key;
+               newLabels[labelKey] = item.text || '';
+            }
+          });
+        }
+        const { data: sData } = await supabase.rpc('get_school_learning_summary_questions_i18n', { p_lang: lang } as any);
+        if (sData && Array.isArray(sData)) {
+          sData.forEach((qObj: any, i: number) => {
+             const text = typeof qObj === 'string' ? qObj : (qObj.translated_text || qObj.question_text || '');
+             newLabels[`section6.question${i + 1}`] = text;
+          });
+        }
+        if (mounted) setLabels(newLabels);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchLabels();
+    return () => { mounted = false; };
+  }, [lang]);
+
+  if (!responses || Object.keys(responses).length === 0) return <p className="text-gray-500 italic">No responses recorded.</p>;
+  return <ResponseViewer data={responses} customLabels={labels} />;
+};
+
+// ─── About Me renderer ───────────────────────────────────────────────────────
+const AboutMeRenderer = ({ responses, lang }: { responses: any, lang: string }) => {
+  const [labels, setLabels] = useState<Record<string, string>>({});
+  
+  useEffect(() => {
+    let mounted = true;
+    const fetchLabels = async () => {
+      const newLabels: Record<string, string> = {};
+      try {
+        const { data: qData } = await supabase.rpc('get_about_me_fields_i18n', { p_lang: lang } as any);
+        if (qData && Array.isArray(qData)) {
+          qData.forEach((item: any) => {
+            if (item?.field_id) newLabels[item.field_id] = item.field_name || '';
+          });
+        }
+        const { data: sData } = await supabase.rpc('get_about_me_summary_questions_i18n', { p_lang: lang } as any);
+        if (sData && Array.isArray(sData)) {
+          sData.forEach((qObj: any, i: number) => {
+             const text = typeof qObj === 'string' ? qObj : (qObj.translated_text || qObj.question_text || '');
+             newLabels[`summary.question${i + 1}`] = text;
+          });
+        }
+        if (mounted) setLabels(newLabels);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchLabels();
+    return () => { mounted = false; };
+  }, [lang]);
+
+  if (!responses || Object.keys(responses).length === 0) return <p className="text-gray-500 italic">No responses recorded.</p>;
+  return <ResponseViewer data={responses} customLabels={labels} />;
+};
+
+// ─── Dreams renderer ─────────────────────────────────────────────────────────
+const DreamsRenderer = ({ responses, lang }: { responses: any, lang: string }) => {
+  const [labels, setLabels] = useState<Record<string, string>>({});
+  
+  useEffect(() => {
+    let mounted = true;
+    const fetchLabels = async () => {
+      const newLabels: Record<string, string> = {};
+      try {
+        const { data: baseData } = await supabase.rpc('get_dreams_questions');
+        const { data: qData } = await supabase.rpc('get_dreams_questions_i18n', { p_lang: lang } as any);
+        const { data: qDataOverrides } = await supabase
+          .from('content_translations')
+          .select('resource_key, text')
+          .eq('resource_type', 'dreams_question')
+          .eq('lang', lang);
+
+        if (baseData && Array.isArray(baseData)) {
+          baseData.forEach((q: any) => {
+            let text = q.text || q.question_text || '';
+            const i18nMatch = qData?.find((item: any) => item.key === q.key);
+            if (i18nMatch?.text) text = i18nMatch.text;
+            const overrideMatch = qDataOverrides?.find((item: any) => item.resource_key === q.key);
+            if (overrideMatch?.text) text = overrideMatch.text;
+            
+            if (q.id) newLabels[q.id] = text;
+          });
+        }
+        
+        const { data: sData } = await supabase.rpc('get_dreams_summary_questions_i18n', { p_lang: lang } as any);
+        if (sData && Array.isArray(sData)) {
+          sData.forEach((qObj: any, i: number) => {
+             const text = typeof qObj === 'string' ? qObj : (qObj.translated_text || qObj.question_text || '');
+             newLabels[`summary_q${qObj.sequence_number || i + 1}`] = text;
+          });
+        }
+        if (mounted) setLabels(newLabels);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchLabels();
+    return () => { mounted = false; };
+  }, [lang]);
+
+  if (!responses || Object.keys(responses).length === 0) return <p className="text-gray-500 italic">No responses recorded.</p>;
+  return <ResponseViewer data={responses} customLabels={labels} />;
+};
+
+// ─── Career Guidance Tools renderer ──────────────────────────────────────────
+const CareerGuidanceToolsRenderer = ({ responses, lang }: { responses: any, lang: string }) => {
+  const [labels, setLabels] = useState<Record<string, string>>({});
+  
+  useEffect(() => {
+    let mounted = true;
+    const fetchLabels = async () => {
+      const newLabels: Record<string, string> = {};
+      try {
+        const { data: qData } = await supabase.rpc('get_career_guidance_tools_questions', { p_lang: lang } as any);
+        if (qData && Array.isArray(qData)) {
+          qData.forEach((item: any, index: number) => {
+            const text = item.text || item.question_text || '';
+            const key = item.key || `question${index + 1}`;
+            newLabels[key] = text;
+          });
+        }
+        if (mounted) setLabels(newLabels);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchLabels();
+    return () => { mounted = false; };
+  }, [lang]);
+
+  if (!responses || Object.keys(responses).length === 0) return <p className="text-gray-500 italic">No responses recorded.</p>;
+  return <ResponseViewer data={responses} customLabels={labels} />;
 };
 
 // ─── Role Models renderer ─────────────────────────────────────────────────────
-// Stored as { roleModel1: {...}, roleModel2: {...}, roleModel3: {...}, question12, question13 }
-
 const ROLE_MODEL_FIELDS: { key: string; label: string }[] = [
   { key: 'name', label: 'Name' },
   { key: 'relationship', label: 'Relationship' },
@@ -154,7 +381,30 @@ const ROLE_MODEL_FIELDS: { key: string; label: string }[] = [
   { key: 'incorporatePlan', label: 'How I will incorporate their qualities' },
 ];
 
-const RoleModelsRenderer = ({ responses }: { responses: any }) => {
+const RoleModelsRenderer = ({ responses, lang }: { responses: any, lang: string }) => {
+  const [summaryLabels, setSummaryLabels] = useState<Record<string, string>>({});
+  
+  useEffect(() => {
+    let mounted = true;
+    const fetchLabels = async () => {
+      const newLabels: Record<string, string> = {};
+      try {
+        const { data: sData } = await supabase.rpc('get_role_models_summary_questions_i18n', { p_lang: lang } as any);
+        if (sData && Array.isArray(sData)) {
+          sData.forEach((qObj: any, i: number) => {
+             const text = typeof qObj === 'string' ? qObj : (qObj.translated_text || qObj.question_text || '');
+             newLabels[`question${qObj.sequence_number || i + 12}`] = text;
+          });
+        }
+        if (mounted) setSummaryLabels(newLabels);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchLabels();
+    return () => { mounted = false; };
+  }, [lang]);
+
   if (!responses) return <p className="text-gray-500 italic">No role models recorded.</p>;
 
   const roleModelKeys = ['roleModel1', 'roleModel2', 'roleModel3'].filter(k => responses[k]);
@@ -194,13 +444,13 @@ const RoleModelsRenderer = ({ responses }: { responses: any }) => {
           <CardContent className="px-4 pb-4 space-y-2 text-sm">
             {responses.question12 && (
               <div>
-                <span className="font-medium text-gray-600 mr-2">Similarities between role models:</span>
+                <span className="font-medium text-gray-600 mr-2">{summaryLabels['question12'] || 'Similarities between role models:'}</span>
                 <span className="text-gray-800">{responses.question12}</span>
               </div>
             )}
             {responses.question13 && (
               <div>
-                <span className="font-medium text-gray-600 mr-2">How to cultivate these qualities:</span>
+                <span className="font-medium text-gray-600 mr-2">{summaryLabels['question13'] || 'How to cultivate these qualities:'}</span>
                 <span className="text-gray-800">{responses.question13}</span>
               </div>
             )}
@@ -445,42 +695,42 @@ export default function TeacherStudentResponsesPage() {
           {/* inspiration */}
           <TabsContent value="inspiration">
             <TabCard title="My Inspiration" record={responseMap['inspiration']} inProgress={inProgressSet.has('inspiration')}>
-              <ResponseViewer data={responseMap['inspiration']?.responses} />
+              <InspirationRenderer responses={responseMap['inspiration']?.responses} lang={lang} />
             </TabCard>
           </TabsContent>
 
           {/* about_me */}
           <TabsContent value="about_me">
             <TabCard title="About Me" record={responseMap['about_me']} inProgress={inProgressSet.has('about_me')}>
-              <ResponseViewer data={responseMap['about_me']?.responses} />
+              <AboutMeRenderer responses={responseMap['about_me']?.responses} lang={lang} />
             </TabCard>
           </TabsContent>
 
           {/* dreams */}
           <TabsContent value="dreams">
             <TabCard title="My Dreams" record={responseMap['dreams']} inProgress={inProgressSet.has('dreams')}>
-              <ResponseViewer data={responseMap['dreams']?.responses} />
+              <DreamsRenderer responses={responseMap['dreams']?.responses} lang={lang} />
             </TabCard>
           </TabsContent>
 
           {/* school_learning */}
           <TabsContent value="school_learning">
             <TabCard title="School & Learning" record={responseMap['school_learning']} inProgress={inProgressSet.has('school_learning')}>
-              <ResponseViewer data={responseMap['school_learning']?.responses} />
+              <SchoolLearningRenderer responses={responseMap['school_learning']?.responses} lang={lang} />
             </TabCard>
           </TabsContent>
 
           {/* hobbies */}
           <TabsContent value="hobbies">
             <TabCard title="Talents & Hobbies" record={responseMap['hobbies']} inProgress={inProgressSet.has('hobbies')}>
-              <HobbiesRenderer responses={responseMap['hobbies']?.responses} />
+              <HobbiesRenderer responses={responseMap['hobbies']?.responses} lang={lang} />
             </TabCard>
           </TabsContent>
 
           {/* role_models */}
           <TabsContent value="role_models">
             <TabCard title="My Role Models" record={responseMap['role_models']} inProgress={inProgressSet.has('role_models')}>
-              <RoleModelsRenderer responses={responseMap['role_models']?.responses} />
+              <RoleModelsRenderer responses={responseMap['role_models']?.responses} lang={lang} />
             </TabCard>
           </TabsContent>
 
@@ -494,7 +744,7 @@ export default function TeacherStudentResponsesPage() {
           {/* career_guidance_tools */}
           <TabsContent value="career_guidance_tools">
             <TabCard title="Career Guidance Tools" record={responseMap['career_guidance_tools']} inProgress={inProgressSet.has('career_guidance_tools')}>
-              <ResponseViewer data={responseMap['career_guidance_tools']?.responses} />
+              <CareerGuidanceToolsRenderer responses={responseMap['career_guidance_tools']?.responses} lang={lang} />
             </TabCard>
           </TabsContent>
         </Tabs>

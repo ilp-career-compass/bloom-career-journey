@@ -537,7 +537,7 @@ export default function ProfileCardPage({ readOnly, studentIdOverride }: Profile
         approved_by: user.id,
         approved_at: new Date().toISOString(),
         rejection_reason: null,
-        keywords: answers[assessmentType] || null,
+        keywords: assessmentType === 'career_direction' ? { direction: careerDirection } : (answers[assessmentType] || {}),
       } as any, { onConflict: 'student_id,assessment_type' });
       if (error) throw error;
 
@@ -585,7 +585,7 @@ export default function ProfileCardPage({ readOnly, studentIdOverride }: Profile
         approved_by: user.id,
         approved_at: new Date().toISOString(),
         rejection_reason: feedback,
-        keywords: answers[moduleBeingRejected] || null,
+        keywords: moduleBeingRejected === 'career_direction' ? { direction: careerDirection } : (answers[moduleBeingRejected] || {}),
       } as any, { onConflict: 'student_id,assessment_type' });
       if (rejectError) throw rejectError;
 

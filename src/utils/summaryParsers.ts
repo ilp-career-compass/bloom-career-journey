@@ -1,13 +1,14 @@
-﻿import { logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 /**
  * Utility functions for parsing complex AI JSON summary portfolio strings
  * into structured arrays to be displayed on student and teacher dashboards.
  */
 
-export const parseDreamEntries = (content: string) => {
+export const parseDreamEntries = (content: any) => {
     try {
-        const parsed = JSON.parse(content);
+        if (!content) return [];
+        const parsed = typeof content === 'string' ? JSON.parse(content) : content;
         if (Array.isArray(parsed)) {
             return parsed.map((entry) => ({
                 dream: entry?.dream ?? '',
@@ -22,9 +23,10 @@ export const parseDreamEntries = (content: string) => {
     return [];
 };
 
-export const parseHobbiesEntries = (content: string) => {
+export const parseHobbiesEntries = (content: any) => {
     try {
-        const parsed = JSON.parse(content);
+        if (!content) return [];
+        const parsed = typeof content === 'string' ? JSON.parse(content) : content;
         if (Array.isArray(parsed)) {
             return parsed.map((entry) => ({
                 hobby: entry?.hobby ?? '',
@@ -39,9 +41,10 @@ export const parseHobbiesEntries = (content: string) => {
     return [];
 };
 
-export const parseTalentsEntries = (content: string) => {
+export const parseTalentsEntries = (content: any) => {
     try {
-        const parsed = JSON.parse(content);
+        if (!content) return [];
+        const parsed = typeof content === 'string' ? JSON.parse(content) : content;
         if (Array.isArray(parsed)) {
             return parsed.map((entry) => ({
                 talent: entry?.talent ?? '',
@@ -56,9 +59,10 @@ export const parseTalentsEntries = (content: string) => {
     return [];
 };
 
-export const parseSchoolLearningEntries = (content: string) => {
+export const parseSchoolLearningEntries = (content: any) => {
     try {
-        const parsed = JSON.parse(content);
+        if (!content) return [];
+        const parsed = typeof content === 'string' ? JSON.parse(content) : content;
         if (Array.isArray(parsed)) {
             return parsed.map((entry) => ({
                 liked_subjects: entry?.liked_subjects ?? '',

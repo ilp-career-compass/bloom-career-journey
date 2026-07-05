@@ -257,7 +257,7 @@ export default function ProfileCardModulesPanel({
           approved_by: teacherUserId,
           approved_at: new Date().toISOString(),
           rejection_reason: null,
-          keywords: cacheRows[assessmentType]?.keywords || null,
+          keywords: cacheRows[assessmentType]?.keywords || {},
         } as any, { onConflict: 'student_id,assessment_type' });
       if (error) throw error;
 
@@ -301,7 +301,7 @@ export default function ProfileCardModulesPanel({
           approved_by: teacherUserId,
           approved_at: new Date().toISOString(),
           rejection_reason: feedback,
-          keywords: cacheRows[moduleBeingRejected]?.keywords || null,
+          keywords: cacheRows[moduleBeingRejected]?.keywords || {},
         } as any, { onConflict: 'student_id,assessment_type' });
       if (error) throw error;
 
