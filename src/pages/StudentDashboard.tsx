@@ -345,7 +345,19 @@ export default function StudentDashboard() {
 
   // ── Assessment helpers ────────────────────────────────────────────
 
-  const isAssessmentUnlocked = (_assessmentType: string) => true; // TESTING: All unlocked
+  const isAssessmentUnlocked = (assessmentType: string) => {
+    switch (assessmentType) {
+      case 'inspiration': return true;
+      case 'about_me': return getCompletionStatus('inspiration');
+      case 'dreams': return getCompletionStatus('about_me');
+      case 'school_learning': return getCompletionStatus('dreams');
+      case 'hobbies': return getCompletionStatus('school_learning');
+      case 'role_models': return getCompletionStatus('hobbies');
+      case 'holland_code': return getCompletionStatus('role_models');
+      case 'career_guidance_tools': return getCompletionStatus('role_models'); // skip holland_code since it is disabled
+      default: return false;
+    }
+  };
 
   const getAssessmentIcon = (assessmentType: string) => {
     switch (assessmentType) {
