@@ -265,6 +265,18 @@ export default function ProfileCardModulesPanel({
         ...prev,
         [assessmentType]: { ...prev[assessmentType]!, approval_status: 'approved' },
       }));
+
+      // Also update assessment_responses.review_status so StudentSummary can show the AI summary
+      const { error: respError } = await supabase
+        .from('assessment_responses')
+        .update({ review_status: 'reviewed' })
+        .eq('student_id', studentId)
+        .eq('assessment_type', assessmentType);
+        
+      if (respError) {
+         logger.warn('Failed to update assessment_responses review_status', respError);
+      }
+
       toast({ title: 'Module approved' });
 
       // Fire-and-forget: notify the student in their preferred language

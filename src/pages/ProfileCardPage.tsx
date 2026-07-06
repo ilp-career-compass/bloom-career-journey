@@ -541,6 +541,15 @@ export default function ProfileCardPage({ readOnly, studentIdOverride }: Profile
       } as any, { onConflict: 'student_id,assessment_type' });
       if (error) throw error;
 
+      if (assessmentType !== 'career_direction') {
+        const { error: respError } = await supabase
+          .from('assessment_responses')
+          .update({ review_status: 'reviewed' })
+          .eq('student_id', studentId)
+          .eq('assessment_type', assessmentType);
+        if (respError) logger.error('Failed to update assessment_responses review_status:', respError);
+      }
+
       setApprovalStatus(prev => ({ ...prev, [assessmentType]: 'approved' }));
       toast({ title: pcp.toastModuleApproved });
 
@@ -588,6 +597,15 @@ export default function ProfileCardPage({ readOnly, studentIdOverride }: Profile
         keywords: moduleBeingRejected === 'career_direction' ? { direction: careerDirection } : (answers[moduleBeingRejected] || {}),
       } as any, { onConflict: 'student_id,assessment_type' });
       if (rejectError) throw rejectError;
+
+      if (moduleBeingRejected !== 'career_direction') {
+        const { error: respError } = await supabase
+          .from('assessment_responses')
+          .update({ review_status: 'needs_revision' })
+          .eq('student_id', studentId)
+          .eq('assessment_type', moduleBeingRejected);
+        if (respError) logger.error('Failed to update assessment_responses review_status:', respError);
+      }
 
       setApprovalStatus(prev => ({ ...prev, [moduleBeingRejected]: 'rejected' }));
       setRejectionReasons(prev => ({ ...prev, [moduleBeingRejected]: feedback }));

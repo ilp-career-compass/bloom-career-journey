@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { AssessmentRecord, AssessmentType, AssessmentResponses } from '@/types/assessment';
+import { AssessmentSummary } from '@/types/assessmentSummary';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useLang } from '@/hooks/useLang';
+import SummaryApprovalCard from '@/components/teacher/SummaryApprovalCard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -561,6 +564,7 @@ export default function TeacherStudentResponsesPage() {
   const [loading, setLoading] = useState(true);
   const [studentName, setStudentName] = useState('');
   const [responseMap, setResponseMap] = useState<Partial<Record<AssessmentType, AssessmentRecord>>>({});
+  const [summaryMap, setSummaryMap] = useState<Partial<Record<AssessmentType, AssessmentSummary>>>({});
   const [inProgressSet, setInProgressSet] = useState<Set<AssessmentType>>(new Set());
 
   // G39: Role guard — only teachers may view this page
@@ -591,7 +595,7 @@ export default function TeacherStudentResponsesPage() {
       // Fetch all assessment responses (student_id references students.id)
       const { data: records } = await supabase
         .from('assessment_responses')
-        .select('assessment_type, responses, completed_at')
+        .select('id, assessment_type, responses, completed_at, review_status')
         .eq('student_id', studentId);
 
       // Build map: latest completed record per type; separately track in-progress
@@ -612,6 +616,28 @@ export default function TeacherStudentResponsesPage() {
       inProgress.forEach(t => { if (map[t]) inProgress.delete(t); });
       setResponseMap(map);
       setInProgressSet(inProgress);
+
+      // Fetch summaries for the completed responses
+      const responseIds = Object.values(map).map(r => r?.id).filter(Boolean);
+      if (responseIds.length > 0) {
+        const { data: summariesRows } = await supabase
+          .from('assessment_summaries')
+          .select('*')
+          .in('assessment_response_id', responseIds);
+
+        if (summariesRows && summariesRows.length > 0) {
+          const sMap: Partial<Record<AssessmentType, AssessmentSummary>> = {};
+          summariesRows.forEach(row => {
+            // Find which assessment type this summary belongs to
+            const entry = Object.entries(map).find(([_, rec]) => rec?.id === row.assessment_response_id);
+            if (entry) {
+              sMap[entry[0] as AssessmentType] = row as AssessmentSummary;
+            }
+          });
+          setSummaryMap(sMap);
+        }
+      }
+
       setLoading(false);
     })();
   }, [studentId]);
@@ -694,42 +720,84 @@ export default function TeacherStudentResponsesPage() {
 
           {/* inspiration */}
           <TabsContent value="inspiration">
-            <TabCard title="My Inspiration" record={responseMap['inspiration']} inProgress={inProgressSet.has('inspiration')}>
+            <TabCard 
+              title="My Inspiration" 
+              record={responseMap['inspiration']} 
+              inProgress={inProgressSet.has('inspiration')}
+              summary={summaryMap['inspiration']}
+              studentName={studentName}
+              teacherUserId={userProfile?.id}
+            >
               <InspirationRenderer responses={responseMap['inspiration']?.responses} lang={lang} />
             </TabCard>
           </TabsContent>
 
           {/* about_me */}
           <TabsContent value="about_me">
-            <TabCard title="About Me" record={responseMap['about_me']} inProgress={inProgressSet.has('about_me')}>
+            <TabCard 
+              title="About Me" 
+              record={responseMap['about_me']} 
+              inProgress={inProgressSet.has('about_me')}
+              summary={summaryMap['about_me']}
+              studentName={studentName}
+              teacherUserId={userProfile?.id}
+            >
               <AboutMeRenderer responses={responseMap['about_me']?.responses} lang={lang} />
             </TabCard>
           </TabsContent>
 
           {/* dreams */}
           <TabsContent value="dreams">
-            <TabCard title="My Dreams" record={responseMap['dreams']} inProgress={inProgressSet.has('dreams')}>
+            <TabCard 
+              title="My Dreams" 
+              record={responseMap['dreams']} 
+              inProgress={inProgressSet.has('dreams')}
+              summary={summaryMap['dreams']}
+              studentName={studentName}
+              teacherUserId={userProfile?.id}
+            >
               <DreamsRenderer responses={responseMap['dreams']?.responses} lang={lang} />
             </TabCard>
           </TabsContent>
 
           {/* school_learning */}
           <TabsContent value="school_learning">
-            <TabCard title="School & Learning" record={responseMap['school_learning']} inProgress={inProgressSet.has('school_learning')}>
+            <TabCard 
+              title="School & Learning" 
+              record={responseMap['school_learning']} 
+              inProgress={inProgressSet.has('school_learning')}
+              summary={summaryMap['school_learning']}
+              studentName={studentName}
+              teacherUserId={userProfile?.id}
+            >
               <SchoolLearningRenderer responses={responseMap['school_learning']?.responses} lang={lang} />
             </TabCard>
           </TabsContent>
 
           {/* hobbies */}
           <TabsContent value="hobbies">
-            <TabCard title="Talents & Hobbies" record={responseMap['hobbies']} inProgress={inProgressSet.has('hobbies')}>
+            <TabCard 
+              title="Talents & Hobbies" 
+              record={responseMap['hobbies']} 
+              inProgress={inProgressSet.has('hobbies')}
+              summary={summaryMap['hobbies']}
+              studentName={studentName}
+              teacherUserId={userProfile?.id}
+            >
               <HobbiesRenderer responses={responseMap['hobbies']?.responses} lang={lang} />
             </TabCard>
           </TabsContent>
 
           {/* role_models */}
           <TabsContent value="role_models">
-            <TabCard title="My Role Models" record={responseMap['role_models']} inProgress={inProgressSet.has('role_models')}>
+            <TabCard 
+              title="My Role Models" 
+              record={responseMap['role_models']} 
+              inProgress={inProgressSet.has('role_models')}
+              summary={summaryMap['role_models']}
+              studentName={studentName}
+              teacherUserId={userProfile?.id}
+            >
               <RoleModelsRenderer responses={responseMap['role_models']?.responses} lang={lang} />
             </TabCard>
           </TabsContent>
@@ -759,31 +827,49 @@ function TabCard({
   title,
   record,
   inProgress = false,
+  summary,
+  studentName,
+  teacherUserId,
   children,
 }: {
   title: string;
   record: AssessmentRecord | undefined;
   inProgress?: boolean;
+  summary?: AssessmentSummary;
+  studentName?: string;
+  teacherUserId?: string;
   children: React.ReactNode;
 }) {
   return (
-    <Card className="border border-gray-200 shadow-sm">
-      <CardHeader className="pb-3 border-b border-gray-100">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base font-semibold text-gray-800">{title}</CardTitle>
-          {record?.completed_at && (
-            <span className="text-xs text-gray-500">
-              Completed {new Date(record.completed_at).toLocaleDateString()}
-            </span>
-          )}
-          {!record && inProgress && (
-            <span className="text-xs text-yellow-600 font-medium">In progress</span>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent className="pt-4">
-        {record ? children : <NotCompleted inProgress={inProgress} />}
-      </CardContent>
-    </Card>
+    <div className="space-y-4">
+      <Card className="border border-gray-200 shadow-sm">
+        <CardHeader className="pb-3 border-b border-gray-100">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base font-semibold text-gray-800">{title}</CardTitle>
+            {record?.completed_at && (
+              <span className="text-xs text-gray-500">
+                Completed {new Date(record.completed_at).toLocaleDateString()}
+              </span>
+            )}
+            {!record && inProgress && (
+              <span className="text-xs text-yellow-600 font-medium">In progress</span>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="pt-4">
+          {record ? children : <NotCompleted inProgress={inProgress} />}
+        </CardContent>
+      </Card>
+      
+      {summary && teacherUserId && studentName && record && (
+        <SummaryApprovalCard
+          summary={summary}
+          studentResponses={record.responses}
+          teacherUserId={teacherUserId}
+          studentName={studentName}
+          assessmentType={record.assessment_type}
+        />
+      )}
+    </div>
   );
 }

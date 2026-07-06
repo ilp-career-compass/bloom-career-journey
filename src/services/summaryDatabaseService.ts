@@ -1,4 +1,4 @@
-﻿import { logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 // Summary Database Service - Handles database operations for assessment summaries
 
@@ -20,17 +20,26 @@ class SummaryDatabaseService {
     studentUserId: string
   ): Promise<{ success: boolean; summaryId?: string; error?: string }> {
     try {
+      console.log('🚀 Attempting to create AI summary:', { 
+        assessmentResponseId, 
+        studentUserId, 
+        aiSummary 
+      });
+
       const { data, error } = await supabase.rpc('create_ai_summary', {
         p_assessment_response_id: assessmentResponseId,
         p_ai_summary: aiSummary,
         p_student_user_id: studentUserId
       });
+      
+      console.log('📬 create_ai_summary RPC response:', { data, error });
 
       if (error) {
         logger.error('Error creating AI summary:', error);
         return { success: false, error: error.message };
       }
 
+      console.log('✅ AI summary successfully created in database with ID:', data);
       return { success: true, summaryId: data };
     } catch (error) {
       logger.error('Exception creating AI summary:', error);

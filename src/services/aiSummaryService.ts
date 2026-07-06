@@ -85,6 +85,23 @@ class AISummaryService {
     // API calls routed through gemini-proxy Edge Function — no client-side key needed
   }
 
+  /**
+   * Safely extract the generated text from the AI proxy response,
+   * handling both Gemini and OpenAI formats.
+   */
+  private extractResponseText(data: any): string {
+    if (!data) return '';
+    // OpenAI format
+    if (data.choices && data.choices.length > 0 && data.choices[0].message) {
+      return data.choices[0].message.content || '';
+    }
+    // Gemini format
+    if (data.candidates && data.candidates.length > 0 && data.candidates[0].content && data.candidates[0].content.parts) {
+      return data.candidates[0].content.parts[0].text || '';
+    }
+    return '';
+  }
+
   /** Bust the in-process 30-min template cache after an admin update. */
   clearTemplateCache(assessmentType?: string): void {
     if (assessmentType) {
@@ -568,7 +585,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
         hasContent: !!data?.candidates?.[0]?.content
       });
 
-      const generatedText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      const generatedText = this.extractResponseText(data);
 
       if (!generatedText) {
         logger.error('❌ No text in response:', JSON.stringify(data, null, 2));
@@ -916,7 +933,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
       const data = await this.callGeminiProxy(requestBody) as any;
       logger.log('✅ Gemini API response received for Dreams summary');
 
-      const generatedText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      const generatedText = this.extractResponseText(data);
 
       if (!generatedText) {
         logger.error('❌ No text in response:', JSON.stringify(data, null, 2));
@@ -1252,7 +1269,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
       const data = await this.callGeminiProxy(requestBody) as any;
       logger.log('✅ Gemini API response received for School Learning summary');
 
-      const generatedText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      const generatedText = this.extractResponseText(data);
 
       if (!generatedText) {
         logger.error('❌ No text in response:', JSON.stringify(data, null, 2));
@@ -1528,7 +1545,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
       const data = await this.callGeminiProxy(requestBody) as any;
       logger.log('✅ Gemini API response received for Hobbies summary');
 
-      const generatedText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      const generatedText = this.extractResponseText(data);
 
       if (!generatedText) {
         logger.error('❌ No text in response:', JSON.stringify(data, null, 2));
@@ -1860,7 +1877,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
       const data = await this.callGeminiProxy(requestBody) as any;
       logger.log('✅ Gemini API response received for About Me');
 
-      const generatedText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      const generatedText = this.extractResponseText(data);
 
       if (!generatedText) {
         logger.error('❌ No text in response:', JSON.stringify(data, null, 2));
@@ -2110,7 +2127,7 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
       const data = await this.callGeminiProxy(requestBody) as any;
       logger.log('✅ Gemini API response received for Role Models summary');
 
-      const generatedText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      const generatedText = this.extractResponseText(data);
 
       if (!generatedText) {
         logger.error('❌ No text in response:', JSON.stringify(data, null, 2));
@@ -2284,7 +2301,7 @@ ${JSON.stringify(jsonStructure, null, 2)}`;
       };
 
       const data = await this.callGeminiProxy(requestBody) as any;
-      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const text = this.extractResponseText(data);
       const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
       const parsed = JSON.parse(cleaned);
 
@@ -2352,7 +2369,7 @@ Role Models: ${formatAnswers(roleModelsAnswers)}`;
       };
 
       const data = await this.callGeminiProxy(requestBody) as any;
-      const direction = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+      const direction = this.extractResponseText(data).trim();
 
       if (!direction) {
         return { success: false, error: 'Empty response from AI' };
