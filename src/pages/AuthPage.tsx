@@ -87,18 +87,19 @@ function sendOtpWithTimeout(
   mobile: string,
   onSuccess: (data: Record<string, unknown>) => void,
   onFailure: () => void,
-  timeoutMs = 15000,
+  _timeoutMs = 15000,
 ) {
   if (typeof window.sendOtp !== 'function') { onFailure(); return; }
-  let settled = false;
-  const timer = setTimeout(() => {
-    if (!settled) { settled = true; onFailure(); }
-  }, timeoutMs);
-  window.sendOtp(
-    mobile,
-    (data) => { if (!settled) { settled = true; clearTimeout(timer); onSuccess(data); } },
-    () => { if (!settled) { settled = true; clearTimeout(timer); onFailure(); } },
-  );
+  
+  try {
+    // window.sendOtp is fire-and-forget; it does not invoke callbacks on dispatch.
+    window.sendOtp(mobile);
+    // Proceed immediately to OTP entry screen.
+    onSuccess({});
+  } catch (err) {
+    console.error('Error calling window.sendOtp:', err);
+    onFailure();
+  }
 }
 
 /**
@@ -882,7 +883,7 @@ export default function AuthPage({ isTeacherOnly = false }: { isTeacherOnly?: bo
         logger.error('MSG91 sendOtp failed or timed out');
         toast({
           title: 'Failed to send OTP',
-          description: 'Could not send OTP to this number. Please check the number and try again.',
+          description: 'Could not send OTP to this number.. Please check the number and try again.',
           variant: 'destructive',
         });
         setLoading(false);
@@ -1066,7 +1067,7 @@ export default function AuthPage({ isTeacherOnly = false }: { isTeacherOnly?: bo
         logger.error('MSG91 sendOtp failed or timed out');
         toast({
           title: 'Failed to send OTP',
-          description: 'Could not send OTP to this number. Please check the number and try again.',
+          description: 'Could not send OTP to this number. please check the number and try again.',
           variant: 'destructive',
         });
         setLoading(false);

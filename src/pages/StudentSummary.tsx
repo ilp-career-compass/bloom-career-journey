@@ -1015,42 +1015,7 @@ export default function StudentSummary() {
           </Card>
         )}
 
-        {/* Key Strengths & Interests from Profile */}
-        {(strengths || interests || careerGoals || areasForGrowth) && (
-          <Card className="border-0 shadow-md bg-white print:shadow-none print:border print:border-slate-200 break-inside-avoid">
-            <CardHeader>
-              <CardTitle className="text-base font-bold text-slate-800 flex items-center gap-2">
-                <Heart className="w-5 h-5 text-indigo-500" /> {t('keyStrengthsInterests')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {strengths && (
-                <div className="p-4 border border-slate-100 bg-slate-50/30 rounded-xl print:bg-white print:border-slate-200">
-                  <div className="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-1.5">{t('strengthsTitle')}</div>
-                  <p className="text-sm text-slate-800 leading-relaxed">{strengths}</p>
-                </div>
-              )}
-              {interests && (
-                <div className="p-4 border border-slate-100 bg-slate-50/30 rounded-xl print:bg-white print:border-slate-200">
-                  <div className="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-1.5">{t('interestsTitle')}</div>
-                  <p className="text-sm text-slate-800 leading-relaxed">{interests}</p>
-                </div>
-              )}
-              {careerGoals && (
-                <div className="p-4 border border-slate-100 bg-slate-50/30 rounded-xl print:bg-white print:border-slate-200">
-                  <div className="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-1.5">{t('goalsTitle')}</div>
-                  <p className="text-sm text-slate-800 leading-relaxed">{careerGoals}</p>
-                </div>
-              )}
-              {areasForGrowth && (
-                <div className="p-4 border border-slate-100 bg-slate-50/30 rounded-xl print:bg-white print:border-slate-200">
-                  <div className="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-1.5">{t('growthTitle')}</div>
-                  <p className="text-sm text-slate-800 leading-relaxed">{areasForGrowth}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+
 
         {/* Detailed Assessment Syntheses */}
         <div className="space-y-4">
