@@ -105,7 +105,7 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: false, error: 'OTP verification failed' }),
+      JSON.stringify({ success: false, error: (data as any)?.message || 'OTP verification failed' }),
       { status: 400, headers: { 'Content-Type': 'application/json' } },
     )
   } catch (err) {

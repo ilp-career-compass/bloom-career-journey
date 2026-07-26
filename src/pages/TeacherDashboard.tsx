@@ -265,7 +265,7 @@ export default function TeacherDashboard() {
   const handleLogout = async () => {
     try {
       await signOut();
-      navigate('/auth');
+      navigate('/auth/teacher');
       const logoutToasts: Record<string, { title: string; description: string }> = {
         en: { title: 'Logged Out', description: 'You have been successfully logged out.' },
         ta: { title: 'வெளியேறினீர்கள்', description: 'நீங்கள் வெற்றிகரமாக வெளியேறினீர்கள்.' },

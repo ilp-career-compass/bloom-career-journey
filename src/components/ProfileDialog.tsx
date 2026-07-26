@@ -24,6 +24,7 @@ const PD: Record<'en' | 'kn' | 'ta' | 'hi', Record<string, string>> = {
     updateFailed: 'Update Failed',
     updateFailedDesc: 'Failed to update profile. Please try again.',
     avatarBucketError: 'We cannot upload your profile picture right now. Please ask your administrator to create the "avatars" storage bucket.',
+    avatarSizeError: 'Profile picture must be smaller than 5MB.',
     labelFullName: 'Full Name',
     labelPhoneEmail: 'Phone / Email',
     labelGender: 'Gender',
@@ -54,6 +55,7 @@ const PD: Record<'en' | 'kn' | 'ta' | 'hi', Record<string, string>> = {
     updateFailed: 'ನವೀಕರಣ ವಿಫಲವಾಗಿದೆ',
     updateFailedDesc: 'ಪ್ರೊಫೈಲ್ ಅನ್ನು ನವೀಕರಿಸಲು ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
     avatarBucketError: 'ಪ್ರೊಫೈಲ್ ಚಿತ್ರವನ್ನು ಈಗ ಅಪ್‌ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ. ದಯವಿಟ್ಟು ನಿರ್ವಾಹಕರು "avatars" ಸ್ಟೋರೇಜ್ ಬಕೆಟ್ ಅನ್ನು ಸೃಷ್ಟಿಸಲಿ.',
+    avatarSizeError: 'ಪ್ರೊಫೈಲ್ ಚಿತ್ರ 5MB ಗಿಂತ ಚಿಕ್ಕದಾಗಿರಬೇಕು.',
     labelFullName: 'ಪೂರ್ಣ ಹೆಸರು',
     labelPhoneEmail: 'ಫೋನ್ / ಇಮೇಲ್',
     labelGender: 'ಲಿಂಗ',
@@ -84,6 +86,7 @@ const PD: Record<'en' | 'kn' | 'ta' | 'hi', Record<string, string>> = {
     updateFailed: 'மாற்ற முடியவில்லை',
     updateFailedDesc: 'சுயவிவரத்தை மாற்ற முடியவில்லை. தயவு செய்து மீண்டும் முயற்சிக்கவும்.',
     avatarBucketError: 'சுயவிவர படத்தை இப்போது பதிவேற்ற முடியவில்லை. நிர்வாகி "avatars" சேமிப்பு பக்கெட்டை உருவாக்க வேண்டும்.',
+    avatarSizeError: 'சுயவிவர படம் 5MB விட சிறியதாக இருக்க வேண்டும்.',
     labelFullName: 'முழு பெயர்',
     labelPhoneEmail: 'தொலைபேசி / மின்னஞ்சல்',
     labelGender: 'பாலினம்',
@@ -114,6 +117,7 @@ const PD: Record<'en' | 'kn' | 'ta' | 'hi', Record<string, string>> = {
     updateFailed: 'अपडेट विफल',
     updateFailedDesc: 'प्रोफ़ाइल अपडेट करने में विफल। कृपया पुनः प्रयास करें।',
     avatarBucketError: 'अभी प्रोफ़ाइल फ़ोटो अपलोड नहीं हो सकी। कृपया व्यवस्थापक से "avatars" स्टोरेज बकेट बनाने को कहें।',
+    avatarSizeError: 'प्रोफ़ाइल फ़ोटो 5MB से छोटी होनी चाहिए।',
     labelFullName: 'पूरा नाम',
     labelPhoneEmail: 'फ़ोन / ईमेल',
     labelGender: 'लिंग',
@@ -231,6 +235,11 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
 
           // Use auth.uid() for the path to ensure it matches the RLS policy
           const userId = authUser.id;
+
+          if (avatarFile.size > 5 * 1024 * 1024) {
+            throw new Error('avatar_size_error');
+          }
+
           const path = `${userId}/${Date.now()}_${avatarFile.name}`;
 
           logger.log('📤 Uploading profile picture:', {
@@ -317,9 +326,14 @@ export default function ProfileDialog({ open, onOpenChange }: Props) {
     } catch (err: any) {
       logger.error('Profile save error:', err);
       const rawMessage = (err && err.message ? String(err.message) : '').toLowerCase();
-      const description = rawMessage.includes('avatars') && rawMessage.includes('bucket')
-        ? PD[selectedLang].avatarBucketError
-        : PD[selectedLang].updateFailedDesc;
+      
+      let description = PD[selectedLang].updateFailedDesc;
+      if (rawMessage.includes('avatars') && rawMessage.includes('bucket')) {
+        description = PD[selectedLang].avatarBucketError;
+      } else if (rawMessage === 'avatar_size_error') {
+        description = PD[selectedLang].avatarSizeError;
+      }
+
       toast({ title: PD[selectedLang].updateFailed, description, variant: 'destructive' });
     } finally {
       setSaving(false);

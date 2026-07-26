@@ -104,14 +104,7 @@ Deno.serve(async (req: Request) => {
       )
     }
 
-    // G19: First Login is only for students — check BEFORE OTP so a teacher calling this endpoint
-    // does not have their OTP consumed before getting the 403.
-    if (userRow.role !== 'student') {
-      return new Response(
-        JSON.stringify({ error: 'This flow is only available for student accounts' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      )
-    }
+
 
     // G25: skip OTP verification in dev/staging when MSG91_AUTH_KEY is not configured —
     // matches the bypass behaviour of create-teacher and create-student-self-register.
@@ -133,7 +126,7 @@ Deno.serve(async (req: Request) => {
 
       if (!verifyData?.success) {
         return new Response(
-          JSON.stringify({ error: 'OTP verification failed — please verify your mobile number again' }),
+          JSON.stringify({ error: `OTP verification failed (${verifyData?.error || 'Unknown'}) — please verify your mobile number again` }),
           { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
         )
       }

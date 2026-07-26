@@ -131,7 +131,7 @@ function verifyOtpWithTimeout(
 }
 
 // Must match the expiry configured in the MSG91 widget dashboard (default: 15 min)
-const OTP_EXPIRY_SECONDS = 60;
+const OTP_EXPIRY_SECONDS = 900;
 
 function passwordStrength(pw: string): { label: string; color: string } {
   if (pw.length === 0) return { label: '', color: '' };
@@ -1294,16 +1294,38 @@ export default function AuthPage({ isTeacherOnly = false }: { isTeacherOnly?: bo
                       <Button type="submit" className="w-full" disabled={loading || signInLockCountdown > 0}>
                         {loading ? 'Signing In...' : signInLockCountdown > 0 ? `Too many attempts — wait ${signInLockCountdown}s` : t('signInBtn')}
                       </Button>
-                      <p className="text-center text-sm text-muted-foreground">
-                        Account set up by your teacher?{' '}
+                      <div className="flex flex-col items-center gap-3 mt-4 text-sm text-muted-foreground">
                         <button
                           type="button"
                           className="underline text-foreground hover:text-primary transition-colors"
                           onClick={() => { setSignInMode('firstlogin'); setFirstLoginStep('phone'); firstLoginAccessTokenRef.current = null; msg91MobileRef.current = ''; }}
                         >
-                          Set up your password
+                          Forgot Password?
                         </button>
-                      </p>
+                        {isTeacherOnly ? (
+                          <p>
+                            Are you a student?{' '}
+                            <button
+                              type="button"
+                              className="underline text-foreground hover:text-primary transition-colors font-medium"
+                              onClick={() => navigate('/auth', { state: { defaultTab: 'signin' } })}
+                            >
+                              Student Sign In
+                            </button>
+                          </p>
+                        ) : (
+                          <p>
+                            Account set up by your teacher?{' '}
+                            <button
+                              type="button"
+                              className="underline text-foreground hover:text-primary transition-colors"
+                              onClick={() => { setSignInMode('firstlogin'); setFirstLoginStep('phone'); firstLoginAccessTokenRef.current = null; msg91MobileRef.current = ''; }}
+                            >
+                              Set up your password
+                            </button>
+                          </p>
+                        )}
+                      </div>
                     </form>
                   ) : firstLoginStep === 'phone' ? (
                     <form onSubmit={handleFirstLoginOtp} className="space-y-4">
