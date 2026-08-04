@@ -72,7 +72,7 @@ const strings: Record<TeacherLang, Record<string, any>> = {
         reactivate: 'ಮರುಸಕ್ರಿಯಗೊಳಿಸು',
     },
     ta: {
-        brand: 'வித்யா சாதி',
+        brand: 'வித்யா சாத்தி',
         welcome: (name: string) => `வணக்கம், ${name}!`,
         manageStudents: 'உங்கள் மாணவர்களை பார்த்து அவர்களுக்கு உதவுங்கள்',
         totalStudents: 'மொத்த மாணவர்கள்',

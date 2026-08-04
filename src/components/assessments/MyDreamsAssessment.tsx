@@ -39,6 +39,7 @@ import { useRef } from 'react';
 
 
 import { checkAssessmentUnlock } from '@/utils/assessmentUnlock';
+import { AudioRecorder } from '@/components/ui/AudioRecorder';
 
 interface DreamQuestion {
   id: string;
@@ -86,7 +87,59 @@ const getDreamSummaryFallback = (language: string): DreamSummaryQuestion[] => {
 };
 
 export default function MyDreamsAssessment() {
+
   const { userProfile } = useAuth();
+  // Audio state
+  const [audioResponsesMap, setAudioResponsesMap] = useState<Record<string, any>>({});
+  const [assessmentRecordId, setAssessmentRecordId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const ensureAssessmentRecord = async () => {
+      if (!userProfile?.id) return;
+      try {
+        const { data: existing, error: selectError } = await supabase
+          .from('assessment_responses')
+          .select('id')
+          .eq('student_id', userProfile.id)
+          .eq('assessment_type', 'dreams')
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (existing && !selectError) {
+          setAssessmentRecordId(existing.id);
+          return;
+        }
+
+        const { data: inserted, error: insertError } = await supabase
+          .from('assessment_responses')
+          .upsert({
+            student_id: userProfile.id,
+            assessment_type: 'dreams',
+            assessment_title: 'My Dreams',
+            responses: {},
+            completed_at: null,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'student_id,assessment_type' })
+          .select('id')
+          .single();
+
+        if (inserted) setAssessmentRecordId(inserted.id);
+      } catch (e) {
+        console.error('Failed to ensure assessment record for audio', e);
+      }
+    };
+    ensureAssessmentRecord();
+  }, [userProfile?.id]);
+  
+  const handleAudioResponse = (qKey: string, audioBlob: Blob, transcription?: string) => {
+    setAudioResponsesMap(prev => ({
+        ...prev,
+        [qKey]: { ...prev[qKey], url: URL.createObjectURL(audioBlob), transcript: transcription }
+    }));
+  };
+
+
   const { t, lang } = useLang();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -1221,9 +1274,29 @@ export default function MyDreamsAssessment() {
                         const isInvalid = attemptedSubmit && !isAnswered && !isReadOnly;
                         return (
                           <div key={q.id} id={`field_${q.id}`} className={`space-y-2 border-l-4 pl-3 md:pl-4 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
-                            <label className="block text-base font-medium text-gray-800 mb-2">
-                              {q.text}<span className="text-red-500 text-sm ml-1">*</span>
-                            </label>
+                            <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-2 gap-2">
+                              <label className="block text-base font-medium text-gray-800">
+                                {q.text}<span className="text-red-500 text-sm ml-1">*</span>
+                              </label>
+                              <div className="flex-shrink-0">
+                                {(userProfile?.id && assessmentRecordId ) && (
+                                  <AudioRecorder
+                                    questionId={`summary_${q.id}`}
+                                    onRecordingComplete={(blob, trans) => handleAudioResponse(`summary_${q.id}`, blob, trans)}
+                                    studentId={userProfile.id}
+                                    assessmentId={assessmentRecordId}
+                                    assessmentType="mydreams"
+                                    assessmentTitle="My Dreams"
+                                    language={lang}
+                                    initialSavedAt={audioResponsesMap[`summary_${q.id}`]?.savedAt}
+                                    initialAudioUrl={audioResponsesMap[`summary_${q.id}`]?.url}
+                                    initialTranscription={audioResponsesMap[`summary_${q.id}`]?.transcript}
+                                    compact={true}
+                                        disabled={isReadOnly}
+                                  />
+                                )}
+                              </div>
+                            </div>
                             <Textarea
                               value={responses[q.id] || ''}
                               onChange={(e) => handleResponseChange(q.id, e.target.value)}
@@ -1361,17 +1434,37 @@ export default function MyDreamsAssessment() {
 
                       return (
                         <div key={question.id} id={`field_${question.id}`} className={`border-l-4 pl-3 md:pl-4 py-2 ${isAnswered ? 'border-transparent' : 'border-red-400'}`}>
-                          <label className="block text-base font-medium text-gray-800 mb-2 flex items-center gap-2">
-                            {label}<span className="text-red-500 text-sm">*</span>
-                            <button
-                              type="button"
-                              aria-label="Help"
-                              className="text-blue-600 hover:text-blue-700"
-                              onClick={() => toggleHelp(helpKey)}
-                            >
-                              💬
-                            </button>
-                          </label>
+                          <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-2 gap-2">
+                            <label className="block text-base font-medium text-gray-800 flex items-center gap-2">
+                              {label}<span className="text-red-500 text-sm">*</span>
+                              <button
+                                type="button"
+                                aria-label="Help"
+                                className="text-blue-600 hover:text-blue-700"
+                                onClick={() => toggleHelp(helpKey)}
+                              >
+                                💬
+                              </button>
+                            </label>
+                            <div className="flex-shrink-0">
+                              {(userProfile?.id && assessmentRecordId ) && (
+                                <AudioRecorder
+                                  questionId={`field_${question.id}`}
+                                  onRecordingComplete={(blob, trans) => handleAudioResponse(question.id, blob, trans)}
+                                  studentId={userProfile.id}
+                                  assessmentId={assessmentRecordId}
+                                  assessmentType="mydreams"
+                                  assessmentTitle="My Dreams"
+                                  language={lang}
+                                  initialSavedAt={audioResponsesMap[question.id]?.savedAt}
+                                  initialAudioUrl={audioResponsesMap[question.id]?.url}
+                                  initialTranscription={audioResponsesMap[question.id]?.transcript}
+                                  compact={true}
+                                        disabled={isReadOnly}
+                                />
+                              )}
+                            </div>
+                          </div>
                           {isOpen && (
                             <div className="mb-2 p-3 rounded border bg-blue-50 border-blue-200 text-sm text-blue-800">
                               {helpText}

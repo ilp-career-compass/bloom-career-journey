@@ -435,7 +435,7 @@ export default function MyInspirationAssessment() {
           'en': [
             { id: 1, title: "English Video 1", url: "https://youtu.be/U7-HlfpvQIA?si=_gakjQozpgbZC2aQ", youtubeId: "U7-HlfpvQIA" },
             { id: 2, title: "English Video 2", url: "https://www.youtube.com/watch?v=xqb1hfgfcl8", youtubeId: "xqb1hfgfcl8" },
-            { id: 3, title: "English Video 3", url: "https://youtu.be/G87ylRECJzY?si=HyhMM4-ggplVLO2i", youtubeId: "G87ylRECJzY" }
+            { id: 3, title: "English Video 3", url: "https://youtu.be/PP-kmxMY1ts?si=AqtDd0e6RFLA99up", youtubeId: "G87ylRECJzY" }
           ]
         };
 

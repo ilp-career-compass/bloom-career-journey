@@ -278,14 +278,14 @@ export default function ChatBubble({ role, isOpen: controlledIsOpen, onOpenChang
             const rl = recipientData?.preferred_language || 'en';
             const notifTitle =
               rl === 'kn' ? 'ಹೊಸ ಸಂದೇಶ' :
-              rl === 'ta' ? 'புதிய செய்தி' :
-              rl === 'hi' ? 'नया संदेश' :
-              'New message';
+                rl === 'ta' ? 'புதிய செய்தி' :
+                  rl === 'hi' ? 'नया संदेश' :
+                    'New message';
             const notifMessage =
               rl === 'kn' ? `${senderName} ನಿಮಗೆ ಒಂದು ಸಂದೇಶ ಕಳುಹಿಸಿದ್ದಾರೆ` :
-              rl === 'ta' ? `${senderName} உங்களுக்கு ஒரு செய்தி அனுப்பியுள்ளார்` :
-              rl === 'hi' ? `${senderName} ने आपको एक संदेश भेजा है` :
-              `${senderName} sent you a message`;
+                rl === 'ta' ? `${senderName} உங்களுக்கு ஒரு செய்தி அனுப்பியுள்ளார்` :
+                  rl === 'hi' ? `${senderName} ने आपको एक संदेश भेजा है` :
+                    `${senderName} sent you a message`;
             const { error: notifError } = await supabase.rpc('create_notification_secure', {
               p_user_id: otherPartyUserId,
               p_type: 'chat_message',
@@ -582,14 +582,14 @@ export default function ChatBubble({ role, isOpen: controlledIsOpen, onOpenChang
                   {role === 'teacher' && showStudentList
                     ? (lang === 'kn' ? 'ವಿದ್ಯಾರ್ಥಿಗೆ ಸಂದೇಶ ಕಳುಹಿಸಿ' : lang === 'ta' ? 'மாணவருக்கு செய்தி அனுப்பு' : lang === 'hi' ? 'छात्र को संदेश भेजें' : 'Message a Student')
                     : role === 'student'
-                      ? otherPartyName || (lang === 'kn' ? 'ವಿದ್ಯಾ ಸಾಥಿ' : lang === 'ta' ? 'வித்யா சாதி' : lang === 'hi' ? 'विद्या साथी' : 'Vidya Saathi')
+                      ? otherPartyName || (lang === 'kn' ? 'ವಿದ್ಯಾ ಸಾಥಿ' : lang === 'ta' ? 'வித்யா சாத்தி' : lang === 'hi' ? 'विद्या साथी' : 'Vidya Saathi')
                       : otherPartyName || (lang === 'kn' ? 'ವಿದ್ಯಾರ್ಥಿ' : lang === 'ta' ? 'மாணவர்' : lang === 'hi' ? 'छात्र' : 'Student')
                   }
                 </CardTitle>
                 {!showStudentList && (
                   <p className="text-xs text-blue-700">
                     {role === 'student'
-                      ? (lang === 'kn' ? 'ನಿಮ್ಮ ವಿದ್ಯಾ ಸಾಥಿ' : lang === 'ta' ? 'உங்கள் வித்யா சாதி' : lang === 'hi' ? 'आपका विद्या साथी' : 'Your Vidya Saathi')
+                      ? (lang === 'kn' ? 'ನಿಮ್ಮ ವಿದ್ಯಾ ಸಾಥಿ' : lang === 'ta' ? 'உங்கள் வித்யா சாத்தி' : lang === 'hi' ? 'आपका विद्या साथी' : 'Your Vidya Saathi')
                       : (lang === 'kn' ? 'ವಿದ್ಯಾರ್ಥಿ' : lang === 'ta' ? 'மாணவர்' : lang === 'hi' ? 'छात्र' : 'Student')
                     }
                   </p>

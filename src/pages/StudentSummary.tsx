@@ -549,20 +549,7 @@ export default function StudentSummary() {
 
   // Helper to extract active summary object
   const getDisplaySummaryData = (rec: AssessmentRecord) => {
-    const summaryObj = summaries[rec.id];
-    if (summaryObj) {
-      // If user is a student, only show the summary if it has been approved by the teacher
-      if (userProfile?.role === 'student' && rec.review_status !== 'reviewed') {
-        return null;
-      }
-
-      let data = summaryObj.student_edited_summary;
-      if (!data || Object.keys(data).length === 0) data = summaryObj.teacher_edited_summary;
-      if (!data || Object.keys(data).length === 0) data = summaryObj.ai_summary;
-
-      if (data && Object.keys(data).length > 0) return data;
-    }
-    return null;
+    return rec.responses || null;
   };
 
   const getSummaryStatus = (rec: AssessmentRecord) => {
@@ -571,141 +558,76 @@ export default function StudentSummary() {
 
   // Parsers and renderers
   const renderDreamsPortfolio = (summaryData: any) => {
-    const q1 = summaryData?.question1 || '';
-    const entries = parseDreamEntries(q1);
-    if (entries.length === 0) return <p className="text-sm text-gray-500 italic mt-2">{t('noDataText')}</p>;
+    if (!summaryData) return <p className="text-sm text-gray-500 italic mt-2">{t('noDataText')}</p>;
+    
+    // Find all summary keys (summary_q1, summary_question1, etc.)
+    const summaryKeys = Object.keys(summaryData)
+      .filter(k => k.startsWith('summary_'))
+      .sort();
+      
+    if (summaryKeys.length === 0) return <p className="text-sm text-gray-500 italic mt-2">{t('noDataText')}</p>;
 
     return (
-      <div className="overflow-x-auto mt-3 border border-gray-150 rounded-lg shadow-sm">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-slate-50">
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">{t('dreamCareer')}</th>
-              <th className="px-4 py-3 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">{t('qualitiesNeeded')}</th>
-              <th className="px-4 py-3 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">{t('preventingFailure')}</th>
-              <th className="px-4 py-3 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">{t('studyPath')}</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {entries.map((entry, idx) => (
-              <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                <td className="px-4 py-3 text-sm font-bold text-indigo-900 align-top">{entry.dream}</td>
-                <td className="px-4 py-3 text-sm text-slate-600 align-top leading-relaxed">{entry.quality_value_strength}</td>
-                <td className="px-4 py-3 text-sm text-slate-600 align-top leading-relaxed">{entry.prevent_failure}</td>
-                <td className="px-4 py-3 text-sm text-slate-600 align-top leading-relaxed">{entry.study_path}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="space-y-4 mt-3">
+        {summaryKeys.map((key, index) => (
+          <div key={key} className="p-3.5 border border-slate-100 rounded-xl bg-slate-50/30 hover:bg-slate-50 transition-colors">
+            <div className="text-xs font-bold text-indigo-600 uppercase mb-1.5">
+              Summary Question {index + 1}
+            </div>
+            <div className="text-sm text-slate-800 whitespace-pre-wrap leading-relaxed">
+              {String(summaryData[key])}
+            </div>
+          </div>
+        ))}
       </div>
     );
   };
 
   const renderHobbiesPortfolio = (summaryData: any) => {
-    const q1 = summaryData?.question1 || '';
-    const q6 = summaryData?.question6 || '';
-    const hobbies = parseHobbiesEntries(q1);
-    const talents = parseTalentsEntries(q6);
-
-    if (hobbies.length === 0 && talents.length === 0) {
-      return <p className="text-sm text-gray-500 italic mt-2">{t('noDataText')}</p>;
-    }
+    if (!summaryData) return <p className="text-sm text-gray-500 italic mt-2">{t('noDataText')}</p>;
+    
+    // Find all summary keys (summary_q1, summary_question1, etc.)
+    const summaryKeys = Object.keys(summaryData)
+      .filter(k => k.startsWith('summary_'))
+      .sort();
+      
+    if (summaryKeys.length === 0) return <p className="text-sm text-gray-500 italic mt-2">{t('noDataText')}</p>;
 
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
-        {hobbies.length > 0 && (
-          <div className="border border-orange-100 rounded-xl p-4 bg-orange-50/15">
-            <h4 className="text-sm font-bold text-orange-800 mb-3 capitalize flex items-center gap-1.5">
-              <Smile className="w-4 h-4" /> {t('hobbies')}
-            </h4>
-            <div className="space-y-3">
-              {hobbies.map((entry, idx) => (
-                <div key={idx} className="bg-white p-3.5 rounded-lg border border-orange-100 shadow-sm">
-                  <div className="flex justify-between items-start gap-2 flex-wrap">
-                    <div className="font-bold text-sm text-orange-950">{entry.hobby}</div>
-                    <Badge variant="outline" className="text-xs bg-orange-50/50 text-orange-700 border-orange-200">
-                      {t('wantCareer')}: {entry.want_career?.toLowerCase() === 'yes' ? t('yes') : entry.want_career?.toLowerCase() === 'no' ? t('no') : entry.want_career || t('maybe')}
-                    </Badge>
-                  </div>
-                  <div className="text-xs text-slate-600 mt-2.5 leading-relaxed">
-                    <span className="font-semibold text-slate-700">{t('compatibleCareers')}:</span> {entry.compatible_careers}
-                  </div>
-                  {entry.people_examples && (
-                    <div className="text-xs text-slate-600 mt-1 leading-relaxed">
-                      <span className="font-semibold text-slate-700">{t('peopleExamples')}:</span> {entry.people_examples}
-                    </div>
-                  )}
-                </div>
-              ))}
+      <div className="space-y-4 mt-3">
+        {summaryKeys.map((key, index) => (
+          <div key={key} className="p-3.5 border border-slate-100 rounded-xl bg-slate-50/30 hover:bg-slate-50 transition-colors">
+            <div className="text-xs font-bold text-indigo-600 uppercase mb-1.5">
+              Summary Question {index + 1}
+            </div>
+            <div className="text-sm text-slate-800 whitespace-pre-wrap leading-relaxed">
+              {String(summaryData[key])}
             </div>
           </div>
-        )}
-
-        {talents.length > 0 && (
-          <div className="border border-pink-100 rounded-xl p-4 bg-pink-50/15">
-            <h4 className="text-sm font-bold text-pink-800 mb-3 capitalize flex items-center gap-1.5">
-              <Star className="w-4 h-4" /> {t('talentLabel')}
-            </h4>
-            <div className="space-y-3">
-              {talents.map((entry, idx) => (
-                <div key={idx} className="bg-white p-3.5 rounded-lg border border-pink-100 shadow-sm">
-                  <div className="flex justify-between items-start gap-2 flex-wrap">
-                    <div className="font-bold text-sm text-pink-950">{entry.talent}</div>
-                    <Badge variant="outline" className="text-xs bg-pink-50/50 text-pink-700 border-pink-200">
-                      {t('wantCareer')}: {entry.want_career?.toLowerCase() === 'yes' ? t('yes') : entry.want_career?.toLowerCase() === 'no' ? t('no') : entry.want_career || t('maybe')}
-                    </Badge>
-                  </div>
-                  <div className="text-xs text-slate-600 mt-2.5 leading-relaxed">
-                    <span className="font-semibold text-slate-700">{t('matchingCareers')}:</span> {entry.matching_careers}
-                  </div>
-                  {entry.people_examples && (
-                    <div className="text-xs text-slate-600 mt-1 leading-relaxed">
-                      <span className="font-semibold text-slate-700">{t('peopleExamples')}:</span> {entry.people_examples}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        ))}
       </div>
     );
   };
 
   const renderSchoolLearning = (summaryData: any) => {
-    const q1 = summaryData?.question1 || '';
-    const entries = parseSchoolLearningEntries(q1);
-    if (entries.length === 0) return <p className="text-sm text-gray-500 italic mt-2">{t('noDataText')}</p>;
+    if (!summaryData) return <p className="text-sm text-gray-500 italic mt-2">{t('noDataText')}</p>;
+    
+    // Find all summary keys (summary_q1, summary_question1, etc.)
+    const summaryKeys = Object.keys(summaryData)
+      .filter(k => k.startsWith('summary_'))
+      .sort();
+      
+    if (summaryKeys.length === 0) return <p className="text-sm text-gray-500 italic mt-2">{t('noDataText')}</p>;
 
     return (
       <div className="space-y-4 mt-3">
-        {entries.map((entry, idx) => (
-          <div key={idx} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="border border-emerald-100 bg-emerald-50/10 p-4 rounded-xl">
-              <h4 className="font-bold text-xs text-emerald-800 uppercase tracking-wider mb-2">{t('likedSubjects')}</h4>
-              <div className="text-sm font-bold text-emerald-950">{entry.liked_subjects}</div>
-              <div className="text-xs text-slate-600 mt-2 leading-relaxed">
-                <span className="font-semibold text-slate-700">{t('likedCareers')}:</span> {entry.liked_careers}
-              </div>
+        {summaryKeys.map((key, index) => (
+          <div key={key} className="p-3.5 border border-slate-100 rounded-xl bg-slate-50/30 hover:bg-slate-50 transition-colors">
+            <div className="text-xs font-bold text-indigo-600 uppercase mb-1.5">
+              Summary Question {index + 1}
             </div>
-
-            <div className="border border-rose-100 bg-rose-50/10 p-4 rounded-xl">
-              <h4 className="font-bold text-xs text-rose-800 uppercase tracking-wider mb-2">{t('dislikedSubjects')}</h4>
-              <div className="text-sm font-bold text-rose-950">{entry.disliked_subjects}</div>
-              <div className="text-xs text-slate-600 mt-2 leading-relaxed">
-                <span className="font-semibold text-slate-700">{t('dislikedCareers')}:</span> {entry.disliked_careers}
-              </div>
-            </div>
-
-            <div className="border border-slate-150 bg-slate-50/50 p-4 rounded-xl md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <h4 className="font-bold text-xs text-slate-600 uppercase tracking-wider mb-1">{t('otherActivities')}</h4>
-                <div className="text-sm text-slate-800 leading-relaxed">{entry.other_activities || '—'}</div>
-              </div>
-              <div>
-                <h4 className="font-bold text-xs text-slate-600 uppercase tracking-wider mb-1">{t('skillsImprovement')}</h4>
-                <div className="text-sm text-slate-800 leading-relaxed">{entry.skills_improvement || '—'}</div>
-              </div>
+            <div className="text-sm text-slate-800 whitespace-pre-wrap leading-relaxed">
+              {String(summaryData[key])}
             </div>
           </div>
         ))}
@@ -715,33 +637,24 @@ export default function StudentSummary() {
 
   const renderAboutMe = (summaryData: any) => {
     if (!summaryData) return <p className="text-sm text-gray-500 italic mt-2">{t('noDataText')}</p>;
-
-    const fields = [
-      { key: 'question1', labelKey: 'friends' },
-      { key: 'question2', labelKey: 'dailyActivities' },
-      { key: 'question3', labelKey: 'schoolEnjoyed' },
-      { key: 'question4', labelKey: 'outsideEnjoyed' },
-      { key: 'question5', labelKey: 'personalEnjoyed' },
-      { key: 'question6', labelKey: 'teamEnjoyed' },
-      { key: 'question7', labelKey: 'difficultSchool' },
-      { key: 'question8', labelKey: 'difficultOutside' },
-      { key: 'question9', labelKey: 'mandatoryActivities' },
-      { key: 'question10', labelKey: 'easyActivities' },
-      { key: 'question11', labelKey: 'hardActivities' },
-      { key: 'question12', labelKey: 'lovedQualities' },
-      { key: 'question13', labelKey: 'othersLiked' },
-      { key: 'question14', labelKey: 'qualitiesToImprove' }
-    ];
-
-    const activeFields = fields.filter(f => summaryData[f.key] && summaryData[f.key].trim());
-    if (activeFields.length === 0) return <p className="text-sm text-gray-500 italic mt-2">{t('noDataText')}</p>;
+    
+    // Find all summary keys (summary_q1, summary_question1, etc.)
+    const summaryKeys = Object.keys(summaryData)
+      .filter(k => k.startsWith('summary_'))
+      .sort();
+      
+    if (summaryKeys.length === 0) return <p className="text-sm text-gray-500 italic mt-2">{t('noDataText')}</p>;
 
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
-        {activeFields.map(field => (
-          <div key={field.key} className="p-3.5 border border-slate-100 rounded-xl bg-slate-50/30 hover:bg-slate-50 transition-colors">
-            <div className="text-xs font-bold text-indigo-600 uppercase mb-1.5">{t(field.labelKey)}</div>
-            <div className="text-sm text-slate-800 whitespace-pre-wrap leading-relaxed">{summaryData[field.key]}</div>
+      <div className="space-y-4 mt-3">
+        {summaryKeys.map((key, index) => (
+          <div key={key} className="p-3.5 border border-slate-100 rounded-xl bg-slate-50/30 hover:bg-slate-50 transition-colors">
+            <div className="text-xs font-bold text-indigo-600 uppercase mb-1.5">
+              Summary Question {index + 1}
+            </div>
+            <div className="text-sm text-slate-800 whitespace-pre-wrap leading-relaxed">
+              {String(summaryData[key])}
+            </div>
           </div>
         ))}
       </div>
@@ -750,22 +663,24 @@ export default function StudentSummary() {
 
   const renderInspiration = (summaryData: any) => {
     if (!summaryData) return <p className="text-sm text-gray-500 italic mt-2">{t('noDataText')}</p>;
-
-    const fields = [
-      { key: 'question1', labelKey: 'keyInspirations', color: 'border-blue-100 bg-blue-50/5 text-blue-950' },
-      { key: 'question2', labelKey: 'avoidBehaviors', color: 'border-amber-100 bg-amber-50/5 text-amber-950' },
-      { key: 'question3', labelKey: 'realLifeParallels', color: 'border-purple-100 bg-purple-50/5 text-purple-950' }
-    ];
-
-    const activeFields = fields.filter(f => summaryData[f.key] && summaryData[f.key].trim());
-    if (activeFields.length === 0) return <p className="text-sm text-gray-500 italic mt-2">{t('noDataText')}</p>;
+    
+    // Find all summary keys (summary_q1, summary_question1, etc.)
+    const summaryKeys = Object.keys(summaryData)
+      .filter(k => k.startsWith('summary_'))
+      .sort();
+      
+    if (summaryKeys.length === 0) return <p className="text-sm text-gray-500 italic mt-2">{t('noDataText')}</p>;
 
     return (
-      <div className="space-y-3.5 mt-3">
-        {activeFields.map(field => (
-          <div key={field.key} className={`p-4 border rounded-xl leading-relaxed ${field.color}`}>
-            <div className="text-xs font-bold uppercase tracking-wider mb-1.5 opacity-80">{t(field.labelKey)}</div>
-            <div className="text-sm whitespace-pre-wrap">{summaryData[field.key]}</div>
+      <div className="space-y-4 mt-3">
+        {summaryKeys.map((key, index) => (
+          <div key={key} className="p-3.5 border border-slate-100 rounded-xl bg-slate-50/30 hover:bg-slate-50 transition-colors">
+            <div className="text-xs font-bold text-indigo-600 uppercase mb-1.5">
+              Summary Question {index + 1}
+            </div>
+            <div className="text-sm text-slate-800 whitespace-pre-wrap leading-relaxed">
+              {String(summaryData[key])}
+            </div>
           </div>
         ))}
       </div>
@@ -773,29 +688,27 @@ export default function StudentSummary() {
   };
 
   const renderRoleModels = (summaryData: any) => {
-    const q1 = summaryData?.question1 || '';
-    if (!q1.trim()) return <p className="text-sm text-gray-500 italic mt-2">{t('noDataText')}</p>;
-
-    const questionsList = q1.split('\n')
-      .map(q => q.trim())
-      .filter(q => q.length > 0)
-      .map(q => q.replace(/^\d+[\.\-\s]*/, ''));
-
-    if (questionsList.length === 0) return <p className="text-sm text-gray-500 italic mt-2">{t('noDataText')}</p>;
+    if (!summaryData) return <p className="text-sm text-gray-500 italic mt-2">{t('noDataText')}</p>;
+    
+    // Find all summary keys (summary_q1, summary_question1, etc.)
+    const summaryKeys = Object.keys(summaryData)
+      .filter(k => k.startsWith('summary_'))
+      .sort();
+      
+    if (summaryKeys.length === 0) return <p className="text-sm text-gray-500 italic mt-2">{t('noDataText')}</p>;
 
     return (
-      <div className="mt-3 border border-purple-100 bg-purple-50/5 p-4.5 rounded-xl">
-        <h4 className="text-xs font-bold uppercase tracking-wider text-purple-900 mb-3">{t('questionsToAsk')}</h4>
-        <ul className="space-y-3">
-          {questionsList.map((q, idx) => (
-            <li key={idx} className="flex items-start gap-3 text-sm text-slate-800">
-              <Badge className="bg-purple-100 text-purple-800 border-none font-bold mt-0.5" variant="outline">
-                {idx + 1}
-              </Badge>
-              <div className="leading-relaxed">{q}</div>
-            </li>
-          ))}
-        </ul>
+      <div className="space-y-4 mt-3">
+        {summaryKeys.map((key, index) => (
+          <div key={key} className="p-3.5 border border-slate-100 rounded-xl bg-slate-50/30 hover:bg-slate-50 transition-colors">
+            <div className="text-xs font-bold text-indigo-600 uppercase mb-1.5">
+              Summary Question {index + 1}
+            </div>
+            <div className="text-sm text-slate-800 whitespace-pre-wrap leading-relaxed">
+              {String(summaryData[key])}
+            </div>
+          </div>
+        ))}
       </div>
     );
   };

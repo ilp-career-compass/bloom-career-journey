@@ -30,6 +30,7 @@ import { audioResponseManager } from '@/services/audioResponseManager';
 import { sarvamStreamingService } from '@/services/sarvamStreamingService';
 import { useLang } from '@/hooks/useLang';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // Audio configuration
 const AUDIO_CONFIG = {
@@ -137,6 +138,14 @@ export function AudioRecorder({
 }: AudioRecorderProps) {
   const { toast } = useToast();
   const { t, lang } = useLang();
+
+  const [spokenLang, setSpokenLang] = useState(language || 'en-IN');
+  useEffect(() => {
+    if (language) {
+      if (language.includes('-')) setSpokenLang(language);
+      else setSpokenLang(`${language}-IN`);
+    }
+  }, [language]);
 
   // Refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -264,11 +273,7 @@ export function AudioRecorder({
       streamingTranscriptRef.current = "";
 
       // Connect to WebSocket Service (Passing language code)
-      let langCode = 'hi-IN';
-      if (language) {
-        if (language.includes('-')) langCode = language;
-        else langCode = `${language}-IN`;
-      }
+      let langCode = spokenLang;
 
       await sarvamStreamingService.connect(
         langCode,
@@ -779,6 +784,9 @@ export function AudioRecorder({
   if (compact) {
     return (
       <div className={`inline-flex items-center gap-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl h-14 px-4 py-2 text-sm select-none shadow-md transition-all duration-300 ${state.isRecording ? 'border-red-200 ring-4 ring-red-50 bg-red-50/20' : ''} ${className}`}>
+        
+
+
         {/* Action Button */}
         <button
           type="button"
@@ -884,6 +892,8 @@ export function AudioRecorder({
 
             {/* Main Action Button */}
             <div className="relative">
+
+
               {state.isRecording && (
                 <div className="absolute inset-0 rounded-full bg-red-400 opacity-20 animate-ping scale-150" />
               )}

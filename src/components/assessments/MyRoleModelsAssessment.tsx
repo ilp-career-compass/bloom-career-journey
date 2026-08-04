@@ -40,6 +40,7 @@ import { useRef } from 'react';
 
 
 import { checkAssessmentUnlock } from '@/utils/assessmentUnlock';
+import { AudioRecorder } from '@/components/ui/AudioRecorder';
 
 interface RoleModel {
   name: string;
@@ -65,7 +66,59 @@ interface RoleModelsAssessmentResponse {
 }
 
 export default function MyRoleModelsAssessment() {
+
   const { userProfile } = useAuth();
+  // Audio state
+  const [audioResponsesMap, setAudioResponsesMap] = useState<Record<string, any>>({});
+  const [assessmentRecordId, setAssessmentRecordId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const ensureAssessmentRecord = async () => {
+      if (!userProfile?.id) return;
+      try {
+        const { data: existing, error: selectError } = await supabase
+          .from('assessment_responses')
+          .select('id')
+          .eq('student_id', userProfile.id)
+          .eq('assessment_type', 'role_models')
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (existing && !selectError) {
+          setAssessmentRecordId(existing.id);
+          return;
+        }
+
+        const { data: inserted, error: insertError } = await supabase
+          .from('assessment_responses')
+          .upsert({
+            student_id: userProfile.id,
+            assessment_type: 'role_models',
+            assessment_title: 'My Role Models',
+            responses: {},
+            completed_at: null,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'student_id,assessment_type' })
+          .select('id')
+          .single();
+
+        if (inserted) setAssessmentRecordId(inserted.id);
+      } catch (e) {
+        console.error('Failed to ensure assessment record for audio', e);
+      }
+    };
+    ensureAssessmentRecord();
+  }, [userProfile?.id]);
+  
+  const handleAudioResponse = (qKey: string, audioBlob: Blob, transcription?: string) => {
+    setAudioResponsesMap(prev => ({
+        ...prev,
+        [qKey]: { ...prev[qKey], url: URL.createObjectURL(audioBlob), transcript: transcription }
+    }));
+  };
+
+
   const [rejectionReason, setRejectionReason] = useState<string | null>(null);
 
   const getStudentId = async () => {

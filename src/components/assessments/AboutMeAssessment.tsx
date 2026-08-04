@@ -21,6 +21,7 @@ import { checkAssessmentUnlock } from '@/utils/assessmentUnlock';
 import { fetchTranslations } from '@/services/translationService';
 import { aiSummaryService } from '@/services/aiSummaryService';
 import { summaryDatabaseService } from '@/services/summaryDatabaseService';
+import { AudioRecorder } from '@/components/ui/AudioRecorder';
 
 interface AboutMeField {
   field_key: string;
@@ -40,7 +41,59 @@ interface AboutMeResponses {
 }
 
 export default function AboutMeAssessment() {
+
   const { userProfile } = useAuth();
+  // Audio state
+  const [audioResponsesMap, setAudioResponsesMap] = useState<Record<string, any>>({});
+  const [assessmentRecordId, setAssessmentRecordId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const ensureAssessmentRecord = async () => {
+      if (!userProfile?.id) return;
+      try {
+        const { data: existing, error: selectError } = await supabase
+          .from('assessment_responses')
+          .select('id')
+          .eq('student_id', userProfile.id)
+          .eq('assessment_type', 'about_me')
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (existing && !selectError) {
+          setAssessmentRecordId(existing.id);
+          return;
+        }
+
+        const { data: inserted, error: insertError } = await supabase
+          .from('assessment_responses')
+          .upsert({
+            student_id: userProfile.id,
+            assessment_type: 'about_me',
+            assessment_title: 'About Me',
+            responses: {},
+            completed_at: null,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'student_id,assessment_type' })
+          .select('id')
+          .single();
+
+        if (inserted) setAssessmentRecordId(inserted.id);
+      } catch (e) {
+        console.error('Failed to ensure assessment record for audio', e);
+      }
+    };
+    ensureAssessmentRecord();
+  }, [userProfile?.id]);
+  
+  const handleAudioResponse = (qKey: string, audioBlob: Blob, transcription?: string) => {
+    setAudioResponsesMap(prev => ({
+        ...prev,
+        [qKey]: { ...prev[qKey], url: URL.createObjectURL(audioBlob), transcript: transcription }
+    }));
+  };
+
+
   const { t, lang } = useLang();
   const [searchParams] = useSearchParams();
   const readOnlyView = ['1', 'true'].includes((searchParams.get('readonly') || searchParams.get('view') || '').toLowerCase());
@@ -1000,10 +1053,30 @@ export default function AboutMeAssessment() {
                                     </h4>
                                   </div>
                                 )}
-                                <label className="block text-base font-medium text-gray-800">
-                                  {index + 1}. {t(`aboutMeSummaryQ${index + 1}`)}
-                                  <span className="text-red-500 ml-1">*</span>
-                                </label>
+                                <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-2 gap-2">
+                                  <label className="block text-base font-medium text-gray-800">
+                                    {index + 1}. {t(`aboutMeSummaryQ${index + 1}`)}
+                                    <span className="text-red-500 ml-1">*</span>
+                                  </label>
+                                  <div className="flex-shrink-0">
+                                    {(userProfile?.id && assessmentRecordId ) && (
+                                      <AudioRecorder
+                                        questionId={`summary_${qKey}`}
+                                        onRecordingComplete={(blob, trans) => handleAudioResponse(`summary_${qKey}`, blob, trans)}
+                                        studentId={userProfile.id}
+                                        assessmentId={assessmentRecordId}
+                                        assessmentType="about_me"
+                                        assessmentTitle="About Me"
+                                        language={lang}
+                                        initialSavedAt={audioResponsesMap[`summary_${qKey}`]?.savedAt}
+                                        initialAudioUrl={audioResponsesMap[`summary_${qKey}`]?.url}
+                                        initialTranscription={audioResponsesMap[`summary_${qKey}`]?.transcript}
+                                        compact={true}
+                                        disabled={isReadOnly}
+                                      />
+                                    )}
+                                  </div>
+                                </div>
                                 <Textarea
                                   placeholder={t('typeYourAnswerHere', 'Type your answer here...')}
                                   value={summaryData[qKey] || ''}
@@ -1078,6 +1151,22 @@ export default function AboutMeAssessment() {
                                 onChange={(vals) => setField(field.field_key, vals)}
                                 readOnly={isReadOnly}
                                 isInvalid={isInvalid}
+                                audioNode={(userProfile?.id && assessmentRecordId ) ? (
+                                  <AudioRecorder
+                                    questionId={`field_${field.field_key}`}
+                                    onRecordingComplete={(blob, trans) => handleAudioResponse(field.field_key, blob, trans)}
+                                    studentId={userProfile.id}
+                                    assessmentId={assessmentRecordId}
+                                    assessmentType="about_me"
+                                    assessmentTitle="About Me"
+                                    language={lang}
+                                    initialSavedAt={audioResponsesMap[field.field_key]?.savedAt}
+                                    initialAudioUrl={audioResponsesMap[field.field_key]?.url}
+                                    initialTranscription={audioResponsesMap[field.field_key]?.transcript}
+                                    compact={true}
+                                        disabled={isReadOnly}
+                                  />
+                                ) : undefined}
                               />
                             </div>
                           );
@@ -1099,6 +1188,22 @@ export default function AboutMeAssessment() {
                                 onChange={(vals) => setField(field.field_key, vals)}
                                 readOnly={isReadOnly}
                                 isInvalid={isInvalid}
+                                audioNode={(userProfile?.id && assessmentRecordId ) ? (
+                                  <AudioRecorder
+                                    questionId={`field_${field.field_key}`}
+                                    onRecordingComplete={(blob, trans) => handleAudioResponse(field.field_key, blob, trans)}
+                                    studentId={userProfile.id}
+                                    assessmentId={assessmentRecordId}
+                                    assessmentType="about_me"
+                                    assessmentTitle="About Me"
+                                    language={lang}
+                                    initialSavedAt={audioResponsesMap[field.field_key]?.savedAt}
+                                    initialAudioUrl={audioResponsesMap[field.field_key]?.url}
+                                    initialTranscription={audioResponsesMap[field.field_key]?.transcript}
+                                    compact={true}
+                                        disabled={isReadOnly}
+                                  />
+                                ) : undefined}
                               />
                             </div>
                           );
@@ -1121,6 +1226,22 @@ export default function AboutMeAssessment() {
                                 area={isTextarea}
                                 readOnly={isReadOnly}
                                 isInvalid={isInvalid}
+                                audioNode={(userProfile?.id && assessmentRecordId ) ? (
+                                  <AudioRecorder
+                                    questionId={`field_${field.field_key}`}
+                                    onRecordingComplete={(blob, trans) => handleAudioResponse(field.field_key, blob, trans)}
+                                    studentId={userProfile.id}
+                                    assessmentId={assessmentRecordId}
+                                    assessmentType="about_me"
+                                    assessmentTitle="About Me"
+                                    language={lang}
+                                    initialSavedAt={audioResponsesMap[field.field_key]?.savedAt}
+                                    initialAudioUrl={audioResponsesMap[field.field_key]?.url}
+                                    initialTranscription={audioResponsesMap[field.field_key]?.transcript}
+                                    compact={true}
+                                        disabled={isReadOnly}
+                                  />
+                                ) : undefined}
                               />
                             </div>
                           );
@@ -1246,7 +1367,7 @@ function SectionTitle({ title, subtitle }: { title: string; subtitle?: string })
   );
 }
 
-function Question({ label, help, value, onChange, area, helpKey, open, onToggle, readOnly, isInvalid }: { label: string; help: string; value: string; onChange: (v: string) => void; area?: boolean; helpKey: string; open: boolean; onToggle: () => void; readOnly?: boolean; isInvalid?: boolean }) {
+function Question({ label, help, value, onChange, area, helpKey, open, onToggle, readOnly, isInvalid, audioNode }: { label: string; help: string; value: string; onChange: (v: string) => void; area?: boolean; helpKey: string; open: boolean; onToggle: () => void; readOnly?: boolean; isInvalid?: boolean; audioNode?: React.ReactNode }) {
   const { lang } = useLang();
   const placeholder = lang === 'kn' ? 'ನಿಮ್ಮ ಉತ್ತರ ಬರೆಯಿರಿ...' : lang === 'ta' ? 'உங்கள் பதிலை எழுதுங்கள்...' : lang === 'hi' ? 'अपना उत्तर लिखें...' : 'Type your answer here...';
   
@@ -1254,11 +1375,14 @@ function Question({ label, help, value, onChange, area, helpKey, open, onToggle,
 
   return (
     <div>
-      <label className="block text-base font-medium text-gray-800 mb-2 flex items-center gap-2">
-        {label}
-        <span className="text-red-500 text-sm ml-1">*</span>
-        <button type="button" aria-label="Help" className="text-blue-600 hover:text-blue-700" onClick={onToggle}>💬</button>
-      </label>
+      <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-2 gap-2">
+        <label className="block text-base font-medium text-gray-800 flex items-center gap-2">
+          {label}
+          <span className="text-red-500 text-sm ml-1">*</span>
+          <button type="button" aria-label="Help" className="text-blue-600 hover:text-blue-700" onClick={onToggle}>💬</button>
+        </label>
+        {audioNode && <div className="flex-shrink-0">{audioNode}</div>}
+      </div>
       {open && (
         <div className="mb-2 p-3 rounded border bg-blue-50 border-blue-200 text-sm text-blue-800">{help}</div>
       )}
@@ -1293,7 +1417,7 @@ function Question({ label, help, value, onChange, area, helpKey, open, onToggle,
   );
 }
 
-function TripleInput({ label, help, values, onChange, helpKey, open, onToggle, readOnly, isInvalid }: { label: string; help: string; values: Triple; onChange: (v: Triple) => void; helpKey: string; open: boolean; onToggle: () => void; readOnly?: boolean; isInvalid?: boolean }) {
+function TripleInput({ label, help, values, onChange, helpKey, open, onToggle, readOnly, isInvalid, audioNode }: { label: string; help: string; values: Triple; onChange: (v: Triple) => void; helpKey: string; open: boolean; onToggle: () => void; readOnly?: boolean; isInvalid?: boolean; audioNode?: React.ReactNode }) {
   const [a, b, c] = values;
   const { lang } = useLang();
   const p1 = lang === 'kn' ? 'ಉತ್ತರ 1' : lang === 'ta' ? 'பதில் 1' : lang === 'hi' ? 'उत्तर 1' : 'Answer 1';
@@ -1301,11 +1425,14 @@ function TripleInput({ label, help, values, onChange, helpKey, open, onToggle, r
   const p3 = lang === 'kn' ? 'ಉತ್ತರ 3' : lang === 'ta' ? 'பதில் 3' : lang === 'hi' ? 'उत्தर 3' : 'Answer 3';
   return (
     <div>
-      <label className="block text-base font-medium text-gray-800 mb-2 flex items-center gap-2">
-        {label}
-        <span className="text-red-500 text-sm ml-1">*</span>
-        <button type="button" aria-label="Help" className="text-blue-600 hover:text-blue-700" onClick={onToggle}>💬</button>
-      </label>
+      <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-2 gap-2">
+        <label className="block text-base font-medium text-gray-800 flex items-center gap-2">
+          {label}
+          <span className="text-red-500 text-sm ml-1">*</span>
+          <button type="button" aria-label="Help" className="text-blue-600 hover:text-blue-700" onClick={onToggle}>💬</button>
+        </label>
+        {audioNode && <div className="flex-shrink-0">{audioNode}</div>}
+      </div>
       {open && (
         <div className="mb-2 p-3 rounded border bg-blue-50 border-blue-200 text-sm text-blue-800">{help}</div>
       )}
@@ -1319,18 +1446,21 @@ function TripleInput({ label, help, values, onChange, helpKey, open, onToggle, r
   );
 }
 
-function DoubleInput({ label, help, values, onChange, helpKey, open, onToggle, readOnly, isInvalid }: { label: string; help: string; values: Double; onChange: (v: Double) => void; helpKey: string; open: boolean; onToggle: () => void; readOnly?: boolean; isInvalid?: boolean }) {
+function DoubleInput({ label, help, values, onChange, helpKey, open, onToggle, readOnly, isInvalid, audioNode }: { label: string; help: string; values: Double; onChange: (v: Double) => void; helpKey: string; open: boolean; onToggle: () => void; readOnly?: boolean; isInvalid?: boolean; audioNode?: React.ReactNode }) {
   const [a, b] = values;
   const { lang } = useLang();
   const p1 = lang === 'kn' ? 'ಉತ್ತರ 1' : lang === 'ta' ? 'பதில் 1' : lang === 'hi' ? 'उत्तर 1' : 'Answer 1';
   const p2 = lang === 'kn' ? 'ಉತ್ತர 2' : lang === 'ta' ? 'பதில் 2' : lang === 'hi' ? 'उत्तर 2' : 'Answer 2';
   return (
     <div>
-      <label className="block text-base font-medium text-gray-800 mb-2 flex items-center gap-2">
-        {label}
-        <span className="text-red-500 text-sm ml-1">*</span>
-        <button type="button" aria-label="Help" className="text-blue-600 hover:text-blue-700" onClick={onToggle}>💬</button>
-      </label>
+      <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-2 gap-2">
+        <label className="block text-base font-medium text-gray-800 flex items-center gap-2">
+          {label}
+          <span className="text-red-500 text-sm ml-1">*</span>
+          <button type="button" aria-label="Help" className="text-blue-600 hover:text-blue-700" onClick={onToggle}>💬</button>
+        </label>
+        {audioNode && <div className="flex-shrink-0">{audioNode}</div>}
+      </div>
       {open && (
         <div className="mb-2 p-3 rounded border bg-blue-50 border-blue-200 text-sm text-blue-800">{help}</div>
       )}

@@ -1,0 +1,251 @@
+{
+  "Verified and Logged In": {
+    "count": 6,
+    "students": [
+      {
+        "student_name": "Riya kumari",
+        "preferred_language": "hi",
+        "teacher": "Saket Kumar Manjhi",
+        "state": "ILP-Jharkhand"
+      },
+      {
+        "student_name": "Monu",
+        "preferred_language": "hi",
+        "teacher": "ROHIT BAUDDHA",
+        "state": "ILP-Uttar Pradesh"
+      },
+      {
+        "student_name": "Vishal Kumar",
+        "preferred_language": "hi",
+        "teacher": "ROHIT BAUDDHA",
+        "state": "ILP-Uttar Pradesh"
+      },
+      {
+        "student_name": "Pankaj Tanti",
+        "preferred_language": "hi",
+        "teacher": "Roshni Kumari",
+        "state": "ILP-Jharkhand"
+      },
+      {
+        "student_name": "Ravi Kachhap",
+        "preferred_language": "hi",
+        "teacher": "Saket Kumar Manjhi",
+        "state": "ILP-Jharkhand"
+      },
+      {
+        "student_name": "Dipti Kachhap",
+        "preferred_language": "hi",
+        "teacher": "Saket Kumar Manjhi",
+        "state": "ILP-Jharkhand"
+      }
+    ]
+  },
+  "Manually Uploaded (Not yet logged in)": {
+    "count": 29,
+    "students": [
+      {
+        "student_name": "Lokesh kumar",
+        "preferred_language": "hi",
+        "teacher": "Jagriti Gautam",
+        "state": "ILP-Uttar Pradesh"
+      },
+      {
+        "student_name": "Yamuna",
+        "preferred_language": "en",
+        "teacher": "Hemalatha Ambalavanan",
+        "state": "ILP-Tamil Nadu"
+      },
+      {
+        "student_name": "Roshni Kumari",
+        "preferred_language": "hi",
+        "teacher": "Saket Kumar Manjhi",
+        "state": "ILP-Jharkhand"
+      },
+      {
+        "student_name": "Kriti Kachhap",
+        "preferred_language": "hi",
+        "teacher": "Saket Kumar Manjhi",
+        "state": "ILP-Jharkhand"
+      },
+      {
+        "student_name": "Anu Dhanwar",
+        "preferred_language": "hi",
+        "teacher": "Saket Kumar Manjhi",
+        "state": "ILP-Jharkhand"
+      },
+      {
+        "student_name": "Nidhi kumari",
+        "preferred_language": "hi",
+        "teacher": "Saket Kumar Manjhi",
+        "state": "ILP-Jharkhand"
+      },
+      {
+        "student_name": "Alka Toppo",
+        "preferred_language": "hi",
+        "teacher": "Saket Kumar Manjhi",
+        "state": "ILP-Jharkhand"
+      },
+      {
+        "student_name": "Sushmita Dhan",
+        "preferred_language": "hi",
+        "teacher": "Saket Kumar Manjhi",
+        "state": "ILP-Jharkhand"
+      },
+      {
+        "student_name": "Chandni Dhan",
+        "preferred_language": "hi",
+        "teacher": "Saket Kumar Manjhi",
+        "state": "ILP-Jharkhand"
+      },
+      {
+        "student_name": "Manisha Kachhap",
+        "preferred_language": "hi",
+        "teacher": "Saket Kumar Manjhi",
+        "state": "ILP-Jharkhand"
+      },
+      {
+        "student_name": "Rahil Dhan",
+        "preferred_language": "hi",
+        "teacher": "Saket Kumar Manjhi",
+        "state": "ILP-Jharkhand"
+      },
+      {
+        "student_name": "Suchita Kachhap",
+        "preferred_language": "hi",
+        "teacher": "Saket Kumar Manjhi",
+        "state": "ILP-Jharkhand"
+      },
+      {
+        "student_name": "Surya Guria",
+        "preferred_language": "hi",
+        "teacher": "Saket Kumar Manjhi",
+        "state": "ILP-Jharkhand"
+      },
+      {
+        "student_name": "Khushi kumari",
+        "preferred_language": "hi",
+        "teacher": "Saket Kumar Manjhi",
+        "state": "ILP-Jharkhand"
+      },
+      {
+        "student_name": "Sangita kumari",
+        "preferred_language": "hi",
+        "teacher": "Saket Kumar Manjhi",
+        "state": "ILP-Jharkhand"
+      },
+      {
+        "student_name": "Anjani Dhan",
+        "preferred_language": "hi",
+        "teacher": "Saket Kumar Manjhi",
+        "state": "ILP-Jharkhand"
+      },
+      {
+        "student_name": "Ailin Barla",
+        "preferred_language": "hi",
+        "teacher": "Saket Kumar Manjhi",
+        "state": "ILP-Jharkhand"
+      },
+      {
+        "student_name": "Ram Oraon",
+        "preferred_language": "hi",
+        "teacher": "Saket Kumar Manjhi",
+        "state": "ILP-Jharkhand"
+      },
+      {
+        "student_name": "Navin Tirkey",
+        "preferred_language": "hi",
+        "teacher": "Saket Kumar Manjhi",
+        "state": "ILP-Jharkhand"
+      },
+      {
+        "student_name": "Sumati kumari",
+        "preferred_language": "hi",
+        "teacher": "Roshni Kumari",
+        "state": "ILP-Jharkhand"
+      },
+      {
+        "student_name": "Shiva Mahto",
+        "preferred_language": "hi",
+        "teacher": "Roshni Kumari",
+        "state": "ILP-Jharkhand"
+      },
+      {
+        "student_name": "Shankar Mahto",
+        "preferred_language": "hi",
+        "teacher": "Roshni Kumari",
+        "state": "ILP-Jharkhand"
+      },
+      {
+        "student_name": "Prince Rav",
+        "preferred_language": "hi",
+        "teacher": "ROHIT BAUDDHA",
+        "state": "ILP-Uttar Pradesh"
+      },
+      {
+        "student_name": "Ayush",
+        "preferred_language": "hi",
+        "teacher": "Shalu Rajbhar",
+        "state": "ILP-Uttar Pradesh"
+      },
+      {
+        "student_name": "Rani",
+        "preferred_language": "hi",
+        "teacher": "Shivangani maurya",
+        "state": "ILP-Uttar Pradesh"
+      },
+      {
+        "student_name": "Rani",
+        "preferred_language": "hi",
+        "teacher": "Pooja",
+        "state": "ILP-Uttar Pradesh"
+      },
+      {
+        "student_name": "Nikhil Gautam",
+        "preferred_language": "hi",
+        "teacher": "Bindu",
+        "state": "ILP-Uttar Pradesh"
+      },
+      {
+        "student_name": "Radhika",
+        "preferred_language": "hi",
+        "teacher": "Bindu",
+        "state": "ILP-Uttar Pradesh"
+      },
+      {
+        "student_name": "Vishal",
+        "preferred_language": "hi",
+        "teacher": "Bindu",
+        "state": "ILP-Uttar Pradesh"
+      }
+    ]
+  },
+  "Manually Signed Up (Pending)": {
+    "count": 4,
+    "students": [
+      {
+        "student_name": "SUDHARSAN G",
+        "preferred_language": "en",
+        "teacher": "Unknown",
+        "state": "ILP-Tamil Nadu"
+      },
+      {
+        "student_name": "Shiv charan Mahto",
+        "preferred_language": "hi",
+        "teacher": "Unknown",
+        "state": "ILP-Jharkhand"
+      },
+      {
+        "student_name": "Aman",
+        "preferred_language": "hi",
+        "teacher": "Unknown",
+        "state": "ILP-Uttar Pradesh"
+      },
+      {
+        "student_name": "Khusi Kumari",
+        "preferred_language": "hi",
+        "teacher": "Unknown",
+        "state": "ILP-Jharkhand"
+      }
+    ]
+  }
+}
